@@ -18,7 +18,7 @@
     "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
     "dist:win": "npm run build:electron && electron-builder --win --publish never",
     "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
-    "test": "tsx --no-warnings --test \"server/*.test.ts\" \"backend/*.test.ts\" \"electron/*.test.ts\"",
+    "test": "tsx --no-warnings --test \"server/*.test.ts\" \"backend/*.test.ts\" \"electron/*.test.ts\" \"src/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -34,8 +34,10 @@
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
     "hono": "4.13.19",
+    "i18next": "26.7.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "react-i18next": "17.1.13",
     "vite": "8.3.8"
   },
   "build": {

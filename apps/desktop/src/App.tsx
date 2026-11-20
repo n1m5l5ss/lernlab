@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SessionLength, SessionPlan } from '@lernlab/core/types';
 import { api } from './api';
 import { setSound } from './audio';
@@ -10,22 +11,17 @@ import { Settings } from './Settings';
 import { Progress } from './Progress';
 import { Decks } from './Decks';
 import { Browse } from './Browse';
+import { setLanguage } from './i18n';
 
 type Tab = 'home' | 'decks' | 'browse' | 'progress' | 'stats' | 'settings';
 type View =
   | { name: Tab }
   | { name: 'play'; plan: SessionPlan }
   | { name: 'summary'; result: SessionResult; server: any; lang: string | null };
-const TABS: [Tab, string][] = [
-  ['home', 'Study'],
-  ['decks', 'Decks'],
-  ['browse', 'Cards'],
-  ['progress', 'Progress'],
-  ['stats', 'Stats'],
-  ['settings', 'Settings'],
-];
+const TABS: Tab[] = ['home', 'decks', 'browse', 'progress', 'stats', 'settings'];
 
 export function App() {
+  const { t } = useTranslation();
   const [state, setState] = useState<any>(null);
   const [view, setView] = useState<View>({ name: 'home' });
   const [error, setError] = useState('');
@@ -36,6 +32,7 @@ export function App() {
       .then((s) => {
         setState(s);
         setSound(s.settings.sound);
+        void setLanguage(s.settings.uiLanguage);
         return s;
       })
       .catch((e) => setError(e.message));
@@ -83,12 +80,12 @@ export function App() {
               refresh();
             }}
           >
-            Retry
+            {t('app.retry')}
           </button>
         </div>
       </div>
     );
-  if (!state) return <div className="wrap muted">Loading…</div>;
+  if (!state) return <div className="wrap muted">{t('app.loading')}</div>;
   if (view.name === 'play')
     return (
       <Session
@@ -114,12 +111,12 @@ export function App() {
 
   return (
     <div className="wrap" style={{ maxWidth: view.name === 'browse' || view.name === 'decks' ? 1180 : undefined }}>
-      <div className="nav">
+      <nav className="nav" aria-label={t('nav.label')}>
         <div className="logo grow">
           <img src="/icon.svg" alt="" />
-          LernLab
+          {t('app.name')}
         </div>
-        {TABS.map(([n, label]) => (
+        {TABS.map((n) => (
           <button
             key={n}
             className={`tab ${view.name === n ? 'on' : ''}`}
@@ -128,10 +125,10 @@ export function App() {
               refresh();
             }}
           >
-            {label}
+            {t(`nav.${n}`)}
           </button>
         ))}
-      </div>
+      </nav>
       {view.name === 'home' && (
         <Home state={state} onStart={start} refresh={refresh} goDecks={() => setView({ name: 'decks' })} />
       )}
