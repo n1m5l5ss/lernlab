@@ -2,8 +2,7 @@
 // app (over IPC); the web dev server runs the same table over HTTP (server/app.ts).
 import { setMeta } from '@lernlab/core/db';
 import { exportDeck } from '@lernlab/core/exporter';
-import { pastedToCards } from '@lernlab/core/formats/csv';
-import { importFile, importFromAnki, type ImportResult } from '@lernlab/core/importer';
+import { IMPORT_LIMITS, importFile, importFromAnki, importPasted, type ImportReport } from '@lernlab/core/importer';
 import {
   MAPPABLE_FIELDS,
   mapFile,
@@ -25,7 +24,6 @@ import {
 import {
   cleanDeckSettings,
   createDeck,
-  deckByName,
   deleteDeck,
   getDeck,
   LANGUAGES,
@@ -152,7 +150,7 @@ export const importStatus = {
   running: false,
   log: [] as string[],
   error: null as string | null,
-  result: null as ImportResult | null,
+  result: null as ImportReport | null,
 };
 
 export async function runAnkiImport(source?: string, deckName?: string) {
@@ -361,7 +359,7 @@ export const handlers = {
   'import.file': h(
     v.object({
       name: v.string(500),
-      data: v.bytes(500 * MB),
+      data: v.bytes(IMPORT_LIMITS.fileBytes),
       deckId: v.optional(v.id),
       deckName: v.optional(v.string(200)),
       language: v.optional(v.nullable(v.string(20))),
@@ -383,13 +381,13 @@ export const handlers = {
       language: v.optional(v.nullable(v.string(20))),
     }),
     (b) => {
-      const cards = pastedToCards(b.text ?? '', b.fieldSep || '\t', b.cardSep || '\n');
-      if (!cards.length) throw new AppError('no_cards', 'No cards found in the pasted text');
-      const name = (b.deckName || 'Pasted cards').trim();
-      const deck = (b.deckId && getDeck(b.deckId)) || deckByName(name) || createDeck(name, b.language || null);
-      const res = upsertCards(deck, cards);
-      chooseDeck(deck.id);
-      return { ...res, format: 'paste', media: 0, mediaMissing: 0 };
+      const res = importPasted(b.text ?? '', {
+        ...b,
+        deckName: b.deckName || 'Pasted cards',
+        language: b.language || null,
+      });
+      chooseDeck(res.deck.id);
+      return res;
     },
   ),
   'import.ankiInfo': h(v.none, async () => {

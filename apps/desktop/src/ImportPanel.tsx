@@ -6,15 +6,8 @@ import type { ColumnMapping, ImportPreview, MappableField } from '@lernlab/core/
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { formatNumber } from './i18n';
-import {
-  MAPPABLE,
-  defaultTarget,
-  fieldOf,
-  reportLines,
-  setColumn,
-  type ReportInput,
-  type SkipLine,
-} from './import-logic';
+import type { ImportReport as Report } from '@lernlab/core/importer';
+import { MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './import-logic';
 
 /** CSV column names are file format, not text: they stay in English in every language. */
 const CSV_REQUIRED = 'front, back';
@@ -51,7 +44,7 @@ export function ImportPanel({
   const [target, setTarget] = useState<number | 'new'>('new');
   const [deckName, setDeckName] = useState('');
   const [language, setLanguage] = useState('');
-  const [report, setReport] = useState<{ result: ReportInput; skipped: SkipLine[] } | null>(null);
+  const [report, setReport] = useState<Report | null>(null);
   const [anki, setAnki] = useState<AnkiInfo | null>(null);
   const [ankiDeck, setAnkiDeck] = useState('');
   const [ankiMsg, setAnkiMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -116,7 +109,7 @@ export function ImportPanel({
         'file' in source
           ? await api.importFile(source.file, { ...deck, language: language || undefined, mapping })
           : await api.importText({ text: source.text, fieldSep, cardSep, ...deck, language: language || null });
-      setReport({ result, skipped: preview.skipped });
+      setReport(result);
       await refresh();
     } catch (e) {
       setError((e as Error).message);
@@ -175,7 +168,7 @@ export function ImportPanel({
         </button>
       </div>
       {report ? (
-        <ImportReport result={report.result} skipped={report.skipped} onAgain={reset} onDone={onDone} />
+        <ImportReport result={report} onAgain={reset} onDone={onDone} />
       ) : (
         <>
           <div className="lengths import-tabs" role="tablist">
@@ -452,19 +445,9 @@ function PreviewTable({ cards }: { cards: ImportPreview['cards'] }) {
 }
 
 /** What an import did: cards added and updated, and what was skipped and why. */
-export function ImportReport({
-  result,
-  skipped,
-  onAgain,
-  onDone,
-}: {
-  result: ReportInput;
-  skipped?: SkipLine[];
-  onAgain: () => void;
-  onDone: () => void;
-}) {
+export function ImportReport({ result, onAgain, onDone }: { result: Report; onAgain: () => void; onDone: () => void }) {
   const { t } = useTranslation();
-  const r = reportLines(result, skipped);
+  const r = reportLines(result);
   return (
     <div className="import-report" role="status">
       <h3>{t('decks.importReport.title', { deck: result.deck.name })}</h3>
@@ -472,12 +455,23 @@ export function ImportReport({
         <li>{t('decks.importReport.added', { count: r.added })}</li>
         <li>{t('decks.importReport.updated', { count: r.updated })}</li>
         {r.skipped.map((s) => (
-          <li key={s.reason}>
+          <li key={s.code}>
             {t('decks.importReport.skipped', { count: s.count })}{' '}
-            <span className="muted">{t(`decks.importReport.reason.${s.reason}`, { defaultValue: s.reason })}</span>
+            <span className="muted">{t(`decks.importReport.reason.${s.code}`)}</span>
+            {s.code === 'missing_media' && r.missingMedia.length > 0 && (
+              <span className="small muted"> {r.missingMedia.join(', ')}</span>
+            )}
           </li>
         ))}
+        {r.moreSkipped > 0 && (
+          <li className="muted">{t('decks.importReport.moreSkipped', { count: r.moreSkipped })}</li>
+        )}
         {result.media > 0 && <li>{t('decks.importPanel.reportMedia', { count: result.media })}</li>}
+        {r.warnings.map((w, i) => (
+          <li key={i} className="muted">
+            {t(`errors.${w.code}`, { file: w.file ?? '' })}
+          </li>
+        ))}
       </ul>
       <p className="small muted">{t('decks.importReport.total', { count: r.total })}</p>
       <div className="row">
