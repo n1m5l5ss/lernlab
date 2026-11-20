@@ -35,7 +35,9 @@ There is no separate staging branch. A **beta release** cut from `dev` plays tha
 2. **Stable.** Open a pull request `dev → main` titled `release: X.Y.Z` and merge it with a merge commit (not squash).
 3. **release-please** sees the new commits on `main`, opens a release PR that bumps the version in `package.json` and adds the section to `CHANGELOG.md`, and updates that PR as more commits arrive.
 4. Merging the release PR creates the tag `vX.Y.Z` and the GitHub Release. The release-please workflow then calls the "Build installers" workflow directly (a tag made with `GITHUB_TOKEN` can't trigger other workflows), which builds, signs and publishes the installers, and `latest*.yml` lets installed apps auto-update.
-5. A workflow merges `main` back into `dev`, so the version bump and changelog are in both.
+5. A workflow opens a pull request `main → dev`, so the version bump and changelog reach `dev` too. Merge it with a merge commit.
+
+Pull requests opened by a workflow (the release PR and the `main → dev` sync) don't trigger `pull_request` runs, because GitHub doesn't let `GITHUB_TOKEN` start other workflows that way. The release-please workflow therefore starts `ci` and `pr-title` on them with `workflow_dispatch`, which `GITHUB_TOKEN` may do. The check runs land on the PR's head commit under the same names, so the required checks pass without a personal token or an admin bypass.
 
 ## Version numbers (SemVer)
 
