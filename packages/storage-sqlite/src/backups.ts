@@ -1,6 +1,7 @@
 // Keeping the user's data safe and in their hands: the daily backup, restoring a backup, exporting
-// and importing everything as one zip, and deleting all data. Every step that replaces or removes
-// the database takes a backup first, so it can be undone from backups/.
+// and importing everything as one zip, and deleting all data. Every step that replaces the
+// database takes a backup first, so it can be undone from backups/. Deleting all data is the one
+// exception: it removes the backups too and cannot be undone.
 //
 // Retention: only automatic daily backups ("-daily-") are pruned, to the newest 7. Backups made by
 // the user, before an update, before a migration or before a delete/restore/import are never
@@ -197,15 +198,13 @@ export function importAllData(bytes: Uint8Array): { safety: string; counts: Coun
 }
 
 /**
- * Delete decks, cards, progress, settings, media and daily summaries, and start empty. A last backup
- * is kept in backups/ so this can be undone; delete that folder to remove everything.
+ * Delete decks, cards, progress, settings, media, daily summaries and every backup, and start empty.
+ * Nothing is kept, so this cannot be undone; the screen warns about that before asking.
  */
-export function deleteAllData(): { backup: string } {
-  const backup = basename(backupAppDb(appFile(), 'before-delete-all'));
+export function deleteAllData(): { ok: true } {
   closeAppDb();
   for (const suffix of ['', '-wal', '-shm']) rmSync(appFile() + suffix, { force: true });
-  rmSync(mediaDir(), { recursive: true, force: true });
-  rmSync(progressDir(), { recursive: true, force: true });
+  for (const dir of [mediaDir(), progressDir(), backupsDir()]) rmSync(dir, { recursive: true, force: true });
   getAppDb(appFile());
-  return { backup };
+  return { ok: true };
 }

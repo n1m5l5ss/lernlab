@@ -80,7 +80,6 @@ test('export everything as one zip, and import it back', () => {
   assert.deepEqual(bundle.manifest.counts, { decks: 2, cards: 2, reviews: 0 });
   assert.deepEqual([...bundle.media['pic.png']], [1, 2, 3]);
 
-  const before = backups().length;
   deleteAllData();
   assert.equal(deckCount(), 0);
   const r = importAllData(out.data);
@@ -88,7 +87,7 @@ test('export everything as one zip, and import it back', () => {
   assert.deepEqual(r.counts, { decks: 2, cards: 2, reviews: 0 });
   assert.deepEqual([...readFileSync(join(dir, 'media', 'pic.png'))], [1, 2, 3]);
   assert.equal(readFileSync(join(dir, 'progress', '2026-01-01.json'), 'utf8'), '{"xp":5}');
-  assert.ok(backups().length >= before + 2, 'delete and import each backed up first');
+  assert.equal(backups().length, 1, 'delete removed every backup; import backed up first');
 });
 
 test('an imported zip is untrusted: odd paths, other zips and bombs are refused', () => {
@@ -131,13 +130,12 @@ test('an imported zip is untrusted: odd paths, other zips and bombs are refused'
   assert.equal(deckCount(), 2);
 });
 
-test('delete all data clears decks, media and progress, and keeps a last backup', () => {
-  const { backup } = deleteAllData();
-  assert.match(backup, /-before-delete-all-v\d+\.db$/);
+test('delete all data clears decks, media, progress and every backup, for good', () => {
+  assert.ok(listBackups().length > 0);
+  assert.deepEqual(deleteAllData(), { ok: true });
   assert.equal(deckCount(), 0);
   assert.ok(!existsSync(join(dir, 'media', 'pic.png')));
   assert.ok(!existsSync(join(dir, 'progress')));
-  assert.ok(existsSync(join(dir, 'backups', backup)));
-  restoreBackup(backup);
-  assert.equal(deckCount(), 2, 'and that backup can bring everything back');
+  assert.ok(!existsSync(join(dir, 'backups')), 'no backup is left behind');
+  assert.deepEqual(listBackups(), []);
 });

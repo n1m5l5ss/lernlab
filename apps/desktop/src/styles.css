@@ -2417,3 +2417,7 @@ kbd {
 .data-danger input {
   max-width: 240px;
 }
+.data-danger .data-warning {
+  font-weight: 600;
+  color: var(--color-incorrect);
+}

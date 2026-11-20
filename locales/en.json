@@ -146,11 +146,12 @@
       "importNow": "Replace my data",
       "imported": "Data imported. Your previous data was saved as {{file}}.",
       "delete": "Delete all my data",
-      "deleteHint": "Removes every deck, card, answer, setting and media file from this computer. One last backup stays in the backups folder; delete that folder to remove everything.",
+      "deleteHint": "Removes every deck, card, answer, setting, media file and backup from this computer.",
+      "deleteWarning": "Everything is deleted permanently, including all backups. This cannot be undone. To keep a copy, export everything first.",
       "deleteWord": "DELETE",
       "deleteType": "Type {{word}} to confirm",
       "deleteNow": "Delete everything",
-      "deleted": "All data deleted. A last backup was kept: {{file}}"
+      "deleted": "All data and backups have been permanently deleted."
     },
     "online": {
       "intro": "LernLab goes online in only these three cases:",
