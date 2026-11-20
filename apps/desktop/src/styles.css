@@ -1570,3 +1570,130 @@ kbd {
   color: var(--color-incorrect);
   background: var(--color-surface);
 }
+
+/* Card browser: filters, bulk bar and a windowed list (only rows in view are drawn). */
+.browse-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.browse-head p {
+  flex: 1;
+  margin: 0;
+}
+.browse-bulk .btn {
+  padding: var(--space-1) var(--space-3);
+  min-height: var(--size-min-target);
+}
+.browse-filters {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) repeat(3, minmax(130px, 1fr));
+  gap: var(--space-2);
+}
+@media (max-width: 700px) {
+  .browse-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.browse-bulk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+}
+.browse-bulk > b {
+  margin-inline-end: var(--space-2);
+}
+.browse-bulk-form {
+  display: flex;
+  flex-basis: 100%;
+  gap: var(--space-2);
+}
+.browse-bulk-form .input {
+  max-width: 280px;
+}
+.browse-notice,
+.browse-empty {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+}
+.browse-list {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-surface);
+  overflow: hidden;
+  min-width: 0;
+}
+.browse-scroll {
+  height: 62vh;
+  overflow-y: auto;
+  position: relative;
+}
+.browse-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 0.7fr) 7.5rem;
+  align-items: center;
+  gap: var(--space-2);
+  height: 44px;
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+}
+.browse-list.one-deck .browse-row {
+  grid-template-columns: 28px minmax(0, 1.2fr) minmax(0, 1fr) 7.5rem;
+}
+.browse-scroll .browse-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+}
+.browse-row > span,
+.browse-open {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.browse-row-head {
+  font-size: var(--text-caption);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: var(--color-subtle);
+}
+.browse-row.sel {
+  background: var(--color-accent-tint);
+}
+.browse-row.open {
+  box-shadow: inset 3px 0 0 var(--color-accent);
+}
+.browse-row.suspended > :not(input) {
+  opacity: 0.55;
+}
+.browse-open {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-text);
+  text-align: start;
+  cursor: pointer;
+  min-height: var(--size-min-target);
+}
+.browse-open:hover {
+  color: var(--color-accent);
+}
+.browse-state {
+  display: inline-block;
+  margin-inline-end: var(--space-1);
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: var(--color-subtle);
+  color: var(--color-text-muted);
+}
+.browse-state.known {
+  background: var(--color-correct-fill);
+  color: var(--color-text);
+}
+.browse-state.learning {
+  background: var(--color-accent-tint);
+  color: var(--color-text);
+}
