@@ -1,4 +1,4 @@
-// CSV / TSV / Quizlet-style text import. Header row optional; columns matched by common names.
+// CSV / TSV / Quizlet-style text import, and the CSV that exports write. Header row optional; columns matched by common names.
 import type { NormalizedCard } from '../library';
 
 /** RFC 4180-ish parser: quoted fields, doubled quotes, newlines inside quotes.
@@ -151,44 +151,42 @@ export function csvToCards(text: string): {
   return { cards: all.filter((_, i) => keep[i]), lines: lines.filter((_, i) => keep[i]), columns, header };
 }
 
-const esc = (s: string) => (/[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
+/** CSV columns LernLab writes: every card field a spreadsheet can hold, named so `csvToCards` reads them back. */
+const CSV_COLUMNS: [string, (c: NormalizedCard) => string | number | undefined][] = [
+  ['front', (c) => c.front],
+  ['back', (c) => c.back],
+  ['alt_answers', (c) => c.altAnswers],
+  ['example', (c) => c.example],
+  ['example translation', (c) => c.exampleTranslation],
+  ['explanation', (c) => c.explanation],
+  ['notes', (c) => c.notes],
+  ['category', (c) => c.category],
+  ['tags', (c) => (c.tags ?? []).join(' ')],
+  ['type', (c) => c.type],
+  ['choices', (c) => c.choices],
+  ['correct', (c) => c.correct],
+  ['steps', (c) => c.steps],
+  ['image', (c) => c.image],
+  ['audio', (c) => c.audio],
+  ['video', (c) => c.video],
+  ['deck', (c) => c.subdeck],
+  ['lesson', (c) => c.group],
+  ['rank', (c) => c.rank],
+  ['reading', (c) => c.extra?.reading],
+  ['id', (c) => c.sourceId],
+];
+
+/** Quote a cell when it holds a separator, a quote or a line break, or starts like a # comment line. */
+const csvCell = (v: string | number | undefined) => {
+  const s = String(v ?? '');
+  return /^#|[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+/** Cards as a CSV that `csvToCards` reads back to the same cards. */
 export function cardsToCsv(cards: NormalizedCard[]): string {
-  const cols = [
-    'front',
-    'back',
-    'example',
-    'example translation',
-    'explanation',
-    'notes',
-    'category',
-    'tags',
-    'image',
-    'audio',
-    'video',
-    'id',
-  ];
-  const lines = [cols.join(',')];
-  for (const c of cards) {
-    lines.push(
-      [
-        c.front,
-        c.back,
-        c.example,
-        c.exampleTranslation,
-        c.explanation,
-        c.notes,
-        c.category,
-        (c.tags ?? []).join(' '),
-        c.image,
-        c.audio,
-        c.video,
-        c.sourceId === undefined ? '' : String(c.sourceId),
-      ]
-        .map((v) => esc(v ?? ''))
-        .join(','),
-    );
-  }
-  return lines.join('\n') + '\n';
+  const lines = [CSV_COLUMNS.map(([name]) => name).join(',')];
+  for (const c of cards) lines.push(CSV_COLUMNS.map(([, get]) => csvCell(get(c))).join(','));
+  return `${lines.join('\n')}\n`;
 }
 
 /** Quizlet-style paste: custom separators between term/definition and between cards. */

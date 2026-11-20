@@ -56,7 +56,7 @@ Rules:
 - **Limits:** see [Limits](#limits) below. They apply to every zip-based format.
 - **Without a manifest.** A zip with just a CSV and media files also imports, as a plain CSV with media (not a `.lernpack`). The deck is named after the CSV file.
 
-What LernLab writes when it exports: `manifest.json`, `cards.jsonl` and every media file the cards use, flat in `media/`. Writing a matching `cards.csv` beside it and sorting media into `images/`, `audio/` and `video/` is ticket #57; both are already valid version 1 packages, so readers must handle either layout.
+What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching `cards.csv` (every column of a CSV export, so the deck opens in a spreadsheet; readers use `cards.jsonl` first), and every media file the cards use, sorted by kind into `media/images/`, `media/audio/` and `media/video/`. Cards point at their files by that path inside `media/` (`images/rot.png`), in both cards files. Packages written before this, with only `cards.jsonl` and media flat in `media/`, are valid version 1 packages too, so readers must handle either layout.
 
 ### Versioning
 

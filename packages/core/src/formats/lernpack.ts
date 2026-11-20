@@ -2,8 +2,8 @@
 // and media/ (any subfolders, e.g. media/images, media/audio, media/video).
 import { strFromU8, strToU8, zipSync, type Zippable } from 'fflate';
 import { basename } from '../paths';
-import type { DeckSettings, NormalizedCard } from '../library';
-import { csvToCards } from './csv';
+import { mediaKind, type DeckSettings, type NormalizedCard } from '../library';
+import { cardsToCsv, csvToCards } from './csv';
 import { UserError } from '../errors';
 import { jsonToCard, parseJson } from './json';
 import { listZip, readZip } from './zip';
@@ -89,6 +89,14 @@ export function lernpackMedia(buf: Uint8Array, want: (file: string) => boolean):
   return Object.fromEntries(Object.entries(files).map(([n, data]) => [basename(n), data]));
 }
 
+/** The folder under media/ a file is written to, by its kind. Unknown kinds stay in media/ itself. */
+const MEDIA_FOLDERS = { image: 'images/', audio: 'audio/', video: 'video/' } as const;
+
+/**
+ * Write a deck package: manifest.json, the cards twice (cards.jsonl, lossless, and cards.csv for
+ * spreadsheets) and the media files sorted into media/images, media/audio and media/video.
+ * `media` is keyed by file name; cards that use a file point at it by its path inside media/.
+ */
 export function writeLernpack(
   manifest: Omit<Manifest, 'format' | 'version' | 'cards' | 'created'>,
   cards: NormalizedCard[],
@@ -101,12 +109,19 @@ export function writeLernpack(
     created: new Date().toISOString(),
     ...manifest,
   };
+  const path = (name: string) => {
+    const kind = mediaKind(name);
+    return kind ? MEDIA_FOLDERS[kind] + name : name;
+  };
+  const at = (v: string | undefined) => (v && media[v] ? path(v) : v);
+  const packed = cards.map((c) => ({ ...c, image: at(c.image), audio: at(c.audio), video: at(c.video) }));
   const files: Zippable = {
     'manifest.json': strToU8(JSON.stringify(full, null, 2)),
     'cards.jsonl': strToU8(
-      cards.map(({ sourceId, ...c }) => JSON.stringify({ id: String(sourceId ?? ''), ...c })).join('\n') + '\n',
+      packed.map(({ sourceId, ...c }) => JSON.stringify({ id: String(sourceId ?? ''), ...c })).join('\n') + '\n',
     ),
+    'cards.csv': strToU8(cardsToCsv(packed)),
   };
-  for (const [name, data] of Object.entries(media)) files[`media/${name}`] = [data, { level: 0 }];
+  for (const [name, data] of Object.entries(media)) files[`media/${path(name)}`] = [data, { level: 0 }];
   return zipSync(files, { level: 6 });
 }
