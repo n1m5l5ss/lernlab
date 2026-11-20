@@ -524,7 +524,9 @@
       "iWasRightTitle": "The checker was too strict – count it as correct",
       "iWasRight": "I was right",
       "titleLanguage": "Type it in the language",
-      "title": "Type the answer"
+      "title": "Type the answer",
+      "youTyped": "You typed",
+      "answer": "Answer"
     },
     "cloze": {
       "title": "Fill the gap"
