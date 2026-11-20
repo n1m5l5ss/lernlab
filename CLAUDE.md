@@ -63,7 +63,7 @@ Node 22.13+ is required (`node:sqlite`).
 - Never mark a card as known from a game or recognition exercise.
 - No timers on new cards.
 - Treat deck files as untrusted. Sanitise HTML, never run scripts, and check paths inside zip files.
-- Changing the data model needs a numbered migration and a backup before it runs.
+- Changing the data model needs a numbered migration and a backup before it runs: add `packages/core/src/migrations/NNN-name.ts` and list it in `MIGRATIONS` (`packages/core/src/migrate.ts`). Never edit a migration that has shipped. The storage host backs up and restores automatically.
 - Don't change `docs/PLAN.md` decisions on your own. Propose the change in the pull request.
 - Keep within the performance budgets in `docs/TESTING.md`. Never run SQL or heavy work in the Electron main process.
 - Use design tokens only; no raw colours in components.

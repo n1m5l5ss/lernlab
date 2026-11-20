@@ -2,11 +2,20 @@
 // to compile) and media / progress files in the data folder.
 import * as sqlite from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { setHost, type DB, type Host } from '@lernlab/core/host';
-import { migrate } from '@lernlab/core/schema';
+import { migrate, type Migration } from '@lernlab/core/migrate';
 
 // Node 22–25 call the class DatabaseSync; newer releases may call it Database.
 type SqliteCtor = new (file: string, options?: { readOnly?: boolean }) => DB;
@@ -26,10 +35,46 @@ export function openReadonly(file: string): DB {
   return new Ctor(file, { readOnly: true }) as DB;
 }
 
-/** Open a database file with LernLab's schema. */
-export function openDb(file: string): DB {
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * Copy the database next to it in backups/ before migrating. VACUUM INTO writes a consistent,
+ * compact copy even while the database is in WAL mode.
+ */
+export function backupDb(d: DB, file: string, fromVersion: number, now = new Date()): string {
+  const dir = resolve(dirname(file), 'backups');
+  mkdirSync(dir, { recursive: true });
+  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  let out = resolve(dir, `lernlab-${stamp}-v${fromVersion}.db`);
+  if (existsSync(out))
+    out = resolve(
+      dir,
+      `lernlab-${stamp}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}-v${fromVersion}.db`,
+    );
+  d.prepare('VACUUM INTO ?').run(out);
+  return out;
+}
+
+/** Put a backup back in place of the database file. Closes `d`. */
+function restoreDb(d: DB, file: string, backupFile: string) {
+  d.close();
+  for (const suffix of ['-wal', '-shm']) rmSync(file + suffix, { force: true });
+  copyFileSync(backupFile, file);
+}
+
+/**
+ * Open a database file with LernLab's schema, running pending migrations with a backup first.
+ * Throws MigrationError (from @lernlab/core/migrate) after restoring the backup if a migration fails.
+ */
+export function openDb(file: string, migrations?: Migration[]): DB {
+  mkdirSync(dirname(file), { recursive: true });
   const d = new Ctor(file) as DB;
-  migrate(d);
+  d.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+  migrate(d, {
+    migrations,
+    backup: (fromVersion) => backupDb(d, file, fromVersion),
+    restore: (backupFile) => restoreDb(d, file, backupFile),
+  });
   return d;
 }
 
@@ -38,11 +83,8 @@ let db: DB | null = null;
 /** The app database in the data folder, opened once. */
 export function getAppDb(file = resolve(dataDir(), 'lernlab.db')): DB {
   if (db) return db;
-  mkdirSync(dirname(file), { recursive: true });
   mkdirSync(mediaDir(), { recursive: true });
-  db = new Ctor(file) as DB;
-  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
-  migrate(db);
+  db = openDb(file);
   return db;
 }
 

@@ -28,6 +28,7 @@ import {
   type NormalizedCard,
 } from '@lernlab/core/library';
 import { ACHIEVEMENTS, appState, dailySummary, finishSession, progressReport, stats } from '@lernlab/core/progress';
+import { MigrationError } from '@lernlab/core/migrate';
 import { planSession } from '@lernlab/core/session';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import { anki, ankiAvailable, ankiConnect } from './anki';
@@ -381,7 +382,7 @@ export async function handle(channel: unknown, input: unknown): Promise<Result<u
   try {
     return { ok: true, value: await handler.run(handler.input(input)) };
   } catch (e) {
-    const code = e instanceof AppError || e instanceof InvalidInput ? e.code : 'failed';
+    const code = e instanceof AppError || e instanceof InvalidInput || e instanceof MigrationError ? e.code : 'failed';
     return { ok: false, error: { code, message: (e as Error)?.message ?? String(e) } };
   }
 }
