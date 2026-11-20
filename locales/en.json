@@ -272,7 +272,7 @@
         "paste": "Paste text",
         "anki": "From Anki"
       },
-      "deckName": "Deck name (optional)",
+      "deckName": "Deck name",
       "deckNamePlaceholder": "Taken from the file if empty",
       "language": "Language (optional)",
       "languageKeep": "Not a language / keep from file",
@@ -293,19 +293,52 @@
         "newline": "New line",
         "pipe": "Pipe |"
       },
-      "cardCount_one": "{{count}} card",
-      "cardCount_other": "{{count}} cards",
-      "importPasted": "Import pasted cards",
       "checkingAnki": "Checking Anki…",
       "ankiUnreachable": "Anki isn't reachable. Open Anki with the <b>AnkiConnect</b> add-on (code 2055492159), or export a deck from Anki as <code>.apkg</code> and drop it in the File tab.",
       "importDeck": "Import deck",
       "ankiDone_one": "Imported {{count}} card from Anki.",
       "ankiDone_other": "Imported {{count}} cards from Anki.",
-      "report": "“{{deck}}”: {{added}} new, {{updated}} updated ({{total}} cards).",
       "reportMedia_one": "{{count}} media file added.",
       "reportMedia_other": "{{count}} media files added.",
-      "reportMissing_one": "{{count}} missing media file skipped.",
-      "reportMissing_other": "{{count}} missing media files skipped."
+      "chooseOther": "Choose another file",
+      "pasteLabel": "Paste one card per line",
+      "found_one": "Found {{count}} card. Nothing is saved until you press Import.",
+      "found_other": "Found {{count}} cards. Nothing is saved until you press Import.",
+      "columns": "Columns",
+      "columnsHint": "We could not tell what each column holds. Choose a field for each column, or ignore it.",
+      "changeColumns": "Change columns",
+      "firstRowHeader": "The first row holds column names",
+      "columnN": "Column {{n}}",
+      "ignore": "Ignore this column",
+      "field": {
+        "front": "Front",
+        "back": "Back",
+        "example": "Example",
+        "exampleTranslation": "Example translation",
+        "explanation": "Explanation",
+        "notes": "Notes",
+        "category": "Category",
+        "tags": "Tags",
+        "image": "Image",
+        "audio": "Audio",
+        "video": "Video",
+        "subdeck": "Sub-deck",
+        "group": "Lesson",
+        "rank": "Order",
+        "reading": "Reading",
+        "sourceId": "Card id",
+        "type": "Card type",
+        "choices": "Choices",
+        "correct": "Correct choices",
+        "steps": "Steps",
+        "altAnswers": "Other accepted answers"
+      },
+      "previewCaption_one": "The first card",
+      "previewCaption_other": "The first {{count}} cards",
+      "target": "Import into",
+      "newDeck": "A new deck",
+      "importCount_one": "Import {{count}} card",
+      "importCount_other": "Import {{count}} cards"
     },
     "subjectDeck_one": "Subject · {{count}} card",
     "subjectDeck_other": "Subject · {{count}} cards",
@@ -321,7 +354,28 @@
     "deleteBody_one": "Its {{count}} card and its progress are removed. A backup of all your data is saved first.",
     "deleteBody_other": "Its {{count}} cards and their progress are removed. A backup of all your data is saved first.",
     "keep": "Keep deck",
-    "deleted": "Deleted “{{name}}”. A backup was saved as {{file}}."
+    "deleted": "Deleted “{{name}}”. A backup was saved as {{file}}.",
+    "importReport": {
+      "title": "Imported into “{{deck}}”",
+      "added_one": "{{count}} card added",
+      "added_other": "{{count}} cards added",
+      "updated_one": "{{count}} card updated (progress kept)",
+      "updated_other": "{{count}} cards updated (progress kept)",
+      "skipped_one": "{{count}} skipped:",
+      "skipped_other": "{{count}} skipped:",
+      "reason": {
+        "no_front": "no front side",
+        "missing_media": "a picture or sound file was not in the import"
+      },
+      "willSkip": {
+        "no_front_one": "{{count}} row has no front side and will be skipped.",
+        "no_front_other": "{{count}} rows have no front side and will be skipped."
+      },
+      "total_one": "The deck now has {{count}} card.",
+      "total_other": "The deck now has {{count}} cards.",
+      "again": "Import more",
+      "done": "Done"
+    }
   },
   "browse": {
     "noDeck": "Pick or import a deck first.",
@@ -868,7 +922,8 @@
     "backup_too_new": "This backup was made by a newer version of LernLab. Update LernLab first.",
     "backup_not_found": "That backup no longer exists.",
     "not_data_export": "This file is not a LernLab data export. Use a zip made with Export everything.",
-    "data_export_too_new": "This export was made by a newer version of LernLab. Update LernLab first."
+    "data_export_too_new": "This export was made by a newer version of LernLab. Update LernLab first.",
+    "mapping_needs_front": "Choose which column holds the front of the cards."
   },
   "update": {
     "ready": "LernLab {{version}} is ready. Restart to update; your progress is saved and backed up.",

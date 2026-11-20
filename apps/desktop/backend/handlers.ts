@@ -5,6 +5,14 @@ import { exportDeck } from '@lernlab/core/exporter';
 import { pastedToCards } from '@lernlab/core/formats/csv';
 import { importFile, importFromAnki, type ImportResult } from '@lernlab/core/importer';
 import {
+  MAPPABLE_FIELDS,
+  mapFile,
+  previewFile,
+  previewText,
+  type ColumnMapping,
+  type MappableField,
+} from '@lernlab/core/importpreview';
+import {
   asStudySource,
   getSettings,
   ITEM_SELECT,
@@ -91,6 +99,19 @@ const cardInput = v.object({
 });
 
 const splitTags = (t: string | string[] | undefined) => (typeof t === 'string' ? t.split(/[\s,]+/) : t);
+
+/** A column mapping from the import screen: known card fields only, each a column number. */
+const columnMapping: Check<ColumnMapping> = (value, path = 'mapping') => {
+  const m = v.object({ header: v.boolean, fields: v.record })(value, path);
+  const fields: ColumnMapping['fields'] = {};
+  for (const [k, i] of Object.entries(m.fields)) {
+    if (!Object.hasOwn(MAPPABLE_FIELDS, k)) continue;
+    if (!Number.isInteger(i) || (i as number) < 0 || (i as number) > 1000)
+      throw new InvalidInput(`${path}.fields.${k} must be a column number`);
+    fields[k as MappableField] = i as number;
+  }
+  return { header: m.header, fields };
+};
 
 /* ── Anki import runs in the background; the window polls its status ── */
 
@@ -326,6 +347,17 @@ export const handlers = {
   }),
 
   /* ── Import / media ── */
+  'import.preview': h(
+    v.object({
+      name: v.optional(v.string(500)),
+      data: v.optional(v.bytes(500 * MB)),
+      text: v.optional(v.string(50 * MB)),
+      fieldSep: v.optional(v.string(10)),
+      cardSep: v.optional(v.string(10)),
+      mapping: v.optional(columnMapping),
+    }),
+    (b) => (b.data ? previewFile(b.name ?? '', b.data, b.mapping) : previewText(b.text ?? '', b.fieldSep, b.cardSep)),
+  ),
   'import.file': h(
     v.object({
       name: v.string(500),
@@ -333,9 +365,10 @@ export const handlers = {
       deckId: v.optional(v.id),
       deckName: v.optional(v.string(200)),
       language: v.optional(v.nullable(v.string(20))),
+      mapping: v.optional(columnMapping),
     }),
-    ({ name, data, deckId, deckName, language }) => {
-      const res = importFile(name, data, { deckId, deckName: deckName || undefined, language });
+    ({ name, data, deckId, deckName, language, mapping }) => {
+      const res = importFile(name, mapFile(name, data, mapping), { deckId, deckName: deckName || undefined, language });
       chooseDeck(res.deck.id);
       return res;
     },
