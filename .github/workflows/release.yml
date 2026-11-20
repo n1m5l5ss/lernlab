@@ -4,7 +4,8 @@ name: Build installers
 # - called by release-please.yml right after it creates a release (its tag is made with GITHUB_TOKEN,
 #   and such tags never trigger `on: push: tags`, so release-please calls this workflow directly);
 # - on a tag pushed by a person (draft release);
-# - by hand (Actions → Build installers → Run workflow): builds artifacts only.
+# - by hand (Actions → Build installers → Run workflow): builds artifacts only, or, with a tag,
+#   rebuilds that release's installers and attaches them (e.g. after a failed run).
 on:
   workflow_call:
     inputs:
@@ -15,6 +16,11 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Optional. An existing release tag to build and attach installers to, e.g. v0.3.0
+        type: string
+        required: false
 
 permissions:
   contents: read
