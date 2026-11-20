@@ -57,7 +57,11 @@
     "languageHint": "More languages will come from volunteer translators.",
     "pseudo": "Pseudo-locale (shows untranslated text)",
     "summaryLink": "Today's summary (JSON for tutors/scripts)",
-    "perDeckNote": "New cards per day, language and goals are set per deck (Decks → ⚙)."
+    "perDeckNote": "New cards per day, language and goals are set per deck (Decks → ⚙).",
+    "autoUpdate": "Update automatically",
+    "autoUpdateHint": "Looks for a new version once a day and installs it when you restart. Your data is backed up first.",
+    "betaUpdates": "Get beta updates",
+    "betaUpdatesHint": "Try new features early. Betas can have bugs."
   },
   "home": {
     "welcomeTitle": "Welcome to LernLab",
@@ -579,5 +583,10 @@
     "not_anki": "This file is not an Anki package.",
     "unsupported_media": "This media file type is not supported.",
     "anki_unreachable": "Anki is not reachable. Open Anki with the AnkiConnect add-on and try again."
+  },
+  "update": {
+    "ready": "LernLab {{version}} is ready. Restart to update; your progress is saved and backed up.",
+    "restart": "Restart now",
+    "restarting": "Restarting…"
   }
 }

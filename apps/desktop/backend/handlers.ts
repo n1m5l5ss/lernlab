@@ -34,6 +34,8 @@ import { planSession } from '@lernlab/core/session';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import { anki, ankiAvailable, ankiConnect } from './anki';
 import { getDb } from './storage';
+import { backupAppDb } from '@lernlab/storage-sqlite';
+import { basename } from 'node:path';
 import { InvalidInput, v, type Check } from './validate';
 
 /** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
@@ -348,12 +350,16 @@ export const handlers = {
   'stats.get': h(v.none, () => ({ ...stats(), achievements: [...ACHIEVEMENTS] })),
   'summary.today': h(v.none, () => dailySummary()),
   'progress.get': h(v.none, () => progressReport()),
+  /** A copy of the database in backups/, taken before an app update is installed. */
+  'backup.create': h(v.none, () => ({ file: basename(backupAppDb()) })),
   'settings.save': h(v.record, (body) => {
     const next: Settings = { ...getSettings(), ...(body as Partial<Settings>) };
     next.newPerDay = Math.max(0, Math.min(100, Number(next.newPerDay) || 0));
     next.dailyGoalSessions = Math.max(1, Math.min(5, Number(next.dailyGoalSessions) || 1));
     next.blitzSeconds = Number(next.blitzSeconds) === 0 ? 0 : Math.max(3, Math.min(60, Number(next.blitzSeconds) || 8));
     next.questionTimer = Math.max(0, Math.min(60, Number(next.questionTimer) || 0));
+    next.autoUpdate = next.autoUpdate !== false;
+    next.betaUpdates = next.betaUpdates === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

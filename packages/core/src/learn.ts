@@ -21,6 +21,10 @@ export type Settings = {
   questionTimer?: number;
   /** Interface language code from locales/ (e.g. 'en'), or the pseudo-locale 'en-XA' for testing. */
   uiLanguage: string;
+  /** Look for app updates (at most once a day) and install them on restart. */
+  autoUpdate: boolean;
+  /** Also get beta releases. */
+  betaUpdates: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -34,6 +38,8 @@ export const DEFAULT_SETTINGS: Settings = {
   blitzSeconds: 8,
   questionTimer: 0,
   uiLanguage: 'en',
+  autoUpdate: true,
+  betaUpdates: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });

@@ -39,6 +39,13 @@ There is no separate staging branch. A **beta release** cut from `dev` plays tha
 
 Pull requests opened by a workflow (the release PR and the `main → dev` sync) don't trigger `pull_request` runs, because GitHub doesn't let `GITHUB_TOKEN` start other workflows that way. The release-please workflow therefore starts `ci` and `pr-title` on them with `workflow_dispatch`, which `GITHUB_TOKEN` may do. The check runs land on the PR's head commit under the same names, so the required checks pass without a personal token or an admin bypass.
 
+## Auto-update
+
+- The app looks for a new version 30 s after it starts, and then at most once a day (`apps/desktop/electron/updates.ts`). It reads `latest*.yml` from the newest GitHub Release, downloads in the background and installs on the next restart. Home shows a quiet "Restart now" note, never a session.
+- Before installing, the data process copies the database to `backups/`.
+- **Settings:** "Update automatically" (on by default) and "Get beta updates" (off). Every build publishes `latest*.yml` (`detectUpdateChannel` is off), and beta testers take the newest release including pre-releases. Turning beta off never downgrades: the app waits for the next stable release.
+- **Platforms:** Windows (NSIS) and Linux (AppImage, deb) update themselves. macOS needs a signed app first (#39), so the Mac build doesn't update itself yet.
+
 ## Version numbers (SemVer)
 
 - **MAJOR (2.0.0):** an incompatible change, such as removing a feature, a deck format version 2, or a database change older versions can't read.

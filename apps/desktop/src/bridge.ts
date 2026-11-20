@@ -4,7 +4,16 @@ import type { Channel, InputOf, OutputOf, Result } from '../backend/handlers';
 import { fromWire, toWire } from '../backend/wire';
 import i18next from './i18n';
 
-type Bridge = { invoke(channel: string, input?: unknown): Promise<Result<unknown>> };
+export type UpdateReady = { version: string };
+type Bridge = {
+  invoke(channel: string, input?: unknown): Promise<Result<unknown>>;
+  /** Desktop only: app updates (electron/updates.ts). */
+  updates?: {
+    status(): Promise<UpdateReady | null>;
+    install(): Promise<boolean>;
+    onReady(cb: (u: UpdateReady) => void): void;
+  };
+};
 
 declare global {
   interface Window {
