@@ -29,7 +29,16 @@ import {
   type DeckSettings,
   type NormalizedCard,
 } from '@lernlab/core/library';
-import { ACHIEVEMENTS, appState, dailySummary, finishSession, journey, stats } from '@lernlab/core/progress';
+import {
+  ACHIEVEMENTS,
+  appState,
+  dailySummary,
+  finishSession,
+  journey,
+  stats,
+  studiedToday,
+} from '@lernlab/core/progress';
+import { cleanReminderTime } from '@lernlab/core/reminder';
 import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
@@ -424,6 +433,17 @@ export const handlers = {
   'summary.today': h(v.none, () => dailySummary()),
   /** The Progress screen: per-deck learned vs remaining, pace and forecast, study days, retention, hardest cards. */
   'progress.get': h(v.none, () => journey()),
+  /** For the desktop reminder (main process): is it on, when, and did you already study today? */
+  'reminder.status': h(v.none, () => {
+    const s = getSettings();
+    return {
+      enabled: s.reminder,
+      time: s.reminderTime,
+      launchAtLogin: s.launchAtLogin,
+      language: s.uiLanguage,
+      studiedToday: studiedToday(),
+    };
+  }),
   /** A copy of the database in backups/: "Back up now", and before an app update is installed. */
   'backup.create': h(v.optional(v.object({ reason: v.optional(v.oneOf('update')) })), (input) => ({
     file: basename(backupAppDb(undefined, input?.reason === 'update' ? 'before-update' : undefined)),
@@ -456,6 +476,9 @@ export const handlers = {
     if (!['system', 'light', 'dark'].includes(next.theme)) next.theme = 'system';
     if (!['normal', 'large', 'larger'].includes(next.textSize)) next.textSize = 'normal';
     next.reducedMotion = next.reducedMotion === true;
+    next.reminder = next.reminder === true;
+    next.reminderTime = cleanReminderTime(next.reminderTime);
+    next.launchAtLogin = next.launchAtLogin === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

@@ -6,6 +6,7 @@ import { getDb, getMeta, tx, type DB } from './db';
 import { gradeFor, dayKey } from './game';
 import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from './types';
 import { qa } from './cards';
+import { DEFAULT_REMINDER_TIME } from './reminder';
 
 export type Settings = {
   deck: string;
@@ -31,6 +32,12 @@ export type Settings = {
   textSize: 'normal' | 'large' | 'larger';
   /** Turn off animations even when the computer does not ask for reduced motion. */
   reducedMotion: boolean;
+  /** A gentle daily notification (desktop app only). Off by default. */
+  reminder: boolean;
+  /** When the reminder shows, "HH:MM" in local time. */
+  reminderTime: string;
+  /** Start LernLab, minimised, when you log in to the computer (desktop app only). */
+  launchAtLogin: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -49,6 +56,9 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   textSize: 'normal',
   reducedMotion: false,
+  reminder: false,
+  reminderTime: DEFAULT_REMINDER_TIME,
+  launchAtLogin: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });

@@ -9,6 +9,7 @@ import { THEMES } from '@lernlab/ui/tokens';
 import { applyTheme } from './theme';
 import { TEXT_SIZES, applyDisplay } from './display';
 import { LENGTHS } from './lengths';
+import { cleanReminderTime } from '@lernlab/core/reminder';
 import { LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
 import { DataControls } from './DataControls';
 
@@ -55,6 +56,8 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
   const [s, setS] = useState(state.settings);
   const [newPerDay, setNewPerDay] = useState(String(state.settings.newPerDay));
   const [dailyGoal, setDailyGoal] = useState(String(state.settings.dailyGoalSessions));
+  const [reminderTime, setReminderTime] = useState(state.settings.reminderTime);
+  const desktop = isDesktop();
   const [msg, setMsg] = useState('');
   const [info, setInfo] = useState<Info | null>(null);
   useEffect(() => {
@@ -76,6 +79,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
       setS(saved);
       setNewPerDay(String(saved.newPerDay));
       setDailyGoal(String(saved.dailyGoalSessions));
+      setReminderTime(saved.reminderTime);
       await setLanguage(saved.uiLanguage);
       setMsg(i18next.t('common.saved')); // the new language, not the one this render started with
       onSaved();
@@ -91,7 +95,8 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
     }
   };
   const timer = TIMERS.findIndex((x) => x.blitz === s.blitzSeconds && x.q === (s.questionTimer ?? 0));
-  const check = (key: 'sound' | 'teacherVoice' | 'reducedMotion' | 'betaUpdates', id: string, disabled = false) => (
+  type Toggle = 'sound' | 'teacherVoice' | 'reducedMotion' | 'betaUpdates' | 'reminder' | 'launchAtLogin';
+  const check = (key: Toggle, id: string, disabled = false) => (
     <input
       id={id}
       type="checkbox"
@@ -221,6 +226,31 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
               </option>
             ))}
           </select>
+        </Row>
+      </Section>
+
+      <Section id="reminders" title={t('settings.section.reminders')}>
+        {!desktop && <p className="settings-hint">{t('settings.reminders.desktopOnly')}</p>}
+        <Row id="set-reminder" label={t('settings.reminders.daily')} hint={t('settings.reminders.dailyHint')}>
+          {check('reminder', 'set-reminder', !desktop)}
+        </Row>
+        <Row id="set-reminder-time" label={t('settings.reminders.time')}>
+          <input
+            id="set-reminder-time"
+            type="time"
+            value={reminderTime}
+            disabled={!desktop || !s.reminder}
+            onChange={(e) => setReminderTime(e.target.value)}
+            // The field is empty while half typed; save only a complete time.
+            onBlur={() => cleanReminderTime(reminderTime) === reminderTime && update({ reminderTime })}
+          />
+        </Row>
+        <Row
+          id="set-login"
+          label={t('settings.reminders.launchAtLogin')}
+          hint={t('settings.reminders.launchAtLoginHint')}
+        >
+          {check('launchAtLogin', 'set-login', !desktop)}
         </Row>
       </Section>
 

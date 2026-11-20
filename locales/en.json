@@ -55,6 +55,23 @@
       "balanced": "Balanced ({{percent}})",
       "intense": "Intense ({{percent}})"
     },
+    "reminders": {
+      "daily": "Daily reminder",
+      "dailyHint": "A gentle nudge once a day. It skips days when you have already studied.",
+      "time": "Remind me at",
+      "launchAtLogin": "Open LernLab when I log in",
+      "launchAtLoginHint": "Starts minimised, so reminders can arrive. You can close it any time.",
+      "desktopOnly": "Reminders and opening at login work in the desktop app.",
+      "notification": {
+        "title": "LernLab",
+        "bodies": [
+          "Fancy a quick round? Your cards are ready when you are.",
+          "A few minutes of practice today? Click to start.",
+          "Your cards would love a visit. Click for a short session.",
+          "Got five minutes? A little practice goes a long way."
+        ]
+      }
+    },
     "language": "Language",
     "languageHint": "More languages will come from volunteer translators.",
     "theme": "Theme",
@@ -72,6 +89,7 @@
     "section": {
       "look": "Language and display",
       "study": "Studying",
+      "reminders": "Reminders",
       "data": "Your data",
       "privacy": "Updates and privacy",
       "about": "About"
