@@ -9,6 +9,7 @@ let chain = Promise.resolve();
 
 export const api = {
   state: () => call('state.get'),
+  finishWelcome: (choice: InputOf<'welcome.finish'>['choice']) => call('welcome.finish', { choice }),
   importStatus: () => call('import.status'),
   startImport: () => call('import.anki', {}),
   session: (length: SessionLength, practice = false) => call('session.plan', { length, practice }),
