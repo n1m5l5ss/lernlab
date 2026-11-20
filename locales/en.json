@@ -443,16 +443,43 @@
   "session": {
     "blitz": "⚡ Blitz · {{n}}/{{total}}",
     "perQuestion": "{{count}}s each",
-    "stop": "Stop (Esc)",
     "combo": "🔥 {{count}}",
     "xp": "⭐ {{xp, number}}",
     "xpLabel": "XP this session",
-    "xpFloat": "+{{xp}}"
+    "xpFloat": "+{{xp}}",
+    "end": "End session",
+    "step": "{{n}} of {{total}}",
+    "blockProgress": "Progress in this block",
+    "sound": "Sound",
+    "leaveTitle": "Leave this session?",
+    "leaveBody": "Every answer so far is saved, and the session still counts for today.",
+    "leave": "Leave",
+    "keepGoing": "Keep studying",
+    "blocks": {
+      "warm-up": "Warm-up",
+      "category-sprint": "Category sprint",
+      "review": "Review",
+      "new-cards": "New cards",
+      "match-pairs": "Match pairs",
+      "true-or-false": "True or false",
+      "lesson": "Lesson",
+      "blitz": "Blitz",
+      "listen": "Listen",
+      "picture-quiz": "Picture quiz",
+      "fill-the-gap": "Fill the gap",
+      "speak": "Speak",
+      "recall": "Recall",
+      "word-rain": "Word rain",
+      "boss": "Boss fight",
+      "rescue": "Quick rescue",
+      "action-round": "Action round"
+    }
   },
   "keys": {
     "enter": "Enter",
     "space": "Space",
-    "tab": "Tab"
+    "tab": "Tab",
+    "esc": "Esc"
   },
   "ex": {
     "intro": {

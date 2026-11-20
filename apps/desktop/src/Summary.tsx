@@ -29,7 +29,7 @@ export function Summary({
   useEffect(() => {
     sfx.win();
     if (server?.goalMetNow || server?.unlocked?.length)
-      confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
+      confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 }, disableForReducedMotion: true });
   }, []);
   useKeys((e) => {
     if (e.key === 'Enter') onHome();
