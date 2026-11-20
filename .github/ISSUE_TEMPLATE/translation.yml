@@ -1,0 +1,16 @@
+name: Translation
+description: Offer to translate the interface into your language
+labels: ["i18n"]
+body:
+  - type: input
+    id: lang
+    attributes:
+      label: Language
+      placeholder: "Telugu (te)"
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes
+      description: Anything we should know (script, regional variant, right-to-left).

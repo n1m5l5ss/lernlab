@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an idea for LernLab
+labels: ["feature"]
+body:
+  - type: textarea
+    id: story
+    attributes:
+      label: What do you want to do?
+      placeholder: "As a <medical student> I want to <hide labels on a diagram> so that <I can learn anatomy>."
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why does it matter?
+  - type: textarea
+    id: ideas
+    attributes:
+      label: Ideas for how it could work

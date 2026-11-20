@@ -1,6 +1,9 @@
 # LernLab
 
 **Free, open-source flashcards that feel like a game, for any subject.**
+
+> **Status:** Working prototype (v0.2). We are planning version 1.0 now: see [docs/PLAN.md](docs/PLAN.md) and the [issues](https://github.com/n1m5l5ss/lernlab/issues). There are no installers to download yet.
+
 Languages, AWS, medicine, physics, law, history: if you can put it on a card, LernLab turns it into short, varied rounds with spaced repetition underneath.
 
 - **Local and private:** no account, no cloud. Your decks and progress stay on your computer.
@@ -46,7 +49,7 @@ Download the installer for your system from **Releases**:
 Requires Node.js 22.13 or newer.
 
 ```bash
-git clone https://github.com/OWNER/lernlab.git
+git clone https://github.com/n1m5l5ss/lernlab.git
 cd lernlab
 npm install
 npm run desktop      # builds and opens the desktop app

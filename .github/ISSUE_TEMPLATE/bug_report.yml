@@ -1,0 +1,33 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. Open Decks\n2. Import file X\n3. ..."
+  - type: dropdown
+    id: os
+    attributes:
+      label: System
+      options: [Windows, macOS, Linux]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Shown in Settings → About
+  - type: textarea
+    id: extra
+    attributes:
+      label: Screenshots or deck file
+      description: Attach a screenshot or a small deck file that shows the problem.
