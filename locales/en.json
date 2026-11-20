@@ -538,7 +538,8 @@
     "dictation": {
       "title": "Dictation",
       "hint": "Type exactly what you hear.",
-      "play": "Play the sentence"
+      "play": "Play the sentence",
+      "slow": "Play slowly"
     },
     "speak": {
       "title": "Say it out loud",
@@ -552,7 +553,7 @@
       "yes": "Yes",
       "repeat": "Listen and repeat:",
       "heardShort": "Heard: “{{heard}}”",
-      "again": "🔊 again",
+      "again": "Play again",
       "mic": "Start speaking",
       "playModel": "Play the model answer"
     },

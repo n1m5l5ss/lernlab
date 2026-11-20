@@ -179,8 +179,11 @@ export function unscramble(item: Item): Exercise | null {
   return { type: 'unscramble', itemId: item.id, tiles, answer, translation: item.sentenceMeaning };
 }
 
+/** Can the app play this card aloud: its own recording, or the system voice for a language deck. */
+export const hearable = (item: Item) => !!item.audio || !!item.lang;
+
 export function listen(item: Item, pool: Item[]): Exercise | null {
-  if (!item.audio) return null;
+  if (!hearable(item)) return null;
   const key = item.sentenceMeaning ? (i: Item) => i.sentenceMeaning : backText;
   const ds = pickDistractors(item, pool, 3, key);
   if (ds.length < 2) return null;
@@ -189,7 +192,7 @@ export function listen(item: Item, pool: Item[]): Exercise | null {
 }
 
 export function dictation(item: Item): Exercise | null {
-  if (!item.audio || !item.sentence || tokenize(item.sentence).length > 8) return null;
+  if (!hearable(item) || !item.sentence || tokenize(item.sentence).length > 8) return null;
   return { type: 'dictation', itemId: item.id, sentence: item.sentence, translation: item.sentenceMeaning };
 }
 

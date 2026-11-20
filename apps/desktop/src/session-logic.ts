@@ -22,3 +22,9 @@ export const blockKey = (title: string) =>
     .toLowerCase()
     .replace(/[^a-z]+/g, '-')
     .replace(/^-|-$/g, '');
+
+type Playable = { type: string; itemId?: number };
+/** Drop listening and dictation exercises the computer can't play (no recording and no voice for the language). */
+export function playableOnly<T extends Playable>(exercises: T[], canHear: (itemId: number) => boolean): T[] {
+  return exercises.filter((e) => !(e.type === 'listen' || e.type === 'dictation') || canHear(e.itemId ?? 0));
+}

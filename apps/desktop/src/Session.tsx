@@ -4,7 +4,7 @@ import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
 import { xpFor } from '@lernlab/core/game';
 import { teacherFor, type Line } from '@lernlab/core/teacher';
 import { api, sendAttempt, sendOverride } from './api';
-import { say, setSound, sfx } from './audio';
+import { hasVoice, say, setSound, sfx } from './audio';
 import { useKeys, type AnswerInput, type BlockResult, type Ctx } from './ctx';
 import {
   Choice,
@@ -23,7 +23,7 @@ import {
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { mcFor, recallFor } from './plan';
 import { agendaText, bubbleFor, textTeacher, type Bubble } from './lines';
-import { blockKey, blockProgress, needsRescue, requeue } from './session-logic';
+import { blockKey, blockProgress, needsRescue, playableOnly, requeue } from './session-logic';
 
 /** Where the learner is inside the current block, for the progress bar and "5 of 12". */
 type Step = { done: number; total: number } | null;
@@ -166,8 +166,22 @@ export function Session({
   onQuit: () => void;
 }) {
   const { t: tr, i18n } = useTranslation();
-  const [blocks, setBlocks] = useState<Block[]>(plan.blocks);
+  // Listening and dictation the computer can't play (no recording, no voice for the language) are left out.
+  const [blocks, setBlocks] = useState<Block[]>(() =>
+    plan.blocks
+      .map((b) => {
+        if (!('exercises' in b)) return b;
+        const it = (id: number) => plan.items[id] ?? plan.extras[id];
+        const exercises = playableOnly(b.exercises, (id) => !!it(id)?.audio || hasVoice(it(id)?.lang));
+        return { ...b, exercises } as Block;
+      })
+      .filter((b) => !('exercises' in b) || b.exercises.length > 0),
+  );
   const [bi, setBi] = useState(0);
+  // Nothing left to play (e.g. a listening-only plan with no voices): go back home instead of showing an empty session.
+  useEffect(() => {
+    if (blocks.length === 0) onQuit();
+  }, [blocks.length, onQuit]);
   const [xp, setXp] = useState(0);
   const [combo, setCombo] = useState(0);
   const [bubble, setBubble] = useState<Bubble>(() => {
@@ -416,6 +430,7 @@ export function Session({
   });
 
   const b = blocks[bi];
+  if (!b) return null;
   const title = tr(`session.blocks.${blockKey(b.title)}`, { defaultValue: '' });
   return (
     <div className="session">

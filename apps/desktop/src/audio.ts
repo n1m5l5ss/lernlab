@@ -43,10 +43,11 @@ export const sfx = {
 };
 
 let current: HTMLAudioElement | null = null;
-export function playMedia(file: string | null | undefined): Promise<void> {
+export function playMedia(file: string | null | undefined, rate = 1): Promise<void> {
   if (!file) return Promise.resolve();
   current?.pause();
   current = new Audio(mediaUrl(file));
+  current.playbackRate = rate;
   return new Promise((resolve) => {
     current!.onended = () => resolve();
     current!.onerror = () => resolve();
@@ -83,6 +84,32 @@ function voiceFor(lang: string): SpeechSynthesisVoice | null {
     voices.find((v) => v.lang.startsWith(lang)) ??
     null
   );
+}
+
+/** Is there a system voice for this language? Voices load late in Chromium, so call warmVoices() at start. */
+export function hasVoice(lang: string | null | undefined): boolean {
+  return !!lang && voiceFor(lang) !== null;
+}
+
+/** Ask for the voice list early so hasVoice() is right by the time a session starts. */
+export function warmVoices() {
+  if (typeof speechSynthesis === 'undefined') return;
+  speechSynthesis.getVoices();
+  speechSynthesis.addEventListener?.('voiceschanged', () => speechSynthesis.getVoices());
+}
+
+/**
+ * Play a card aloud: its own recording, or `text` in the system voice for its language.
+ * `preferVoice` reads `text` even when there is a recording (the recording may be the word, not the sentence).
+ */
+export function hear(
+  item: { audio: string | null; lang: string | null },
+  text: string,
+  { rate = 1, preferVoice = false }: { rate?: number; preferVoice?: boolean } = {},
+): Promise<void> {
+  if (item.audio && !(preferVoice && hasVoice(item.lang))) return playMedia(item.audio, rate);
+  if (item.lang) say(text, 0.95 * rate, item.lang);
+  return Promise.resolve();
 }
 
 /** Text-to-speech in the deck's language (system voices). */

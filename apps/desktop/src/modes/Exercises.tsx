@@ -3,13 +3,47 @@ import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Exercise, Item } from '@lernlab/core/types';
 import { checkAnswer, similarity, normalize, type CheckResult } from '@lernlab/core/text';
-import { playMedia, say, recognizer, sfx } from '../audio';
+import { hear, playMedia, say, recognizer, sfx } from '../audio';
 import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
 
 type P<E> = { ex: E; ctx: Ctx; onNext: (r: { correct: boolean }) => void };
 const now = () => performance.now();
+
+/** Speaker and microphone icons (outline, like the sidebar's), coloured by the button. */
+const SpeakerIcon = () => (
+  <svg
+    aria-hidden="true"
+    width="28"
+    height="28"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 9v6h4l5 4V5L8 9z" />
+    <path d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11" />
+  </svg>
+);
+const MicIcon = () => (
+  <svg
+    aria-hidden="true"
+    width="32"
+    height="32"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5 11a7 7 0 0014 0M12 18v3" />
+  </svg>
+);
 
 export function Article({ item }: { item: Item }) {
   if (!item.article || item.kind !== 'noun')
@@ -152,7 +186,7 @@ export function Choice({
   const timer = seconds ?? ctx.timer;
 
   useEffect(() => {
-    if (listen) playMedia(item.audio);
+    if (listen) hear(item, item.target);
     else if (ex.type === 'mc' && ex.direction === 'de2en') sayFront(ctx, item);
   }, []);
 
@@ -184,7 +218,7 @@ export function Choice({
     else if (picked !== null && e.key === 'Enter') onNext({ correct: picked === ex.answerIndex });
     else if (listen && e.key === ' ') {
       e.preventDefault();
-      playMedia(item.audio);
+      hear(item, item.target);
     }
   });
 
@@ -195,13 +229,8 @@ export function Choice({
         <>
           <div className="blocktitle">{t('ex.choice.listen')}</div>
           <div className="row" style={{ margin: '10px 0 22px' }}>
-            <button
-              className="mic"
-              style={{ width: 80, height: 80, fontSize: 32 }}
-              onClick={() => playMedia(item.audio)}
-              aria-label={t('ex.choice.replay')}
-            >
-              🔊
+            <button className="play" onClick={() => hear(item, item.target)} aria-label={t('ex.choice.replay')}>
+              <SpeakerIcon />
             </button>
             <span className="muted">
               <Trans
@@ -854,10 +883,11 @@ export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dict
   const [res, setRes] = useState<'right' | 'near' | 'wrong' | null>(null);
   const shown = useRef(now());
   const input = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    playMedia(item.audio);
+  const play = (rate = 1) => {
+    hear(item, ex.sentence, { rate, preferVoice: true });
     input.current?.focus();
-  }, []);
+  };
+  useEffect(() => play(), []);
   const submit = () => {
     if (res) return onNext({ correct: res !== 'wrong' });
     if (!value.trim()) return;
@@ -878,14 +908,12 @@ export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dict
   return (
     <div>
       <div className="blocktitle">{t('ex.dictation.title')}</div>
-      <div className="row" style={{ margin: '10px 0 18px' }}>
-        <button
-          className="mic"
-          style={{ width: 72, height: 72, fontSize: 30 }}
-          onClick={() => playMedia(item.audio)}
-          aria-label={t('ex.dictation.play')}
-        >
-          🔊
+      <div className="row play-row">
+        <button className="play" onClick={() => play()} aria-label={t('ex.dictation.play')}>
+          <SpeakerIcon />
+        </button>
+        <button className="btn" onClick={() => play(0.7)}>
+          {t('ex.dictation.slow')}
         </button>
         <span className="muted">{t('ex.dictation.hint')}</span>
       </div>
@@ -899,6 +927,7 @@ export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dict
         onKeyDown={(e) => {
           if (e.key === 'Enter') submit();
         }}
+        aria-label={t('ex.dictation.hint')}
         placeholder="…"
       />
       <Umlauts lang={ctx.lang} onAdd={(c) => setValue((v) => v + c)} />
@@ -928,10 +957,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
   const [tries, setTries] = useState(0);
   const [ok, setOk] = useState<boolean | null>(null);
   const shown = useRef(now());
-  const playModel = () =>
-    ex.expected === item.sentence && item.audio
-      ? playMedia(item.audio)
-      : Promise.resolve(say(ex.expected, 0.95, ctx.lang ?? 'de'));
+  const playModel = () => hear(item, ex.expected, { preferVoice: ex.expected !== item.target });
   const settle = (correct: boolean, near = false) => {
     setOk(correct);
     setPhase('done');
@@ -997,8 +1023,9 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
             className={`mic ${phase === 'listening' ? 'on' : ''}`}
             onClick={listen}
             aria-label={t('ex.speak.mic')}
+            aria-pressed={phase === 'listening'}
           >
-            🎤
+            <MicIcon />
           </button>
           <div className="muted">
             {phase === 'listening'
@@ -1013,11 +1040,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
             </div>
           )}
           {rec && phase !== 'listening' && (
-            <button
-              className="btn ghost"
-              style={{ fontSize: 13, padding: '6px 12px' }}
-              onClick={() => setPhase('reveal')}
-            >
+            <button className="btn ghost" onClick={() => setPhase('reveal')}>
               {t('ex.speak.noMic')}
             </button>
           )}
@@ -1028,14 +1051,14 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
           {t('ex.speak.didYouSay')}
           <div className="ans">{ex.expected}</div>
           <div className="actions">
-            <button className="btn" onClick={() => settle(false)}>
+            <button className="play play-sm" onClick={playModel} aria-label={t('ex.speak.playModel')}>
+              <SpeakerIcon />
+            </button>
+            <button className="btn rate-no" onClick={() => settle(false)}>
               {t('ex.speak.no')} <span className="kbd">1</span>
             </button>
-            <button className="btn good" onClick={() => settle(true)}>
+            <button className="btn rate-yes" onClick={() => settle(true)}>
               {t('ex.speak.yes')} <span className="kbd">2</span>
-            </button>
-            <button className="audio" onClick={playModel} aria-label={t('ex.speak.playModel')}>
-              🔊
             </button>
           </div>
         </div>
@@ -1046,7 +1069,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
           <div className="ans">{ex.expected}</div>
           {heard && <div className="small">{t('ex.speak.heardShort', { heard })}</div>}
           <div className="actions">
-            <button className="audio" onClick={playModel}>
+            <button className="btn" onClick={playModel}>
               {t('ex.speak.again')}
             </button>
             <button className="btn primary" onClick={() => onNext({ correct: !!ok })}>

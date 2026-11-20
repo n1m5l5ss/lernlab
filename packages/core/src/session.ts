@@ -224,11 +224,17 @@ export function planSession(
     });
   }
 
-  // 8. Listening (cards with audio).
-  const listenEx = shuffle([...fresh, ...learned.slice(0, 40)].filter((id) => get(id).audio))
+  // 8. Listening: the card's recording, or the system voice on a language deck. Known cards with a short
+  //    sentence also get dictation (recall). The window skips any it can't play (no voice installed).
+  const listenEx = shuffle([...fresh, ...learned.slice(0, 40)].filter((id) => gen.hearable(get(id))))
     .map((id) => gen.listen(get(id), pool))
     .filter(Boolean)
     .slice(0, size.listen) as Exercise[];
+  const dictationEx = shuffle(known)
+    .map((id) => gen.dictation(get(id)))
+    .filter(Boolean)
+    .slice(0, size.listen ? 2 : 0) as Exercise[];
+  listenEx.push(...dictationEx);
   if (listenEx.length >= 2)
     blocks.push({
       id: bid(),
