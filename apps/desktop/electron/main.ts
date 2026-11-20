@@ -1,8 +1,24 @@
-// LernLab desktop: runs the local server inside the app and shows the UI in a window.
-// Everything stays on this computer (no accounts, no cloud).
-import { app, BrowserWindow, dialog, globalShortcut, Menu, session, shell } from 'electron';
+// LernLab desktop: the window talks to the data process through a typed bridge (preload + IPC).
+// No network port is opened. Everything stays on this computer (no accounts, no cloud).
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  globalShortcut,
+  ipcMain,
+  Menu,
+  net,
+  protocol,
+  session,
+  shell,
+  utilityProcess,
+  type UtilityProcess,
+  type WebFrameMain,
+} from 'electron';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const configFile = () => join(app.getPath('userData'), 'config.json');
 const readConfig = (): { dataDir?: string } => {
@@ -15,8 +31,69 @@ const readConfig = (): { dataDir?: string } => {
 const dataDir = () => readConfig().dataDir || join(app.getPath('userData'), 'data');
 
 let win: BrowserWindow | null = null;
-let base = '';
+let ready = false;
 const pendingFiles: string[] = [];
+
+const distDir = join(__dirname, '..', 'dist');
+// Compare file URLs without query/hash, decoded, and case-insensitively on Windows (drive letters).
+const normalizeUrl = (url: string) => {
+  const u = decodeURIComponent(url.split('#')[0].split('?')[0]);
+  return process.platform === 'win32' ? u.toLowerCase() : u;
+};
+const appUrl = normalizeUrl(pathToFileURL(join(distDir, 'index.html')).href);
+const isAppUrl = (url: string) => normalizeUrl(url) === appUrl;
+
+/* ── Data process: the only place with the database ── */
+
+type Result = { ok: true; value: unknown } | { ok: false; error: { code: string; message: string } };
+let data: UtilityProcess | null = null;
+let nextId = 1;
+let restarts = 0;
+const pending = new Map<number, (r: Result) => void>();
+
+function startDataProcess() {
+  const child = utilityProcess.fork(join(__dirname, 'data.cjs'), [], {
+    serviceName: 'LernLab data',
+    env: { ...process.env, LERNLAB_DATA: dataDir(), LERNLAB_AUTO_ANKI: '0' },
+  });
+  child.on('message', ({ id, result }: { id: number; result: Result }) => {
+    pending.get(id)?.(result);
+    pending.delete(id);
+  });
+  child.on('exit', (code) => {
+    data = null;
+    for (const done of pending.values())
+      done({ ok: false, error: { code: 'data_process_exit', message: 'Please try again.' } });
+    pending.clear();
+    if (app.isReady() && !quitting && restarts < 5) {
+      console.error(`Data process exited (${code}); restarting.`);
+      setTimeout(startDataProcess, 500 * 2 ** restarts++);
+    }
+  });
+  child.once('spawn', () => (restarts = 0));
+  data = child;
+}
+
+/** Send one request to the data process. Never throws. */
+function callData(channel: string, input: unknown): Promise<Result> {
+  return new Promise((resolve) => {
+    if (!data) return resolve({ ok: false, error: { code: 'data_process_down', message: 'Please try again.' } });
+    const id = nextId++;
+    pending.set(id, resolve);
+    data.postMessage({ id, channel, input });
+  });
+}
+
+/** Only LernLab's own page may use the bridge. */
+const trusted = (frame: WebFrameMain | null) => !!frame && isAppUrl(frame.url);
+
+let quitting = false;
+app.on('before-quit', () => (quitting = true));
+
+// Media is served from the data folder by a private scheme, never over HTTP or file://.
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'lernlab-media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+]);
 
 if (!app.requestSingleInstanceLock()) app.quit();
 
@@ -30,7 +107,7 @@ app.on('second-instance', (_e, argv) => {
 });
 app.on('open-file', (e, path) => {
   e.preventDefault();
-  if (base) importDeckFile(path);
+  if (ready) importDeckFile(path);
   else pendingFiles.push(path);
 });
 
@@ -40,19 +117,16 @@ function isDeckFile(p: string) {
 
 async function importDeckFile(path: string) {
   try {
-    const res = await fetch(`${base}/api/import/file?name=${encodeURIComponent(basename(path))}`, {
-      method: 'POST',
-      body: readFileSync(path),
-    });
-    const body: any = await res.json();
-    if (!res.ok) throw new Error(body.error);
+    const res = await callData('import.file', { name: basename(path), data: new Uint8Array(await readFile(path)) });
+    if (!res.ok) throw new Error(res.error.message);
+    const body = res.value as { deck: { name: string }; added: number; updated: number };
     win?.webContents.reload();
     dialog.showMessageBox(win!, {
       message: `Imported “${body.deck.name}”`,
       detail: `${body.added} new, ${body.updated} updated cards.`,
     });
-  } catch (e: any) {
-    dialog.showErrorBox('Import failed', e.message);
+  } catch (e) {
+    dialog.showErrorBox('Import failed', (e as Error).message);
   }
 }
 
@@ -131,12 +205,20 @@ async function main() {
   await app.whenReady();
   const dir = dataDir();
   mkdirSync(dir, { recursive: true });
-  process.env.LERNLAB_DATA = dir;
-  process.env.LERNLAB_AUTO_ANKI = '0';
+  startDataProcess();
 
-  const { startServer } = await import('../server/server');
-  const { port } = await startServer({ port: 0, distDir: join(__dirname, '..', 'dist') });
-  base = `http://127.0.0.1:${port}`;
+  ipcMain.handle('lernlab:invoke', (e, channel: unknown, input: unknown): Promise<Result> | Result => {
+    if (!trusted(e.senderFrame) || typeof channel !== 'string')
+      return { ok: false, error: { code: 'forbidden', message: 'Not allowed' } };
+    return callData(channel, input);
+  });
+
+  const mediaDir = join(dir, 'media');
+  protocol.handle('lernlab-media', (req) => {
+    const name = basename(decodeURIComponent(new URL(req.url).pathname));
+    if (!name || name.startsWith('.')) return new Response(null, { status: 404 });
+    return net.fetch(pathToFileURL(join(mediaDir, name)).href);
+  });
 
   // Microphone for speaking rounds; nothing else.
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'media'));
@@ -150,21 +232,26 @@ async function main() {
     backgroundColor: '#12142a',
     title: 'LernLab',
     show: false,
-    webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+      preload: join(__dirname, 'preload.cjs'),
+    },
   });
   win.once('ready-to-show', () => win!.show());
   win.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith(base)) return { action: 'allow' };
     if (/^https?:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
   win.webContents.on('will-navigate', (e, url) => {
-    if (!url.startsWith(base)) {
+    if (!isAppUrl(url)) {
       e.preventDefault();
       if (/^https?:/.test(url)) shell.openExternal(url);
     }
   });
-  await win.loadURL(`${base}/`);
+  await win.loadFile(join(distDir, 'index.html'));
+  ready = true;
 
   // One shortcut from anywhere straight into a session: the "zero friction" start.
   globalShortcut.register('CommandOrControl+Shift+L', startSession);

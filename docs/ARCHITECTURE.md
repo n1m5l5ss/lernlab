@@ -33,7 +33,7 @@ The app runs as four separate parts. Only the data process touches the database,
 | Renderer | UI only, at `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false` | Touch files, network or the database directly |
 | Data process | The only database connection, all domain work, imports and backups | Know about windows or React |
 
-**Why a separate data process?** `node:sqlite` is synchronous. In the main process, a slow query or a 10,000-card import would freeze the whole app. **Prototype today:** a Hono HTTP server on localhost runs the database in the main process. #7 replaces it.
+**Why a separate data process?** `node:sqlite` is synchronous. In the main process, a slow query or a 10,000-card import would freeze the whole app. **Today (#7):** this is in place. `apps/desktop/backend/process.ts` is the data process; main only routes requests (`electron/main.ts`). Requests are checked by small hand-written validators in `backend/validate.ts` rather than zod (no new dependency yet), in the data process only. The web dev mode (`npm start`) runs the same handler table over HTTP on localhost; the desktop app never starts that server, and a test checks its bundles contain no server code.
 
 ## 2. Packages
 
@@ -54,7 +54,7 @@ bench/           performance benchmarks + fixture generators
 docs/adr/        architecture decision records
 ```
 
-**Prototype today:** the engine is in `packages/core` (#6). It reaches storage through one SQL-level `Host` port (a synchronous SQLite connection, a media store, ids), implemented by `packages/storage-sqlite` on `node:sqlite`. The finer repository ports in §3 come later. The HTTP API, AnkiConnect client and screens are still in `apps/desktop/`.
+**Prototype today:** the engine is in `packages/core` (#6). It reaches storage through one SQL-level `Host` port (a synchronous SQLite connection, a media store, ids), implemented by `packages/storage-sqlite` on `node:sqlite`. The finer repository ports in §3 come later. The request handlers, AnkiConnect client and screens are in `apps/desktop/`.
 
 **Import rules, enforced by `dependency-cruiser` in CI:**
 

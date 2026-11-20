@@ -25,12 +25,13 @@ The repo is an npm workspace. It holds the **v0.2 prototype**, which is a workin
 - `packages/core/`: the engine. Answer checking, grading, XP and streaks, card logic, FSRS, session planner, importers and exporters, and the SQLite schema. Pure TypeScript: no Node, DOM, Electron, React or HTTP imports (ESLint enforces it). Platform services (database connection, media files, ids) come in through the `Host` port in `src/host.ts`. Import modules by path, e.g. `@lernlab/core/text`.
 - `packages/storage-sqlite/`: the Node/Electron host: `node:sqlite` plus media and progress files in the data folder. Call `installNodeHost()` once at startup.
 - `apps/desktop/`: the v0.2 prototype app.
-  - `server/`: Hono HTTP API, AnkiConnect client, CLI entry (replaced by typed IPC in #7).
-  - `src/`: React screens.
-  - `electron/`: desktop shell.
+  - `backend/`: the request table (`handlers.ts`: one validated handler per channel), the data process entry (`process.ts`, an Electron utilityProcess and the only place that opens the database), the AnkiConnect client.
+  - `electron/`: main process (windows, menu, routes IPC to the data process, serves media on `lernlab-media://`) and `preload.ts` (exposes only `window.lernlab.invoke`).
+  - `src/`: React screens. They reach the app only through `src/api.ts` → `src/bridge.ts`.
+  - `server/`: web dev mode only (`npm start`): the same handlers over HTTP on localhost. The desktop app never starts it.
 - `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`: one shared config for every package.
 
-The rest of the Foundation epic (#6–#11) moves the engine into `packages/core` and replaces the HTTP API with typed IPC. **Don't redesign screens until the mockups in `docs/design/` are approved (issue #1).**
+The rest of the Foundation epic (#8–#11) adds migrations and backups, CI, the translation system and the app shell. **Don't redesign screens until the mockups in `docs/design/` are approved (issue #1).**
 
 ## Commands
 ```bash
@@ -39,7 +40,7 @@ npm test              # unit + integration tests in every workspace (node:test v
 npm run typecheck     # strict TypeScript in every workspace
 npm run lint          # ESLint (one shared config)
 npm run format        # Prettier (CI runs format:check)
-npm start             # web version at http://localhost:5179
+npm start             # web dev version at http://localhost:5179 (same handlers over HTTP)
 npm run desktop       # Electron app
 npm run dist:linux    # installers → release/ (dist:mac on a Mac, dist:win on Windows)
 ```

@@ -81,7 +81,14 @@ export function Settings({ state, onSaved }: { state: any; onSaved: () => void }
         <button className="btn primary" onClick={() => save()}>
           Save
         </button>
-        <a className="small muted" href="/api/summary/today" target="_blank" rel="noreferrer">
+        <a
+          className="small muted"
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            api.downloadSummary().catch((err: Error) => setMsg(err.message));
+          }}
+        >
           Today's summary (JSON for tutors/scripts)
         </a>
         {msg && <span className="small">{msg}</span>}

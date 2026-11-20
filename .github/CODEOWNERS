@@ -3,6 +3,7 @@
 /packages/core/           @n1m5l5ss
 /packages/storage-sqlite/ @n1m5l5ss
 /apps/desktop/server/     @n1m5l5ss
+/apps/desktop/backend/    @n1m5l5ss
 /apps/desktop/electron/   @n1m5l5ss
 /.github/                 @n1m5l5ss
 /docs/PLAN.md             @n1m5l5ss

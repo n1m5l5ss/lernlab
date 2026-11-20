@@ -1,9 +1,9 @@
 // CLI entry: `npm start` / `npm run dev`. The desktop app uses server.ts directly.
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getDb } from './storage';
-import { ankiAvailable } from './anki';
-import { runAnkiImport } from './app';
+import { getDb } from '../backend/storage';
+import { ankiAvailable } from '../backend/anki';
+import { runAnkiImport } from '../backend/handlers';
 import { startServer } from './server';
 
 // The app's own folder (apps/desktop), so the UI build is found wherever the command runs from.

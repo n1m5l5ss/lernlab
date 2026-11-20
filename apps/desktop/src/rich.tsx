@@ -1,12 +1,13 @@
 // Safe rendering of card text (decks are shared files: only a few formatting tags survive) and media.
 import { sanitizeHtml } from '@lernlab/core/cards';
 import type { Item } from '@lernlab/core/types';
+import { mediaUrl } from './bridge';
 
 export function Rich({ html, className }: { html: string; className?: string }) {
   return <span className={className} dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />;
 }
 
-const src = (f: string) => (/^https?:\/\//.test(f) ? f : `/media/${encodeURIComponent(f)}`);
+const src = (f: string) => (/^https?:\/\//.test(f) ? f : mediaUrl(f));
 
 export function Media({ item, size = 'md' }: { item: Item; size?: 'sm' | 'md' | 'lg' }) {
   if (!item.image && !item.video) return null;

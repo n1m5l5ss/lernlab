@@ -11,8 +11,8 @@ process.env.LERNLAB_DATA = dir;
 process.env.ANKICONNECT_URL = 'http://127.0.0.1:8799';
 
 const { startMockAnki } = await import('../test/mock-anki');
-await import('./storage');
-const { importDeck } = await import('./anki');
+await import('../backend/storage');
+const { importDeck } = await import('../backend/anki');
 const { planSession } = await import('@lernlab/core/session');
 const { recordAttempt, dueItemIds } = await import('@lernlab/core/learn');
 const { finishSession, appState, dailySummary } = await import('@lernlab/core/progress');

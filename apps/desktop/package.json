@@ -12,13 +12,13 @@
   "homepage": "https://github.com/",
   "scripts": {
     "build": "vite build",
-    "build:electron": "vite build && esbuild electron/main.ts --bundle --platform=node --format=cjs --target=node22 --outfile=dist-electron/main.cjs --external:electron --external:vite --log-level=warning",
+    "build:electron": "vite build && tsx electron/build.ts",
     "desktop": "npm run build:electron && electron .",
     "dist": "npm run build:electron && electron-builder --publish never",
     "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
     "dist:win": "npm run build:electron && electron-builder --win --publish never",
     "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
-    "test": "tsx --no-warnings --test \"server/*.test.ts\"",
+    "test": "tsx --no-warnings --test \"server/*.test.ts\" \"backend/*.test.ts\" \"electron/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
