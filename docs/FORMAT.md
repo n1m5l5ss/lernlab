@@ -103,7 +103,7 @@ Each line is one card. Only `front` is required.
 | `rank` | Introduction order (e.g. word frequency rank) |
 | `extra` | Any other fields (object of strings), e.g. `{"reading": "…"}` |
 
-Allowed formatting in text: `<b> <i> <u> <br> <sup> <sub> <code> <pre> <ul> <ol> <li> <mark>`. Everything else is stripped on display, because decks are shared files. In CSV you can also write `**bold**`, `*italic*` and `` `code` ``.
+Allowed formatting in text (the safe list): `<b> <strong> <i> <em> <u> <s> <mark> <sup> <sub> <small> <code> <pre> <br> <p> <div> <span> <ul> <ol> <li>`. They are kept without attributes; every other tag is removed when a card is saved and again when it is shown, because decks are shared files. In CSV and in the card editor you can also write `**bold**`, `*italic*` and `` `code` ``.
 
 ## CSV / TSV
 

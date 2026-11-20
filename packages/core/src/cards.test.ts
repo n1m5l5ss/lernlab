@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { qa, parseCloze, sanitizeHtml, markdownLite } from './cards';
+import { qa, parseCloze, sanitizeHtml, markdownLite, SAFE_TAGS } from './cards';
 
 const base = {
   id: 1,
@@ -85,6 +85,22 @@ test('cloze parsing', () => {
 test('sanitizer strips scripts and attributes', () => {
   assert.equal(sanitizeHtml('<b onclick="x()">hi</b><script>alert(1)</script><img src=x onerror=y>'), '<b>hi</b>');
   assert.equal(sanitizeHtml('<a href="javascript:x">link</a>'), 'link');
+});
+
+test('sanitizer keeps only the safe list, bare, and never lets a tag rebuild itself', () => {
+  for (const tag of SAFE_TAGS) {
+    const out = sanitizeHtml(`<${tag} class="x" style="color:red">t</${tag}>`);
+    assert.equal(out, tag === 'br' ? '<br>t</br>' : `<${tag}>t</${tag}>`, tag);
+  }
+  for (const bad of ['a', 'img', 'svg', 'iframe', 'form', 'input', 'video', 'style', 'math', 'table'])
+    assert.ok(!sanitizeHtml(`<${bad}>x</${bad}>`).includes(`<${bad}`), bad);
+  assert.equal(sanitizeHtml('<svg/onload=alert(1)>hi'), 'hi', 'a slash right after the name is still a tag');
+  assert.equal(sanitizeHtml('<b/onclick=x()>hi</b>'), '<b>hi</b>');
+  const rebuilt = sanitizeHtml('<<x>img src=x onerror=alert(1)>');
+  assert.ok(!/<img/i.test(rebuilt), `no tag can be rebuilt from the pieces: ${rebuilt}`);
+  assert.equal(sanitizeHtml('a < b and c > d'), 'a &lt; b and c > d', 'a stray < is text');
+  const once = sanitizeHtml('<p>x <b>y</b></p> 1 < 2');
+  assert.equal(sanitizeHtml(once), once, 'cleaning twice changes nothing');
 });
 
 test('markdown lite', () => {
