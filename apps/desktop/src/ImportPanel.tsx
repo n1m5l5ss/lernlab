@@ -14,7 +14,7 @@ import { MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './impo
 /** CSV column names are file format, not text: they stay in English in every language. */
 const CSV_REQUIRED = 'front, back';
 const CSV_OPTIONAL =
-  'example, explanation, notes, category, tags, image, audio, video, alt_answers, type, choices, correct, steps';
+  'example, explanation, notes, category, tags, image, image_alt, audio, video, alt_answers, type, choices, correct, steps';
 
 type AppState = OutputOf<'state.get'>;
 type Source = { file: File } | { text: string };

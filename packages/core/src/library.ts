@@ -75,6 +75,8 @@ export type NormalizedCard = {
   explanation?: string; // rule / longer explanation (shown in lessons and after answers)
   notes?: string;
   image?: string; // media file name
+  /** Text alternative for the image (its alt text), for screen readers. Plain text; '' clears a stored one. */
+  imageAlt?: string;
   audio?: string;
   video?: string; // mp4/webm/gif
   category?: string; // for category-sort rounds (e.g. "der"/"die"/"das", "IaaS"/"PaaS"/"SaaS")
@@ -261,6 +263,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   if (c.correct) extra.correct = c.correct;
   if (c.steps) extra.steps = sanitizeHtml(c.steps);
   if (c.altAnswers) extra.alt = c.altAnswers;
+  // The image description lives in extra (no migration); it goes when the image goes.
+  const imageAlt = stripHtml(c.imageAlt ?? extra.imageAlt ?? '');
+  if (imageAlt && c.image) extra.imageAlt = imageAlt;
+  else delete extra.imageAlt;
   const { article, word } = splitArticle(stripHtml(front));
   const example = clean(c.example);
   const isNoun = kind === 'noun';

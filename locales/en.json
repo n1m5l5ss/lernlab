@@ -317,6 +317,7 @@
         "category": "Category",
         "tags": "Tags",
         "image": "Image",
+        "imageAlt": "Image description",
         "audio": "Audio",
         "video": "Video",
         "subdeck": "Sub-deck",
@@ -448,6 +449,8 @@
       "tags": "Tags",
       "tagsPlaceholder": "space separated",
       "media": "Media",
+      "imageAlt": "Image description",
+      "imageAltPlaceholder": "What the picture shows, read out by screen readers",
       "mediaSet": {
         "image": "✓ Image",
         "audio": "✓ Audio",

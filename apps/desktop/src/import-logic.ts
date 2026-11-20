@@ -14,6 +14,7 @@ export const MAPPABLE: MappableField[] = [
   'category',
   'tags',
   'image',
+  'imageAlt',
   'audio',
   'video',
   'subdeck',

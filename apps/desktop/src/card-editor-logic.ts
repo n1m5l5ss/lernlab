@@ -20,6 +20,7 @@ export const EMPTY = {
   category: '',
   tags: '',
   image: '',
+  imageAlt: '',
   audio: '',
   video: '',
   alt: '',
@@ -41,6 +42,7 @@ export const formFor = (c: FullCard): Form => ({
   category: c.category ?? '',
   tags: c.tags.join(' '),
   image: c.image ?? '',
+  imageAlt: c.extra.imageAlt ?? '',
   audio: c.audio ?? '',
   video: c.video ?? '',
   alt: c.extra.alt ?? '',
@@ -52,6 +54,9 @@ export const formFor = (c: FullCard): Form => ({
   starred: c.starred,
   item: c,
 });
+
+/** The image description field shows while the card has an image (it is the image's alt text). */
+export const showImageAlt = (f: Pick<Form, 'image'>) => !!f.image;
 
 /** What the editor saves: only the fields of the chosen type, so a leftover choice list can't turn a card into a quiz. */
 export function fieldsToSave(f: Form) {

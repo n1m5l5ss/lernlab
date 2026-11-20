@@ -55,6 +55,19 @@ test('create a deck, add and edit a card, import a file, plan a session', async 
   assert.equal(state.itemCount, 3);
 });
 
+test('the card editor saves, changes and clears an image description', async () => {
+  const deck = await ok('decks.create', { name: 'Pictures', language: null });
+  const card = { front: 'What is this?', back: 'a heart', image: 'heart.png' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, imageAlt: 'A red heart' } });
+  assert.equal((await ok('cards.get', { id })).extra.imageAlt, 'A red heart');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.imageAlt, 'A red heart', 'kept when the field is not sent');
+  await ok('cards.update', { id, card: { ...card, imageAlt: 'A <i>beating</i> heart' } });
+  assert.equal((await ok('cards.get', { id })).extra.imageAlt, 'A beating heart', 'plain text');
+  await ok('cards.update', { id, card: { ...card, imageAlt: '' } });
+  assert.ok(!('imageAlt' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');

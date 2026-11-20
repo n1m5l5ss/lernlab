@@ -40,6 +40,7 @@ upsertCards(deck, [
     category: 'Organs',
     tags: ['bio', 'cardio'],
     image: 'heart.png',
+    imageAlt: 'A heart cut open: four chambers',
     audio: 'heart.mp3',
     video: 'heart.mp4',
     subdeck: 'Biology::Cardio',
@@ -55,6 +56,7 @@ upsertCards(deck, [
     correct: '1|3',
     explanation: 'Organelles live inside cells.',
     image: 'spin.gif',
+    imageAlt: 'A cell, "spinning", with\nits organelles',
     rank: 1,
   },
   { front: 'Order mitosis', back: '', type: 'order', steps: 'Prophase|Metaphase|Anaphase|Telophase', rank: 2 },
@@ -72,6 +74,7 @@ const cardsOf = (deckId: number, deckName: string) =>
       return { ...card, subdeck: sub === deckName ? '<deck>' : sub };
     });
 const original = cardsOf(deck.id, 'Biology');
+const extraOf = (c: object) => JSON.parse(String((c as { extra?: unknown }).extra ?? '{}')) as Record<string, string>;
 
 test('.lernpack: export then import into a new deck gives identical cards, with media', () => {
   const pack = exportDeck(deck.id, 'lernpack');
@@ -105,6 +108,8 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
     [heart.image, heart.audio, heart.video, mcq.image],
     ['images/heart.png', 'audio/heart.mp3', 'video/heart.mp4', 'images/spin.gif'],
   );
+  assert.equal(heart.imageAlt, 'A heart cut open: four chambers', 'the image description is a card field');
+  assert.ok(!('imageAlt' in (heart.extra ?? {})), 'not hidden in extra');
   const csv = strFromU8(files['cards.csv']);
   const header = csv.split('\n')[0].split(',');
   for (const col of [
@@ -116,6 +121,7 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
     'steps',
     'alt_answers',
     'image',
+    'image_alt',
     'audio',
     'video',
     'id',
@@ -147,14 +153,28 @@ test('CSV: export then import into a new deck gives identical cards (media files
   const copy = cardsOf(r.deck.id, 'Fresh');
   // A plain CSV carries the file name of a picture, not the picture itself.
   assert.equal(r.mediaMissing, 4);
-  const withoutMedia = original.map((c) => ({ ...c, image: null, audio: null, video: null }));
+  // Without the picture its description goes too.
+  const noAlt = (c: object) => {
+    const { imageAlt: _alt, ...rest } = extraOf(c);
+    return JSON.stringify(rest);
+  };
+  const withoutMedia = original.map((c) => ({ ...c, image: null, audio: null, video: null, extra: noAlt(c) }));
   assert.deepEqual(copy, withoutMedia);
+  const header = strFromU8(csv.data).split('\n')[0].split(',');
+  assert.ok(header.includes('image_alt'), 'the CSV has an image_alt column');
+});
+
+test('image descriptions are stored with the cards (so the round trips above carry them)', () => {
+  const alts = original.map((c) => extraOf(c).imageAlt).filter(Boolean);
+  assert.deepEqual(alts, ['A cell, "spinning", with its organelles', 'A heart cut open: four chambers']);
 });
 
 test('the CSV template imports as three example cards', () => {
   const lines = CSV_TEMPLATE.trim().split('\n');
   assert.equal(lines.length, 4, 'a header and three example rows');
   assert.match(lines[0], /^front,back,/);
+  assert.ok(lines[0].split(',').includes('image_alt'), 'the template shows the image description column');
+  for (const l of lines) assert.equal(l.split(',').length, lines[0].split(',').length, l);
   const r = importFile('template.csv', strToU8(CSV_TEMPLATE));
   assert.equal(r.added, 3);
   const kinds = getDb()
