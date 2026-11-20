@@ -2652,3 +2652,53 @@ h1.session-title:focus,
   min-width: 0;
   max-width: 100%;
 }
+
+/* ---- Data process (#56): "Reconnecting…" while main restarts it after a crash. Never blocks the screen. ---- */
+.data-status-region {
+  position: fixed;
+  inset-block-start: var(--space-3);
+  inset-inline: var(--space-3);
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 70;
+}
+.data-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-2) var(--space-4);
+  max-width: 40rem;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-caption);
+  font-weight: 600;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--color-text) 12%, transparent);
+  pointer-events: auto;
+}
+.data-status.failed {
+  border-color: var(--color-incorrect);
+  border-radius: var(--radius-card);
+}
+.data-status-spinner {
+  flex: none;
+  inline-size: 0.9em;
+  block-size: 0.9em;
+  border: 2px solid var(--color-border-strong);
+  border-block-start-color: var(--color-accent);
+  border-radius: 50%;
+  animation: data-status-spin 0.9s linear infinite;
+}
+@keyframes data-status-spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .data-status-spinner {
+    animation: none;
+  }
+}

@@ -8,6 +8,11 @@ import i18next from './i18n';
 export type UpdateReady = { version: string; notes?: { added: string[]; fixed: string[] } };
 type Bridge = {
   invoke(channel: string, input?: unknown): Promise<Result<unknown>>;
+  /** Desktop only: the data process status (electron/main.ts); unchecked strings, see data-status-logic.ts. */
+  data?: {
+    status(): Promise<unknown>;
+    onStatus(cb: (status: unknown) => void): void;
+  };
   /** Desktop only: app updates (electron/updates.ts). */
   updates?: {
     status(): Promise<UpdateReady | null>;

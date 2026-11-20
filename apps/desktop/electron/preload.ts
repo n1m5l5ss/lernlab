@@ -4,6 +4,13 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('lernlab', {
   invoke: (channel: string, input?: unknown) => ipcRenderer.invoke('lernlab:invoke', channel, input),
+  /** The data process: 'ok', 'reconnecting' while it restarts after a crash, or 'failed' (src/DataStatus.tsx). */
+  data: {
+    status: () => ipcRenderer.invoke('lernlab:data-status'),
+    onStatus: (cb: (status: string) => void) => {
+      ipcRenderer.on('lernlab:data-status', (_e, status) => cb(status));
+    },
+  },
   updates: {
     /** The downloaded update waiting for a restart, or null. */
     status: () => ipcRenderer.invoke('lernlab:update-status'),
