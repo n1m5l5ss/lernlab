@@ -1,9 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
 import { api } from './api';
+
+/** CSV column names are file format, not text: they stay in English in every language. */
+const CSV_REQUIRED = 'front, back';
+const CSV_OPTIONAL =
+  'example, explanation, notes, category, tags, image, audio, video, alt_answers, type, choices, correct, steps';
 
 type Props = { state: any; refresh: () => Promise<any>; onStudy: () => void; onBrowse: (deckId: number) => void };
 
 export function Decks({ state, refresh, onStudy, onBrowse }: Props) {
+  const { t } = useTranslation();
   const [editing, setEditing] = useState<any>(null);
   const [showImport, setShowImport] = useState(!state.decks.length);
   const open = async (id: number, then: () => void) => {
@@ -15,13 +22,13 @@ export function Decks({ state, refresh, onStudy, onBrowse }: Props) {
     <div className="col" style={{ gap: 16 }}>
       <div className="row">
         <h2 className="grow" style={{ margin: 0 }}>
-          Your decks
+          {t('decks.title')}
         </h2>
         <button className="btn" onClick={() => setEditing({ name: '', language: '', newPerDay: 10 })}>
-          + New deck
+          {t('decks.newDeck')}
         </button>
         <button className="btn primary" onClick={() => setShowImport((v) => !v)}>
-          ⬆ Import
+          {t('decks.import')}
         </button>
       </div>
       {showImport && <ImportPanel state={state} refresh={refresh} onDone={() => setShowImport(false)} />}
@@ -41,18 +48,18 @@ export function Decks({ state, refresh, onStudy, onBrowse }: Props) {
           <div key={d.id} className={`card deck ${d.id === state.activeDeck ? 'on' : ''}`}>
             <h3>{d.name}</h3>
             <div className="small muted">
-              {d.languageName ? `Language · ${d.languageName}` : 'Any subject'}
-              {d.settings.goal ? ` · goal: ${d.settings.goal.label}` : ''}
+              {d.languageName ? t('decks.languageDeck', { language: d.languageName }) : t('decks.anySubject')}
+              {d.settings.goal ? t('decks.goalSuffix', { goal: d.settings.goal.label }) : ''}
             </div>
             <div className="deckstats">
               <span>
-                <b>{d.cards}</b> cards
+                <Trans i18nKey="decks.cards" count={d.cards} components={{ b: <b /> }} />
               </span>
               <span>
-                <b>{d.due}</b> due
+                <Trans i18nKey="decks.due" count={d.due} components={{ b: <b /> }} />
               </span>
               <span>
-                <b>{d.learned}</b> learned
+                <Trans i18nKey="decks.learned" count={d.learned} components={{ b: <b /> }} />
               </span>
             </div>
             <div className="bar green">
@@ -60,13 +67,15 @@ export function Decks({ state, refresh, onStudy, onBrowse }: Props) {
             </div>
             <div className="row" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
               <button className="btn primary" onClick={() => open(d.id, onStudy)}>
-                Study
+                {t('decks.study')}
               </button>
               <button className="btn" onClick={() => open(d.id, () => onBrowse(d.id))}>
-                Cards
+                {t('decks.browse')}
               </button>
               <button
                 className="btn ghost"
+                title={t('decks.settingsButton')}
+                aria-label={t('decks.settingsButton')}
                 onClick={() =>
                   setEditing({
                     ...d,
@@ -82,9 +91,7 @@ export function Decks({ state, refresh, onStudy, onBrowse }: Props) {
           </div>
         ))}
       </div>
-      {!state.decks.length && !showImport && (
-        <div className="card muted">No decks yet. Import one or create a new deck.</div>
-      )}
+      {!state.decks.length && !showImport && <div className="card muted">{t('decks.empty')}</div>}
     </div>
   );
 }
@@ -100,6 +107,7 @@ function DeckEditor({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const [d, setD] = useState(deck);
   const [err, setErr] = useState('');
   const set = (k: string, v: any) => setD({ ...d, [k]: v });
@@ -126,33 +134,33 @@ function DeckEditor({
     api.exportDeck(d.id, format).catch((x: Error) => setErr(x.message));
   };
   const remove = async () => {
-    if (!confirm(`Delete the deck "${d.name}" with all its cards and progress? This cannot be undone.`)) return;
+    if (!confirm(t('decks.editor.confirmDelete', { name: d.name }))) return;
     await api.deleteDeck(d.id);
     onSaved();
   };
   return (
     <div className="card">
-      <b>{d.id ? 'Deck settings' : 'New deck'}</b>
-      <label className="lbl">Name</label>
+      <b>{d.id ? t('decks.editor.settingsTitle') : t('decks.editor.newTitle')}</b>
+      <label className="lbl">{t('decks.editor.name')}</label>
       <input
         className="input"
         value={d.name}
         onChange={(e) => set('name', e.target.value)}
-        placeholder="e.g. AWS Solutions Architect, Anatomy, German"
+        placeholder={t('decks.editor.namePlaceholder')}
       />
-      <label className="lbl">Language of the cards' front side</label>
+      <label className="lbl">{t('decks.editor.frontLanguage')}</label>
       <select className="input" value={d.language ?? ''} onChange={(e) => set('language', e.target.value)}>
-        <option value="">Not a language deck (any subject)</option>
+        <option value="">{t('decks.editor.notLanguage')}</option>
         {Object.entries(languages).map(([k, v]) => (
           <option key={k} value={k}>
             {v}
           </option>
         ))}
       </select>
-      <div className="small muted">Language decks get speaking, pronunciation and sentence-building rounds.</div>
+      <div className="small muted">{t('decks.editor.languageHint')}</div>
       <div className="row" style={{ gap: 12 }}>
         <div className="grow">
-          <label className="lbl">New cards per day</label>
+          <label className="lbl">{t('decks.editor.newPerDay')}</label>
           <input
             className="input"
             type="number"
@@ -161,47 +169,47 @@ function DeckEditor({
           />
         </div>
         <div className="grow">
-          <label className="lbl">Goal (optional)</label>
+          <label className="lbl">{t('decks.editor.goal')}</label>
           <input
             className="input"
             value={d.goalLabel ?? ''}
             onChange={(e) => set('goalLabel', e.target.value)}
-            placeholder="e.g. Goethe B1, AWS SAA exam"
+            placeholder={t('decks.editor.goalPlaceholder')}
           />
         </div>
         <div style={{ width: 130 }}>
-          <label className="lbl">Goal size</label>
+          <label className="lbl">{t('decks.editor.goalSize')}</label>
           <input
             className="input"
             type="number"
             value={d.goalWords ?? ''}
             onChange={(e) => set('goalWords', e.target.value)}
-            placeholder="cards"
+            placeholder={t('decks.editor.goalSizePlaceholder')}
           />
         </div>
       </div>
       {err && <div className="feedback wrong">{err}</div>}
       <div className="actions">
         <button className="btn primary" onClick={save} disabled={!d.name?.trim()}>
-          Save
+          {t('common.save')}
         </button>
         <button className="btn ghost" onClick={onClose}>
-          Cancel
+          {t('common.cancel')}
         </button>
         <span className="grow" />
         {d.id && (
           <a className="btn ghost" href="#" onClick={(e) => exportAs(e, 'lernpack')}>
-            Export .lernpack
+            {t('decks.editor.exportLernpack')}
           </a>
         )}
         {d.id && (
           <a className="btn ghost" href="#" onClick={(e) => exportAs(e, 'csv')}>
-            Export CSV
+            {t('decks.editor.exportCsv')}
           </a>
         )}
         {d.id && (
           <button className="btn" style={{ background: 'var(--bad)', color: '#fff' }} onClick={remove}>
-            Delete
+            {t('common.delete')}
           </button>
         )}
       </div>
@@ -210,6 +218,7 @@ function DeckEditor({
 }
 
 function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Promise<any>; onDone: () => void }) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<'file' | 'paste' | 'anki'>('file');
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -235,27 +244,33 @@ function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Pr
   }, [tab]);
   useEffect(() => {
     if (!anki?.running) return;
-    const t = setInterval(async () => {
+    const timer = setInterval(async () => {
       const a = await api.ankiInfo();
       setAnki(a);
       if (!a.running) {
-        clearInterval(t);
+        clearInterval(timer);
         setBusy(false);
         setMsg(
           a.error
             ? { ok: false, text: a.error }
-            : { ok: true, text: `Imported ${a.result?.total ?? 0} cards from Anki.` },
+            : { ok: true, text: t('decks.importPanel.ankiDone', { count: a.result?.total ?? 0 }) },
         );
         refresh();
       }
     }, 1000);
-    return () => clearInterval(t);
+    return () => clearInterval(timer);
   }, [anki?.running]);
 
   const report = (r: any) =>
     setMsg({
       ok: true,
-      text: `“${r.deck.name}”: ${r.added} new, ${r.updated} updated (${r.total} cards${r.media ? `, ${r.media} media files` : ''}${r.mediaMissing ? `, ${r.mediaMissing} missing media skipped` : ''}).`,
+      text: [
+        t('decks.importPanel.report', { deck: r.deck.name, added: r.added, updated: r.updated, total: r.total }),
+        r.media ? t('decks.importPanel.reportMedia', { count: r.media }) : '',
+        r.mediaMissing ? t('decks.importPanel.reportMissing', { count: r.mediaMissing }) : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
     });
   const doFiles = async (files: FileList | File[]) => {
     setBusy(true);
@@ -278,7 +293,7 @@ function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Pr
           text,
           fieldSep,
           cardSep,
-          deckName: deckName || 'Pasted cards',
+          deckName: deckName || t('decks.importPanel.pastedDeckName'),
           language: language || null,
         }),
       );
@@ -303,32 +318,32 @@ function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Pr
   return (
     <div className="card col">
       <div className="row">
-        <b className="grow">Import cards</b>
+        <b className="grow">{t('decks.importPanel.title')}</b>
         <button className="btn ghost" onClick={onDone}>
-          Close
+          {t('common.close')}
         </button>
       </div>
       <div className="lengths" style={{ marginTop: 0 }}>
-        {(['file', 'paste', 'anki'] as const).map((t) => (
-          <button key={t} className={tab === t ? 'on' : ''} onClick={() => setTab(t)}>
-            {t === 'file' ? 'File' : t === 'paste' ? 'Paste text' : 'From Anki'}
+        {(['file', 'paste', 'anki'] as const).map((k) => (
+          <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
+            {t(`decks.importPanel.tab.${k}`)}
           </button>
         ))}
       </div>
       <div className="row" style={{ gap: 12 }}>
         <div className="grow">
-          <label className="lbl">Deck name (optional)</label>
+          <label className="lbl">{t('decks.importPanel.deckName')}</label>
           <input
             className="input"
             value={deckName}
             onChange={(e) => setDeckName(e.target.value)}
-            placeholder="Taken from the file if empty"
+            placeholder={t('decks.importPanel.deckNamePlaceholder')}
           />
         </div>
         <div className="grow">
-          <label className="lbl">Language (optional)</label>
+          <label className="lbl">{t('decks.importPanel.language')}</label>
           <select className="input" value={language} onChange={(e) => setLanguage(e.target.value)}>
-            <option value="">Not a language / keep from file</option>
+            <option value="">{t('decks.importPanel.languageKeep')}</option>
             {Object.entries(state.languages ?? {}).map(([k, v]) => (
               <option key={k} value={k}>
                 {v as string}
@@ -352,12 +367,12 @@ function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Pr
           }}
         >
           <div style={{ fontSize: 34 }}>📦</div>
-          <b>Drop a deck file here</b>
+          <b>{t('decks.importPanel.drop')}</b>
           <div className="small muted" style={{ margin: '6px 0 12px' }}>
-            .lernpack · Anki .apkg / .colpkg · CSV / TSV / TXT · JSON · .zip (CSV + images/audio)
+            {t('decks.importPanel.formats')}
           </div>
           <button className="btn" onClick={() => fileRef.current?.click()} disabled={busy}>
-            {busy ? 'Importing…' : 'Choose file'}
+            {busy ? t('common.importing') : t('decks.importPanel.choose')}
           </button>
           <input
             ref={fileRef}
@@ -368,11 +383,11 @@ function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Pr
             onChange={(e) => e.target.files && doFiles(e.target.files)}
           />
           <div className="small muted" style={{ marginTop: 12 }}>
-            CSV columns: <code>front, back</code> + optional{' '}
-            <code>
-              example, explanation, notes, category, tags, image, audio, video, alt_answers, type, choices, correct,
-              steps
-            </code>
+            <Trans
+              i18nKey="decks.importPanel.csvColumns"
+              values={{ required: CSV_REQUIRED, optional: CSV_OPTIONAL }}
+              components={{ code: <code /> }}
+            />
           </div>
         </div>
       )}
@@ -383,36 +398,38 @@ function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Pr
             style={{ minHeight: 160, fontFamily: 'ui-monospace, monospace' }}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={'term<TAB>definition\nAmazon S3\tObject storage\nMitochondrion\tPowerhouse of the cell'}
+            placeholder={t('decks.importPanel.pastePlaceholder')}
           />
           <div className="row small" style={{ gap: 16 }}>
             <span>
-              Between term and definition:{' '}
+              {t('decks.importPanel.fieldSep')}{' '}
               <select value={fieldSep} onChange={(e) => setFieldSep(e.target.value)}>
-                <option value={'\t'}>Tab</option>
-                <option value=",">Comma</option>
-                <option value=" - ">Dash ( - )</option>
-                <option value=":">Colon</option>
-                <option value=";">Semicolon</option>
+                <option value={'\t'}>{t('decks.importPanel.sep.tab')}</option>
+                <option value=",">{t('decks.importPanel.sep.comma')}</option>
+                <option value=" - ">{t('decks.importPanel.sep.dash')}</option>
+                <option value=":">{t('decks.importPanel.sep.colon')}</option>
+                <option value=";">{t('decks.importPanel.sep.semicolon')}</option>
               </select>
             </span>
             <span>
-              Between cards:{' '}
+              {t('decks.importPanel.cardSep')}{' '}
               <select value={cardSep} onChange={(e) => setCardSep(e.target.value)}>
-                <option value={'\n'}>New line</option>
-                <option value=";">Semicolon</option>
-                <option value="|">Pipe |</option>
+                <option value={'\n'}>{t('decks.importPanel.sep.newline')}</option>
+                <option value=";">{t('decks.importPanel.sep.semicolon')}</option>
+                <option value="|">{t('decks.importPanel.sep.pipe')}</option>
               </select>
             </span>
             <span className="muted">
               {text.trim()
-                ? `${text.split(cardSep === '\n' ? /\r?\n/ : cardSep).filter((x) => x.trim()).length} cards`
+                ? t('decks.importPanel.cardCount', {
+                    count: text.split(cardSep === '\n' ? /\r?\n/ : cardSep).filter((x) => x.trim()).length,
+                  })
                 : ''}
             </span>
           </div>
           <div>
             <button className="btn primary" onClick={doPaste} disabled={busy || !text.trim()}>
-              Import pasted cards
+              {t('decks.importPanel.importPasted')}
             </button>
           </div>
         </>
@@ -420,11 +437,10 @@ function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Pr
       {tab === 'anki' && (
         <div className="col">
           {!anki ? (
-            <div className="muted">Checking Anki…</div>
+            <div className="muted">{t('decks.importPanel.checkingAnki')}</div>
           ) : !anki.anki ? (
             <div className="muted">
-              Anki isn't reachable. Open Anki with the <b>AnkiConnect</b> add-on (code 2055492159), or export a deck
-              from Anki as <code>.apkg</code> and drop it in the File tab.
+              <Trans i18nKey="decks.importPanel.ankiUnreachable" components={{ b: <b />, code: <code /> }} />
             </div>
           ) : (
             <div className="row">
@@ -434,7 +450,7 @@ function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Pr
                 ))}
               </select>
               <button className="btn primary" onClick={doAnki} disabled={busy || !ankiDeck}>
-                {busy ? 'Importing…' : 'Import deck'}
+                {busy ? t('common.importing') : t('decks.importPanel.importDeck')}
               </button>
             </div>
           )}

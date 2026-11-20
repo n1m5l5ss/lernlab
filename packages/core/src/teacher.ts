@@ -38,6 +38,7 @@ const DE = {
     "You took yesterday off. No problem – let's continue today.",
   ],
   timeUp: () => pick(['Zeit um!', 'Zu langsam – weiter!']),
+  goalMet: () => ['Tagesziel geschafft! Noch eine Runde?', 'Daily goal done! One more round?'],
 };
 
 const EN: typeof DE = {
@@ -73,6 +74,7 @@ const EN: typeof DE = {
     ]),
   missedDay: () => ["You took yesterday off. No problem – let's continue today.", ''],
   timeUp: () => pick(["Time's up!", 'Too slow – next!']),
+  goalMet: () => ['Daily goal done! One more round?', ''],
 };
 
 export const teacherFor = (lang: string | null | undefined) => (lang === 'de' ? DE : EN);

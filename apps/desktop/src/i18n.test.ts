@@ -11,15 +11,7 @@ import { pseudoString, pseudoize } from './pseudo';
 const SRC = import.meta.dirname;
 
 /** Screens whose text has not moved to locales/en.json yet (issue #10). Remove a file once it is converted. */
-const NOT_YET_TRANSLATED = new Set([
-  'Browse.tsx',
-  'Decks.tsx',
-  'Home.tsx',
-  'Progress.tsx',
-  'Session.tsx',
-  'Stats.tsx',
-  'Summary.tsx',
-]);
+const NOT_YET_TRANSLATED = new Set(['Browse.tsx', 'Progress.tsx', 'Session.tsx', 'Stats.tsx', 'Summary.tsx']);
 
 /** JSX attributes a person reads or hears. */
 const VISIBLE_ATTRS = new Set(['placeholder', 'title', 'alt', 'aria-label', 'aria-description', 'label']);
@@ -111,8 +103,10 @@ test('every t() key used in the screens exists in locales/en.json', () => {
   for (const f of readdirSync(SRC).filter((x) => /\.tsx?$/.test(x) && !x.endsWith('.test.ts'))) {
     const src = readFileSync(join(SRC, f), 'utf8');
     // Static keys: t('a.b'). Template keys: t(`a.${x}`) must match at least one key with that prefix.
-    for (const m of src.matchAll(/\bt\('([\w.]+)'/g))
-      if (!keys.has(m[1]) && !keys.has(`${m[1]}_other`)) missing.push(`${f}: ${m[1]}`);
+    for (const m of src.matchAll(/\bt\('([\w.]+)'|i18nKey="([\w.]+)"/g)) {
+      const key = m[1] ?? m[2];
+      if (!keys.has(key) && !keys.has(`${key}_other`)) missing.push(`${f}: ${key}`);
+    }
     for (const m of src.matchAll(/\bt\(`([\w.]+)\.\$\{/g))
       if (![...keys].some((k) => k.startsWith(`${m[1]}.`))) missing.push(`${f}: ${m[1]}.*`);
   }
