@@ -50,6 +50,7 @@ export function Summary({
         </div>
       </div>
       <div className="big">{t('summary.xp', { xp: result.xp + (server?.bonus ?? 0) })}</div>
+      {result.practice && <p className="panel summary-practice">{t('summary.practice')}</p>}
       <div className="statgrid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <div className="stat">
           <b>{formatPercent(acc)}</b>

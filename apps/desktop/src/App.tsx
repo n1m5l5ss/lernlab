@@ -47,9 +47,9 @@ export function App() {
         setError(message(e));
         return null;
       });
-  const start = async (length: SessionLength) => {
+  const start = async (length: SessionLength, practice = false) => {
     try {
-      setFull({ name: 'play', plan: await api.session(length) });
+      setFull({ name: 'play', plan: await api.session(length, practice) });
     } catch (e) {
       setError(message(e));
     }
@@ -125,7 +125,7 @@ export function App() {
         result={full.result}
         server={full.server}
         lang={full.lang}
-        onAgain={() => start('mini')}
+        onAgain={() => start('mini', full.result.practice)}
         onHome={() => go('home')}
       />
     );

@@ -94,3 +94,21 @@ test('choose what to study: a tag or starred cards, checked first; picking a dec
   await ok('decks.activate', { id: null });
   assert.deepEqual((await ok('state.get')).source, { kind: 'all' });
 });
+
+test('a practice session is planned as practice, and its answers are accepted as practice', async () => {
+  const plan = await ok('session.plan', { length: 'mini', practice: true });
+  assert.equal(plan.practice, true);
+  const itemId = Number(Object.keys(plan.items)[0]);
+  const r = await ok('attempt.record', {
+    sessionId: plan.id,
+    itemId,
+    format: 'typed',
+    correct: true,
+    responseMs: 900,
+    xp: 5,
+    practice: true,
+  });
+  assert.equal(r.grade, null);
+  const bad = await handle('session.plan', { length: 'mini', practice: 'yes' });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+});

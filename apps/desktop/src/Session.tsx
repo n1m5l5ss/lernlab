@@ -40,6 +40,7 @@ export type SessionResult = {
   perfectBlocks: number;
   startedAt: string;
   missed: number[];
+  practice: boolean;
 };
 
 const RECALL = new Set(['typed', 'cloze', 'flip', 'mcq', 'order']);
@@ -299,6 +300,7 @@ export function Session({
         given: a.given,
         xp: gained,
         genderOnly: a.genderOnly,
+        practice: plan.practice,
       });
       return gained;
     },
@@ -306,7 +308,7 @@ export function Session({
   );
 
   const override = useCallback((itemId: number) => {
-    sendOverride(itemId);
+    if (!plan.practice) sendOverride(itemId); // practice never touches today's real grade
     missed.current.delete(itemId);
     totals.current.correct++;
   }, []);
@@ -405,6 +407,7 @@ export function Session({
       perfectBlocks: totals.current.perfectBlocks,
       startedAt: started.current.iso,
       missed: [...missed.current],
+      practice: plan.practice,
     });
   };
 

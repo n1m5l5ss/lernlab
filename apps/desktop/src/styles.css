@@ -1383,3 +1383,20 @@ kbd {
     scroll-behavior: auto !important;
   }
 }
+.home-practice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin: 0 0 var(--space-4);
+  min-height: var(--size-min-target);
+  cursor: pointer;
+}
+.home-practice input {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-accent);
+}
+.summary-practice {
+  text-align: center;
+  padding: var(--space-3) var(--space-4);
+}
