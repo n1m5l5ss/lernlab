@@ -194,3 +194,16 @@ export function recordSession(s: StreakState, today: string, goalMetNow: boolean
   st.longest = Math.max(st.longest, st.current);
   return st;
 }
+
+/** What one finished session did to the streak, so the summary can say it: a freeze earned, repair progress or a repair done. */
+export type StreakChange = { freezeEarned: boolean; repaired: boolean; repairDone: number | null };
+
+export function streakChange(before: StreakState, after: StreakState): StreakChange {
+  const repaired = !!before.repair && !after.repair && after.current >= before.repair.value;
+  return {
+    freezeEarned: after.freezes > before.freezes,
+    repaired,
+    repairDone:
+      after.repair && after.repair.sessionsDone > (before.repair?.sessionsDone ?? 0) ? after.repair.sessionsDone : null,
+  };
+}

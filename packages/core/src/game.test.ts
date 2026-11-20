@@ -5,6 +5,7 @@ import {
   levelFor,
   xpFor,
   settleStreak,
+  streakChange,
   recordSession,
   NEW_STREAK,
   dayKey,
@@ -68,6 +69,27 @@ test('streak: counting, freezes, break and repair', () => {
   s = recordSession(s, '2026-11-26', true);
   assert.equal(s.repair, null);
   assert.equal(s.current, 3, 'repaired streak (2) + today (1)');
+});
+
+test('streak change: what a finished session did to the streak, for the summary', () => {
+  const base = { ...NEW_STREAK, current: 6, freezes: 1, lastCountedDay: '2026-11-19', lastSettledDay: '2026-11-19' };
+  const week = recordSession(base, '2026-11-20', true);
+  assert.deepEqual(streakChange(base, week), { freezeEarned: true, repaired: false, repairDone: null });
+
+  const broken = {
+    ...NEW_STREAK,
+    current: 0,
+    freezes: 0,
+    repair: { value: 5, deadline: '2026-11-22', sessionsDone: 0 },
+  };
+  const one = recordSession(broken, '2026-11-21', false);
+  assert.deepEqual(streakChange(broken, one), { freezeEarned: false, repaired: false, repairDone: 1 });
+  const two = recordSession(one, '2026-11-21', false);
+  assert.deepEqual(streakChange(one, two), { freezeEarned: false, repaired: true, repairDone: null });
+  assert.equal(two.current, 5, 'the old streak comes back');
+
+  const full = { ...base, freezes: 3 };
+  assert.equal(streakChange(full, recordSession(full, '2026-11-20', true)).freezeEarned, false, 'at most 3 freezes');
 });
 
 test('day starts at 4am', () => {

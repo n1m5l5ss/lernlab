@@ -12,6 +12,7 @@ import { Progress } from './Progress';
 import { Decks } from './Decks';
 import { Browse } from './Browse';
 import { Badges } from './Badges';
+import { StreakPanel } from './Motivation';
 import { Shell } from './Shell';
 import { Welcome } from './Welcome';
 import { formatDate, setLanguage } from './i18n';
@@ -181,6 +182,7 @@ export function App() {
       {route === 'progress' && (
         <div className="col" style={{ gap: 'var(--space-5)' }}>
           <Progress onStudyHardest={studyHardest} />
+          <StreakPanel streak={state.streak} />
           <Badges got={state.achievements} />
         </div>
       )}
