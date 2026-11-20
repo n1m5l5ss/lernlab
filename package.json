@@ -10,7 +10,7 @@
   },
   "scripts": {
     "start": "npm run build && npm run serve",
-    "serve": "NODE_NO_WARNINGS=1 tsx server/index.ts",
+    "serve": "tsx --no-warnings server/index.ts",
     "dev": "NODE_NO_WARNINGS=1 LERNLAB_DEV=1 tsx watch --ignore ./data server/index.ts",
     "build": "vite build",
     "build:electron": "vite build && esbuild electron/main.ts --bundle --platform=node --format=cjs --target=node22 --outfile=dist-electron/main.cjs --external:electron --external:vite --log-level=warning",
@@ -19,8 +19,8 @@
     "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
     "dist:win": "npm run build:electron && electron-builder --win --publish never",
     "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
-    "import": "NODE_NO_WARNINGS=1 tsx server/cli-import.ts",
-    "test": "NODE_NO_WARNINGS=1 tsx --test shared/*.test.ts server/*.test.ts",
+    "import": "tsx --no-warnings server/cli-import.ts",
+    "test": "tsx --no-warnings --test \"shared/*.test.ts\" \"server/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
