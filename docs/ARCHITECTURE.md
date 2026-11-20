@@ -124,6 +124,7 @@ docs/adr/        architecture decision records
 3. The renderer paints the app shell, then asks for `home.summary`.
 4. Show the window on `ready-to-show`, so there is no white flash.
 5. Deferred work: the update check (after 30 s), backups, `PRAGMA optimize`.
+6. **Daily reminder (#34), off by default.** Main looks at the clock once a minute (`@lernlab/core/reminder`: local "HH:MM", once per date, DST-safe, an hour of grace) and only then asks the data process (`reminder.status`) whether you already studied today; it never opens the database. The notification's words come from `locales/en.json`; clicking it starts a session (`#start`). "Open at login" starts the window minimised: a Windows Run entry with `--hidden`, a macOS login item (`wasOpenedAtLogin` keeps the window hidden) or a Linux `~/.config/autostart/lernlab.desktop` (`electron/reminders.ts`). Reminders only arrive while LernLab is running.
 
 ## 8. Errors, logging and crash safety
 

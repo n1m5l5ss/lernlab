@@ -24,10 +24,19 @@ import { pathToFileURL } from 'node:url';
 import { windowBackground, type Theme } from '@lernlab/ui/tokens';
 import { setupUpdates } from './updates';
 import { themeOf } from './theme';
+import { applyPrefs, setupReminders, type ReminderStatus } from './reminders';
+import { reminderPrefsOf, startedAtLogin } from './reminder-policy';
 import { MIN_SIZE, restoreWindow, type WindowState } from './window-state';
 
 const configFile = () => join(app.getPath('userData'), 'config.json');
-type Config = { dataDir?: string; lastUpdateCheck?: number; theme?: Theme; window?: WindowState };
+type Config = {
+  dataDir?: string;
+  lastUpdateCheck?: number;
+  /** The local date the daily reminder was last checked, so it shows at most once a day. */
+  lastReminder?: string;
+  theme?: Theme;
+  window?: WindowState;
+};
 const readConfig = (): Config => {
   try {
     return JSON.parse(readFileSync(configFile(), 'utf8'));
@@ -149,6 +158,7 @@ async function importDeckFile(path: string) {
 
 function startSession() {
   if (!win) return;
+  if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
   win.webContents.executeJavaScript("location.hash = 'start'");
@@ -226,6 +236,9 @@ function applyTheme(theme: Theme | null) {
   writeConfig({ theme });
 }
 
+// Windows shows notifications only for an app with an AppUserModelID (the installer's appId).
+if (process.platform === 'win32') app.setAppUserModelId('dev.lernlab.app');
+
 async function main() {
   await app.whenReady();
   nativeTheme.themeSource = readConfig().theme ?? 'system';
@@ -237,7 +250,11 @@ async function main() {
     if (!trusted(e.senderFrame) || typeof channel !== 'string')
       return { ok: false, error: { code: 'forbidden', message: 'Not allowed' } };
     const result = await callData(channel, input);
-    if (result.ok) applyTheme(themeOf(channel, result.value));
+    if (result.ok) {
+      applyTheme(themeOf(channel, result.value));
+      const reminder = reminderPrefsOf(channel, result.value);
+      if (reminder) applyPrefs(reminder);
+    }
     return result;
   });
 
@@ -273,9 +290,19 @@ async function main() {
       preload: join(__dirname, 'preload.cjs'),
     },
   });
+  // Opened automatically at login: stay out of the way. Windows and Linux show the window minimised
+  // in the taskbar; macOS keeps it hidden and the Dock icon opens it (see reminders.ts).
+  const atLogin = startedAtLogin(
+    process.argv,
+    process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin,
+  );
   win.once('ready-to-show', () => {
     if (place.maximized) win!.maximize();
-    win!.show();
+    if (!atLogin) win!.show();
+    else if (process.platform !== 'darwin') {
+      win!.showInactive();
+      win!.minimize();
+    }
   });
   // Remember size and position for the next start (normal bounds, so un-maximizing restores them too).
   win.on('close', () => {
@@ -311,6 +338,16 @@ async function main() {
     backup: () => callData('backup.create', { reason: 'update' }),
     lastCheck: () => readConfig().lastUpdateCheck,
     setLastCheck: (time) => writeConfig({ lastUpdateCheck: time }),
+  });
+
+  void setupReminders({
+    status: async () => {
+      const res = await callData('reminder.status', undefined);
+      return res.ok ? (res.value as ReminderStatus) : null;
+    },
+    startSession,
+    lastShown: () => readConfig().lastReminder,
+    setLastShown: (date) => writeConfig({ lastReminder: date }),
   });
 }
 

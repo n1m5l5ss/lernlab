@@ -120,6 +120,33 @@ test('text size, reduced motion and new cards per day are checked before they ar
   assert.equal(bad.newPerDay, 0);
 });
 
+test('the daily reminder is off by default, its time is checked, and it knows when you studied', async () => {
+  const d = (await ok('state.get')).settings;
+  assert.equal(d.reminder, false);
+  assert.equal(d.reminderTime, '19:00');
+  assert.equal(d.launchAtLogin, false);
+  const s = await ok('settings.save', { reminder: true, reminderTime: '07:45', launchAtLogin: true });
+  assert.deepEqual([s.reminder, s.reminderTime, s.launchAtLogin], [true, '07:45', true]);
+  const bad = await ok('settings.save', { reminder: 'yes', reminderTime: '25:99', launchAtLogin: 1 });
+  assert.deepEqual([bad.reminder, bad.reminderTime, bad.launchAtLogin], [false, '19:00', false]);
+  await ok('settings.save', { reminder: true, reminderTime: '08:30' });
+  const before = await ok('reminder.status');
+  assert.deepEqual(before, { enabled: true, time: '08:30', launchAtLogin: false, language: 'en', studiedToday: false });
+  await ok('session.finish', {
+    sessionId: 'reminder-test',
+    length: 'mini',
+    seconds: 60,
+    answers: 0,
+    correct: 0,
+    bossWon: null,
+    bestGenderCombo: 0,
+    perfectBlocks: 0,
+    startedAt: new Date().toISOString(),
+  });
+  assert.equal((await ok('reminder.status')).studiedToday, true);
+  await ok('settings.save', { reminder: false });
+});
+
 test('Settings can show the version, licence and data folder', async () => {
   const info = await ok('app.info');
   assert.match(info.version, /^\d+\.\d+\.\d+/);

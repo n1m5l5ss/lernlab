@@ -106,6 +106,12 @@ function allTags(d: DB): string[] {
   return [...seen.values()].sort((a, b) => a.localeCompare(b)).slice(0, 300);
 }
 
+/** Any study today (a finished session or answered cards), by the learning day that starts at 4 a.m. */
+export function studiedToday(d: DB = getDb(), now = new Date()): boolean {
+  const r = d.prepare('SELECT sessions, xp FROM days WHERE day = ?').get(dayKey(now));
+  return !!r && (Number(r.sessions) > 0 || Number(r.xp) > 0);
+}
+
 export function appState(d: DB = getDb(), now = new Date()) {
   const settings = getSettings(d);
   const today = dayKey(now);
