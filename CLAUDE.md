@@ -38,7 +38,7 @@ npm install
 npm test              # unit + integration tests in every workspace (node:test via tsx)
 npm run typecheck     # strict TypeScript in every workspace
 npm run lint          # ESLint (one shared config)
-npm run format        # Prettier
+npm run format        # Prettier (CI runs format:check)
 npm start             # web version at http://localhost:5179
 npm run desktop       # Electron app
 npm run dist:linux    # installers → release/ (dist:mac on a Mac, dist:win on Windows)
@@ -49,7 +49,7 @@ Node 22.13+ is required (`node:sqlite`).
 1. Read the issue and its acceptance criteria. If something is unclear or conflicts with `docs/PLAN.md`, ask in the issue before coding.
 2. Branch from `dev`: `feature/<issue>-short-name` or `fix/<issue>-short-name`. One ticket per branch and per pull request. Never commit to `main` or `dev` directly.
 3. Test first: write the failing test, make it pass, then refactor. Every feature and bug fix has a test.
-4. Run `npm test && npm run typecheck && npm run lint` from the repo root before pushing.
+4. Run `npm run format`, then `npm test && npm run typecheck && npm run lint` from the repo root before pushing.
 5. Open a pull request into `dev`. Its title is a Conventional Commit in plain user language (`feat: add session length picker`, `fix: keep streak when the clock changes`), because it becomes the changelog line. The body says `Closes #<issue>` and lists:
    - what changed;
    - how it was tested;

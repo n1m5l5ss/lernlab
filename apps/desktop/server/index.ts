@@ -12,15 +12,27 @@ const appDir = fileURLToPath(new URL('..', import.meta.url));
 
 const [major, minor] = process.versions.node.split('.').map(Number);
 if (major < 22 || (major === 22 && minor < 13)) {
-  console.error(`LernLab needs Node 22.13 or newer (you have ${process.versions.node}). Install it from https://nodejs.org`);
+  console.error(
+    `LernLab needs Node 22.13 or newer (you have ${process.versions.node}). Install it from https://nodejs.org`,
+  );
   process.exit(1);
 }
 
-startServer({ port: Number(process.env.PORT ?? 5179), dev: process.env.LERNLAB_DEV === '1', distDir: join(appDir, 'dist'), root: appDir }).then(async ({ port }) => {
-  console.log(`\n  LernLab is running → http://localhost:${port}\n`);
-  const decks = Number(getDb().prepare('SELECT COUNT(*) AS n FROM decks').get().n);
-  if (decks === 0 && process.env.LERNLAB_AUTO_ANKI !== '0' && (await ankiAvailable())) {
-    console.log('  First start: importing Lang::German from Anki…');
-    void runAnkiImport();
-  }
-}).catch((e) => { console.error(e.message); process.exit(1); });
+startServer({
+  port: Number(process.env.PORT ?? 5179),
+  dev: process.env.LERNLAB_DEV === '1',
+  distDir: join(appDir, 'dist'),
+  root: appDir,
+})
+  .then(async ({ port }) => {
+    console.log(`\n  LernLab is running → http://localhost:${port}\n`);
+    const decks = Number(getDb().prepare('SELECT COUNT(*) AS n FROM decks').get().n);
+    if (decks === 0 && process.env.LERNLAB_AUTO_ANKI !== '0' && (await ankiAvailable())) {
+      console.log('  First start: importing Lang::German from Anki…');
+      void runAnkiImport();
+    }
+  })
+  .catch((e) => {
+    console.error(e.message);
+    process.exit(1);
+  });

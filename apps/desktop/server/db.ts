@@ -136,15 +136,27 @@ function migrate(d: DB) {
     );
   `);
   // v0.2: cards belong to decks and may carry images, video/GIF, a category and free-form extras.
-  const cols = new Set(d.prepare('PRAGMA table_info(items)').all().map((c: any) => c.name));
-  const add = (name: string, type: string) => { if (!cols.has(name)) d.exec(`ALTER TABLE items ADD COLUMN ${name} ${type}`); };
+  const cols = new Set(
+    d
+      .prepare('PRAGMA table_info(items)')
+      .all()
+      .map((c: any) => c.name),
+  );
+  const add = (name: string, type: string) => {
+    if (!cols.has(name)) d.exec(`ALTER TABLE items ADD COLUMN ${name} ${type}`);
+  };
   add('deck_id', 'INTEGER');
   add('image', 'TEXT');
   add('video', 'TEXT');
   add('category', 'TEXT');
   add('extra', "TEXT NOT NULL DEFAULT '{}'");
   add('starred', 'INTEGER NOT NULL DEFAULT 0');
-  const scols = new Set(d.prepare('PRAGMA table_info(srs)').all().map((c: any) => c.name));
+  const scols = new Set(
+    d
+      .prepare('PRAGMA table_info(srs)')
+      .all()
+      .map((c: any) => c.name),
+  );
   if (!scols.has('prev_card')) d.exec('ALTER TABLE srs ADD COLUMN prev_card TEXT');
   if (!scols.has('prev_due')) d.exec('ALTER TABLE srs ADD COLUMN prev_due TEXT');
   d.exec('CREATE INDEX IF NOT EXISTS items_deck ON items(deck_id)');
@@ -159,13 +171,18 @@ function migrateLegacyDeck(d: DB) {
   const source = settings.deck ?? 'Lang::German';
   const german = /german|deutsch/i.test(source);
   const name = german ? 'German' : source.split('::').pop();
-  d.prepare(
-    `INSERT OR IGNORE INTO decks(name, language, settings, created_at) VALUES (?, ?, ?, ?)`,
-  ).run(name, german ? 'de' : null, JSON.stringify({
-    newPerDay: settings.newPerDay ?? 10,
-    ankiSource: source,
-    goal: german ? { label: 'Goethe B1', words: 2400, hoursLow: 260, hoursHigh: 490, tag: 'exam_goethe_b1' } : undefined,
-  }), new Date().toISOString());
+  d.prepare(`INSERT OR IGNORE INTO decks(name, language, settings, created_at) VALUES (?, ?, ?, ?)`).run(
+    name,
+    german ? 'de' : null,
+    JSON.stringify({
+      newPerDay: settings.newPerDay ?? 10,
+      ankiSource: source,
+      goal: german
+        ? { label: 'Goethe B1', words: 2400, hoursLow: 260, hoursHigh: 490, tag: 'exam_goethe_b1' }
+        : undefined,
+    }),
+    new Date().toISOString(),
+  );
   const deck = d.prepare('SELECT id FROM decks WHERE name = ?').get(name);
   d.prepare('UPDATE items SET deck_id = ? WHERE deck_id IS NULL').run(deck.id);
   if (!getMeta(d, 'activeDeck', null)) setMeta(d, 'activeDeck', Number(deck.id));

@@ -27,7 +27,8 @@ export function xpFor(format: Format, correct: boolean, combo: number): number {
   if (!correct) return 1; // showing up still counts a little
   const base = Math.round(10 * XP_WEIGHT[format]);
   // Timed arcade rounds pay a flat rate: speed-tapping must never out-earn real recall.
-  if (format === 'gender' || format === 'rain' || format === 'match' || format === 'truefalse' || format === 'blitz') return base;
+  if (format === 'gender' || format === 'rain' || format === 'match' || format === 'truefalse' || format === 'blitz')
+    return base;
   const comboBonus = Math.min(10, Math.max(0, combo - 1) * 2);
   return base + comboBonus;
 }

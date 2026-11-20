@@ -13,7 +13,14 @@ export type DeckSettings = {
   ankiSource?: string;
 };
 
-export type Deck = { id: number; name: string; language: string | null; description: string; settings: DeckSettings; createdAt: string };
+export type Deck = {
+  id: number;
+  name: string;
+  language: string | null;
+  description: string;
+  settings: DeckSettings;
+  createdAt: string;
+};
 
 /** The one shape every importer produces. Only `front` and `back` are required. */
 export type NormalizedCard = {
@@ -42,11 +49,31 @@ export type NormalizedCard = {
 };
 
 export const LANGUAGES: Record<string, string> = {
-  de: 'German', ja: 'Japanese', ko: 'Korean', fr: 'French', es: 'Spanish', it: 'Italian', pt: 'Portuguese',
-  nl: 'Dutch', sv: 'Swedish', ru: 'Russian', zh: 'Chinese', ar: 'Arabic', hi: 'Hindi', te: 'Telugu', en: 'English',
+  de: 'German',
+  ja: 'Japanese',
+  ko: 'Korean',
+  fr: 'French',
+  es: 'Spanish',
+  it: 'Italian',
+  pt: 'Portuguese',
+  nl: 'Dutch',
+  sv: 'Swedish',
+  ru: 'Russian',
+  zh: 'Chinese',
+  ar: 'Arabic',
+  hi: 'Hindi',
+  te: 'Telugu',
+  en: 'English',
 };
 
-const rowToDeck = (r: any): Deck => ({ id: Number(r.id), name: r.name, language: r.language, description: r.description, settings: JSON.parse(r.settings), createdAt: r.created_at });
+const rowToDeck = (r: any): Deck => ({
+  id: Number(r.id),
+  name: r.name,
+  language: r.language,
+  description: r.description,
+  settings: JSON.parse(r.settings),
+  createdAt: r.created_at,
+});
 
 export function listDecks(d: DB = getDb()): Deck[] {
   return d.prepare('SELECT * FROM decks ORDER BY name').all().map(rowToDeck);
@@ -60,31 +87,53 @@ export function deckByName(name: string, d: DB = getDb()): Deck | null {
   return r ? rowToDeck(r) : null;
 }
 
-export function createDeck(name: string, language: string | null = null, settings: DeckSettings = {}, description = '', d: DB = getDb()): Deck {
+export function createDeck(
+  name: string,
+  language: string | null = null,
+  settings: DeckSettings = {},
+  description = '',
+  d: DB = getDb(),
+): Deck {
   const existing = deckByName(name, d);
   if (existing) return existing;
   d.prepare('INSERT INTO decks(name, language, description, settings, created_at) VALUES (?, ?, ?, ?, ?)').run(
-    name, language || null, description, JSON.stringify({ newPerDay: 10, ...settings }), new Date().toISOString(),
+    name,
+    language || null,
+    description,
+    JSON.stringify({ newPerDay: 10, ...settings }),
+    new Date().toISOString(),
   );
   const deck = deckByName(name, d)!;
   if (!getMeta(d, 'activeDeck', null)) setMeta(d, 'activeDeck', deck.id);
   return deck;
 }
 
-export function updateDeck(id: number, patch: Partial<Pick<Deck, 'name' | 'language' | 'description' | 'settings'>>, d: DB = getDb()): Deck {
+export function updateDeck(
+  id: number,
+  patch: Partial<Pick<Deck, 'name' | 'language' | 'description' | 'settings'>>,
+  d: DB = getDb(),
+): Deck {
   const cur = getDeck(id, d);
   if (!cur) throw new Error('Deck not found');
   const next = { ...cur, ...patch, settings: { ...cur.settings, ...(patch.settings ?? {}) } };
   d.prepare('UPDATE decks SET name = ?, language = ?, description = ?, settings = ? WHERE id = ?').run(
-    next.name, next.language || null, next.description, JSON.stringify(next.settings), id,
+    next.name,
+    next.language || null,
+    next.description,
+    JSON.stringify(next.settings),
+    id,
   );
   return getDeck(id, d)!;
 }
 
 export function deleteDeck(id: number, d: DB = getDb()) {
   tx(d, () => {
-    const ids = d.prepare('SELECT id FROM items WHERE deck_id = ?').all(id).map((r: any) => r.id);
-    for (const t of ['srs', 'item_state']) d.prepare(`DELETE FROM ${t} WHERE item_id IN (SELECT id FROM items WHERE deck_id = ?)`).run(id);
+    const ids = d
+      .prepare('SELECT id FROM items WHERE deck_id = ?')
+      .all(id)
+      .map((r: any) => r.id);
+    for (const t of ['srs', 'item_state'])
+      d.prepare(`DELETE FROM ${t} WHERE item_id IN (SELECT id FROM items WHERE deck_id = ?)`).run(id);
     d.prepare('DELETE FROM items WHERE deck_id = ?').run(id);
     d.prepare('DELETE FROM decks WHERE id = ?').run(id);
     return ids.length;
@@ -97,7 +146,13 @@ export function stableId(s: string): number {
   return parseInt(createHash('sha1').update(s).digest('hex').slice(0, 13), 16);
 }
 
-export function detectKind(front: string, back: string, tags: string[], language: string | null, c?: NormalizedCard): ItemKind {
+export function detectKind(
+  front: string,
+  back: string,
+  tags: string[],
+  language: string | null,
+  c?: NormalizedCard,
+): ItemKind {
   const t = (c?.type ?? '').toLowerCase();
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
@@ -135,7 +190,13 @@ export const MEDIA_TYPES = {
 };
 export const mediaKind = (f: string) => {
   const e = extname(f).toLowerCase();
-  return MEDIA_TYPES.image.includes(e) ? 'image' : MEDIA_TYPES.audio.includes(e) ? 'audio' : MEDIA_TYPES.video.includes(e) ? 'video' : null;
+  return MEDIA_TYPES.image.includes(e)
+    ? 'image'
+    : MEDIA_TYPES.audio.includes(e)
+      ? 'audio'
+      : MEDIA_TYPES.video.includes(e)
+        ? 'video'
+        : null;
 };
 
 const clean = (s: string | undefined) => sanitizeHtml(markdownLite(String(s ?? '').trim()));
@@ -172,19 +233,38 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
       if (c.steps) extra.steps = c.steps;
       if (c.altAnswers) extra.alt = c.altAnswers;
       const { article, word } = splitArticle(stripHtml(front));
-      const id = typeof c.sourceId === 'number' ? c.sourceId : stableId(`${deck.name}\u0000${c.sourceId ?? `${front}\u0000${back}`}`);
+      const id =
+        typeof c.sourceId === 'number'
+          ? c.sourceId
+          : stableId(`${deck.name}\u0000${c.sourceId ?? `${front}\u0000${back}`}`);
       const prev = exists.get(id);
       prev ? updated++ : added++;
       const example = clean(c.example);
       const isNoun = kind === 'noun';
       up.run(
-        id, deck.id, c.subdeck ?? deck.name, kind, kind === 'cloze' ? front : stripHtml(front),
-        isNoun ? article : null, isNoun ? word : stripHtml(front), ['cloze', 'mcq', 'order'].includes(kind) ? back : stripHtml(back),
-        example, stripHtml(example), stripHtml(c.exampleTranslation ?? ''), clean(c.explanation), clean(c.notes),
-        c.audio || null, c.image || null, c.video || null,
+        id,
+        deck.id,
+        c.subdeck ?? deck.name,
+        kind,
+        kind === 'cloze' ? front : stripHtml(front),
+        isNoun ? article : null,
+        isNoun ? word : stripHtml(front),
+        ['cloze', 'mcq', 'order'].includes(kind) ? back : stripHtml(back),
+        example,
+        stripHtml(example),
+        stripHtml(c.exampleTranslation ?? ''),
+        clean(c.explanation),
+        clean(c.notes),
+        c.audio || null,
+        c.image || null,
+        c.video || null,
         (c.category ?? (isNoun ? article : null)) || null,
-        c.rank ?? 0, JSON.stringify(tags), c.group || null, prev ? Number(prev.ord) : maxOrd + 1 + i,
-        JSON.stringify(extra), now,
+        c.rank ?? 0,
+        JSON.stringify(tags),
+        c.group || null,
+        prev ? Number(prev.ord) : maxOrd + 1 + i,
+        JSON.stringify(extra),
+        now,
       );
     });
   });
@@ -193,13 +273,22 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
 }
 
 export function deckCounts(d: DB = getDb()) {
-  const rows = d.prepare(`
+  const rows = d
+    .prepare(
+      `
     SELECT i.deck_id AS id, COUNT(*) AS cards,
       SUM(CASE WHEN s.item_id IS NULL THEN 1 ELSE 0 END) AS fresh,
       SUM(CASE WHEN st.mastery >= 3 THEN 1 ELSE 0 END) AS learned
     FROM items i LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
-    WHERE i.suspended = 0 GROUP BY i.deck_id`).all();
-  return Object.fromEntries(rows.map((r: any) => [Number(r.id), { cards: Number(r.cards), fresh: Number(r.fresh), learned: Number(r.learned) }]));
+    WHERE i.suspended = 0 GROUP BY i.deck_id`,
+    )
+    .all();
+  return Object.fromEntries(
+    rows.map((r: any) => [
+      Number(r.id),
+      { cards: Number(r.cards), fresh: Number(r.fresh), learned: Number(r.learned) },
+    ]),
+  );
 }
 
 export function readMedia(file: string): Buffer | null {

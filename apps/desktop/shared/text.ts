@@ -22,7 +22,7 @@ export function stripHtml(html: string): string {
 export function splitBold(html: string): { before: string; bold: string; after: string } | null {
   const m = html.match(/^(.*?)<b>(.*?)<\/b>(.*)$/i);
   if (!m) return null;
-  return { before: stripHtml(m[1]) , bold: stripHtml(m[2]), after: stripHtml(m[3]) };
+  return { before: stripHtml(m[1]), bold: stripHtml(m[2]), after: stripHtml(m[3]) };
 }
 
 /** Lowercase, unify umlaut spellings and ß, drop punctuation and extra spaces. */
@@ -158,8 +158,13 @@ export function tokenize(sentence: string): string[] {
 
 /** Accepted answers for a vocabulary target: the full target plus each slash/semicolon alternative. */
 export function acceptedAnswers(target: string): string[] {
-  const clean = stripHtml(target).replace(/\s*\(\d+\)\s*$/, '').trim();
-  const parts = clean.split(/\s*[/;]\s*/).map((p) => p.trim()).filter(Boolean);
+  const clean = stripHtml(target)
+    .replace(/\s*\(\d+\)\s*$/, '')
+    .trim();
+  const parts = clean
+    .split(/\s*[/;]\s*/)
+    .map((p) => p.trim())
+    .filter(Boolean);
   const set = new Set([clean, ...(parts.length > 1 ? parts : [])]);
   return [...set];
 }

@@ -21,7 +21,10 @@ function pickDistractors(item: Item, pool: Item[], n: number, key: (i: Item) => 
     return s + Math.random() * 1.5;
   };
   const candidates = pool
-    .filter((p) => p.id !== item.id && !['grammar', 'mcq', 'order'].includes(p.kind) && key(p) && !seen.has(key(p).toLowerCase()))
+    .filter(
+      (p) =>
+        p.id !== item.id && !['grammar', 'mcq', 'order'].includes(p.kind) && key(p) && !seen.has(key(p).toLowerCase()),
+    )
     .map((p) => ({ p, s: score(p) }))
     .sort((a, b) => b.s - a.s)
     .map((x) => x.p);
@@ -41,7 +44,14 @@ export function mc(item: Item, pool: Item[], direction: 'de2en' | 'en2de'): Exer
   if (direction === 'de2en') {
     const ds = pickDistractors(item, pool, 3, backText);
     const options = shuffle([backText(item), ...ds.map(backText)]);
-    return { type: 'mc', itemId: item.id, direction, prompt: frontText(item), options, answerIndex: options.indexOf(backText(item)) };
+    return {
+      type: 'mc',
+      itemId: item.id,
+      direction,
+      prompt: frontText(item),
+      options,
+      answerIndex: options.indexOf(backText(item)),
+    };
   }
   const opts: string[] = [frontText(item)];
   if (item.kind === 'noun' && item.article) {
@@ -50,15 +60,35 @@ export function mc(item: Item, pool: Item[], direction: 'de2en' | 'en2de'): Exer
   }
   opts.push(...pickDistractors(item, pool, 4 - opts.length, frontText).map(frontText));
   const options = shuffle(opts);
-  return { type: 'mc', itemId: item.id, direction, prompt: backText(item), options, answerIndex: options.indexOf(frontText(item)) };
+  return {
+    type: 'mc',
+    itemId: item.id,
+    direction,
+    prompt: backText(item),
+    options,
+    answerIndex: options.indexOf(frontText(item)),
+  };
 }
 
 export function typed(item: Item): Exercise {
   const q = qa(item);
   const core = q.requireArticle ? item.word : q.accepted[0];
   const hint = `${core[0]}${core.slice(1).replace(/[^\s]/g, '_')} (${core.length})`;
-  const kindLabel = item.lang ? (item.kind === 'noun' ? ' · noun + article' : item.kind === 'verb' ? ' · verb' : '') : '';
-  return { type: 'typed', itemId: item.id, prompt: stripHtml(q.prompt) + kindLabel, accepted: q.accepted, requireArticle: q.requireArticle, hint };
+  const kindLabel = item.lang
+    ? item.kind === 'noun'
+      ? ' · noun + article'
+      : item.kind === 'verb'
+        ? ' · verb'
+        : ''
+    : '';
+  return {
+    type: 'typed',
+    itemId: item.id,
+    prompt: stripHtml(q.prompt) + kindLabel,
+    accepted: q.accepted,
+    requireArticle: q.requireArticle,
+    hint,
+  };
 }
 
 export function flip(item: Item): Exercise {
@@ -70,7 +100,14 @@ export function mcq(item: Item): Exercise | null {
   const m = mcqOf(item);
   if (!m) return null;
   const order = shuffle(m.choices.map((_, i) => i));
-  return { type: 'mcq', itemId: item.id, stem: item.target, choices: order.map((i) => m.choices[i]), correct: m.correct.map((c) => order.indexOf(c)), explanation: item.grammar || item.notes };
+  return {
+    type: 'mcq',
+    itemId: item.id,
+    stem: item.target,
+    choices: order.map((i) => m.choices[i]),
+    correct: m.correct.map((c) => order.indexOf(c)),
+    explanation: item.grammar || item.notes,
+  };
 }
 
 export function order(item: Item): Exercise | null {
@@ -83,26 +120,47 @@ export function order(item: Item): Exercise | null {
 
 /** Recall exercise for any card: question cards ask their question; short answers are typed; long ones flip. */
 export const recall = (item: Item): Exercise =>
-  (item.kind === 'mcq' ? mcq(item) : item.kind === 'order' ? order(item) : null) ?? (qa(item).typeable ? typed(item) : flip(item));
+  (item.kind === 'mcq' ? mcq(item) : item.kind === 'order' ? order(item) : null) ??
+  (qa(item).typeable ? typed(item) : flip(item));
 
 export function cloze(item: Item): Exercise | null {
   if (item.kind === 'cloze') {
     const c = parseCloze(item.target);
     if (!c) return null;
-    return { type: 'cloze', itemId: item.id, before: c.before, after: c.after, accepted: acceptedAnswers(c.answer), translation: backText(item), hint: c.hint || `${c.answer[0]}…` };
+    return {
+      type: 'cloze',
+      itemId: item.id,
+      before: c.before,
+      after: c.after,
+      accepted: acceptedAnswers(c.answer),
+      translation: backText(item),
+      hint: c.hint || `${c.answer[0]}…`,
+    };
   }
   const parts = splitBold(item.sentenceHtml);
   if (!parts || !parts.bold) return null;
   return {
-    type: 'cloze', itemId: item.id, before: parts.before, after: parts.after, accepted: [parts.bold], translation: item.sentenceMeaning,
-    hint: item.kind === 'grammar' ? item.target.replace(/\s*\(\d+\)\s*$/, '') : `${frontText(item)} · ${backText(item)}`,
+    type: 'cloze',
+    itemId: item.id,
+    before: parts.before,
+    after: parts.after,
+    accepted: [parts.bold],
+    translation: item.sentenceMeaning,
+    hint:
+      item.kind === 'grammar' ? item.target.replace(/\s*\(\d+\)\s*$/, '') : `${frontText(item)} · ${backText(item)}`,
   };
 }
 
 export function truefalse(item: Item, pool: Item[]): Exercise {
   const isTrue = Math.random() < 0.5;
   const other = isTrue ? null : pickDistractors(item, pool, 1, backText)[0];
-  return { type: 'truefalse', itemId: item.id, front: frontText(item), shown: other ? backText(other) : backText(item), isTrue: !other };
+  return {
+    type: 'truefalse',
+    itemId: item.id,
+    front: frontText(item),
+    shown: other ? backText(other) : backText(item),
+    isTrue: !other,
+  };
 }
 
 export function imagemc(item: Item, pool: Item[]): Exercise | null {
@@ -145,7 +203,10 @@ export function speak(item: Item): Exercise {
 export function lesson(group: string, items: Item[]): Exercise {
   const first = items[0];
   return {
-    type: 'lesson', group, title: first.target.replace(/\s*\(\d+\)\s*$/, ''), text: stripHtml(first.grammar),
+    type: 'lesson',
+    group,
+    title: first.target.replace(/\s*\(\d+\)\s*$/, ''),
+    text: stripHtml(first.grammar),
     examples: items.slice(0, 3).map((i) => ({ de: i.sentence || frontText(i), en: i.sentenceMeaning || backText(i) })),
   };
 }

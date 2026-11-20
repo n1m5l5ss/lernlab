@@ -33,7 +33,15 @@ export type Ctx = {
 
 /** A shrinking bar for timed questions; calls onTimeout once. */
 import { createElement, useState as useS, useEffect as useE } from 'react';
-export function QuestionTimer({ seconds, running, onTimeout }: { seconds: number; running: boolean; onTimeout: () => void }) {
+export function QuestionTimer({
+  seconds,
+  running,
+  onTimeout,
+}: {
+  seconds: number;
+  running: boolean;
+  onTimeout: () => void;
+}) {
   const [left, setLeft] = useS(seconds * 1000);
   const cb = useRef(onTimeout);
   cb.current = onTimeout;
@@ -44,17 +52,28 @@ export function QuestionTimer({ seconds, running, onTimeout }: { seconds: number
     const tick = () => {
       const l = seconds * 1000 - (performance.now() - start);
       setLeft(Math.max(0, l));
-      if (l <= 0) cb.current(); else raf = requestAnimationFrame(tick);
+      if (l <= 0) cb.current();
+      else raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [running, seconds]);
   if (!seconds) return null;
   const pct = (left / (seconds * 1000)) * 100;
-  return createElement('div', { className: 'qtimer' }, createElement('i', { style: { width: `${pct}%`, background: pct < 30 ? 'var(--bad)' : undefined } }));
+  return createElement(
+    'div',
+    { className: 'qtimer' },
+    createElement('i', { style: { width: `${pct}%`, background: pct < 30 ? 'var(--bad)' : undefined } }),
+  );
 }
 
-export type BlockResult = { correct: number; total: number; bossWon?: boolean | null; bestCombo?: number; missedIds?: number[] };
+export type BlockResult = {
+  correct: number;
+  total: number;
+  bossWon?: boolean | null;
+  bestCombo?: number;
+  missedIds?: number[];
+};
 
 /** Keyboard helper: run handler for keydown while mounted. */
 import { useEffect, useRef } from 'react';

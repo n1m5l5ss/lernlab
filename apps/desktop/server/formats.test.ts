@@ -42,13 +42,21 @@ test('CSV with header: columns by name, categories, tags, markdown-free', () => 
 });
 
 test('Quizlet-style TSV without header', () => {
-  const r = importFile('bio.txt', strToU8('Mitochondrion\tPowerhouse of the cell\nRibosome\tMakes proteins\nNucleus\tHolds the DNA\nGolgi apparatus\tPackages proteins\n'));
+  const r = importFile(
+    'bio.txt',
+    strToU8(
+      'Mitochondrion\tPowerhouse of the cell\nRibosome\tMakes proteins\nNucleus\tHolds the DNA\nGolgi apparatus\tPackages proteins\n',
+    ),
+  );
   assert.equal(r.added, 4);
   assert.equal(r.format, 'tsv');
 });
 
 test('cloze cards', () => {
-  const r = importFile('cloze.csv', strToU8('front,back\n"The {{c1::mitochondria}} is the powerhouse of the cell",Biology 101\n'));
+  const r = importFile(
+    'cloze.csv',
+    strToU8('front,back\n"The {{c1::mitochondria}} is the powerhouse of the cell",Biology 101\n'),
+  );
   assert.equal(r.added, 1);
   assert.equal(getDb().prepare("SELECT kind FROM items WHERE target LIKE '%mitochondria%'").get().kind, 'cloze');
 });
@@ -91,7 +99,19 @@ function buildApkg(newFormat: boolean) {
     db.exec(`CREATE TABLE col (models TEXT, decks TEXT);
       CREATE TABLE notes (id INTEGER PRIMARY KEY, mid INTEGER, tags TEXT, flds TEXT);
       CREATE TABLE cards (id INTEGER PRIMARY KEY, nid INTEGER, did INTEGER, ord INTEGER);`);
-    db.prepare('INSERT INTO col VALUES (?, ?)').run(JSON.stringify({ 7: { id: 7, name: 'Basic', flds: [{ name: 'Front', ord: 0 }, { name: 'Back', ord: 1 }] } }), JSON.stringify({ 5: { id: 5, name: 'Medicine::Cardio' } }));
+    db.prepare('INSERT INTO col VALUES (?, ?)').run(
+      JSON.stringify({
+        7: {
+          id: 7,
+          name: 'Basic',
+          flds: [
+            { name: 'Front', ord: 0 },
+            { name: 'Back', ord: 1 },
+          ],
+        },
+      }),
+      JSON.stringify({ 5: { id: 5, name: 'Medicine::Cardio' } }),
+    );
   }
   const ins = db.prepare('INSERT INTO notes (id, mid, tags, flds) VALUES (?, ?, ?, ?)');
   ins.run(1, 7, ' cardio ', 'Normal resting heart rate\x1f60–100 bpm');
@@ -103,7 +123,10 @@ function buildApkg(newFormat: boolean) {
   const files: Record<string, Uint8Array> = { '0': strToU8('PNGDATA'), '1': strToU8('MP3DATA') };
   if (newFormat) {
     // MediaEntries protobuf: entries(1) { name(1) }
-    const entry = (name: string) => { const n = strToU8(name); return [0x0a, n.length + 2, 0x0a, n.length, ...n]; };
+    const entry = (name: string) => {
+      const n = strToU8(name);
+      return [0x0a, n.length + 2, 0x0a, n.length, ...n];
+    };
     files['media'] = zstdCompress(new Uint8Array([...entry('lv.png'), ...entry('lv.mp3')]));
     files['collection.anki21b'] = zstdCompress(col);
     files['collection.anki2'] = strToU8('placeholder');
@@ -125,7 +148,10 @@ for (const newFormat of [false, true]) {
     assert.equal(lv.image, 'lv.png');
     assert.equal(lv.audio, 'lv.mp3');
     assert.equal(lv.deck, 'Medicine::Cardio');
-    assert.equal(getDb().prepare(`SELECT kind FROM items WHERE deck_id = ? AND target LIKE '%Aspirin%'`).get(r.deck.id).kind, 'cloze');
+    assert.equal(
+      getDb().prepare(`SELECT kind FROM items WHERE deck_id = ? AND target LIKE '%Aspirin%'`).get(r.deck.id).kind,
+      'cloze',
+    );
   });
 }
 
@@ -137,8 +163,15 @@ order,Order the TCP handshake,,,,SYN|SYN-ACK|ACK
 `;
   const r = importFile('cert.csv', strToU8(csv));
   assert.equal(r.added, 3);
-  const kinds = getDb().prepare('SELECT kind FROM items WHERE deck_id = ? ORDER BY ord').all(r.deck.id).map((x: any) => x.kind);
-  assert.equal(getDb().prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id = ? AND category IS NOT NULL').get(r.deck.id).n, 0, 'the type column is not a category');
+  const kinds = getDb()
+    .prepare('SELECT kind FROM items WHERE deck_id = ? ORDER BY ord')
+    .all(r.deck.id)
+    .map((x: any) => x.kind);
+  assert.equal(
+    getDb().prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id = ? AND category IS NOT NULL').get(r.deck.id).n,
+    0,
+    'the type column is not a category',
+  );
   assert.deepEqual(kinds, ['mcq', 'mcq', 'order']);
   const { recall } = await import('./exercises');
   const { allItems } = await import('./learn');
@@ -159,7 +192,22 @@ test('"I was right" turns today\'s Again into Good', async () => {
   const id = Number(getDb().prepare("SELECT id FROM items WHERE deck_id = ? AND target = 'Amazon S3'").get(deck.id).id);
   const t = new Date(2026, 10, 22, 10);
   recordAttempt({ sessionId: 's', itemId: id, format: 'intro', correct: true, responseMs: 1, xp: 0 }, getDb(), t);
-  assert.equal(recordAttempt({ sessionId: 's', itemId: id, format: 'typed', correct: false, responseMs: 3000, xp: 1, given: 'S3 object storage' }, getDb(), t).grade, 1);
+  assert.equal(
+    recordAttempt(
+      {
+        sessionId: 's',
+        itemId: id,
+        format: 'typed',
+        correct: false,
+        responseMs: 3000,
+        xp: 1,
+        given: 'S3 object storage',
+      },
+      getDb(),
+      t,
+    ).grade,
+    1,
+  );
   const againDue = getDb().prepare('SELECT due FROM srs WHERE item_id = ?').get(id).due;
   assert.equal(overrideToCorrect(id, getDb(), t).ok, true);
   const goodDue = getDb().prepare('SELECT due FROM srs WHERE item_id = ?').get(id).due;
@@ -168,7 +216,12 @@ test('"I was right" turns today\'s Again into Good', async () => {
 });
 
 test('alternative answers', async () => {
-  const r = importFile('spell.csv', strToU8('front,back,alt_answers\nThe shade of the sky,blue,azure|sky blue\nOpposite of left,right,\nFrozen water,ice,\nNot hot,cold,chilly\n'));
+  const r = importFile(
+    'spell.csv',
+    strToU8(
+      'front,back,alt_answers\nThe shade of the sky,blue,azure|sky blue\nOpposite of left,right,\nFrozen water,ice,\nNot hot,cold,chilly\n',
+    ),
+  );
   const { allItems } = await import('./learn');
   const { qa } = await import('../shared/cards');
   const sky = allItems(getDb(), r.deck.id).find((i) => i.meaning === 'blue')!;
@@ -179,8 +232,12 @@ test('deck package with cards.csv and media in subfolders (images/, audio/)', ()
   const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
   const gif = strToU8('GIF89a-test');
   const zip = zipSync({
-    'colours/manifest.json': strToU8(JSON.stringify({ format: 'lernpack', version: 1, deck: { name: 'Colours test', language: 'de' } })),
-    'colours/cards.csv': strToU8('front,back,image\nrot,red,images/rot.png\ndrehen,to turn,images/drehen.gif\nblau,blue,images/missing.png\n'),
+    'colours/manifest.json': strToU8(
+      JSON.stringify({ format: 'lernpack', version: 1, deck: { name: 'Colours test', language: 'de' } }),
+    ),
+    'colours/cards.csv': strToU8(
+      'front,back,image\nrot,red,images/rot.png\ndrehen,to turn,images/drehen.gif\nblau,blue,images/missing.png\n',
+    ),
     'colours/media/images/rot.png': png,
     'colours/media/images/drehen.gif': gif,
     'colours/media/audio/': new Uint8Array(),
@@ -190,7 +247,9 @@ test('deck package with cards.csv and media in subfolders (images/, audio/)', ()
   assert.equal(r.total, 3);
   assert.equal(r.media, 2);
   assert.equal(r.mediaMissing, 1);
-  const rows = getDb().prepare("SELECT target, image FROM items WHERE deck_id = ? ORDER BY target").all(deckByName('Colours test')!.id) as any[];
+  const rows = getDb()
+    .prepare('SELECT target, image FROM items WHERE deck_id = ? ORDER BY target')
+    .all(deckByName('Colours test')!.id) as any[];
   assert.ok(rows.find((x) => x.target === 'rot').image, 'rot has its image');
   assert.ok(rows.find((x) => x.target === 'drehen').image, 'GIF resolved from images/');
 });

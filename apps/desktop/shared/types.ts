@@ -77,7 +77,15 @@ export type Exercise =
   | { type: 'intro'; itemId: number }
   | { type: 'mc'; itemId: number; direction: 'de2en' | 'en2de'; prompt: string; options: string[]; answerIndex: number }
   | { type: 'typed'; itemId: number; prompt: string; accepted: string[]; requireArticle: boolean; hint: string }
-  | { type: 'cloze'; itemId: number; before: string; after: string; accepted: string[]; translation: string; hint: string }
+  | {
+      type: 'cloze';
+      itemId: number;
+      before: string;
+      after: string;
+      accepted: string[];
+      translation: string;
+      hint: string;
+    }
   | { type: 'unscramble'; itemId: number; tiles: string[]; answer: string[]; translation: string }
   | { type: 'listen'; itemId: number; options: string[]; answerIndex: number }
   | { type: 'dictation'; itemId: number; sentence: string; translation: string }

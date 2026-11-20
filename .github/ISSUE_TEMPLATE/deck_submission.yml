@@ -1,6 +1,6 @@
 name: Deck submission
 description: Share a deck for the example decks or the future deck gallery
-labels: ["deck"]
+labels: ['deck']
 body:
   - type: input
     id: name

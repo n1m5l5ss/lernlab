@@ -21,6 +21,7 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm run lint
+      - run: npm run format:check
       - run: npm test
       - run: npm run build:electron
       # Added by later tickets: coverage gate (#6), visual + axe (#2/#11),

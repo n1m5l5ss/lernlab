@@ -18,8 +18,13 @@ const { finishSession, appState, dailySummary } = await import('./progress');
 const { getDb } = await import('./db');
 
 let server: any;
-before(async () => { server = await startMockAnki(8799); });
-after(() => { server.close(); cleanupTempDir(dir); });
+before(async () => {
+  server = await startMockAnki(8799);
+});
+after(() => {
+  server.close();
+  cleanupTempDir(dir);
+});
 
 const day1 = new Date(2026, 10, 21, 10, 17);
 
@@ -28,7 +33,12 @@ test('import reads all notes, kinds and media', async () => {
   assert.equal(r.total, 38);
   assert.equal(r.media, 38);
   assert.equal(r.deck.language, 'de');
-  const kinds = Object.fromEntries(getDb().prepare('SELECT kind, COUNT(*) n FROM items GROUP BY kind').all().map((x: any) => [x.kind, Number(x.n)]));
+  const kinds = Object.fromEntries(
+    getDb()
+      .prepare('SELECT kind, COUNT(*) n FROM items GROUP BY kind')
+      .all()
+      .map((x: any) => [x.kind, Number(x.n)]),
+  );
   assert.equal(kinds.noun, 16);
   assert.equal(kinds.grammar, 5);
   assert.ok(kinds.verb >= 5);
@@ -57,7 +67,11 @@ test('answering: intro, recognition (no grade), recall (one grade per day)', () 
   recordAttempt({ ...base, format: 'intro', correct: true }, getDb(), day1);
   assert.equal(recordAttempt({ ...base, format: 'mc', correct: true }, getDb(), day1).grade, null);
   assert.equal(recordAttempt({ ...base, format: 'typed', correct: false }, getDb(), day1).grade, 1);
-  assert.equal(recordAttempt({ ...base, format: 'typed', correct: true }, getDb(), day1).grade, null, 'second recall same day is not graded');
+  assert.equal(
+    recordAttempt({ ...base, format: 'typed', correct: true }, getDb(), day1).grade,
+    null,
+    'second recall same day is not graded',
+  );
   const st = getDb().prepare('SELECT * FROM item_state WHERE item_id = ?').get(id);
   assert.equal(Number(st.mastery), 3);
 
@@ -67,11 +81,31 @@ test('answering: intro, recognition (no grade), recall (one grade per day)', () 
     recordAttempt({ ...base, itemId: e.itemId, format: 'typed', correct: true }, getDb(), day1);
   }
   // The grammar lesson introduces its items (the client sends an intro for each).
-  for (const gid of plan.blocks.flatMap((b: any) => b.title === 'Lesson' ? b.exercises.map((e: any) => e.itemId).filter(Boolean) : [])) {
+  for (const gid of plan.blocks.flatMap((b: any) =>
+    b.title === 'Lesson' ? b.exercises.map((e: any) => e.itemId).filter(Boolean) : [],
+  )) {
     recordAttempt({ ...base, itemId: gid, format: 'intro', correct: true }, getDb(), day1);
-    assert.equal(recordAttempt({ ...base, itemId: gid, format: 'unscramble', correct: true }, getDb(), day1).grade, 3, 'unscramble grades grammar items');
+    assert.equal(
+      recordAttempt({ ...base, itemId: gid, format: 'unscramble', correct: true }, getDb(), day1).grade,
+      3,
+      'unscramble grades grammar items',
+    );
   }
-  const res = finishSession({ sessionId: plan.id, length: 'standard', seconds: 600, answers: 12, correct: 10, bossWon: true, bestGenderCombo: 16, perfectBlocks: 1, startedAt: day1.toISOString() }, getDb(), day1);
+  const res = finishSession(
+    {
+      sessionId: plan.id,
+      length: 'standard',
+      seconds: 600,
+      answers: 12,
+      correct: 10,
+      bossWon: true,
+      bestGenderCombo: 16,
+      perfectBlocks: 1,
+      startedAt: day1.toISOString(),
+    },
+    getDb(),
+    day1,
+  );
   assert.equal(res.streak.current, 1);
   assert.ok(res.goalMetNow);
   assert.ok(res.unlocked.some((u) => u.key === 'boss') && res.unlocked.some((u) => u.key === 'gender15'));
@@ -87,7 +121,21 @@ test('next days: failed item comes back as due; streak continues', () => {
   const plan = planSession('standard', getDb(), day2);
   assert.ok(plan.counts.due >= 1);
   assert.equal(plan.counts.grammar, 'G02', 'next grammar group');
-  finishSession({ sessionId: plan.id, length: 'standard', seconds: 300, answers: 5, correct: 5, bossWon: null, bestGenderCombo: 0, perfectBlocks: 0, startedAt: day2.toISOString() }, getDb(), day2);
+  finishSession(
+    {
+      sessionId: plan.id,
+      length: 'standard',
+      seconds: 300,
+      answers: 5,
+      correct: 5,
+      bossWon: null,
+      bestGenderCombo: 0,
+      perfectBlocks: 0,
+      startedAt: day2.toISOString(),
+    },
+    getDb(),
+    day2,
+  );
   assert.equal(appState(getDb(), day2).streak.current, 2);
   // Skip 23rd: a freeze is used on the 24th
   const day4 = new Date(2026, 10, 24, 10, 0);
@@ -103,7 +151,10 @@ test('progress report counts learned words and forecasts', async () => {
   assert.ok(p.totals.producible >= 5);
   assert.equal(p.totals.vocabTotal, 33);
   assert.equal(p.series.length, 60);
-  assert.equal(p.series.at(-1)!.cumulative, p.series.reduce((s: number, x: any) => s + x.learned, 0));
+  assert.equal(
+    p.series.at(-1)!.cumulative,
+    p.series.reduce((s: number, x: any) => s + x.learned, 0),
+  );
   assert.ok(p.forecast.goal?.at30PerDay);
   assert.equal(p.forecast.goal?.label, 'Goethe B1');
 });

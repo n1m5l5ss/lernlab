@@ -4,8 +4,20 @@
 import { randomUUID } from 'node:crypto';
 import { getDb, type DB } from './db';
 import {
-  activeDeckId, allItems, deckNewPerDay, dueItemIds, getSettings, grammarItemIds, introducedTodayCount, itemsByIds,
-  learnedIds, learningTodayIds, leechIds, newItemIds, nextGrammarGroup, srsInfo,
+  activeDeckId,
+  allItems,
+  deckNewPerDay,
+  dueItemIds,
+  getSettings,
+  grammarItemIds,
+  introducedTodayCount,
+  itemsByIds,
+  learnedIds,
+  learningTodayIds,
+  leechIds,
+  newItemIds,
+  nextGrammarGroup,
+  srsInfo,
 } from './learn';
 import { getDeck } from './library';
 import * as gen from './exercises';
@@ -14,7 +26,10 @@ import { dayKey } from '../shared/game';
 import { shuffle, stripHtml } from '../shared/text';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from '../shared/types';
 
-const SIZES: Record<SessionLength, { due: number; fresh: number; sprint: number; extras: boolean; speak: number; listen: number; blitz: number }> = {
+const SIZES: Record<
+  SessionLength,
+  { due: number; fresh: number; sprint: number; extras: boolean; speak: number; listen: number; blitz: number }
+> = {
   mini: { due: 6, fresh: 3, sprint: 0, extras: false, speak: 2, listen: 0, blitz: 0 },
   standard: { due: 14, fresh: 5, sprint: 40, extras: true, speak: 3, listen: 3, blitz: 8 },
   long: { due: 30, fresh: 8, sprint: 45, extras: true, speak: 5, listen: 4, blitz: 12 },
@@ -39,7 +54,12 @@ function rotate(blocks: Block[]): Block[] {
   return out;
 }
 
-export function planSession(length: SessionLength, d: DB = getDb(), now = new Date(), deckIdArg?: number | null): SessionPlan {
+export function planSession(
+  length: SessionLength,
+  d: DB = getDb(),
+  now = new Date(),
+  deckIdArg?: number | null,
+): SessionPlan {
   const deckId = deckIdArg === undefined ? activeDeckId(d) : deckIdArg;
   const deck = deckId ? getDeck(deckId, d) : null;
   const lang = deck?.language ?? null;
@@ -65,15 +85,36 @@ export function planSession(length: SessionLength, d: DB = getDb(), now = new Da
   const known = [...new Set([...learned, ...leftovers])];
 
   const blocks: Block[] = [];
-  const titles = lang === 'de'
-    ? { warm: 'Drei schnelle Fragen. Los!', newT: (n: number) => `${n} neue Wörter. Hör genau hin.`, review: 'Schreib die Antwort.', recall: 'Jetzt ohne Hilfe!', boss: 'Deine schwierigsten Karten. Drei Leben. Kämpf!' }
-    : { warm: 'Three quick ones. Go!', newT: (n: number) => `${n} new card${n === 1 ? '' : 's'}. Take a good look.`, review: 'Answer from memory.', recall: 'Now without help!', boss: 'Your hardest cards. Three lives. Fight!' };
+  const titles =
+    lang === 'de'
+      ? {
+          warm: 'Drei schnelle Fragen. Los!',
+          newT: (n: number) => `${n} neue Wörter. Hör genau hin.`,
+          review: 'Schreib die Antwort.',
+          recall: 'Jetzt ohne Hilfe!',
+          boss: 'Deine schwierigsten Karten. Drei Leben. Kämpf!',
+        }
+      : {
+          warm: 'Three quick ones. Go!',
+          newT: (n: number) => `${n} new card${n === 1 ? '' : 's'}. Take a good look.`,
+          review: 'Answer from memory.',
+          recall: 'Now without help!',
+          boss: 'Your hardest cards. Three lives. Fight!',
+        };
 
   // 1. Ignition: three near-certain wins (easiest known cards; on day one, guess common ones).
   const easy = [...learned].sort((a, b) => (info[b]?.mastery ?? 0) - (info[a]?.mastery ?? 0)).slice(0, 12);
-  const ignitionIds = shuffle(easy.length >= 3 ? easy : [...easy, ...upcoming.slice(0, 6)]).filter(plain).slice(0, 3);
+  const ignitionIds = shuffle(easy.length >= 3 ? easy : [...easy, ...upcoming.slice(0, 6)])
+    .filter(plain)
+    .slice(0, 3);
   if (ignitionIds.length && pool.length >= 4) {
-    blocks.push({ id: bid(), kind: 'ignition', title: 'Warm-up', teacher: titles.warm, exercises: ignitionIds.map((id) => gen.mc(get(id), pool, 'de2en')) });
+    blocks.push({
+      id: bid(),
+      kind: 'ignition',
+      title: 'Warm-up',
+      teacher: titles.warm,
+      exercises: ignitionIds.map((id) => gen.mc(get(id), pool, 'de2en')),
+    });
   }
 
   // 2. Category sprint: sort cards into their category (der/die/das, IaaS/PaaS/SaaS…) on the clock.
@@ -81,11 +122,24 @@ export function planSession(length: SessionLength, d: DB = getDb(), now = new Da
     const withCat = [...new Set([...known, ...fresh, ...upcoming])].filter((id) => get(id).category);
     const freq = new Map<string, number>();
     withCat.forEach((id) => freq.set(get(id).category!, (freq.get(get(id).category!) ?? 0) + 1));
-    const cats = [...freq.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4).map(([c]) => c);
+    const cats = [...freq.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([c]) => c);
     const sprintIds = shuffle(withCat.filter((id) => cats.includes(get(id).category!))).slice(0, 30);
     if (cats.length >= 2 && sprintIds.length >= 4) {
-      const label = lang === 'de' && cats.every((c) => ['der', 'die', 'das'].includes(c)) ? 'Der, die oder das? So schnell du kannst!' : 'Sort each card into its group. Fast!';
-      blocks.push({ id: bid(), kind: 'gender', title: 'Category sprint', teacher: label, itemIds: sprintIds, seconds: size.sprint });
+      const label =
+        lang === 'de' && cats.every((c) => ['der', 'die', 'das'].includes(c))
+          ? 'Der, die oder das? So schnell du kannst!'
+          : 'Sort each card into its group. Fast!';
+      blocks.push({
+        id: bid(),
+        kind: 'gender',
+        title: 'Category sprint',
+        teacher: label,
+        itemIds: sprintIds,
+        seconds: size.sprint,
+      });
     }
   }
 
@@ -93,27 +147,56 @@ export function planSession(length: SessionLength, d: DB = getDb(), now = new Da
   const half = Math.ceil(due.length / 2);
   const dueA = due.slice(0, half);
   const dueB = due.slice(half);
-  if (dueA.length) blocks.push({ id: bid(), kind: 'drill', format: 'typed', title: 'Review', teacher: titles.review, exercises: dueA.map((id) => gen.recall(get(id))) });
+  if (dueA.length)
+    blocks.push({
+      id: bid(),
+      kind: 'drill',
+      format: 'typed',
+      title: 'Review',
+      teacher: titles.review,
+      exercises: dueA.map((id) => gen.recall(get(id))),
+    });
 
   // 4. New cards: meet each one, then recognise it right away.
   if (fresh.length) {
     const ex: Exercise[] = [];
     for (const id of fresh) {
-      if (!plain(id)) { ex.push(gen.recall(get(id))); continue; } // question cards: answer first, learn from the explanation
+      if (!plain(id)) {
+        ex.push(gen.recall(get(id)));
+        continue;
+      } // question cards: answer first, learn from the explanation
       ex.push({ type: 'intro', itemId: id });
-      if (pool.filter((p) => plain(p.id)).length >= 4) ex.push(gen.mc(get(id), pool, Math.random() < 0.5 ? 'de2en' : 'en2de'));
+      if (pool.filter((p) => plain(p.id)).length >= 4)
+        ex.push(gen.mc(get(id), pool, Math.random() < 0.5 ? 'de2en' : 'en2de'));
     }
     blocks.push({ id: bid(), kind: 'learn', title: 'New cards', teacher: titles.newT(fresh.length), exercises: ex });
   }
 
   // 5. Match pairs (short cards) — or true/false for long ones.
-  const shortPair = (id: number) => plain(id) && gen.frontText(get(id)).length <= 40 && gen.backText(get(id)).length <= 50;
-  const matchIds = shuffle([...new Set([...fresh, ...leftovers, ...learned.slice(0, 20)])].filter(shortPair)).slice(0, 5);
+  const shortPair = (id: number) =>
+    plain(id) && gen.frontText(get(id)).length <= 40 && gen.backText(get(id)).length <= 50;
+  const matchIds = shuffle([...new Set([...fresh, ...leftovers, ...learned.slice(0, 20)])].filter(shortPair)).slice(
+    0,
+    5,
+  );
   if (matchIds.length >= 4) {
-    blocks.push({ id: bid(), kind: 'match', title: 'Match pairs', teacher: lang === 'de' ? 'Finde die Paare – auf Zeit!' : 'Match the pairs – against the clock!', itemIds: matchIds });
+    blocks.push({
+      id: bid(),
+      kind: 'match',
+      title: 'Match pairs',
+      teacher: lang === 'de' ? 'Finde die Paare – auf Zeit!' : 'Match the pairs – against the clock!',
+      itemIds: matchIds,
+    });
   } else if (pool.filter((p) => plain(p.id)).length >= 4 && [...fresh, ...known].filter(plain).length >= 3) {
     const ids = shuffle([...fresh, ...known].filter(plain)).slice(0, 6);
-    blocks.push({ id: bid(), kind: 'drill', format: 'truefalse', title: 'True or false', teacher: 'Quick: does this match?', exercises: ids.map((id) => gen.truefalse(get(id), pool)) });
+    blocks.push({
+      id: bid(),
+      kind: 'drill',
+      format: 'truefalse',
+      title: 'True or false',
+      teacher: 'Quick: does this match?',
+      exercises: ids.map((id) => gen.truefalse(get(id), pool)),
+    });
   }
 
   // 6. Mini-lesson for a group of cards (grammar rule, concept), then drill it immediately.
@@ -121,10 +204,16 @@ export function planSession(length: SessionLength, d: DB = getDb(), now = new Da
     const gi = grammar.map(get);
     const ex: Exercise[] = [gen.lesson(group, gi)];
     gi.forEach((it, i) => {
-      const e = i % 2 === 0 ? gen.cloze(it) ?? gen.unscramble(it) : gen.unscramble(it) ?? gen.cloze(it);
+      const e = i % 2 === 0 ? (gen.cloze(it) ?? gen.unscramble(it)) : (gen.unscramble(it) ?? gen.cloze(it));
       if (e) ex.push(e);
     });
-    blocks.push({ id: bid(), kind: 'learn', title: 'Lesson', teacher: lang === 'de' ? 'Eine Regel, dann sofort üben.' : 'One idea, then practise it right away.', exercises: ex });
+    blocks.push({
+      id: bid(),
+      kind: 'learn',
+      title: 'Lesson',
+      teacher: lang === 'de' ? 'Eine Regel, dann sofort üben.' : 'One idea, then practise it right away.',
+      exercises: ex,
+    });
   }
 
   // 7. Blitz: rapid-fire true/false and multiple choice with a per-question timer — only on cards you already
@@ -132,39 +221,105 @@ export function planSession(length: SessionLength, d: DB = getDb(), now = new Da
   const blitzPool = shuffle(known.filter(plain));
   const blitzOn = (settings.blitzSeconds ?? 8) > 0;
   if (size.blitz && blitzOn && blitzPool.length >= 4 && pool.filter((p) => plain(p.id)).length >= 4) {
-    const ex = blitzPool.slice(0, size.blitz).map((id, i) => (i % 2 ? gen.truefalse(get(id), pool) : gen.mc(get(id), pool, 'de2en')));
-    blocks.push({ id: bid(), kind: 'blitz', title: 'Blitz', teacher: lang === 'de' ? 'Blitzrunde: schnell antworten!' : 'Blitz round: answer before the timer runs out!', exercises: ex, secondsPerQuestion: settings.blitzSeconds ?? 8 });
+    const ex = blitzPool
+      .slice(0, size.blitz)
+      .map((id, i) => (i % 2 ? gen.truefalse(get(id), pool) : gen.mc(get(id), pool, 'de2en')));
+    blocks.push({
+      id: bid(),
+      kind: 'blitz',
+      title: 'Blitz',
+      teacher: lang === 'de' ? 'Blitzrunde: schnell antworten!' : 'Blitz round: answer before the timer runs out!',
+      exercises: ex,
+      secondsPerQuestion: settings.blitzSeconds ?? 8,
+    });
   }
 
   // 8. Listening (cards with audio).
-  const listenEx = shuffle([...fresh, ...learned.slice(0, 40)].filter((id) => get(id).audio)).map((id) => gen.listen(get(id), pool)).filter(Boolean).slice(0, size.listen) as Exercise[];
-  if (listenEx.length >= 2) blocks.push({ id: bid(), kind: 'drill', format: 'listen', title: 'Listen', teacher: lang === 'de' ? 'Hör zu. Was bedeutet das?' : 'Listen. What does it mean?', exercises: listenEx });
+  const listenEx = shuffle([...fresh, ...learned.slice(0, 40)].filter((id) => get(id).audio))
+    .map((id) => gen.listen(get(id), pool))
+    .filter(Boolean)
+    .slice(0, size.listen) as Exercise[];
+  if (listenEx.length >= 2)
+    blocks.push({
+      id: bid(),
+      kind: 'drill',
+      format: 'listen',
+      title: 'Listen',
+      teacher: lang === 'de' ? 'Hör zu. Was bedeutet das?' : 'Listen. What does it mean?',
+      exercises: listenEx,
+    });
 
   // 9. Picture quiz (cards with images).
-  const picEx = shuffle([...fresh, ...known].filter((id) => get(id).image)).map((id) => gen.imagemc(get(id), pool)).filter(Boolean).slice(0, 5) as Exercise[];
-  if (picEx.length >= 2) blocks.push({ id: bid(), kind: 'drill', format: 'mc', title: 'Picture quiz', teacher: 'What is this?', exercises: picEx });
+  const picEx = shuffle([...fresh, ...known].filter((id) => get(id).image))
+    .map((id) => gen.imagemc(get(id), pool))
+    .filter(Boolean)
+    .slice(0, 5) as Exercise[];
+  if (picEx.length >= 2)
+    blocks.push({
+      id: bid(),
+      kind: 'drill',
+      format: 'mc',
+      title: 'Picture quiz',
+      teacher: 'What is this?',
+      exercises: picEx,
+    });
 
   // 10. Due reviews, second half: fill the gap where possible.
-  if (dueB.length) blocks.push({ id: bid(), kind: 'drill', format: 'cloze', title: 'Fill the gap', teacher: lang === 'de' ? 'Welches Wort fehlt?' : 'What is missing?', exercises: dueB.map((id) => gen.cloze(get(id)) ?? gen.recall(get(id))) });
+  if (dueB.length)
+    blocks.push({
+      id: bid(),
+      kind: 'drill',
+      format: 'cloze',
+      title: 'Fill the gap',
+      teacher: lang === 'de' ? 'Welches Wort fehlt?' : 'What is missing?',
+      exercises: dueB.map((id) => gen.cloze(get(id)) ?? gen.recall(get(id))),
+    });
 
   // 11. Speak aloud (language decks): production effect on a subset.
   if (lang) {
     const speakIds = shuffle([...fresh, ...due, ...leftovers].filter(notGrammar)).slice(0, size.speak);
-    if (speakIds.length) blocks.push({ id: bid(), kind: 'drill', format: 'speak', title: 'Speak', teacher: lang === 'de' ? 'Sag es laut auf Deutsch!' : 'Say it out loud!', exercises: speakIds.map((id) => gen.speak(get(id))) });
+    if (speakIds.length)
+      blocks.push({
+        id: bid(),
+        kind: 'drill',
+        format: 'speak',
+        title: 'Speak',
+        teacher: lang === 'de' ? 'Sag es laut auf Deutsch!' : 'Say it out loud!',
+        exercises: speakIds.map((id) => gen.speak(get(id))),
+      });
   }
 
   // 12. Recall today's new cards: first real test, writes their first grade.
   const recallIds = [...new Set([...fresh, ...leftovers])];
   if (recallIds.length) {
-    blocks.push({ id: bid(), kind: 'drill', format: 'typed', title: 'Recall', teacher: titles.recall,
-      exercises: shuffle(recallIds).map((id, i) => (i % 3 === 2 ? gen.cloze(get(id)) ?? gen.recall(get(id)) : gen.recall(get(id)))) });
+    blocks.push({
+      id: bid(),
+      kind: 'drill',
+      format: 'typed',
+      title: 'Recall',
+      teacher: titles.recall,
+      exercises: shuffle(recallIds).map((id, i) =>
+        i % 3 === 2 ? (gen.cloze(get(id)) ?? gen.recall(get(id))) : gen.recall(get(id)),
+      ),
+    });
   }
 
   // 13. Word rain arcade (short prompts and typeable answers). Every other day, always in long sessions.
-  const rainIds = shuffle([...new Set([...learned, ...fresh])].filter((id) => plain(id) && qa(get(id)).typeable && stripHtml(qa(get(id)).prompt).length <= 32)).slice(0, 24);
+  const rainIds = shuffle(
+    [...new Set([...learned, ...fresh])].filter(
+      (id) => plain(id) && qa(get(id)).typeable && stripHtml(qa(get(id)).prompt).length <= 32,
+    ),
+  ).slice(0, 24);
   const rainDay = Number(dayKey(now).slice(-2)) % 2 === 0;
   if (size.extras && rainIds.length >= 6 && (length === 'long' || rainDay)) {
-    blocks.splice(Math.max(2, blocks.length - 1), 0, { id: bid(), kind: 'rain', title: 'Word rain', teacher: lang === 'de' ? 'Tippe die Wörter, bevor sie landen!' : 'Type the answers before they land!', itemIds: rainIds, seconds: 60 });
+    blocks.splice(Math.max(2, blocks.length - 1), 0, {
+      id: bid(),
+      kind: 'rain',
+      title: 'Word rain',
+      teacher: lang === 'de' ? 'Tippe die Wörter, bevor sie landen!' : 'Type the answers before they land!',
+      itemIds: rainIds,
+      seconds: 60,
+    });
   }
 
   // 14. Boss battle: today's mistakes + leeches (the client adds every card missed this session).
@@ -172,28 +327,62 @@ export function planSession(length: SessionLength, d: DB = getDb(), now = new Da
   blocks.push({ id: bid(), kind: 'boss', title: 'Boss', teacher: titles.boss, itemIds: leeches, lives: 3 });
 
   const finalBlocks = rotate(blocks);
-  const ids = new Set<number>([...ignitionIds, ...due, ...fresh, ...leftovers, ...matchIds, ...grammar, ...leeches, ...rainIds, ...blitzPool.slice(0, 12)]);
+  const ids = new Set<number>([
+    ...ignitionIds,
+    ...due,
+    ...fresh,
+    ...leftovers,
+    ...matchIds,
+    ...grammar,
+    ...leeches,
+    ...rainIds,
+    ...blitzPool.slice(0, 12),
+  ]);
   for (const b of finalBlocks) {
     if ('itemIds' in b) b.itemIds.forEach((i) => ids.add(i));
     if ('exercises' in b) b.exercises.forEach((e) => 'itemId' in e && ids.add(e.itemId));
   }
   const items = itemsByIds([...ids], d);
   const extras: Record<number, Item> = {};
-  for (const it of shuffle(pool.filter((p) => p.kind !== 'grammar')).slice(0, 60)) if (!items[it.id]) extras[it.id] = it;
+  for (const it of shuffle(pool.filter((p) => p.kind !== 'grammar')).slice(0, 60))
+    if (!items[it.id]) extras[it.id] = it;
 
   const parts: string[] = [];
   const partsEn: string[] = [];
-  if (due.length) { parts.push(`${due.length} Wiederholungen`); partsEn.push(`${due.length} reviews`); }
-  if (fresh.length) { parts.push(`${fresh.length} neue Wörter`); partsEn.push(`${fresh.length} new cards`); }
-  if (group) { parts.push(`Lektion: ${get(grammar[0]).target.replace(/\s*\(\d+\)$/, '').split(':')[0]}`); partsEn.push('one lesson'); }
-  if (!parts.length) { parts.push('Wiederholung und Spiele'); partsEn.push('review games'); }
+  if (due.length) {
+    parts.push(`${due.length} Wiederholungen`);
+    partsEn.push(`${due.length} reviews`);
+  }
+  if (fresh.length) {
+    parts.push(`${fresh.length} neue Wörter`);
+    partsEn.push(`${fresh.length} new cards`);
+  }
+  if (group) {
+    parts.push(
+      `Lektion: ${
+        get(grammar[0])
+          .target.replace(/\s*\(\d+\)$/, '')
+          .split(':')[0]
+      }`,
+    );
+    partsEn.push('one lesson');
+  }
+  if (!parts.length) {
+    parts.push('Wiederholung und Spiele');
+    partsEn.push('review games');
+  }
   const agendaEn = `${deck ? `${deck.name} · ` : ''}Today: ${partsEn.join(', ')}.`;
 
   return {
-    id: randomUUID(), deckId: deckId ?? null, lang, length,
+    id: randomUUID(),
+    deckId: deckId ?? null,
+    lang,
+    length,
     agenda: lang === 'de' ? `Heute: ${parts.join(', ')}.` : agendaEn,
     agendaEn: lang === 'de' ? agendaEn : '',
-    blocks: finalBlocks, items, extras,
+    blocks: finalBlocks,
+    items,
+    extras,
     counts: { due: due.length, fresh: fresh.length, grammar: group },
   };
 }
