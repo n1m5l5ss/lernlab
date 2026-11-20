@@ -4,6 +4,7 @@ import { getDb, type DB } from './db';
 import { getDeck, readMedia, type NormalizedCard } from './library';
 import { writeLernpack } from './formats/lernpack';
 import { cardsToCsv } from './formats/csv';
+import { UserError } from './errors';
 
 function deckCards(deckId: number, d: DB): NormalizedCard[] {
   return d
@@ -38,7 +39,7 @@ export function exportDeck(
   d: DB = getDb(),
 ): { name: string; data: Uint8Array; type: string } {
   const deck = getDeck(deckId, d);
-  if (!deck) throw new Error('Deck not found');
+  if (!deck) throw new UserError('deck_not_found', 'Deck not found');
   const cards = deckCards(deckId, d);
   const safe = deck.name.replace(/[^\w\- ]+/g, '_');
   if (format === 'csv')

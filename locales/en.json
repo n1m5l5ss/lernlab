@@ -561,5 +561,23 @@
     "wonText_one": "+{{xp}} XP bonus. {{count}} hit.",
     "wonText_other": "+{{xp}} XP bonus. {{count}} hits.",
     "lostText": "These cards come back tomorrow. No penalty."
+  },
+  "errors": {
+    "failed": "Something went wrong. Please try again.",
+    "unknown_channel": "The app made a request it does not know. Please restart LernLab.",
+    "invalid_input": "That input was not valid.",
+    "migration_failed": "Your data could not be upgraded. LernLab restored your backup.",
+    "name_required": "Give the deck a name.",
+    "front_required": "The card needs a front.",
+    "deck_not_found": "That deck no longer exists.",
+    "card_not_found": "That card no longer exists.",
+    "no_cards": "No cards found. Use one card per line: front, back (comma or tab separated).",
+    "unsupported_zip": "This zip is not a deck. Use a .lernpack, an Anki .apkg, or a zip with a CSV and media files.",
+    "not_lernpack": "This file is not a LernLab deck.",
+    "lernpack_too_new": "This deck needs a newer version of LernLab (format v{{version}}).",
+    "lernpack_no_cards": "This LernLab deck has no cards.",
+    "not_anki": "This file is not an Anki package.",
+    "unsupported_media": "This media file type is not supported.",
+    "anki_unreachable": "Anki is not reachable. Open Anki with the AnkiConnect add-on and try again."
   }
 }

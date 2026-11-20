@@ -15,6 +15,7 @@ import {
 import { csvToCards } from './formats/csv';
 import { readLernpack } from './formats/lernpack';
 import { readApkg } from './formats/apkg';
+import { UserError } from './errors';
 
 export type ImportOptions = { deckId?: number; deckName?: string; language?: string | null };
 export type ImportResult = UpsertResult & { format: string; media: number; mediaMissing: number };
@@ -105,7 +106,10 @@ export function importFile(
     const all = unzipSync(data);
     const csvName = Object.keys(all).find((n) => /\.(csv|tsv|txt)$/i.test(n) && !n.startsWith('__MACOSX'));
     if (!csvName)
-      throw new Error('Unsupported zip: expected a .lernpack, an Anki .apkg, or a zip with a CSV and media files');
+      throw new UserError(
+        'unsupported_zip',
+        'Unsupported zip: expected a .lernpack, an Anki .apkg, or a zip with a CSV and media files',
+      );
     const { cards } = csvToCards(strFromU8(all[csvName]));
     const media = Object.fromEntries(
       Object.entries(all)
@@ -137,7 +141,8 @@ export function importFile(
     return { ...upsertCards(deck, cards, d), format: 'json', media: 0, mediaMissing: m.missing };
   }
   const { cards } = csvToCards(text);
-  if (!cards.length) throw new Error('No cards found. Use one card per line: front, back (comma or tab separated).');
+  if (!cards.length)
+    throw new UserError('no_cards', 'No cards found. Use one card per line: front, back (comma or tab separated).');
   const deck = pickDeck(base, opts, null, {}, d);
   const m = attachMedia(cards, {});
   return {
