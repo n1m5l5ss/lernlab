@@ -653,71 +653,98 @@ input {
 .gbtn.dim {
   opacity: 0.35;
 }
-.timer {
-  height: 8px;
-  border-radius: 99px;
-  background: var(--bg2);
-  overflow: hidden;
-  margin-bottom: 16px;
+.round-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
 }
-.timer > i {
+.round-clock {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.round-clock-bar,
+.boss-bar {
+  flex: 1;
+  height: var(--size-progress-bar);
+  border-radius: var(--radius-pill);
+  background: var(--color-subtle);
+  overflow: hidden;
+}
+.round-clock-bar > i,
+.boss-bar > i {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--good), var(--accent), var(--bad));
+  background: var(--color-accent);
   transition: width 1s linear;
+}
+.boss-bar {
+  flex: none;
+  height: calc(var(--size-progress-bar) * 2);
+  margin-bottom: var(--space-5);
+}
+.boss-bar > i {
+  transition: width var(--motion-card) var(--motion-ease-exit);
+}
+.boss-bar.hit > i {
+  opacity: 0.6;
+}
+.round-prompt {
+  text-align: center;
+  margin: var(--space-6) 0;
+}
+.round-prompt .feedback {
+  margin-top: var(--space-3);
+}
+.sprint-options {
+  display: grid;
+  gap: var(--space-3);
+}
+.sprint-options .opt {
+  justify-content: center;
+  font-size: var(--text-subhead);
+  font-weight: 700;
 }
 .match {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: var(--space-3);
 }
-.match button {
-  padding: 14px;
-  border-radius: 14px;
-  background: var(--card);
-  border: 2px solid var(--line);
-  border-bottom-width: 5px;
-  font-size: 18px;
-  font-weight: 700;
-  min-height: 58px;
+.match .col {
+  display: grid;
+  gap: var(--space-3);
 }
-.match button.sel {
-  border-color: var(--accent);
-  background: var(--color-accent-tint);
-}
-.match button.gone {
+.match .opt.gone {
   visibility: hidden;
-}
-.match button.bad {
-  border-color: var(--bad);
-  animation: shake 0.3s;
 }
 .rain {
   position: relative;
-  height: 380px;
-  border-radius: 20px;
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, #1b1f44, #12142a);
+  height: 360px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+  background: var(--color-subtle);
   overflow: hidden;
 }
 .drop {
   position: absolute;
-  padding: 6px 12px;
-  border-radius: 99px;
-  background: var(--card2);
-  border: 1px solid var(--line);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   font-weight: 700;
   white-space: nowrap;
   transform: translateX(-50%);
 }
 .drop.hit {
-  background: var(--good);
-  color: #062614;
-  animation: pop 0.35s forwards;
+  border: 2px solid var(--color-correct);
+  color: var(--color-correct);
+  animation: pop var(--motion-summary) var(--motion-ease-exit) forwards;
 }
 @keyframes pop {
   to {
-    transform: translateX(-50%) scale(1.6);
     opacity: 0;
   }
 }
@@ -726,33 +753,22 @@ input {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 6px;
-  background: var(--bad);
-  opacity: 0.5;
+  height: var(--size-progress-bar);
+  background: var(--color-incorrect);
 }
-.boss {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 18px;
+.rain-input {
+  margin-top: var(--space-4);
 }
-.bossface {
-  font-size: 64px;
-  transition: transform 0.2s;
+.round-note {
+  margin-top: var(--space-2);
 }
-.bossface.hit {
-  animation: shake 0.3s;
-  filter: hue-rotate(90deg);
+.round-end {
+  text-align: center;
+  padding: var(--space-5) 0;
 }
-.hp {
-  flex: 1;
-}
-.hp .bar > i {
-  background: linear-gradient(90deg, #ff5c7a, #ff8a3d);
-}
-.lives {
-  font-size: 22px;
-  letter-spacing: 4px;
+.round-end h2 {
+  font-size: var(--text-title);
+  margin: 0 0 var(--space-3);
 }
 .btn .kbd {
   margin-inline-start: var(--space-2);
@@ -960,18 +976,6 @@ table.t th {
 .btn.rate-yes {
   border: 2px solid var(--color-correct);
   color: var(--color-correct);
-}
-.cat-0 {
-  background: #4c8dff;
-}
-.cat-1 {
-  background: #ff5c7a;
-}
-.cat-2 {
-  background: #2ec27e;
-}
-.cat-3 {
-  background: #b07cff;
 }
 .table-wrap {
   overflow: auto;

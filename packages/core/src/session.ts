@@ -23,7 +23,7 @@ import {
 import { getDeck } from './library';
 import * as gen from './exercises';
 import { qa } from './cards';
-import { dayKey } from './game';
+import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
@@ -122,7 +122,7 @@ export function planSession(
         title: 'Category sprint',
         teacher: label,
         itemIds: sprintIds,
-        seconds: size.sprint,
+        seconds: arcadeSeconds(size.sprint, settings), // 0: timers off, one untimed pass
       });
     }
   }
@@ -307,14 +307,15 @@ export function planSession(
     ),
   ).slice(0, 24);
   const rainDay = Number(dayKey(now).slice(-2)) % 2 === 0;
-  if (size.extras && rainIds.length >= 6 && (length === 'long' || rainDay)) {
+  const rainSeconds = arcadeSeconds(60, settings); // rain is a race against the clock: none when timers are off
+  if (size.extras && rainSeconds && rainIds.length >= 6 && (length === 'long' || rainDay)) {
     blocks.splice(Math.max(2, blocks.length - 1), 0, {
       id: bid(),
       kind: 'rain',
       title: 'Word rain',
       teacher: say('rain'),
       itemIds: rainIds,
-      seconds: 60,
+      seconds: rainSeconds,
     });
   }
 
