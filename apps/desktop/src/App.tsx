@@ -13,6 +13,7 @@ import { Decks } from './Decks';
 import { Browse } from './Browse';
 import { Badges } from './Badges';
 import { Shell } from './Shell';
+import { Welcome } from './Welcome';
 import { formatDate, setLanguage } from './i18n';
 import { applyTheme } from './theme';
 import { applyDisplay } from './display';
@@ -125,6 +126,18 @@ export function App() {
       </div>
     );
   if (!state) return <div className="wrap muted">{t('app.loading')}</div>;
+  // First run only: the welcome replaces the shell until it is finished or skipped.
+  if (state.welcome && !full)
+    return (
+      <Welcome
+        onError={(e) => setError(message(e))}
+        onDone={async (next) => {
+          await refresh();
+          if (next === 'session') await start('mini');
+          else go(next);
+        }}
+      />
+    );
   if (full?.name === 'play')
     return (
       <Session

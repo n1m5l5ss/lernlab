@@ -153,6 +153,20 @@
     "practiceHint": "Cram any cards. Your review schedule stays the same.",
     "startPractice": "Start practice"
   },
+  "welcome": {
+    "title": "Learn anything, a few minutes a day.",
+    "lead": "Short, varied rounds that help you remember for good. Everything stays on this computer — no account needed.",
+    "question": "What would you like to do?",
+    "language": "Learn a language",
+    "languageHint": "Words, sentences, listening and speaking — with sample starter decks.",
+    "subject": "Study a subject",
+    "subjectHint": "Certifications, medicine, science, history — anything you can put on a card.",
+    "own": "I have my own cards",
+    "ownHint": "Import a CSV, an Anki deck or a LernLab deck file.",
+    "continue": "Continue",
+    "sample": "Try a 2-minute sample first",
+    "skip": "Skip for now"
+  },
   "decks": {
     "newDeck": "New deck",
     "import": "Import",

@@ -34,12 +34,14 @@ import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
+import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import { anki, ankiAvailable, ankiConnect } from './anki';
 import { getDb } from './storage';
 import { backupAppDb, dataDir } from '@lernlab/storage-sqlite';
 import { basename, join } from 'node:path';
 import pkg from '../package.json';
+import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
 
 /** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
@@ -136,7 +138,24 @@ type Handler<I, O> = { input: Check<I>; run: (input: I) => O | Promise<O> };
 const h = <I, O>(input: Check<I>, run: (input: I) => O | Promise<O>): Handler<I, O> => ({ input, run });
 
 export const handlers = {
-  'state.get': h(v.none, () => ({ ...appState(), importing: importStatus.running, languages: LANGUAGES })),
+  'state.get': h(v.none, () => ({
+    ...appState(),
+    importing: importStatus.running,
+    languages: LANGUAGES,
+    welcome: needsWelcome(getDb()),
+  })),
+  /** First run: a sample deck for "language" or "subject" (bundled, offline), then never show the welcome again. */
+  'welcome.finish': h(v.object({ choice: v.oneOf(...WELCOME_CHOICES) }), ({ choice }) => {
+    let deckId: number | null = null;
+    if (choice === 'language' || choice === 'subject') {
+      const sample = SAMPLES[choice];
+      const opts = { deckName: sample.deckName, language: sample.language };
+      deckId = importFile(sample.file, new TextEncoder().encode(sample.csv), opts).deck.id;
+      chooseDeck(deckId);
+    }
+    finishWelcome(choice, getDb());
+    return { deckId };
+  }),
 
   /* ── Decks ── */
   'decks.create': h(
