@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import en from '../../../locales/en.json';
 import { SLOT_VARIANTS, teacherFor } from '../src/teacher';
 import { ACHIEVEMENTS } from '../src/progress';
+import { checkAnswer } from '../src/text';
 
 const lookup = (key: string): unknown =>
   key.split('.').reduce<unknown>((o, k) => (o as Record<string, unknown> | undefined)?.[k], en);
@@ -62,4 +63,20 @@ test('every badge has a title and description in en.json', () => {
     assert.equal(typeof lookup(`badges.${id}.title`), 'string', id);
     assert.equal(typeof lookup(`badges.${id}.desc`), 'string', id);
   }
+});
+
+test('answer-check notes are en.json keys with their values', () => {
+  const notes = [
+    checkAnswer('die Mann', ['der Mann'], { requireArticle: true }).note,
+    checkAnswer('Mann', ['der Mann'], { requireArticle: true }).note,
+    checkAnswer('haus', ['Haus']).note,
+    checkAnswer('Maedchen', ['Mädchen']).note,
+    checkAnswer('Fenstr', ['Fenster']).note,
+  ];
+  assert.deepEqual(
+    notes.map((n) => n?.key),
+    ['check.articleWrong', 'check.articleMissing', 'check.capitals', 'check.spelling', 'check.almost'],
+  );
+  for (const n of notes) assert.ok(n && exists(n.key), n?.key);
+  assert.deepEqual(notes[0]?.params, { right: 'der', given: 'die' });
 });

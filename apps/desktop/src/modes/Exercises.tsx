@@ -1,3 +1,4 @@
+import { Trans, useTranslation } from 'react-i18next';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Exercise, Item } from '@lernlab/core/types';
@@ -30,6 +31,7 @@ const sayFront = (ctx: Ctx, item: Item) => {
 
 /* ───────────── Meet a new card (German nouns: guess the article first) ───────────── */
 export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }>>) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   const guessable = ctx.lang === 'de' && item.kind === 'noun' && !!item.article;
   const [phase, setPhase] = useState<'guess' | 'card'>(guessable ? 'guess' : 'card');
@@ -42,8 +44,8 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
     recorded.current = true;
     ctx.answer({ itemId: item.id, format: 'intro', correct: true, shownAt: shown.current, silent: true });
     sayFront(ctx, item);
-    const t = setTimeout(() => playMedia(item.audio), ctx.lang ? 1100 : 200);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => playMedia(item.audio), ctx.lang ? 1100 : 200);
+    return () => clearTimeout(timer);
   }, [phase]);
 
   const pick = (a: string) => {
@@ -74,10 +76,10 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
   if (phase === 'guess') {
     return (
       <div>
-        <div className="blocktitle">New word · guess the article</div>
+        <div className="blocktitle">{t('ex.intro.guessTitle')}</div>
         <div className="prompt de">___ {item.word}</div>
         <div className="sub" style={{ marginBottom: 18 }}>
-          {item.meaning} · just guess – you learn either way
+          {t('ex.intro.guessHint', { meaning: item.meaning })}
         </div>
         <div className="gender3">
           {(['der', 'die', 'das'] as const).map((a, i) => (
@@ -91,7 +93,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
   }
   return (
     <div className="card introcard">
-      <div className="blocktitle">New card</div>
+      <div className="blocktitle">{t('ex.intro.title')}</div>
       <Media item={item} size="lg" />
       <div className="word" style={{ fontSize: item.target.length > 40 ? 28 : undefined }}>
         <Article item={item} />
@@ -117,16 +119,16 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
       <div className="actions" style={{ justifyContent: 'center' }}>
         {ctx.lang && (
           <button className="audio" onClick={() => sayFront(ctx, item)}>
-            🔊 Word
+            {t('ex.intro.sayWord')}
           </button>
         )}
         {item.audio && (
           <button className="audio" onClick={() => playMedia(item.audio)}>
-            🔊 Audio <span className="kbd">Space</span>
+            {t('ex.intro.playAudio')} <span className="kbd">{t('keys.space')}</span>
           </button>
         )}
         <button className="btn primary" onClick={() => onNext({ correct: true })}>
-          Got it <span className="kbd">Enter</span>
+          {t('ex.intro.gotIt')} <span className="kbd">{t('keys.enter')}</span>
         </button>
       </div>
     </div>
@@ -140,6 +142,7 @@ export function Choice({
   onNext,
   seconds,
 }: P<Extract<Exercise, { type: 'mc' | 'listen' | 'imagemc' }>> & { seconds?: number }) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   const [picked, setPicked] = useState<number | null>(null);
   const [timedOut, setTimedOut] = useState(false);
@@ -189,17 +192,22 @@ export function Choice({
       <QuestionTimer seconds={timer} running={picked === null} onTimeout={timeout} />
       {listen ? (
         <>
-          <div className="blocktitle">Listen</div>
+          <div className="blocktitle">{t('ex.choice.listen')}</div>
           <div className="row" style={{ margin: '10px 0 22px' }}>
             <button
               className="mic"
               style={{ width: 80, height: 80, fontSize: 32 }}
               onClick={() => playMedia(item.audio)}
+              aria-label={t('ex.choice.replay')}
             >
               🔊
             </button>
             <span className="muted">
-              What does it mean? <span className="kbd">Space</span> replays
+              <Trans
+                i18nKey="ex.choice.listenHint"
+                values={{ key: t('keys.space') }}
+                components={{ kbd: <span className="kbd" /> }}
+              />
             </span>
           </div>
           {picked !== null && (
@@ -210,7 +218,7 @@ export function Choice({
         </>
       ) : ex.type === 'imagemc' ? (
         <>
-          <div className="blocktitle">What is this?</div>
+          <div className="blocktitle">{t('ex.choice.picture')}</div>
           <Media item={item} size="lg" />
         </>
       ) : (
@@ -218,11 +226,11 @@ export function Choice({
           <div className="blocktitle">
             {ex.direction === 'de2en'
               ? ctx.lang
-                ? 'What does it mean?'
-                : 'Pick the answer'
+                ? t('ex.choice.meaning')
+                : t('ex.choice.pick')
               : ctx.lang
-                ? 'How do you say…'
-                : 'Which one matches?'}
+                ? t('ex.choice.sayIt')
+                : t('ex.choice.matches')}
           </div>
           {ex.direction === 'de2en' && <Media item={item} size="sm" />}
           <div
@@ -249,7 +257,7 @@ export function Choice({
       {picked !== null && picked !== ex.answerIndex && !seconds && (
         <div className="actions">
           <button className="btn" onClick={() => onNext({ correct: false })}>
-            Continue <span className="kbd">Enter</span>
+            {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         </div>
       )}
@@ -264,6 +272,7 @@ export function TrueFalse({
   onNext,
   seconds,
 }: P<Extract<Exercise, { type: 'truefalse' }>> & { seconds?: number }) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   const [ans, setAns] = useState<boolean | null>(null);
   const shown = useRef(now());
@@ -289,7 +298,7 @@ export function TrueFalse({
   return (
     <div>
       <QuestionTimer seconds={timer} running={ans === null} onTimeout={() => answer(null)} />
-      <div className="blocktitle">True or false?</div>
+      <div className="blocktitle">{t('ex.tf.title')}</div>
       <Media item={item} size="sm" />
       <div className="prompt" style={{ fontSize: 28 }}>
         <Rich html={ex.front} />
@@ -299,15 +308,15 @@ export function TrueFalse({
       </div>
       <div className="tf">
         <button className="no" style={{ opacity: ans !== null && ex.isTrue ? 0.35 : 1 }} onClick={() => answer(false)}>
-          ✗ False <span className="kbd">←</span>
+          {t('ex.tf.false')} <span className="kbd">←</span>
         </button>
         <button className="yes" style={{ opacity: ans !== null && !ex.isTrue ? 0.35 : 1 }} onClick={() => answer(true)}>
-          ✓ True <span className="kbd">→</span>
+          {t('ex.tf.true')} <span className="kbd">→</span>
         </button>
       </div>
       {ans !== null && !ok && (
         <div className="feedback wrong">
-          Correct answer:{' '}
+          {t('common.correctAnswer')}{' '}
           <div className="ans">
             <Rich html={item.meaning} />
           </div>
@@ -324,6 +333,7 @@ export function Flip({
   onNext,
   format = 'flip',
 }: P<Extract<Exercise, { type: 'flip' }>> & { format?: 'flip' | 'boss' }) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   const [shownAns, setShown] = useState(false);
   const shown = useRef(now());
@@ -350,7 +360,7 @@ export function Flip({
   });
   return (
     <div>
-      <div className="blocktitle">Recall · think of the answer</div>
+      <div className="blocktitle">{t('ex.flip.title')}</div>
       <div className="card flipcard">
         {!ex.reverse && <Media item={item} size="md" />}
         <div className="prompt" style={{ fontSize: ex.prompt.length > 80 ? 22 : 28 }}>
@@ -379,20 +389,20 @@ export function Flip({
               playMedia(item.audio);
             }}
           >
-            Show answer <span className="kbd">Space</span>
+            {t('ex.flip.show')} <span className="kbd">{t('keys.space')}</span>
           </button>
-          <span className="small muted">Say or think your answer first – that's what makes it stick.</span>
+          <span className="small muted">{t('ex.flip.hint')}</span>
         </div>
       ) : (
         <div className="grade3">
           <button className="btn" style={{ background: 'var(--bad)', color: '#fff' }} onClick={() => rate(0)}>
-            Didn't know <span className="kbd">1</span>
+            {t('ex.flip.no')} <span className="kbd">1</span>
           </button>
           <button className="btn" style={{ background: 'var(--near)', color: '#2a1600' }} onClick={() => rate(1)}>
-            Partly <span className="kbd">2</span>
+            {t('ex.flip.partly')} <span className="kbd">2</span>
           </button>
           <button className="btn good" onClick={() => rate(2)}>
-            Knew it <span className="kbd">3</span>
+            {t('ex.flip.yes')} <span className="kbd">3</span>
           </button>
         </div>
       )}
@@ -454,6 +464,7 @@ export function TypedEngine({
   onNext,
   revealAudio,
 }: TypedProps) {
+  const { t } = useTranslation();
   const item = ctx.item(itemId);
   const [value, setValue] = useState('');
   const [phase, setPhase] = useState<'answer' | 'retry' | 'copy' | 'done'>('answer');
@@ -463,7 +474,7 @@ export function TypedEngine({
   const shown = useRef(now());
   const input = useRef<HTMLInputElement>(null);
   const finalCorrect = useRef(false);
-  const t = ctx.t;
+  const coach = ctx.t;
   useEffect(() => {
     input.current?.focus();
   }, [phase]);
@@ -503,7 +514,13 @@ export function TypedEngine({
         given: value,
         shownAt: shown.current,
       });
-      setMsg(r.nearMiss ? `${t.near()} ${r.note ?? ''}` : requireArticle ? t.rightArticle() : t.right(ctx.combo + 1));
+      setMsg(
+        r.nearMiss
+          ? [coach.near(), r.note ? t(r.note.key, r.note.params) : ''].join(' ')
+          : requireArticle
+            ? coach.rightArticle()
+            : coach.right(ctx.combo + 1),
+      );
       finish(first, r.nearMiss ? 1500 : 750);
       return;
     }
@@ -520,11 +537,11 @@ export function TypedEngine({
     ctx.missed.add(itemId);
     if (first) {
       setPhase('retry');
-      setMsg(r.articleError ? `${r.note}. ${t.retry()}` : t.retry());
+      setMsg(r.articleError ? `${r.note ? t(r.note.key, r.note.params) : ''}. ${coach.retry()}` : coach.retry());
       if (!r.articleError) setValue('');
     } else {
       setPhase('copy');
-      setMsg(t.reveal());
+      setMsg(coach.reveal());
       setValue('');
       if (revealAudio) playMedia(item.audio);
       else if (ctx.lang) say(accepted[0], 0.95, ctx.lang);
@@ -537,7 +554,7 @@ export function TypedEngine({
     ctx.override(itemId);
     ctx.missed.delete(itemId);
     setRes(null);
-    setMsg('Okay – counted as correct.');
+    setMsg(t('ex.typed.overridden'));
     finish(true, 700);
   };
 
@@ -545,7 +562,7 @@ export function TypedEngine({
     if (phase === 'done' || phase === 'copy') return;
     if (hintLevel === 0) {
       setHintLevel(1);
-      setMsg(`Hint: ${hint}`);
+      setMsg(t('ex.typed.hint', { hint }));
       return;
     }
     ctx.answer({
@@ -559,7 +576,7 @@ export function TypedEngine({
     });
     ctx.missed.add(itemId);
     setPhase('copy');
-    setMsg(t.reveal());
+    setMsg(coach.reveal());
     setValue('');
   };
 
@@ -582,7 +599,7 @@ export function TypedEngine({
       autoCorrect="off"
       autoCapitalize="off"
       spellCheck={false}
-      placeholder={phase === 'copy' ? accepted[0] : format === 'cloze' ? '…' : 'Type your answer…'}
+      placeholder={phase === 'copy' ? accepted[0] : format === 'cloze' ? '…' : t('ex.typed.placeholder')}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
@@ -615,30 +632,29 @@ export function TypedEngine({
           {(phase === 'copy' || (phase === 'done' && !finalCorrect.current) || res?.nearMiss) && (
             <div className="ans">{requireArticle && item.article ? <Article item={item} /> : accepted[0]}</div>
           )}
-          {phase === 'copy' && (
-            <div className="small">Type it exactly to continue – writing it fixes it in memory.</div>
-          )}
+          {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
         </div>
       )}
       <div className="actions">
         {phase !== 'done' && (
           <button className="btn primary" onClick={submit}>
-            {phase === 'copy' ? 'Copy it' : 'Check'} <span className="kbd">Enter</span>
+            {phase === 'copy' ? t('ex.typed.copy') : t('common.check')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
         {(phase === 'answer' || phase === 'retry') && (
           <button className="btn ghost" onClick={giveHint}>
-            {hintLevel ? 'Show answer' : 'Hint'} <span className="kbd">Tab</span>
+            {hintLevel ? t('ex.typed.showAnswer') : t('ex.typed.hintButton')}{' '}
+            <span className="kbd">{t('keys.tab')}</span>
           </button>
         )}
         {phase === 'done' && (
           <button className="btn" onClick={() => onNext({ correct: finalCorrect.current })}>
-            Continue <span className="kbd">Enter</span>
+            {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
         {(phase === 'retry' || phase === 'copy' || (phase === 'done' && !finalCorrect.current)) && !overridden && (
-          <button className="btn ghost" title="The checker was too strict – count it as correct" onClick={iWasRight}>
-            I was right
+          <button className="btn ghost" title={t('ex.typed.iWasRightTitle')} onClick={iWasRight}>
+            {t('ex.typed.iWasRight')}
           </button>
         )}
       </div>
@@ -647,6 +663,7 @@ export function TypedEngine({
 }
 
 export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'typed' }>> & { boss?: boolean }) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   return (
     <TypedEngine
@@ -659,7 +676,7 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
       onNext={onNext}
       render={(input) => (
         <>
-          <div className="blocktitle">{ctx.lang ? 'Type it in the language' : 'Type the answer'}</div>
+          <div className="blocktitle">{ctx.lang ? t('ex.typed.titleLanguage') : t('ex.typed.title')}</div>
           {ex.prompt === item.target && <Media item={item} size="sm" />}
           <div className="prompt" style={{ fontSize: ex.prompt.length > 70 ? 22 : undefined }}>
             <Rich html={ex.prompt} />
@@ -672,6 +689,7 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
 }
 
 export function Cloze({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'cloze' }>>) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   return (
     <TypedEngine
@@ -685,7 +703,7 @@ export function Cloze({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'cloze' }
       revealAudio
       render={(input) => (
         <>
-          <div className="blocktitle">Fill the gap</div>
+          <div className="blocktitle">{t('ex.cloze.title')}</div>
           <Media item={item} size="sm" />
           <div className="cloze">
             {ex.before} {input} {ex.after}
@@ -704,6 +722,7 @@ export function Cloze({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'cloze' }
 
 /* ───────────── Sentence building from tiles ───────────── */
 export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'unscramble' }>>) {
+  const { t } = useTranslation();
   const [order, setOrder] = useState<number[]>([]);
   const [result, setResult] = useState<boolean | null>(null);
   const shown = useRef(now());
@@ -735,7 +754,7 @@ export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'uns
   });
   return (
     <div>
-      <div className="blocktitle">Build the sentence</div>
+      <div className="blocktitle">{t('ex.unscramble.title')}</div>
       <div className="prompt" style={{ fontSize: 24 }}>
         {ex.translation}
       </div>
@@ -770,15 +789,15 @@ export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'uns
       </div>
       {result !== null && (
         <div className={`feedback ${result ? 'right' : 'wrong'}`}>
-          {result ? ctx.t.right(ctx.combo) : 'Correct order:'}
+          {result ? ctx.t.right(ctx.combo) : t('common.correctOrder')}
           {!result && <div className="ans">{ex.answer.join(' ')}</div>}
         </div>
       )}
       <div className="actions">
-        {result === null && <span className="small muted">Click tiles or press numbers · Backspace undoes</span>}
+        {result === null && <span className="small muted">{t('ex.unscramble.help')}</span>}
         {result === false && (
           <button className="btn" onClick={() => onNext({ correct: false })}>
-            Continue <span className="kbd">Enter</span>
+            {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
       </div>
@@ -788,6 +807,7 @@ export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'uns
 
 /* ───────────── Dictation ───────────── */
 export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dictation' }>>) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   const [value, setValue] = useState('');
   const [res, setRes] = useState<'right' | 'near' | 'wrong' | null>(null);
@@ -816,12 +836,17 @@ export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dict
   };
   return (
     <div>
-      <div className="blocktitle">Dictation</div>
+      <div className="blocktitle">{t('ex.dictation.title')}</div>
       <div className="row" style={{ margin: '10px 0 18px' }}>
-        <button className="mic" style={{ width: 72, height: 72, fontSize: 30 }} onClick={() => playMedia(item.audio)}>
+        <button
+          className="mic"
+          style={{ width: 72, height: 72, fontSize: 30 }}
+          onClick={() => playMedia(item.audio)}
+          aria-label={t('ex.dictation.play')}
+        >
           🔊
         </button>
-        <span className="muted">Type exactly what you hear.</span>
+        <span className="muted">{t('ex.dictation.hint')}</span>
       </div>
       <input
         ref={input}
@@ -838,14 +863,14 @@ export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dict
       <Umlauts lang={ctx.lang} onAdd={(c) => setValue((v) => v + c)} />
       {res && (
         <div className={`feedback ${res}`}>
-          {res === 'right' ? ctx.t.right(ctx.combo) : res === 'near' ? ctx.t.near() : 'Correct:'}
+          {res === 'right' ? ctx.t.right(ctx.combo) : res === 'near' ? ctx.t.near() : t('common.correctLabel')}
           <div className="ans">{ex.sentence}</div>
           <div className="small">{ex.translation}</div>
         </div>
       )}
       <div className="actions">
         <button className="btn primary" onClick={submit}>
-          {res ? 'Continue' : 'Check'} <span className="kbd">Enter</span>
+          {res ? t('common.continue') : t('common.check')} <span className="kbd">{t('keys.enter')}</span>
         </button>
       </div>
     </div>
@@ -854,6 +879,7 @@ export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dict
 
 /* ───────────── Speak it aloud (speech recognition, or self-check) ───────────── */
 export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }>>) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   const rec = useMemo(() => recognizer(ctx.lang ?? 'de'), []);
   const [phase, setPhase] = useState<'ready' | 'listening' | 'heard' | 'reveal' | 'done'>('ready');
@@ -922,20 +948,26 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
   });
   return (
     <div>
-      <div className="blocktitle">Say it out loud</div>
+      <div className="blocktitle">{t('ex.speak.title')}</div>
       <div className="prompt">{ex.prompt}</div>
       {phase !== 'reveal' && phase !== 'done' && (
         <div className="col" style={{ alignItems: 'center', marginTop: 10 }}>
-          <button className={`mic ${phase === 'listening' ? 'on' : ''}`} onClick={listen}>
+          <button
+            className={`mic ${phase === 'listening' ? 'on' : ''}`}
+            onClick={listen}
+            aria-label={t('ex.speak.mic')}
+          >
             🎤
           </button>
           <div className="muted">
-            {phase === 'listening' ? 'Listening…' : rec ? 'Press Space and speak' : 'Say it out loud, then press Space'}
+            {phase === 'listening'
+              ? t('ex.speak.listening')
+              : rec
+                ? t('ex.speak.pressSpace')
+                : t('ex.speak.sayThenSpace')}
           </div>
           {phase === 'heard' && (
-            <div className="feedback near">
-              I heard: “{heard || '…'}” – {ctx.t.retry()}
-            </div>
+            <div className="feedback near">{t('ex.speak.heard', { heard: heard || '…', retry: ctx.t.retry() })}</div>
           )}
           {rec && phase !== 'listening' && (
             <button
@@ -943,22 +975,23 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
               style={{ fontSize: 13, padding: '6px 12px' }}
               onClick={() => setPhase('reveal')}
             >
-              No mic? Say it aloud and check yourself
+              {t('ex.speak.noMic')}
             </button>
           )}
         </div>
       )}
       {phase === 'reveal' && (
         <div className="feedback near">
-          Did you say it like this?<div className="ans">{ex.expected}</div>
+          {t('ex.speak.didYouSay')}
+          <div className="ans">{ex.expected}</div>
           <div className="actions">
             <button className="btn" onClick={() => settle(false)}>
-              No <span className="kbd">1</span>
+              {t('ex.speak.no')} <span className="kbd">1</span>
             </button>
             <button className="btn good" onClick={() => settle(true)}>
-              Yes <span className="kbd">2</span>
+              {t('ex.speak.yes')} <span className="kbd">2</span>
             </button>
-            <button className="audio" onClick={playModel}>
+            <button className="audio" onClick={playModel} aria-label={t('ex.speak.playModel')}>
               🔊
             </button>
           </div>
@@ -966,15 +999,15 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
       )}
       {phase === 'done' && (
         <div className={`feedback ${ok ? 'right' : 'wrong'}`}>
-          {ok ? ctx.t.right(ctx.combo) : 'Listen and repeat:'}
+          {ok ? ctx.t.right(ctx.combo) : t('ex.speak.repeat')}
           <div className="ans">{ex.expected}</div>
-          {heard && <div className="small">Heard: “{heard}”</div>}
+          {heard && <div className="small">{t('ex.speak.heardShort', { heard })}</div>}
           <div className="actions">
             <button className="audio" onClick={playModel}>
-              🔊 again
+              {t('ex.speak.again')}
             </button>
             <button className="btn" onClick={() => onNext({ correct: !!ok })}>
-              Continue <span className="kbd">Enter</span>
+              {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
             </button>
           </div>
         </div>
@@ -990,6 +1023,7 @@ export function Lesson({
   onNext,
   grammarIds,
 }: P<Extract<Exercise, { type: 'lesson' }>> & { grammarIds: number[] }) {
+  const { t } = useTranslation();
   const shown = useRef(now());
   useEffect(() => {
     for (const id of grammarIds)
@@ -1000,7 +1034,7 @@ export function Lesson({
   });
   return (
     <div className="card lesson">
-      <div className="blocktitle">Lesson · {ex.group}</div>
+      <div className="blocktitle">{t('ex.lesson.title', { group: ex.group })}</div>
       <div className="prompt" style={{ fontSize: 28 }}>
         {ex.title}
       </div>
@@ -1019,7 +1053,7 @@ export function Lesson({
       </div>
       <div className="actions">
         <button className="btn primary" onClick={() => onNext({ correct: true })}>
-          Got it – practise! <span className="kbd">Enter</span>
+          {t('ex.lesson.gotIt')} <span className="kbd">{t('keys.enter')}</span>
         </button>
       </div>
     </div>
@@ -1028,6 +1062,7 @@ export function Lesson({
 
 /* ───────────── Multiple choice / multi-select question (certification style) ───────────── */
 export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) {
+  const { t } = useTranslation();
   const item = ctx.item(ex.itemId);
   const multi = ex.correct.length > 1;
   const [sel, setSel] = useState<number[]>([]);
@@ -1069,7 +1104,9 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
   });
   return (
     <div>
-      <div className="blocktitle">{multi ? `Question · choose ${ex.correct.length}` : 'Question'}</div>
+      <div className="blocktitle">
+        {multi ? t('ex.mcq.titleMulti', { count: ex.correct.length }) : t('ex.mcq.title')}
+      </div>
       <Media item={item} size="sm" />
       <div className="prompt" style={{ fontSize: ex.stem.length > 120 ? 19 : 24, lineHeight: 1.4 }}>
         <Rich html={ex.stem} />
@@ -1097,7 +1134,9 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
       </div>
       {done !== null && (
         <div className={`feedback ${done ? 'right' : 'wrong'}`}>
-          {done ? ctx.t.right(ctx.combo) : `Correct: ${ex.correct.map((i) => ex.choices[i]).join(' + ')}`}
+          {done
+            ? ctx.t.right(ctx.combo)
+            : t('common.correctIs', { answer: ex.correct.map((i) => ex.choices[i]).join(' + ') })}
           {ex.explanation && (
             <div className="small" style={{ marginTop: 6, fontWeight: 500 }}>
               <Rich html={ex.explanation} />
@@ -1108,12 +1147,12 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
       <div className="actions">
         {done === null && multi && (
           <button className="btn primary" disabled={!sel.length} onClick={() => submit()}>
-            Check <span className="kbd">Enter</span>
+            {t('common.check')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
         {done !== null && (!done || ex.explanation) && (
           <button className="btn" onClick={() => onNext({ correct: !!done })}>
-            Continue <span className="kbd">Enter</span>
+            {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
       </div>
@@ -1123,6 +1162,7 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
 
 /* ───────────── Put the steps in order (processes, timelines, code lines) ───────────── */
 export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }>>) {
+  const { t } = useTranslation();
   const [placed, setPlaced] = useState<number[]>([]);
   const [result, setResult] = useState<boolean | null>(null);
   const shown = useRef(now());
@@ -1154,7 +1194,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
   });
   return (
     <div>
-      <div className="blocktitle">Put in order</div>
+      <div className="blocktitle">{t('ex.order.title')}</div>
       <div className="prompt" style={{ fontSize: 24 }}>
         <Rich html={ex.prompt} />
       </div>
@@ -1186,7 +1226,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
       </div>
       {result === false && (
         <div className="feedback wrong">
-          Correct order:
+          {t('common.correctOrder')}
           <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
             {ex.steps.map((s, i) => (
               <li key={i}>
@@ -1198,12 +1238,10 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
       )}
       {result === true && <div className="feedback right">{ctx.t.right(ctx.combo)}</div>}
       <div className="actions">
-        {result === null && (
-          <span className="small muted">Click steps in order or press numbers · Backspace undoes</span>
-        )}
+        {result === null && <span className="small muted">{t('ex.order.help')}</span>}
         {result === false && (
           <button className="btn" onClick={() => onNext({ correct: false })}>
-            Continue <span className="kbd">Enter</span>
+            {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
       </div>
