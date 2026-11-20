@@ -39,6 +39,13 @@ import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import { anki, ankiAvailable, ankiConnect } from './anki';
 import { getDb } from './storage';
 import { backupAppDb, dataDir } from '@lernlab/storage-sqlite';
+import {
+  deleteAllData,
+  exportAllData,
+  importAllData,
+  listBackups,
+  restoreBackup,
+} from '@lernlab/storage-sqlite/backups';
 import { basename, join } from 'node:path';
 import pkg from '../package.json';
 import { SAMPLES } from './samples';
@@ -196,7 +203,7 @@ export const handlers = {
   /** Deleting a deck takes a backup of the whole database first, so it can be undone from backups/. */
   'decks.delete': h(v.object({ id: v.id }), ({ id }) => {
     if (!getDeck(id)) throw new AppError('deck_not_found', 'Deck not found');
-    const backup = basename(backupAppDb());
+    const backup = basename(backupAppDb(undefined, 'before-delete'));
     deleteDeck(id);
     return { ok: true, backup };
   }),
@@ -247,7 +254,7 @@ export const handlers = {
   /** One change to many cards. Deleting takes a backup of the whole database first. */
   'cards.bulk': h(v.object({ ids: v.array(v.id, 100_000), action: bulkAction }), ({ ids, action }) => {
     if (action.kind === 'move' && !getDeck(action.deckId)) throw new AppError('deck_not_found', 'Deck not found');
-    const backup = action.kind === 'delete' ? basename(backupAppDb()) : undefined;
+    const backup = action.kind === 'delete' ? basename(backupAppDb(undefined, 'before-delete')) : undefined;
     const count = bulkCards(ids, action);
     return backup ? { count, backup } : { count };
   }),
@@ -417,8 +424,20 @@ export const handlers = {
   'summary.today': h(v.none, () => dailySummary()),
   /** The Progress screen: per-deck learned vs remaining, pace and forecast, study days, retention, hardest cards. */
   'progress.get': h(v.none, () => journey()),
-  /** A copy of the database in backups/, taken before an app update is installed. */
-  'backup.create': h(v.none, () => ({ file: basename(backupAppDb()) })),
+  /** A copy of the database in backups/: "Back up now", and before an app update is installed. */
+  'backup.create': h(v.optional(v.object({ reason: v.optional(v.oneOf('update')) })), (input) => ({
+    file: basename(backupAppDb(undefined, input?.reason === 'update' ? 'before-update' : undefined)),
+  })),
+  /** Every backup with its date and how many decks, cards and answers it holds. */
+  'backup.list': h(v.none, () => listBackups()),
+  /** Put a backup back. The current data is backed up first, so this can be undone. */
+  'backup.restore': h(v.object({ file: v.string(200) }), ({ file }) => restoreBackup(file)),
+  /** Everything (database, media, daily summaries) as one zip. */
+  'data.export': h(v.none, () => exportAllData()),
+  /** Replace all data with a zip from data.export. The current data is backed up first. */
+  'data.import': h(v.object({ data: v.bytes(500 * MB) }), ({ data }) => importAllData(data)),
+  /** Delete all data and start empty. The window asks the user to type a word first; a last backup is kept. */
+  'data.deleteAll': h(v.object({ confirm: v.oneOf('delete-all-data') }), () => deleteAllData()),
   /** For Settings: the version, licence and where the data lives (read only). */
   'app.info': h(v.none, () => ({
     version: pkg.version,

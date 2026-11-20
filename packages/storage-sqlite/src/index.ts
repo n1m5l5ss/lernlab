@@ -37,19 +37,24 @@ export function openReadonly(file: string): DB {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
+/** The day part of a backup's name: YYYYMMDD in local time. */
+export const backupStamp = (now: Date) => `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+
 /**
- * Copy the database next to it in backups/ before migrating. VACUUM INTO writes a consistent,
- * compact copy even while the database is in WAL mode.
+ * Copy the database next to it in backups/ (before migrating, before deleting, daily…). VACUUM INTO
+ * writes a consistent, compact copy even while the database is in WAL mode. `label` (e.g. "daily")
+ * goes into the name: lernlab-YYYYMMDD[-HHMMSS[-n]][-label]-vN.db.
  */
-export function backupDb(d: DB, file: string, fromVersion: number, now = new Date()): string {
+export function backupDb(d: DB, file: string, fromVersion: number, now = new Date(), label?: string): string {
   const dir = resolve(dirname(file), 'backups');
   mkdirSync(dir, { recursive: true });
-  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  const stamp = backupStamp(now);
   const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-  let out = resolve(dir, `lernlab-${stamp}-v${fromVersion}.db`);
+  const tag = label ? `-${label}` : '';
+  let out = resolve(dir, `lernlab-${stamp}${tag}-v${fromVersion}.db`);
   // Several backups can be taken in the same second (two deletes in a row): number them.
   for (let n = 1; existsSync(out); n++)
-    out = resolve(dir, `lernlab-${stamp}-${time}${n > 1 ? `-${n}` : ''}-v${fromVersion}.db`);
+    out = resolve(dir, `lernlab-${stamp}-${time}${n > 1 ? `-${n}` : ''}${tag}-v${fromVersion}.db`);
   d.prepare('VACUUM INTO ?').run(out);
   return out;
 }
@@ -87,10 +92,16 @@ export function getAppDb(file = resolve(dataDir(), 'lernlab.db')): DB {
   return db;
 }
 
+/** Close the app database (to swap its file); the next getAppDb() opens it again. */
+export function closeAppDb(): void {
+  db?.close();
+  db = null;
+}
+
 /** Back up the app database now (e.g. before an app update is installed). Returns the backup's path. */
-export function backupAppDb(file = resolve(dataDir(), 'lernlab.db')): string {
+export function backupAppDb(file = resolve(dataDir(), 'lernlab.db'), label?: string, now = new Date()): string {
   const d = getAppDb(file);
-  return backupDb(d, file, schemaVersion(d));
+  return backupDb(d, file, schemaVersion(d), now, label);
 }
 
 /** Read-only copy of SQLite bytes, kept in a temp folder that is removed on close. */

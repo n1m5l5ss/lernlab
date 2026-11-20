@@ -2394,3 +2394,26 @@ kbd {
   color: var(--color-accent);
   font-weight: 700;
 }
+
+/* Settings → Your data (#33): backup preview and the confirm steps for restore, import and delete-all. */
+.data-preview {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.data-confirm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.data-confirm p {
+  margin: 0;
+}
+.data-danger {
+  border-color: var(--color-incorrect);
+}
+.data-danger input {
+  max-width: 240px;
+}

@@ -10,6 +10,7 @@ import { applyTheme } from './theme';
 import { TEXT_SIZES, applyDisplay } from './display';
 import { LENGTHS } from './lengths';
 import { LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
+import { DataControls } from './DataControls';
 
 const TIMERS = [
   { key: 'off', blitz: 0, q: 0 },
@@ -249,6 +250,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
             </a>
           </div>
         </div>
+        <DataControls say={setMsg} />
       </Section>
 
       <Section id="privacy" title={t('settings.section.privacy')}>
