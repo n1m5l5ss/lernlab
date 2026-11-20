@@ -6,5 +6,5 @@
     "allowImportingTsExtensions": false,
     "types": ["node"]
   },
-  "include": ["src", "server", "backend", "electron", "test"]
+  "include": ["src", "server", "backend", "electron", "test", "e2e"]
 }

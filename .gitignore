@@ -5,3 +5,4 @@ data/
 .DS_Store
 release/
 dist-electron/
+apps/desktop/e2e-results/

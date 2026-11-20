@@ -1,6 +1,7 @@
 node_modules/
 dist/
 dist-electron/
+apps/desktop/e2e-results/
 release/
 data/
 examples/

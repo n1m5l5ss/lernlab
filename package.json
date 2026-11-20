@@ -25,6 +25,7 @@
     "dist:linux": "npm run --workspace apps/desktop dist:linux",
     "import": "tsx --no-warnings apps/desktop/server/cli-import.ts",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run build:electron && npm run --workspace apps/desktop e2e",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
