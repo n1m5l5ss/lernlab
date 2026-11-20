@@ -37,8 +37,9 @@ import { planSession } from '@lernlab/core/session';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import { anki, ankiAvailable, ankiConnect } from './anki';
 import { getDb } from './storage';
-import { backupAppDb } from '@lernlab/storage-sqlite';
-import { basename } from 'node:path';
+import { backupAppDb, dataDir } from '@lernlab/storage-sqlite';
+import { basename, join } from 'node:path';
+import pkg from '../package.json';
 import { InvalidInput, v, type Check } from './validate';
 
 /** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
@@ -393,6 +394,13 @@ export const handlers = {
   'progress.get': h(v.none, () => progressReport()),
   /** A copy of the database in backups/, taken before an app update is installed. */
   'backup.create': h(v.none, () => ({ file: basename(backupAppDb()) })),
+  /** For Settings: the version, licence and where the data lives (read only). */
+  'app.info': h(v.none, () => ({
+    version: pkg.version,
+    licence: pkg.license,
+    dataDir: dataDir(),
+    backupsDir: join(dataDir(), 'backups'),
+  })),
   'settings.save': h(v.record, (body) => {
     const next: Settings = { ...getSettings(), ...(body as Partial<Settings>) };
     next.newPerDay = Math.max(0, Math.min(100, Number(next.newPerDay) || 0));
@@ -402,6 +410,8 @@ export const handlers = {
     next.autoUpdate = next.autoUpdate !== false;
     next.betaUpdates = next.betaUpdates === true;
     if (!['system', 'light', 'dark'].includes(next.theme)) next.theme = 'system';
+    if (!['normal', 'large', 'larger'].includes(next.textSize)) next.textSize = 'normal';
+    next.reducedMotion = next.reducedMotion === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

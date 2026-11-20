@@ -16,6 +16,7 @@ import { Badges } from './Badges';
 import { Shell } from './Shell';
 import { formatDate, setLanguage } from './i18n';
 import { applyTheme } from './theme';
+import { applyDisplay } from './display';
 import { hashFor, isStartHash, routeFromHash, type Route } from './routes';
 
 type AppState = OutputOf<'state.get'>;
@@ -47,6 +48,7 @@ export function App() {
         setSound(s.settings.sound);
         void setLanguage(s.settings.uiLanguage);
         applyTheme(s.settings.theme);
+        applyDisplay(s.settings);
         return s;
       })
       .catch((e: unknown) => {

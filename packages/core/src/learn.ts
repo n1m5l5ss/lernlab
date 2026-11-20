@@ -27,6 +27,10 @@ export type Settings = {
   betaUpdates: boolean;
   /** Colour theme: follow the system (default), or always light or dark. */
   theme: 'system' | 'light' | 'dark';
+  /** Scales the whole interface: normal, large (115%) or larger (130%). */
+  textSize: 'normal' | 'large' | 'larger';
+  /** Turn off animations even when the computer does not ask for reduced motion. */
+  reducedMotion: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -43,6 +47,8 @@ export const DEFAULT_SETTINGS: Settings = {
   autoUpdate: true,
   betaUpdates: false,
   theme: 'system',
+  textSize: 'normal',
+  reducedMotion: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
