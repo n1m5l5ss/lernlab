@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from './api';
+import { formatDate } from './i18n';
 
-const fmt = (d: string | null) =>
-  d
-    ? new Date(d + 'T12:00:00').toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
-    : '—';
+/** Day keys (YYYY-MM-DD) are read at noon so no time zone shifts them to another day. */
+const day = (d: string) => d + 'T12:00:00';
 
 export function Progress() {
+  const { t } = useTranslation();
   const [p, setP] = useState<any>(null);
+  const fmt = (d: string | null) => (d ? formatDate(day(d)) : t('common.noDate'));
   useEffect(() => {
     api.progress().then(setP);
   }, []);
-  if (!p) return <div className="muted">Loading…</div>;
-  const t = p.totals;
+  if (!p) return <div className="muted">{t('app.loading')}</div>;
+  const tot = p.totals;
   const f = p.forecast;
   const max = Math.max(10, ...p.series.map((s: any) => s.cumulative));
   const W = 640,
@@ -25,82 +27,74 @@ export function Progress() {
     <div className="col" style={{ gap: 16 }}>
       <div className="statgrid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <div className="stat">
-          <b>{t.producible}</b>
-          <span>learned (recalled from memory)</span>
+          <b>{tot.producible}</b>
+          <span>{t('progress.learned')}</span>
         </div>
         <div className="stat">
-          <b>{t.introduced}</b>
-          <span>cards met</span>
+          <b>{tot.introduced}</b>
+          <span>{t('progress.met')}</span>
         </div>
         <div className="stat">
-          <b>{t.remainingDeck}</b>
-          <span>left in your deck</span>
+          <b>{tot.remainingDeck}</b>
+          <span>{t('progress.left')}</span>
         </div>
         <div className="stat">
-          <b>{t.hours} h</b>
-          <span>studied · {t.studyDays} days</span>
+          <b>{t('progress.hours', { hours: tot.hours })}</b>
+          <span>{t('progress.studied', { count: tot.studyDays })}</span>
         </div>
       </div>
       <div className="card">
         <div className="row">
-          <b className="grow">{p.deck?.name ?? 'Cards'} learned, last 60 days</b>
+          <b className="grow">{t('progress.chartTitle', { deck: p.deck?.name ?? t('progress.cardsFallback') })}</b>
           <span className="small muted">
-            {p.pace.wordsPerDay} cards/day · {p.pace.minutesPerDay} min/day (7-day average)
+            {t('progress.pace', { cards: p.pace.wordsPerDay, minutes: p.pace.minutesPerDay })}
           </span>
         </div>
         <svg
           viewBox={`0 0 ${W} ${H}`}
           style={{ width: '100%', height: 160, marginTop: 10 }}
           role="img"
-          aria-label="Cards learned over time"
+          aria-label={t('progress.chartLabel')}
         >
           <polyline points={`0,${H} ${pts} ${W},${H}`} fill="#2ec27e22" stroke="none" />
           <polyline points={pts} fill="none" stroke="#2ec27e" strokeWidth="3" />
         </svg>
         <div className="row small muted">
-          <span>{p.series[0].day}</span>
+          <span>{formatDate(day(p.series[0].day))}</span>
           <span className="grow" />
-          <span>today</span>
+          <span>{t('progress.today')}</span>
         </div>
       </div>
       <div className="card col">
-        <b>How much is left</b>
+        <b>{t('progress.leftTitle')}</b>
         <div>
           <div className="row small">
-            <span className="grow">This deck</span>
-            <span>
-              {t.producible} / {t.vocabTotal}
-            </span>
+            <span className="grow">{t('progress.thisDeck')}</span>
+            <span>{t('progress.of', { done: tot.producible, total: tot.vocabTotal })}</span>
           </div>
           <div className="bar green">
-            <i style={{ width: pct(t.producible, t.vocabTotal) }} />
+            <i style={{ width: pct(tot.producible, tot.vocabTotal) }} />
           </div>
         </div>
-        {t.grammar.total > 0 && (
+        {tot.grammar.total > 0 && (
           <div>
             <div className="row small">
-              <span className="grow">Lessons started</span>
-              <span>
-                {t.grammar.done} / {t.grammar.total}
-              </span>
+              <span className="grow">{t('progress.lessons')}</span>
+              <span>{t('progress.of', { done: tot.grammar.done, total: tot.grammar.total })}</span>
             </div>
             <div className="bar">
-              <i style={{ width: pct(t.grammar.done, t.grammar.total) }} />
+              <i style={{ width: pct(tot.grammar.done, tot.grammar.total) }} />
             </div>
           </div>
         )}
         {f.goal && (
           <div>
             <div className="row small">
-              <span className="grow">
-                {f.goal.label} (≈ {f.goal.target} cards)
-              </span>
-              <span>
-                {t.producible} / {f.goal.target}
-              </span>
+              <span className="grow">{t('progress.goalCards', { goal: f.goal.label, count: f.goal.target })}</span>
+              <span>{t('progress.of', { done: tot.producible, total: f.goal.target })}</span>
             </div>
             <div className="bar green">
-              <i style={{ width: pct(t.producible, f.goal.target) }} />
+              <i style={{ width: pct(tot.producible, f.goal.target) }} />
             </div>
           </div>
         )}
@@ -108,11 +102,9 @@ export function Progress() {
           <div>
             <div className="row small">
               <span className="grow">
-                {f.goal.label} study hours (estimate {f.goal.hours.low}–{f.goal.hours.high} h)
+                {t('progress.goalHours', { goal: f.goal.label, low: f.goal.hours.low, high: f.goal.hours.high })}
               </span>
-              <span>
-                {f.goal.hours.done} / {f.goal.hours.low} h
-              </span>
+              <span>{t('progress.ofHours', { done: f.goal.hours.done, total: f.goal.hours.low })}</span>
             </div>
             <div className="bar">
               <i style={{ width: pct(f.goal.hours.done, f.goal.hours.low) }} />
@@ -121,24 +113,24 @@ export function Progress() {
         )}
       </div>
       <div className="card">
-        <b>Forecast</b>
+        <b>{t('progress.forecast')}</b>
         <table className="t" style={{ marginTop: 8 }}>
           <tbody>
             <tr>
-              <td>Finish your deck at your current pace</td>
+              <td>{t('progress.deckCurrentPace')}</td>
               <td>
                 <b>{fmt(f.deckAtCurrentPace)}</b>
               </td>
             </tr>
             <tr>
-              <td>Finish your deck at {p.pace.newPerDaySetting} new words/day</td>
+              <td>{t('progress.deckAtSetting', { count: p.pace.newPerDaySetting })}</td>
               <td>
                 <b>{fmt(f.deckAtSetting)}</b>
               </td>
             </tr>
             {f.goal && (
               <tr>
-                <td>{f.goal.label} at your current pace</td>
+                <td>{t('progress.goalCurrentPace', { goal: f.goal.label })}</td>
                 <td>
                   <b>{fmt(f.goal.atCurrentPace)}</b>
                 </td>
@@ -146,7 +138,7 @@ export function Progress() {
             )}
             {f.goal && (
               <tr>
-                <td>{f.goal.label} at 30 cards/day</td>
+                <td>{t('progress.goalAt30', { goal: f.goal.label, count: 30 })}</td>
                 <td>
                   <b>{fmt(f.goal.at30PerDay)}</b>
                 </td>
@@ -155,8 +147,8 @@ export function Progress() {
           </tbody>
         </table>
         <div className="small muted" style={{ marginTop: 8 }}>
-          Pace counts missed days, so the dates move with what you actually do.
-          {f.goal ? ' Knowing the cards is only part of an exam – practise its real format too.' : ''}
+          {t('progress.paceNote')}
+          {f.goal ? ` ${t('progress.examNote')}` : ''}
         </div>
       </div>
     </div>

@@ -19,7 +19,8 @@
     "cancel": "Cancel",
     "close": "Close",
     "delete": "Delete",
-    "importing": "Importing…"
+    "importing": "Importing…",
+    "noDate": "—"
   },
   "settings": {
     "dailyGoal": "Daily goal (sessions)",
@@ -242,5 +243,75 @@
       "unsuspend": "Unsuspend",
       "confirmDelete": "Delete this card and its progress?"
     }
+  },
+  "progress": {
+    "learned": "learned (recalled from memory)",
+    "met": "cards met",
+    "left": "left in your deck",
+    "hours": "{{hours, number}} h",
+    "studied_one": "studied · {{count}} day",
+    "studied_other": "studied · {{count}} days",
+    "chartTitle": "{{deck}} learned, last 60 days",
+    "cardsFallback": "Cards",
+    "pace": "{{cards, number}} cards/day · {{minutes, number}} min/day (7-day average)",
+    "chartLabel": "Cards learned over time",
+    "today": "today",
+    "leftTitle": "How much is left",
+    "thisDeck": "This deck",
+    "lessons": "Lessons started",
+    "goalCards": "{{goal}} (≈ {{count}} cards)",
+    "goalHours": "{{goal}} study hours (estimate {{low}}–{{high}} h)",
+    "ofHours": "{{done}} / {{total}} h",
+    "of": "{{done}} / {{total}}",
+    "forecast": "Forecast",
+    "deckCurrentPace": "Finish your deck at your current pace",
+    "deckAtSetting": "Finish your deck at {{count}} new words/day",
+    "goalCurrentPace": "{{goal}} at your current pace",
+    "goalAt30": "{{goal}} at {{count}} cards/day",
+    "paceNote": "Pace counts missed days, so the dates move with what you actually do.",
+    "examNote": "Knowing the cards is only part of an exam – practise its real format too."
+  },
+  "stats": {
+    "format": {
+      "typed": "Typing",
+      "cloze": "Fill the gap",
+      "mc": "Multiple choice",
+      "match": "Match pairs",
+      "gender": "Der/die/das",
+      "listen": "Listening",
+      "dictation": "Dictation",
+      "speak": "Speaking",
+      "unscramble": "Sentence building",
+      "rain": "Word rain",
+      "boss": "Boss",
+      "intro": "New words"
+    },
+    "heatmap": "Last 18 weeks",
+    "forecast": "Next 7 days: reviews due",
+    "accuracy": "Accuracy by exercise (30 days)",
+    "seconds": "{{seconds, number(maximumFractionDigits: 1; minimumFractionDigits: 1)}} s",
+    "weak": "Weak words (14 days)",
+    "misses": "{{count}}×",
+    "weakEmpty": "Nothing yet. Play a session!",
+    "ladder": "Mastery ladder",
+    "ladderLegend": "0 seen · 1 recognised · 2 matched · 3 recalled · 4 in context · 5 spoken",
+    "ladderLevel": "L{{level}}: {{count}}"
+  },
+  "summary": {
+    "xp": "+{{xp, number}} XP",
+    "accuracy": "accuracy",
+    "answers": "answers",
+    "minutes": "minutes",
+    "streak": "🔥{{count}}",
+    "dayStreak": "day streak",
+    "noStreak": "–",
+    "goalReached": "✅ Daily goal reached (+{{xp}} XP)",
+    "newBadge": "🏅 New badge: <b>{{title}}</b> – {{desc}}",
+    "bossDefeated": "👾 Boss defeated (+{{xp}} XP)",
+    "homework": "Homework",
+    "again": "One more mini round",
+    "againKey": "Space",
+    "done": "Done",
+    "doneKey": "Enter"
   }
 }

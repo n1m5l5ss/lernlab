@@ -1,27 +1,15 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { api } from './api';
-
-const FORMAT_NAMES: Record<string, string> = {
-  typed: 'Typing',
-  cloze: 'Fill the gap',
-  mc: 'Multiple choice',
-  match: 'Match pairs',
-  gender: 'Der/die/das',
-  listen: 'Listening',
-  dictation: 'Dictation',
-  speak: 'Speaking',
-  unscramble: 'Sentence building',
-  rain: 'Word rain',
-  boss: 'Boss',
-  intro: 'New words',
-};
+import { formatDate, formatPercent } from './i18n';
 
 export function Stats() {
+  const { t, i18n } = useTranslation();
   const [s, setS] = useState<any>(null);
   useEffect(() => {
     api.stats().then(setS);
   }, []);
-  if (!s) return <div className="muted">Loading…</div>;
+  if (!s) return <div className="muted">{t('app.loading')}</div>;
   const byDay = new Map(s.heatmap.map((d: any) => [d.day, d]));
   const days: string[] = [];
   const today = new Date();
@@ -33,15 +21,15 @@ export function Stats() {
   return (
     <div className="col" style={{ gap: 16 }}>
       <div className="card">
-        <b>Last 18 weeks</b>
+        <b>{t('stats.heatmap')}</b>
         <div className="heat" style={{ marginTop: 10 }}>
           {days.map((d) => (
-            <i key={d} className={lvl(byDay.get(d))} title={d} />
+            <i key={d} className={lvl(byDay.get(d))} title={formatDate(d + 'T12:00:00')} />
           ))}
         </div>
       </div>
       <div className="card">
-        <b>Next 7 days: reviews due</b>
+        <b>{t('stats.forecast')}</b>
         <div className="row" style={{ alignItems: 'flex-end', height: 90, marginTop: 10 }}>
           {s.forecast.map((f: any) => (
             <div key={f.day} className="col grow" style={{ alignItems: 'center', gap: 4 }}>
@@ -59,22 +47,22 @@ export function Stats() {
         </div>
       </div>
       <div className="card">
-        <b>Accuracy by exercise (30 days)</b>
+        <b>{t('stats.accuracy')}</b>
         <table className="t" style={{ marginTop: 8 }}>
           <tbody>
             {s.byFormat.map((f: any) => (
               <tr key={f.format}>
-                <td>{FORMAT_NAMES[f.format] ?? f.format}</td>
+                <td>{i18n.exists(`stats.format.${f.format}`) ? t(`stats.format.${f.format}`) : f.format}</td>
                 <td>{f.n}</td>
-                <td>{Math.round(f.accuracy * 100)}%</td>
-                <td className="muted">{(f.avgMs / 1000).toFixed(1)} s</td>
+                <td>{formatPercent(f.accuracy)}</td>
+                <td className="muted">{t('stats.seconds', { seconds: f.avgMs / 1000 })}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <div className="card">
-        <b>Weak words (14 days)</b>
+        <b>{t('stats.weak')}</b>
         <table className="t" style={{ marginTop: 8 }}>
           <tbody>
             {s.weak.length ? (
@@ -84,24 +72,24 @@ export function Stats() {
                     <b>{w.target}</b>
                   </td>
                   <td className="muted">{w.meaning}</td>
-                  <td>{w.misses}×</td>
+                  <td>{t('stats.misses', { count: w.misses })}</td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td className="muted">Nothing yet. Play a session!</td>
+                <td className="muted">{t('stats.weakEmpty')}</td>
               </tr>
             )}
           </tbody>
         </table>
       </div>
       <div className="card">
-        <b>Mastery ladder</b>
-        <div className="small muted">0 seen · 1 recognised · 2 matched · 3 recalled · 4 in context · 5 spoken</div>
+        <b>{t('stats.ladder')}</b>
+        <div className="small muted">{t('stats.ladderLegend')}</div>
         <div className="row" style={{ marginTop: 10 }}>
           {s.mastery.map((m: any) => (
             <span key={m.level} className="badge">
-              L{m.level}: {m.n}
+              {t('stats.ladderLevel', { level: m.level, count: m.n })}
             </span>
           ))}
         </div>
