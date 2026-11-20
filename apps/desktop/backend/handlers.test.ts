@@ -55,6 +55,34 @@ test('create a deck, add and edit a card, import a file, plan a session', async 
   assert.equal(state.itemCount, 3);
 });
 
+test('import preview saves nothing, and a column mapping reaches the real import', async () => {
+  const before = (await ok('state.get')).itemCount;
+  const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');
+  const auto = await ok('import.preview', { name: 'Tiere.csv', data: csv });
+  assert.equal(auto.table.header, false);
+  assert.equal(auto.cards[0].front, 'Wort');
+  const mapping = { header: true, fields: { front: 0, back: 2, nonsense: 1 } };
+  const p = await ok('import.preview', { name: 'Tiere.csv', data: csv, mapping });
+  assert.deepEqual(
+    p.cards.map((c: { back: string }) => c.back),
+    ['dog', 'cat'],
+  );
+  assert.deepEqual(p.table.fields, { front: 0, back: 2 });
+  const pasted = await ok('import.preview', { text: 'a:1\nb:2', fieldSep: ':' });
+  assert.equal(pasted.total, 2);
+  assert.equal((await ok('state.get')).itemCount, before, 'a preview saves nothing');
+  const bad = await handle('import.preview', {
+    name: 'x.csv',
+    data: csv,
+    mapping: { header: true, fields: { front: -1 } },
+  });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  const res = await ok('import.file', { name: 'Tiere.csv', data: csv, mapping });
+  assert.equal(res.added, 2);
+  const rows = (await ok('cards.find', { deckId: res.deck.id })).rows;
+  assert.deepEqual(rows.map((r: { back: string }) => r.back).sort(), ['cat', 'dog']);
+});
+
 test('update settings default to on and stable, and a backup can be taken before an update', async () => {
   const s = await ok('settings.save', { betaUpdates: 'yes', autoUpdate: undefined });
   assert.equal(s.autoUpdate, true);

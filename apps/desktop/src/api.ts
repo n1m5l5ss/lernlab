@@ -1,6 +1,7 @@
 import type { Attempt, SessionLength } from '@lernlab/core/types';
 import type { StudySource } from '@lernlab/core/learn';
 import type { BulkAction } from '@lernlab/core/browse';
+import type { ColumnMapping } from '@lernlab/core/importpreview';
 
 import type { InputOf } from '../backend/handlers';
 import { call, saveFile } from './bridge';
@@ -45,8 +46,22 @@ export const api = {
   bulkCards: (ids: number[], action: BulkAction) => call('cards.bulk', { ids, action }),
   addCard: (deckId: number, card: CardInput) => call('cards.add', { deckId, card }),
   saveCard: (id: number, card: CardInput) => call('cards.update', { id, card }),
-  importFile: async (file: File, opts: { deckName?: string; language?: string; deckId?: number }) =>
+  importFile: async (file: File, opts: Omit<InputOf<'import.file'>, 'name' | 'data'>) =>
     call('import.file', { name: file.name, data: new Uint8Array(await file.arrayBuffer()), ...opts }),
+  /** What a file or pasted text would import, without saving anything. */
+  previewImport: async (b: {
+    file?: File;
+    text?: string;
+    fieldSep?: string;
+    cardSep?: string;
+    mapping?: ColumnMapping;
+  }) =>
+    call('import.preview', {
+      ...(b.file ? { name: b.file.name, data: new Uint8Array(await b.file.arrayBuffer()) } : { text: b.text }),
+      fieldSep: b.fieldSep,
+      cardSep: b.cardSep,
+      mapping: b.mapping,
+    }),
   importText: (b: Parameters<typeof call<'import.text'>>[1]) => call('import.text', b),
   ankiInfo: () => call('import.ankiInfo'),
   ankiImport: (b: { source?: string; deckName?: string }) => call('import.anki', b),

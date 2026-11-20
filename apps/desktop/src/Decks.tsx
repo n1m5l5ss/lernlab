@@ -4,14 +4,10 @@ import { Trans, useTranslation } from 'react-i18next';
 import { deckTree, type DeckNode } from '@lernlab/core/decktree';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
+import { ImportPanel } from './ImportPanel';
 import { onVoicesChanged, systemVoices, tryVoice } from './audio';
 import { formatDate, formatLanguage, formatNumber } from './i18n';
 import { MAX_RATE, MIN_RATE, clampRate, voicesFor } from './voice-logic';
-
-/** CSV column names are file format, not text: they stay in English in every language. */
-const CSV_REQUIRED = 'front, back';
-const CSV_OPTIONAL =
-  'example, explanation, notes, category, tags, image, audio, video, alt_answers, type, choices, correct, steps';
 
 type AppState = OutputOf<'state.get'>;
 type DeckRow = AppState['decks'][number];
@@ -51,6 +47,7 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
   const { t } = useTranslation();
   const [editing, setEditing] = useState<Form | null>(null);
   const [showImport, setShowImport] = useState(!state.decks.length);
+  const [dropped, setDropped] = useState<File | undefined>();
   const [removing, setRemoving] = useState<DeckRow | null>(null);
   const [notice, setNotice] = useState('');
   const confirmDialog = useRef<HTMLDialogElement>(null);
@@ -146,7 +143,17 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
           {notice}
         </p>
       )}
-      {showImport && <ImportPanel state={state} refresh={refresh} onDone={() => setShowImport(false)} />}
+      {showImport && (
+        <ImportPanel
+          state={state}
+          refresh={refresh}
+          initialFile={dropped}
+          onDone={() => {
+            setShowImport(false);
+            setDropped(undefined);
+          }}
+        />
+      )}
       {editing && (
         <DeckEditor
           form={editing}
@@ -165,7 +172,16 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
       <div className="deckgrid">
         {tree.map(card)}
         {!showImport && (
-          <button className="deck-drop" onClick={() => setShowImport(true)}>
+          <button
+            className="deck-drop"
+            onClick={() => setShowImport(true)}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDropped(e.dataTransfer.files[0]);
+              setShowImport(true);
+            }}
+          >
             <b>{t('decks.importPanel.drop')}</b>
             <span>{t('decks.dropFormats')}</span>
           </button>
@@ -442,250 +458,5 @@ function VoicePicker({
         </>
       )}
     </fieldset>
-  );
-}
-
-function ImportPanel({ state, refresh, onDone }: { state: any; refresh: () => Promise<any>; onDone: () => void }) {
-  const { t } = useTranslation();
-  const [tab, setTab] = useState<'file' | 'paste' | 'anki'>('file');
-  const [over, setOver] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const [deckName, setDeckName] = useState('');
-  const [language, setLanguage] = useState('');
-  const [text, setText] = useState('');
-  const [fieldSep, setFieldSep] = useState('\t');
-  const [cardSep, setCardSep] = useState('\n');
-  const [anki, setAnki] = useState<any>(null);
-  const [ankiDeck, setAnkiDeck] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    if (tab === 'anki')
-      api
-        .ankiInfo()
-        .then((a) => {
-          setAnki(a);
-          setAnkiDeck((d) => d || a.ankiDecks?.[0] || '');
-        })
-        .catch(() => setAnki({ anki: false }));
-  }, [tab]);
-  useEffect(() => {
-    if (!anki?.running) return;
-    const timer = setInterval(async () => {
-      const a = await api.ankiInfo();
-      setAnki(a);
-      if (!a.running) {
-        clearInterval(timer);
-        setBusy(false);
-        setMsg(
-          a.error
-            ? { ok: false, text: a.error }
-            : { ok: true, text: t('decks.importPanel.ankiDone', { count: a.result?.total ?? 0 }) },
-        );
-        refresh();
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [anki?.running]);
-
-  const report = (r: any) =>
-    setMsg({
-      ok: true,
-      text: [
-        t('decks.importPanel.report', { deck: r.deck.name, added: r.added, updated: r.updated, total: r.total }),
-        r.media ? t('decks.importPanel.reportMedia', { count: r.media }) : '',
-        r.mediaMissing ? t('decks.importPanel.reportMissing', { count: r.mediaMissing }) : '',
-      ]
-        .filter(Boolean)
-        .join(' '),
-    });
-  const doFiles = async (files: FileList | File[]) => {
-    setBusy(true);
-    setMsg(null);
-    try {
-      for (const f of Array.from(files))
-        report(await api.importFile(f, { deckName: deckName || undefined, language: language || undefined }));
-      await refresh();
-    } catch (e: any) {
-      setMsg({ ok: false, text: e.message });
-    }
-    setBusy(false);
-  };
-  const doPaste = async () => {
-    setBusy(true);
-    setMsg(null);
-    try {
-      report(
-        await api.importText({
-          text,
-          fieldSep,
-          cardSep,
-          deckName: deckName || t('decks.importPanel.pastedDeckName'),
-          language: language || null,
-        }),
-      );
-      setText('');
-      await refresh();
-    } catch (e: any) {
-      setMsg({ ok: false, text: e.message });
-    }
-    setBusy(false);
-  };
-  const doAnki = async () => {
-    setMsg(null);
-    try {
-      await api.ankiImport({ source: ankiDeck, deckName: deckName || undefined });
-      setBusy(true);
-      setAnki({ ...anki, running: true });
-    } catch (e: any) {
-      setMsg({ ok: false, text: e.message });
-    }
-  };
-
-  return (
-    <div className="card col">
-      <div className="row">
-        <b className="grow">{t('decks.importPanel.title')}</b>
-        <button className="btn ghost" onClick={onDone}>
-          {t('common.close')}
-        </button>
-      </div>
-      <div className="lengths" style={{ marginTop: 0 }}>
-        {(['file', 'paste', 'anki'] as const).map((k) => (
-          <button key={k} className={tab === k ? 'on' : ''} onClick={() => setTab(k)}>
-            {t(`decks.importPanel.tab.${k}`)}
-          </button>
-        ))}
-      </div>
-      <div className="row" style={{ gap: 12 }}>
-        <div className="grow">
-          <label className="lbl">{t('decks.importPanel.deckName')}</label>
-          <input
-            className="input"
-            value={deckName}
-            onChange={(e) => setDeckName(e.target.value)}
-            placeholder={t('decks.importPanel.deckNamePlaceholder')}
-          />
-        </div>
-        <div className="grow">
-          <label className="lbl">{t('decks.importPanel.language')}</label>
-          <select className="input" value={language} onChange={(e) => setLanguage(e.target.value)}>
-            <option value="">{t('decks.importPanel.languageKeep')}</option>
-            {Object.entries(state.languages ?? {}).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v as string}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-      {tab === 'file' && (
-        <div
-          className={`drop-zone ${over ? 'over' : ''}`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setOver(true);
-          }}
-          onDragLeave={() => setOver(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setOver(false);
-            doFiles(e.dataTransfer.files);
-          }}
-        >
-          <div style={{ fontSize: 34 }}>📦</div>
-          <b>{t('decks.importPanel.drop')}</b>
-          <div className="small muted" style={{ margin: '6px 0 12px' }}>
-            {t('decks.importPanel.formats')}
-          </div>
-          <button className="btn" onClick={() => fileRef.current?.click()} disabled={busy}>
-            {busy ? t('common.importing') : t('decks.importPanel.choose')}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            hidden
-            multiple
-            accept=".lernpack,.apkg,.colpkg,.csv,.tsv,.txt,.json,.zip"
-            onChange={(e) => e.target.files && doFiles(e.target.files)}
-          />
-          <div className="small muted" style={{ marginTop: 12 }}>
-            <Trans
-              i18nKey="decks.importPanel.csvColumns"
-              values={{ required: CSV_REQUIRED, optional: CSV_OPTIONAL }}
-              components={{ code: <code /> }}
-            />
-          </div>
-        </div>
-      )}
-      {tab === 'paste' && (
-        <>
-          <textarea
-            className="input"
-            style={{ minHeight: 160, fontFamily: 'ui-monospace, monospace' }}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder={t('decks.importPanel.pastePlaceholder')}
-          />
-          <div className="row small" style={{ gap: 16 }}>
-            <span>
-              {t('decks.importPanel.fieldSep')}{' '}
-              <select value={fieldSep} onChange={(e) => setFieldSep(e.target.value)}>
-                <option value={'\t'}>{t('decks.importPanel.sep.tab')}</option>
-                <option value=",">{t('decks.importPanel.sep.comma')}</option>
-                <option value=" - ">{t('decks.importPanel.sep.dash')}</option>
-                <option value=":">{t('decks.importPanel.sep.colon')}</option>
-                <option value=";">{t('decks.importPanel.sep.semicolon')}</option>
-              </select>
-            </span>
-            <span>
-              {t('decks.importPanel.cardSep')}{' '}
-              <select value={cardSep} onChange={(e) => setCardSep(e.target.value)}>
-                <option value={'\n'}>{t('decks.importPanel.sep.newline')}</option>
-                <option value=";">{t('decks.importPanel.sep.semicolon')}</option>
-                <option value="|">{t('decks.importPanel.sep.pipe')}</option>
-              </select>
-            </span>
-            <span className="muted">
-              {text.trim()
-                ? t('decks.importPanel.cardCount', {
-                    count: text.split(cardSep === '\n' ? /\r?\n/ : cardSep).filter((x) => x.trim()).length,
-                  })
-                : ''}
-            </span>
-          </div>
-          <div>
-            <button className="btn primary" onClick={doPaste} disabled={busy || !text.trim()}>
-              {t('decks.importPanel.importPasted')}
-            </button>
-          </div>
-        </>
-      )}
-      {tab === 'anki' && (
-        <div className="col">
-          {!anki ? (
-            <div className="muted">{t('decks.importPanel.checkingAnki')}</div>
-          ) : !anki.anki ? (
-            <div className="muted">
-              <Trans i18nKey="decks.importPanel.ankiUnreachable" components={{ b: <b />, code: <code /> }} />
-            </div>
-          ) : (
-            <div className="row">
-              <select className="input grow" value={ankiDeck} onChange={(e) => setAnkiDeck(e.target.value)}>
-                {(anki.ankiDecks ?? []).map((d: string) => (
-                  <option key={d}>{d}</option>
-                ))}
-              </select>
-              <button className="btn primary" onClick={doAnki} disabled={busy || !ankiDeck}>
-                {busy ? t('common.importing') : t('decks.importPanel.importDeck')}
-              </button>
-            </div>
-          )}
-          {anki?.log?.length > 0 && anki.running && <div className="small muted">{anki.log[anki.log.length - 1]}</div>}
-        </div>
-      )}
-      {msg && <div className={`feedback ${msg.ok ? 'right' : 'wrong'}`}>{msg.text}</div>}
-    </div>
   );
 }
