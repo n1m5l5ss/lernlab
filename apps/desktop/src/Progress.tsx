@@ -1,156 +1,248 @@
-import { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+// Progress: the journey. Per deck learned vs remaining, pace and forecast; study days; retention; hardest cards.
+import { useEffect, useRef, useState } from 'react';
+import { Trans, useTranslation } from 'react-i18next';
+import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
-import { formatDate } from './i18n';
+import { formatDate, formatNumber, formatPercent } from './i18n';
+import { heatmapWeeks, monthStarts, recallRate } from './progress-logic';
+
+type Journey = OutputOf<'progress.get'>;
+type DeckJourney = Journey['decks'][number];
 
 /** Day keys (YYYY-MM-DD) are read at noon so no time zone shifts them to another day. */
-const day = (d: string) => d + 'T12:00:00';
+const date = (day: string, opts?: Intl.DateTimeFormatOptions) => formatDate(`${day}T12:00:00`, opts);
+const b = { b: <b /> };
 
-export function Progress() {
+export function Progress({ onStudyHardest }: { onStudyHardest: () => void }) {
   const { t } = useTranslation();
-  const [p, setP] = useState<any>(null);
-  const fmt = (d: string | null) => (d ? formatDate(day(d)) : t('common.noDate'));
+  const [p, setP] = useState<Journey | null>(null);
   useEffect(() => {
     api.progress().then(setP);
   }, []);
   if (!p) return <div className="muted">{t('app.loading')}</div>;
-  const tot = p.totals;
-  const f = p.forecast;
-  const max = Math.max(10, ...p.series.map((s: any) => s.cumulative));
-  const W = 640,
-    H = 140;
-  const pts = p.series
-    .map((s: any, i: number) => `${(i / (p.series.length - 1)) * W},${H - (s.cumulative / max) * (H - 10)}`)
-    .join(' ');
-  const pct = (a: number, b: number) => `${b ? Math.min(100, (a / b) * 100) : 0}%`;
+  const rate = recallRate(p.retention);
   return (
-    <div className="col" style={{ gap: 16 }}>
-      <div className="statgrid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <div className="stat">
-          <b>{tot.producible}</b>
-          <span>{t('progress.learned')}</span>
+    <div className="journey">
+      <div className="summary-tiles">
+        <div className="panel summary-tile">
+          <b>{formatNumber(p.totals.learned)}</b>
+          <span>{t('progress.tiles.learned', { count: p.totals.remaining })}</span>
         </div>
-        <div className="stat">
-          <b>{tot.introduced}</b>
-          <span>{t('progress.met')}</span>
+        <div className="panel summary-tile">
+          <b>{formatNumber(p.totals.perWeek)}</b>
+          <span>{t('progress.tiles.perWeek')}</span>
         </div>
-        <div className="stat">
-          <b>{tot.remainingDeck}</b>
-          <span>{t('progress.left')}</span>
-        </div>
-        <div className="stat">
-          <b>{t('progress.hours', { hours: tot.hours })}</b>
-          <span>{t('progress.studied', { count: tot.studyDays })}</span>
+        <div className="panel summary-tile">
+          <b>{rate === null ? t('common.noDate') : formatPercent(rate)}</b>
+          <span>{t('progress.tiles.recalled')}</span>
         </div>
       </div>
-      <div className="card">
-        <div className="row">
-          <b className="grow">{t('progress.chartTitle', { deck: p.deck?.name ?? t('progress.cardsFallback') })}</b>
-          <span className="small muted">
-            {t('progress.pace', { cards: p.pace.wordsPerDay, minutes: p.pace.minutesPerDay })}
-          </span>
-        </div>
-        <svg
-          viewBox={`0 0 ${W} ${H}`}
-          style={{ width: '100%', height: 160, marginTop: 10 }}
-          role="img"
-          aria-label={t('progress.chartLabel')}
-        >
-          <polyline points={`0,${H} ${pts} ${W},${H}`} fill="#2ec27e22" stroke="none" />
-          <polyline points={pts} fill="none" stroke="#2ec27e" strokeWidth="3" />
-        </svg>
-        <div className="row small muted">
-          <span>{formatDate(day(p.series[0].day))}</span>
-          <span className="grow" />
-          <span>{t('progress.today')}</span>
-        </div>
-      </div>
-      <div className="card col">
-        <b>{t('progress.leftTitle')}</b>
-        <div>
-          <div className="row small">
-            <span className="grow">{t('progress.thisDeck')}</span>
-            <span>{t('progress.of', { done: tot.producible, total: tot.vocabTotal })}</span>
+
+      <section aria-labelledby="journey-decks">
+        <h2 id="journey-decks" className="journey-title">
+          {t('progress.decksTitle')}
+        </h2>
+        {p.decks.length ? (
+          <div className="deckgrid">
+            {p.decks.map((d) => (
+              <DeckProgress key={d.id} d={d} />
+            ))}
           </div>
-          <div className="bar green">
-            <i style={{ width: pct(tot.producible, tot.vocabTotal) }} />
-          </div>
-        </div>
-        {tot.grammar.total > 0 && (
-          <div>
-            <div className="row small">
-              <span className="grow">{t('progress.lessons')}</span>
-              <span>{t('progress.of', { done: tot.grammar.done, total: tot.grammar.total })}</span>
-            </div>
-            <div className="bar">
-              <i style={{ width: pct(tot.grammar.done, tot.grammar.total) }} />
-            </div>
-          </div>
+        ) : (
+          <p className="muted">{t('progress.noDecks')}</p>
         )}
-        {f.goal && (
-          <div>
-            <div className="row small">
-              <span className="grow">{t('progress.goalCards', { goal: f.goal.label, count: f.goal.target })}</span>
-              <span>{t('progress.of', { done: tot.producible, total: f.goal.target })}</span>
-            </div>
-            <div className="bar green">
-              <i style={{ width: pct(tot.producible, f.goal.target) }} />
-            </div>
-          </div>
-        )}
-        {f.goal?.hours && (
-          <div>
-            <div className="row small">
-              <span className="grow">
-                {t('progress.goalHours', { goal: f.goal.label, low: f.goal.hours.low, high: f.goal.hours.high })}
-              </span>
-              <span>{t('progress.ofHours', { done: f.goal.hours.done, total: f.goal.hours.low })}</span>
-            </div>
-            <div className="bar">
-              <i style={{ width: pct(f.goal.hours.done, f.goal.hours.low) }} />
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="card">
-        <b>{t('progress.forecast')}</b>
-        <table className="t" style={{ marginTop: 8 }}>
-          <tbody>
-            <tr>
-              <td>{t('progress.deckCurrentPace')}</td>
-              <td>
-                <b>{fmt(f.deckAtCurrentPace)}</b>
-              </td>
-            </tr>
-            <tr>
-              <td>{t('progress.deckAtSetting', { count: p.pace.newPerDaySetting })}</td>
-              <td>
-                <b>{fmt(f.deckAtSetting)}</b>
-              </td>
-            </tr>
-            {f.goal && (
-              <tr>
-                <td>{t('progress.goalCurrentPace', { goal: f.goal.label })}</td>
-                <td>
-                  <b>{fmt(f.goal.atCurrentPace)}</b>
-                </td>
-              </tr>
-            )}
-            {f.goal && (
-              <tr>
-                <td>{t('progress.goalAt30', { goal: f.goal.label, count: 30 })}</td>
-                <td>
-                  <b>{fmt(f.goal.at30PerDay)}</b>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        <div className="small muted" style={{ marginTop: 8 }}>
-          {t('progress.paceNote')}
-          {f.goal ? ` ${t('progress.examNote')}` : ''}
-        </div>
-      </div>
+      </section>
+
+      <StudyDays p={p} />
+      <Retention p={p} />
+      <Hardest p={p} onStudy={onStudyHardest} />
     </div>
+  );
+}
+
+function DeckProgress({ d }: { d: DeckJourney }) {
+  const { t } = useTranslation();
+  const sub = [
+    d.goal
+      ? t('progress.deck.goal', { goal: d.goal.label, count: d.goal.target })
+      : t('progress.deck.whole', { count: d.cards }),
+    d.examDate && t('decks.examOn', { date: date(d.examDate) }),
+  ].filter(Boolean);
+  const forecast = d.reached
+    ? t(d.goal ? 'progress.deck.goalReached' : 'progress.deck.allLearned')
+    : d.forecast
+      ? t(d.goal ? 'progress.deck.goalBy' : 'progress.deck.deckBy', { goal: d.goal?.label, date: date(d.forecast) })
+      : t('progress.deck.noPace');
+  return (
+    <section className="panel deck journey-deck">
+      <h3>{d.name}</h3>
+      <p className="deck-sub">{sub.join(' · ')}</p>
+      <p className="deckstats">
+        <span>
+          <Trans i18nKey="progress.deck.learned" values={{ count: formatNumber(d.learned) }} components={b} />
+        </span>
+        <span>
+          <Trans i18nKey="progress.deck.left" values={{ count: formatNumber(d.remaining) }} components={b} />
+        </span>
+        <span>
+          <Trans i18nKey="progress.deck.perWeek" values={{ count: formatNumber(d.perWeek) }} components={b} />
+        </span>
+      </p>
+      <div className="meter" aria-hidden="true">
+        <i style={{ width: `${d.cards ? (d.learned / d.cards) * 100 : 0}%` }} />
+      </div>
+      <p className="journey-forecast">{forecast}</p>
+    </section>
+  );
+}
+
+/** One square per day, a column per week; darker means more minutes. */
+function StudyDays({ p }: { p: Journey }) {
+  const { t } = useTranslation();
+  const weeks = heatmapWeeks(p.heatmapSince, p.today, p.studyDays);
+  const STEP = 15;
+  const CELL = 12;
+  const TOP = 16;
+  const label = t('progress.days.summary', { count: p.studyDays.length });
+  const wrap = useRef<HTMLDivElement>(null);
+  // Open at today: the most recent weeks are on the right.
+  useEffect(() => {
+    if (wrap.current) wrap.current.scrollLeft = wrap.current.scrollWidth;
+  }, []);
+  return (
+    <section className="panel journey-panel" aria-labelledby="journey-days">
+      <h2 id="journey-days">{t('progress.days.title')}</h2>
+      {/* Focusable so the calendar can be scrolled with the keyboard when the window is narrow. */}
+      <div className="journey-heat-wrap" ref={wrap} tabIndex={0}>
+        <svg
+          className="journey-heat"
+          viewBox={`0 0 ${weeks.length * STEP} ${TOP + 7 * STEP}`}
+          role="img"
+          aria-label={label}
+        >
+          {monthStarts(weeks).map((m) => (
+            <text key={m.day} x={m.column * STEP} y={TOP - 5} className="journey-axis">
+              {date(m.day, { month: 'short' })}
+            </text>
+          ))}
+          {weeks.map((w, x) =>
+            w.map((c, y) =>
+              c.future ? null : (
+                <rect
+                  key={c.day}
+                  x={x * STEP}
+                  y={TOP + y * STEP}
+                  width={CELL}
+                  height={CELL}
+                  rx={2}
+                  className={`heat-l${c.level}${c.day === p.today ? ' heat-today' : ''}`}
+                >
+                  <title>
+                    {c.level
+                      ? t('progress.days.studied', { date: date(c.day), count: c.minutes })
+                      : t('progress.days.rest', { date: date(c.day) })}
+                  </title>
+                </rect>
+              ),
+            ),
+          )}
+        </svg>
+      </div>
+      <div className="journey-foot">
+        <span className="grow">{label}</span>
+        <span className="journey-legend" aria-hidden="true">
+          {t('progress.days.less')}
+          {[0, 1, 2, 3].map((l) => (
+            <i key={l} className={`heat-l${l}`} />
+          ))}
+          {t('progress.days.more')}
+        </span>
+      </div>
+    </section>
+  );
+}
+
+/** Weekly share of real reviews recalled (practice answers are left out), against the target retention. */
+function Retention({ p }: { p: Journey }) {
+  const { t } = useTranslation();
+  const r = p.retention;
+  const rate = recallRate(r);
+  return (
+    <section className="panel journey-panel" aria-labelledby="journey-retention">
+      <h2 id="journey-retention">{t('progress.retention.title')}</h2>
+      <p className="journey-lead">
+        {rate === null
+          ? t('progress.retention.empty')
+          : t('progress.retention.lead', { percent: formatPercent(rate), count: r.reviews, weeks: r.weeks.length })}
+      </p>
+      <div className="journey-chart">
+        <div className="journey-target" style={{ bottom: `${r.target * 100}%` }} aria-hidden="true" />
+        <ol className="journey-bars">
+          {r.weeks.map((w) => {
+            const v = recallRate(w);
+            const week = date(w.week, { day: 'numeric', month: 'short' });
+            return (
+              <li key={w.week}>
+                {v !== null && (
+                  <>
+                    <span className="journey-bar-value" style={{ bottom: `${v * 100}%` }} aria-hidden="true">
+                      {formatPercent(v)}
+                    </span>
+                    <i style={{ height: `${v * 100}%` }} />
+                  </>
+                )}
+                <span className="sr-only">
+                  {v === null
+                    ? t('progress.retention.weekEmpty', { week })
+                    : t('progress.retention.week', { week, percent: formatPercent(v), count: w.reviews })}
+                </span>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+      <div className="journey-foot journey-spread">
+        <span aria-hidden="true">{date(r.weeks[0].week, { day: 'numeric', month: 'short' })}</span>
+        <span className="journey-target-key">
+          {t('progress.retention.target', { percent: formatPercent(r.target) })}
+        </span>
+        <span aria-hidden="true">{t('progress.retention.thisWeek')}</span>
+      </div>
+    </section>
+  );
+}
+
+function Hardest({ p, onStudy }: { p: Journey; onStudy: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <section className="panel journey-panel journey-hard" aria-labelledby="journey-hard">
+      <div className="journey-hard-head">
+        <h2 id="journey-hard">{t('progress.hard.title', { count: p.hardest.length })}</h2>
+        {p.hardest.length > 0 && (
+          <button className="btn" onClick={onStudy}>
+            {t('progress.hard.study')}
+          </button>
+        )}
+      </div>
+      {p.hardest.length ? (
+        <ol>
+          {p.hardest.map((c) => (
+            <li key={c.id}>
+              <span className="grow">
+                <b lang={c.lang ?? undefined}>{c.front}</b>
+                <span className="muted">{c.back}</span>
+              </span>
+              <span className="muted small">
+                {c.lapses
+                  ? t('progress.hard.forgot', { count: c.lapses })
+                  : t('progress.hard.missed', { count: c.wrong })}
+              </span>
+            </li>
+          ))}
+        </ol>
+      ) : (
+        <p className="muted">{t('progress.hard.empty')}</p>
+      )}
+    </section>
   );
 }

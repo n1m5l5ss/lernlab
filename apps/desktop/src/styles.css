@@ -1799,3 +1799,172 @@ kbd {
 .settings-libs li + li {
   margin-top: var(--space-1);
 }
+
+/* Progress (issue #29): per-deck journey, study-day calendar, weekly retention bars, hardest cards. */
+.journey {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.journey-title,
+.journey-panel h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-subhead);
+}
+.journey-deck h3 {
+  margin: 0;
+  font-size: var(--text-subhead);
+}
+.journey-forecast,
+.journey-lead {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.journey-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.journey-panel h2 {
+  margin: 0;
+}
+.journey-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.journey .deckgrid {
+  grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
+}
+/* On a narrow window the year scrolls sideways (opened at today) instead of shrinking to dots. */
+.journey-heat-wrap {
+  overflow-x: auto;
+}
+.journey-heat {
+  display: block;
+  width: 100%;
+  min-width: 600px;
+  height: auto;
+}
+.journey-axis {
+  font-size: 11px;
+  fill: var(--color-text-muted);
+}
+.journey .heat-l0 {
+  fill: var(--color-subtle);
+  background: var(--color-subtle);
+}
+.journey .heat-l1 {
+  fill: color-mix(in srgb, var(--color-accent) 35%, var(--color-subtle));
+  background: color-mix(in srgb, var(--color-accent) 35%, var(--color-subtle));
+}
+.journey .heat-l2 {
+  fill: color-mix(in srgb, var(--color-accent) 65%, var(--color-subtle));
+  background: color-mix(in srgb, var(--color-accent) 65%, var(--color-subtle));
+}
+.journey .heat-l3 {
+  fill: var(--color-accent);
+  background: var(--color-accent);
+}
+.journey .heat-today {
+  stroke: var(--color-text);
+  stroke-width: 1.5;
+}
+.journey-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.journey-legend i {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+.journey-chart {
+  position: relative;
+  height: 160px;
+  margin-top: var(--space-5);
+  border-bottom: 1px solid var(--color-border);
+}
+.journey-bars {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-2);
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.journey-bars li {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+}
+.journey-bars i {
+  width: 100%;
+  border-radius: var(--radius-control) var(--radius-control) 0 0;
+  background: var(--color-accent);
+}
+.journey-bar-value {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  margin-bottom: var(--space-1);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.journey-target {
+  position: absolute;
+  inset-inline: 0;
+  border-top: 2px dashed var(--color-text-muted);
+  z-index: 1;
+  pointer-events: none;
+}
+.journey-spread {
+  justify-content: space-between;
+}
+.journey-target-key::before {
+  content: '';
+  display: inline-block;
+  width: var(--space-5);
+  margin-inline-end: var(--space-2);
+  vertical-align: middle;
+  border-top: 2px dashed var(--color-text-muted);
+}
+@media (max-width: 640px) {
+  .journey-bar-value {
+    display: none;
+  }
+}
+.journey-hard-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.journey-hard ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.journey-hard li {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+.journey-hard li .grow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-3);
+  min-width: 0;
+}

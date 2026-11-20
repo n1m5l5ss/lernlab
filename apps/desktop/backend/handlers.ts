@@ -29,7 +29,7 @@ import {
   type DeckSettings,
   type NormalizedCard,
 } from '@lernlab/core/library';
-import { ACHIEVEMENTS, appState, dailySummary, finishSession, progressReport, stats } from '@lernlab/core/progress';
+import { ACHIEVEMENTS, appState, dailySummary, finishSession, journey, stats } from '@lernlab/core/progress';
 import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
@@ -391,7 +391,8 @@ export const handlers = {
   /* ── Progress ── */
   'stats.get': h(v.none, () => ({ ...stats(), achievements: [...ACHIEVEMENTS] })),
   'summary.today': h(v.none, () => dailySummary()),
-  'progress.get': h(v.none, () => progressReport()),
+  /** The Progress screen: per-deck learned vs remaining, pace and forecast, study days, retention, hardest cards. */
+  'progress.get': h(v.none, () => journey()),
   /** A copy of the database in backups/, taken before an app update is installed. */
   'backup.create': h(v.none, () => ({ file: basename(backupAppDb()) })),
   /** For Settings: the version, licence and where the data lives (read only). */
