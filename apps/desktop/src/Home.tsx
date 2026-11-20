@@ -24,18 +24,19 @@ export function Home({
   goDecks,
 }: {
   state: AppState;
-  onStart: (l: SessionLength) => void;
+  onStart: (l: SessionLength, practice: boolean) => void;
   refresh: () => void;
   goDecks: () => void;
 }) {
   const { t } = useTranslation();
   const [length, setLength] = useState<SessionLength>(state.settings.sessionLength);
+  const [practice, setPractice] = useState(false);
   const canStart = state.decks.length > 0;
   useKeys(
     (e) => {
       // Enter starts, unless a control has focus and Enter means something there.
       if (e.key === 'Enter' && canStart && !(e.target as HTMLElement).closest('select, a, button, input, textarea'))
-        onStart(length);
+        onStart(length, practice);
     },
     [length, state],
   );
@@ -131,8 +132,14 @@ export function Home({
             </div>
           </div>
         </div>
-        <button className="btn primary home-start" onClick={() => onStart(length)}>
-          {t('home.startStudying')} <kbd>{t('home.startKey')}</kbd>
+        <label className="home-practice">
+          <input type="checkbox" role="switch" checked={practice} onChange={(e) => setPractice(e.target.checked)} />
+          <span>
+            <b>{t('home.practice')}</b> <span className="muted">{t('home.practiceHint')}</span>
+          </span>
+        </label>
+        <button className="btn primary home-start" onClick={() => onStart(length, practice)}>
+          {practice ? t('home.startPractice') : t('home.startStudying')} <kbd>{t('home.startKey')}</kbd>
         </button>
       </section>
       {s.repair && (

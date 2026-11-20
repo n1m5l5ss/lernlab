@@ -110,7 +110,10 @@
       "hardest_other": "Hardest cards ({{count}})",
       "tags": "Tags",
       "tag": "Tag: {{tag}}"
-    }
+    },
+    "practice": "Practice",
+    "practiceHint": "Cram any cards. Your review schedule stays the same.",
+    "startPractice": "Start practice"
   },
   "decks": {
     "title": "Your decks",
@@ -335,7 +338,8 @@
     "again": "One more mini round",
     "againKey": "Space",
     "done": "Done",
-    "doneKey": "Enter"
+    "doneKey": "Enter",
+    "practice": "That was practice: your review schedule did not change."
   },
   "badges": {
     "first": {

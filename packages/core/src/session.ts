@@ -61,6 +61,7 @@ export function planSession(
   d: DB = getDb(),
   now = new Date(),
   sourceArg?: number | null | StudySource,
+  { practice = false }: { practice?: boolean } = {},
 ): SessionPlan {
   const source: StudySource =
     sourceArg === undefined
@@ -87,12 +88,15 @@ export function planSession(
   /** Plain front/back cards (question cards with their own format are excluded from pair games). */
   const plain = (id: number) => !['grammar', 'mcq', 'order'].includes(get(id).kind);
 
-  const due = dueItemIds(d, now, size.due, scope).filter(has);
-  const leftovers = learningTodayIds(d, now, scope).filter((id) => has(id) && notGrammar(id));
-  const fresh = freshPerDeck(d, now, scope, size.fresh, (id) => get(id).deckId);
+  // Practice (cramming) draws on every card in the source, due or not, and teaches nothing new.
+  const due = practice
+    ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
+    : dueItemIds(d, now, size.due, scope).filter(has);
+  const leftovers = practice ? [] : learningTodayIds(d, now, scope).filter((id) => has(id) && notGrammar(id));
+  const fresh = practice ? [] : freshPerDeck(d, now, scope, size.fresh, (id) => get(id).deckId);
   const learned = learnedIds(d, 300, scope).filter((id) => has(id) && notGrammar(id));
   const upcoming = newItemIds(d, 40, undefined, scope).filter(has);
-  const group = length === 'mini' ? null : nextGrammarGroup(d, now, scope);
+  const group = length === 'mini' || practice ? null : nextGrammarGroup(d, now, scope);
   const grammar = group ? grammarItemIds(group, d, scope).slice(0, 4).filter(has) : [];
   const info = srsInfo([...due, ...learned], d);
   const known = [...new Set([...learned, ...leftovers])];
@@ -373,6 +377,7 @@ export function planSession(
   return {
     id: host().randomId(),
     deckId: deckId ?? null,
+    practice,
     lang,
     length,
     agendaTarget: lang === 'de' ? `Heute: ${parts.join(', ')}.` : null,

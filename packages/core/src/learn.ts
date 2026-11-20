@@ -185,11 +185,44 @@ export function introduce(itemId: number, d: DB = getDb(), now = new Date()) {
   d.prepare(`INSERT OR IGNORE INTO item_state(item_id) VALUES (?)`).run(itemId);
 }
 
+/** One row in the attempts log, and the answer's XP on today's total. */
+function logAttempt(d: DB, a: Attempt, now: Date, grade: number | null, practice: boolean) {
+  const day = dayKey(now);
+  d.prepare(
+    `INSERT INTO attempts(ts, day, session_id, item_id, format, correct, near_miss, article_error, used_hint,
+       response_ms, given, xp, grade, practice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    now.toISOString(),
+    day,
+    a.sessionId,
+    a.itemId,
+    a.genderOnly ? 'gender' : a.format,
+    a.correct ? 1 : 0,
+    a.nearMiss ? 1 : 0,
+    a.articleError ? 1 : 0,
+    a.usedHint ? 1 : 0,
+    Math.round(a.responseMs),
+    a.given ?? null,
+    a.xp,
+    grade,
+    practice ? 1 : 0,
+  );
+  d.prepare(`INSERT INTO days(day, xp) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET xp = xp + excluded.xp`).run(
+    day,
+    a.xp,
+  );
+}
+
 export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
   const day = dayKey(now);
   return tx(d, () => {
     const item = d.prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(a.itemId);
     if (!item) return { grade: null };
+    if (a.practice) {
+      // Practice is logged (history, XP) but never introduces a card, moves the mastery ladder or grades FSRS.
+      logAttempt(d, a, now, null, true);
+      return { grade: null };
+    }
     d.prepare(`INSERT OR IGNORE INTO item_state(item_id) VALUES (?)`).run(a.itemId);
 
     // Intro introduces a card; so does a first attempt on a question card (a pretest – guessing first helps).
@@ -243,28 +276,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
       }
     }
 
-    d.prepare(
-      `INSERT INTO attempts(ts, day, session_id, item_id, format, correct, near_miss, article_error, used_hint,
-         response_ms, given, xp, grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      now.toISOString(),
-      day,
-      a.sessionId,
-      a.itemId,
-      a.genderOnly ? 'gender' : a.format,
-      a.correct ? 1 : 0,
-      a.nearMiss ? 1 : 0,
-      a.articleError ? 1 : 0,
-      a.usedHint ? 1 : 0,
-      Math.round(a.responseMs),
-      a.given ?? null,
-      a.xp,
-      grade,
-    );
-    d.prepare(`INSERT INTO days(day, xp) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET xp = xp + excluded.xp`).run(
-      day,
-      a.xp,
-    );
+    logAttempt(d, a, now, grade, false);
     return { grade };
   });
 }

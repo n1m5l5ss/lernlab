@@ -328,12 +328,17 @@ export const handlers = {
   }),
 
   /* ── Study ── */
-  'session.plan': h(v.optional(v.object({ length: v.optional(v.string(20)), deckId: v.optional(v.id) })), (body) => {
-    const length = (
-      ['mini', 'standard', 'long'].includes(body?.length ?? '') ? body!.length : getSettings().sessionLength
-    ) as SessionLength;
-    return planSession(length, getDb(), new Date(), body?.deckId);
-  }),
+  'session.plan': h(
+    v.optional(
+      v.object({ length: v.optional(v.string(20)), deckId: v.optional(v.id), practice: v.optional(v.boolean) }),
+    ),
+    (body) => {
+      const length = (
+        ['mini', 'standard', 'long'].includes(body?.length ?? '') ? body!.length : getSettings().sessionLength
+      ) as SessionLength;
+      return planSession(length, getDb(), new Date(), body?.deckId, { practice: !!body?.practice });
+    },
+  ),
   'attempt.record': h(
     v.object({
       sessionId: v.string(100),
@@ -348,6 +353,7 @@ export const handlers = {
       given: v.optional(v.string(10_000)),
       xp: v.number,
       genderOnly: v.optional(v.boolean),
+      practice: v.optional(v.boolean),
     }),
     (a) => recordAttempt(a as Attempt),
   ),
