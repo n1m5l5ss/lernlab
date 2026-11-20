@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SessionLength } from '@lernlab/core/types';
 import { teacherFor } from '@lernlab/core/teacher';
 import { api } from './api';
 import { useKeys } from './ctx';
 
-const LENGTHS: { key: SessionLength; label: string; sub: string }[] = [
-  { key: 'mini', label: 'Mini', sub: '~4 min' },
-  { key: 'standard', label: 'Standard', sub: '~12 min' },
-  { key: 'long', label: 'Long', sub: '~20 min' },
+const LENGTHS: { key: SessionLength; minutes: number }[] = [
+  { key: 'mini', minutes: 4 },
+  { key: 'standard', minutes: 12 },
+  { key: 'long', minutes: 20 },
 ];
 
 export function Home({
@@ -21,6 +22,7 @@ export function Home({
   refresh: () => void;
   goDecks: () => void;
 }) {
+  const { t } = useTranslation();
   const [length, setLength] = useState<SessionLength>(state.settings.sessionLength);
   const deck = state.decks.find((d: any) => d.id === state.activeDeck);
   useKeys(
@@ -34,37 +36,30 @@ export function Home({
     return (
       <div className="card col center" style={{ padding: 40 }}>
         <div style={{ fontSize: 44 }}>👋</div>
-        <h2 style={{ margin: 0 }}>Welcome to LernLab</h2>
-        <p className="muted">
-          Learn anything – languages, cloud certifications, medicine, physics – with short game rounds and smart spaced
-          repetition. Everything stays on your computer.
-        </p>
+        <h2 style={{ margin: 0 }}>{t('home.welcomeTitle')}</h2>
+        <p className="muted">{t('home.welcomeBody')}</p>
         <div>
           <button className="btn primary" onClick={goDecks}>
-            Import or create your first deck
+            {t('home.welcomeAction')}
           </button>
         </div>
       </div>
     );
   }
 
-  const t = teacherFor(deck?.language);
+  const teacher = teacherFor(deck?.language);
   const s = state.streak;
   const lvl = state.level;
-  const greet = state.missedYesterday
-    ? t.missedDay()
-    : state.today.goalMet
-      ? deck?.language === 'de'
-        ? ['Tagesziel geschafft! Noch eine Runde?', 'Daily goal done! One more round?']
-        : ['Daily goal done! One more round?', '']
-      : t.start();
+  const greet = state.missedYesterday ? teacher.missedDay() : state.today.goalMet ? teacher.goalMet() : teacher.start();
   const pct = (a: number, b: number) => `${b ? Math.min(100, Math.round((a / b) * 100)) : 0}%`;
 
   return (
     <div className="col" style={{ gap: 16 }}>
       <div className="row">
         <div className="teacher grow">
-          <div className="avatar">L</div>
+          <div className="avatar" aria-hidden="true">
+            {t('home.teacherInitial')}
+          </div>
           <div className="bubble">
             <div>{greet[0]}</div>
             {greet[1] && <div className="en">{greet[1]}</div>}
@@ -76,11 +71,12 @@ export function Home({
             await api.activate(Number(e.target.value));
             refresh();
           }}
-          title="Deck"
+          title={t('home.deckPicker')}
+          aria-label={t('home.deckPicker')}
         >
           {state.decks.map((d: any) => (
             <option key={d.id} value={d.id}>
-              {d.name} · {d.due} due
+              {t('home.deckOption', { name: d.name, count: d.due })}
             </option>
           ))}
         </select>
@@ -88,46 +84,40 @@ export function Home({
       <div className="hero">
         <div className="card">
           <button className="start" onClick={() => onStart(length)}>
-            START <span className="kbd">Enter</span>
+            {t('home.start')} <span className="kbd">{t('home.startKey')}</span>
           </button>
           <div className="lengths">
             {LENGTHS.map((l) => (
               <button key={l.key} className={length === l.key ? 'on' : ''} onClick={() => setLength(l.key)}>
-                {l.label}
+                {t(`home.length.${l.key}`)}
                 <br />
-                <span className="small">{l.sub}</span>
+                <span className="small">{t('home.minutes', { count: l.minutes })}</span>
               </button>
             ))}
           </div>
           <div className="row small muted" style={{ marginTop: 12, justifyContent: 'space-between' }}>
+            <span>{t('home.deckLine', { deck: deck?.name, due: state.due, newCount: state.newLeftToday })}</span>
             <span>
-              {deck?.name}: {state.due} due · {state.newLeftToday} new today
-            </span>
-            <span>
-              {state.today.goalMet
-                ? '✅ goal done'
-                : `goal: ${state.settings.dailyGoalSessions} session${state.settings.dailyGoalSessions > 1 ? 's' : ''}`}
+              {state.today.goalMet ? t('home.goalDone') : t('home.goal', { count: state.settings.dailyGoalSessions })}
             </span>
           </div>
         </div>
         <div className="statgrid">
           <div className="stat">
             <b>{state.studyDaysMonth}</b>
-            <span>study days this month</span>
+            <span>{t('home.studyDays')}</span>
           </div>
           <div className="stat">
-            <b>🔥 {s.current}</b>
-            <span>
-              streak · ❄️ {s.freezes} freeze{s.freezes === 1 ? '' : 's'}
-            </span>
+            <b>{t('home.streak', { count: s.current })}</b>
+            <span>{t('home.freezes', { count: s.freezes })}</span>
           </div>
           <div className="stat">
             <b>{state.wordsProducible}</b>
-            <span>cards you know from memory</span>
+            <span>{t('home.knownFromMemory')}</span>
           </div>
           <div className="stat">
-            <b>Lv {lvl.level}</b>
-            <span>{state.totalXp} XP</span>
+            <b>{t('home.level', { level: lvl.level })}</b>
+            <span>{t('home.xp', { xp: state.totalXp })}</span>
             <div className="bar" style={{ marginTop: 6 }}>
               <i style={{ width: pct(lvl.into, lvl.span) }} />
             </div>
@@ -136,16 +126,21 @@ export function Home({
       </div>
       {s.repair && (
         <div className="card" style={{ borderColor: 'var(--accent)' }}>
-          <b>Streak repair quest:</b> do 2 sessions by {s.repair.deadline} to restore your {s.repair.value}-day streak (
-          {s.repair.sessionsDone}/2).
+          <b>{t('home.repairTitle')}</b>{' '}
+          {t('home.repairBody', { deadline: s.repair.deadline, days: s.repair.value, done: s.repair.sessionsDone })}
         </div>
       )}
       <div className="card">
         <div className="row">
-          <b className="grow">{state.goal ? `Road to ${state.goal.label}` : `${deck?.name ?? 'Deck'} progress`}</b>
+          <b className="grow">
+            {state.goal
+              ? t('home.roadTo', { goal: state.goal.label })
+              : t('home.deckProgress', { deck: deck?.name ?? t('home.deckFallback') })}
+          </b>
           <span className="muted small">
-            {state.goal ? `${state.goal.known} / ${state.goal.total}` : `${state.wordsProducible} / ${state.itemCount}`}{' '}
-            known
+            {state.goal
+              ? t('home.knownCount', { known: state.goal.known, total: state.goal.total })
+              : t('home.knownCount', { known: state.wordsProducible, total: state.itemCount })}
           </span>
         </div>
         <div className="bar green" style={{ marginTop: 8 }}>
@@ -156,13 +151,9 @@ export function Home({
           />
         </div>
         <div className="row small muted" style={{ marginTop: 8 }}>
-          <span>
-            Met {state.introduced} of {state.itemCount} cards
-          </span>
+          <span>{t('home.met', { introduced: state.introduced, total: state.itemCount })}</span>
           <span className="grow" />
-          <span>
-            Today: {state.today.xp} XP · {state.today.minutes} min
-          </span>
+          <span>{t('home.today', { xp: state.today.xp, minutes: state.today.minutes })}</span>
         </div>
       </div>
       <Achievements got={state.achievements} />
@@ -171,6 +162,7 @@ export function Home({
 }
 
 function Achievements({ got }: { got: Record<string, string> }) {
+  const { t } = useTranslation();
   const [all, setAll] = useState<Record<string, { title: string; desc: string }>>({});
   useEffect(() => {
     api
@@ -180,7 +172,7 @@ function Achievements({ got }: { got: Record<string, string> }) {
   }, []);
   return (
     <div className="card">
-      <b>Badges</b>
+      <b>{t('home.badges')}</b>
       <div className="badges" style={{ marginTop: 10 }}>
         {Object.entries(all).map(([k, a]) => (
           <span key={k} className={`badge ${got[k] ? 'on' : ''}`} title={a.desc}>
