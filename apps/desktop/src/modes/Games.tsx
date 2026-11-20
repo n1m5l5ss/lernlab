@@ -131,7 +131,7 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
       </div>
       <RoundClock left={left} total={block.seconds} />
       <div className="round-prompt">
-        <div className="prompt" lang={ctx.lang ?? undefined}>
+        <div className="prompt" lang={ctx.lang ?? undefined} aria-live="polite">
           {label}
         </div>
         {isArticles && <div className="muted">{item.meaning}</div>}
@@ -328,6 +328,7 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
     }
   };
 
+  const latest = drops.find((d) => d.key === keyN.current - 1 && !d.hit);
   return (
     <div>
       <div className="round-head">
@@ -336,6 +337,10 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
         <span className="pill">{t('games.rainMiss', { count: score.miss })}</span>
       </div>
       <RoundClock left={left} total={block.seconds} />
+      {/* The rain is drawn for the eyes; screen readers hear each new word as it starts to fall. */}
+      <p className="sr-only" aria-live="polite">
+        {latest ? stripHtml(qa(latest.item).prompt) : ''}
+      </p>
       <div className="rain" aria-hidden="true">
         {drops.map((d) => (
           <div

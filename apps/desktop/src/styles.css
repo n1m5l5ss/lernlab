@@ -2644,3 +2644,11 @@ h1.session-title:focus,
 .summary h1:focus {
   outline: none;
 }
+/* At 200% zoom a long option name must not push the Settings page sideways (WCAG 1.4.4, 1.4.10). */
+.settings-row {
+  flex-wrap: wrap;
+}
+.settings-row > select {
+  min-width: 0;
+  max-width: 100%;
+}

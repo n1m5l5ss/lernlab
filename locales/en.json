@@ -1,6 +1,7 @@
 {
   "app": {
     "name": "LernLab",
+    "windowTitle": "{{page}} – LernLab",
     "loading": "Loading…",
     "retry": "Retry"
   },
@@ -817,7 +818,9 @@
       "pick": "Pick the answer",
       "sayIt": "How do you say…",
       "matches": "Which one matches?",
-      "replay": "Play again"
+      "replay": "Play again",
+      "right": "Right",
+      "wrong": "Not quite. It’s {{answer}}"
     },
     "tf": {
       "title": "True or false?",
