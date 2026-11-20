@@ -59,7 +59,7 @@ Node 22.13+ is required (`node:sqlite`).
 
 ## Rules
 - Ask in the issue before adding a new dependency. Prefer the platform: `node:sqlite`, `Intl`, Web Speech.
-- No user-visible text outside the language files (enforced once #10 lands).
+- No user-visible text outside the language files. Put strings in `locales/en.json` and show them with `t('key')` (react-i18next); format numbers and dates with the helpers in `apps/desktop/src/i18n.ts`. `apps/desktop/src/i18n.test.ts` fails on hard-coded text in screens; screens still being converted are listed in it, and the list only shrinks.
 - Never mark a card as known from a game or recognition exercise.
 - No timers on new cards.
 - Treat deck files as untrusted. Sanitise HTML, never run scripts, and check paths inside zip files.

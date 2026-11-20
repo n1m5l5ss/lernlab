@@ -1,0 +1,51 @@
+{
+  "app": {
+    "name": "LernLab",
+    "loading": "Loading…",
+    "retry": "Retry"
+  },
+  "nav": {
+    "label": "Main",
+    "home": "Study",
+    "decks": "Decks",
+    "browse": "Cards",
+    "progress": "Progress",
+    "stats": "Stats",
+    "settings": "Settings"
+  },
+  "common": {
+    "save": "Save",
+    "saved": "Saved ✓"
+  },
+  "settings": {
+    "dailyGoal": "Daily goal (sessions)",
+    "sessionLength": "Default session length",
+    "length": {
+      "mini": "Mini (~{{minutes}} min)",
+      "standard": "Standard (~{{minutes}} min)",
+      "long": "Long (~{{minutes}} min)"
+    },
+    "timers": "Timers",
+    "timersHint": "Timed rounds only use cards you already know. \"Challenge\" also times review questions.",
+    "timer": {
+      "off": "Off",
+      "relaxed": "Relaxed",
+      "normal": "Normal",
+      "challenge": "Challenge"
+    },
+    "sound": "Sound effects",
+    "teacherVoice": "Teacher speaks aloud (language decks)",
+    "retention": "Target memory retention",
+    "retentionHint": "Higher = more reviews. 90% is the recommended balance.",
+    "retentionLevel": {
+      "relaxed": "Relaxed ({{percent}})",
+      "balanced": "Balanced ({{percent}})",
+      "intense": "Intense ({{percent}})"
+    },
+    "language": "Language",
+    "languageHint": "More languages will come from volunteer translators.",
+    "pseudo": "Pseudo-locale (shows untranslated text)",
+    "summaryLink": "Today's summary (JSON for tutors/scripts)",
+    "perDeckNote": "New cards per day, language and goals are set per deck (Decks → ⚙)."
+  }
+}

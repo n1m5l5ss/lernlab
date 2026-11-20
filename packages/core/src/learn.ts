@@ -19,6 +19,8 @@ export type Settings = {
   blitzSeconds?: number;
   /** Optional per-question timer for every multiple-choice/true-false question (0 = off). */
   questionTimer?: number;
+  /** Interface language code from locales/ (e.g. 'en'), or the pseudo-locale 'en-XA' for testing. */
+  uiLanguage: string;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -31,6 +33,7 @@ export const DEFAULT_SETTINGS: Settings = {
   teacherVoice: true,
   blitzSeconds: 8,
   questionTimer: 0,
+  uiLanguage: 'en',
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
