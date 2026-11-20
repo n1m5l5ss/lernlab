@@ -11,7 +11,7 @@ import { pseudoString, pseudoize } from './pseudo';
 const SRC = import.meta.dirname;
 
 /** Screens whose text has not moved to locales/en.json yet (issue #10). Remove a file once it is converted. */
-const NOT_YET_TRANSLATED = new Set(['Session.tsx']);
+const NOT_YET_TRANSLATED = new Set(['Session.tsx', 'modes/Exercises.tsx', 'modes/Games.tsx']);
 
 /** JSX attributes a person reads or hears. */
 const VISIBLE_ATTRS = new Set(['placeholder', 'title', 'alt', 'aria-label', 'aria-description', 'label']);
@@ -64,7 +64,9 @@ export function findHardCodedText(file: string, source: string): Finding[] {
   return out;
 }
 
-const screens = readdirSync(SRC).filter((f) => f.endsWith('.tsx'));
+/** Every source file under src/, as paths relative to it (e.g. "modes/Games.tsx"). */
+const sources = (readdirSync(SRC, { recursive: true }) as string[]).map((f) => f.split('\\').join('/'));
+const screens = sources.filter((f) => f.endsWith('.tsx'));
 
 test('screens have no hard-coded visible text (use t() and locales/en.json)', () => {
   const findings = screens
@@ -100,7 +102,7 @@ const flatKeys = (tree: object, prefix = ''): string[] =>
 test('every t() key used in the screens exists in locales/en.json', () => {
   const keys = new Set(flatKeys(en));
   const missing: string[] = [];
-  for (const f of readdirSync(SRC).filter((x) => /\.tsx?$/.test(x) && !x.endsWith('.test.ts'))) {
+  for (const f of sources.filter((x) => /\.tsx?$/.test(x) && !x.endsWith('.test.ts'))) {
     const src = readFileSync(join(SRC, f), 'utf8');
     // Static keys: t('a.b'). Template keys: t(`a.${x}`) must match at least one key with that prefix.
     for (const m of src.matchAll(/\bt\('([\w.]+)'|i18nKey="([\w.]+)"/g)) {
