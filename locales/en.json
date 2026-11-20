@@ -65,11 +65,49 @@
     },
     "pseudo": "Pseudo-locale (shows untranslated text)",
     "summaryLink": "Today's summary (JSON for tutors/scripts)",
-    "perDeckNote": "New cards per day, language and goals are set per deck (Decks → ⚙).",
     "autoUpdate": "Update automatically",
     "autoUpdateHint": "Looks for a new version once a day and installs it when you restart. Your data is backed up first.",
     "betaUpdates": "Get beta updates",
-    "betaUpdatesHint": "Try new features early. Betas can have bugs."
+    "betaUpdatesHint": "Try new features early. Betas can have bugs.",
+    "section": {
+      "look": "Language and display",
+      "study": "Studying",
+      "data": "Your data",
+      "privacy": "Updates and privacy",
+      "about": "About"
+    },
+    "textSize": "Text size",
+    "textSizeOption": {
+      "normal": "Normal",
+      "large": "Large",
+      "larger": "Larger"
+    },
+    "reducedMotion": "Reduce motion",
+    "reducedMotionHint": "Turns off animations and confetti. LernLab also does this when your computer asks for less motion.",
+    "newPerDay": "New cards per day",
+    "newPerDayHint": "The default for every deck, from 0 to 100. A deck can set its own in Decks.",
+    "dataFolder": "Data folder",
+    "dataFolderHint": "Your decks, progress and settings are kept here, on this computer.",
+    "dataFolderDesktop": "To open or move it (for example into a synced folder), use File → Open data folder or File → Use a different data folder.",
+    "backups": "Backups",
+    "backupsHint": "Copies of your database are saved in {{path}}. LernLab also makes one before every update and before you delete a deck.",
+    "backupNow": "Back up now",
+    "backupDone": "Backup saved: {{file}}",
+    "online": {
+      "intro": "LernLab goes online in only these three cases:",
+      "updates": "Checking for updates on GitHub, while “Update automatically” is on.",
+      "gallery": "Loading a deck from the deck gallery, when you ask for it.",
+      "aiKey": "Using your own AI key, if you add one.",
+      "outro": "Nothing else leaves your computer: no account, no tracking."
+    },
+    "about": {
+      "version": "Version {{version}}",
+      "licence": "LernLab is free and open source under the {{licence}} licence.",
+      "licenceLink": "Read the licence",
+      "source": "Source code on GitHub",
+      "libraries": "Open-source libraries inside LernLab",
+      "library": "{{name}} ({{licence}} licence)"
+    }
   },
   "home": {
     "welcomeTitle": "Welcome to LernLab",

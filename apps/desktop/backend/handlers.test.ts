@@ -80,6 +80,28 @@ test('the theme follows the system unless light or dark is chosen', async () => 
   assert.equal((await ok('settings.save', { theme: 'light' })).theme, 'light');
 });
 
+test('text size, reduced motion and new cards per day are checked before they are saved', async () => {
+  const d = (await ok('state.get')).settings;
+  assert.equal(d.textSize, 'normal');
+  assert.equal(d.reducedMotion, false);
+  const s = await ok('settings.save', { textSize: 'larger', reducedMotion: true, newPerDay: 250 });
+  assert.equal(s.textSize, 'larger');
+  assert.equal(s.reducedMotion, true);
+  assert.equal(s.newPerDay, 100);
+  const bad = await ok('settings.save', { textSize: 'huge', reducedMotion: 'yes', newPerDay: -3 });
+  assert.equal(bad.textSize, 'normal');
+  assert.equal(bad.reducedMotion, false);
+  assert.equal(bad.newPerDay, 0);
+});
+
+test('Settings can show the version, licence and data folder', async () => {
+  const info = await ok('app.info');
+  assert.match(info.version, /^\d+\.\d+\.\d+/);
+  assert.equal(info.licence, 'MIT');
+  assert.equal(info.dataDir, dir);
+  assert.equal(info.backupsDir, join(dir, 'backups'));
+});
+
 test('choose what to study: a tag or starred cards, checked first; picking a deck resets it', async () => {
   const bad = await handle('study.choose', { source: { kind: 'tag', tag: '' } });
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');

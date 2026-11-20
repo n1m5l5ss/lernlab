@@ -17,6 +17,8 @@ export const api = {
   summary: () => call('summary.today'),
   progress: () => call('progress.get'),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),
+  appInfo: () => call('app.info'),
+  backupNow: () => call('backup.create'),
   createDeck: (b: Parameters<typeof call<'decks.create'>>[1]) => call('decks.create', b),
   updateDeck: (id: number, patch: Parameters<typeof call<'decks.update'>>[1]['patch']) =>
     call('decks.update', { id, patch }),

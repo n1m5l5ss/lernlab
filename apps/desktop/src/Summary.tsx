@@ -1,6 +1,7 @@
 // The end of a session: what you recalled, what you earned, and the cards that come back tomorrow.
 import { useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
+import { motionReduced } from './display';
 import { useTranslation } from 'react-i18next';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
@@ -31,7 +32,7 @@ export function Summary({
   useEffect(() => {
     sfx.win();
     // A celebration only at the end, and only for a real milestone.
-    if (server?.goalMetNow || server?.unlocked?.length)
+    if ((server?.goalMetNow || server?.unlocked?.length) && !motionReduced())
       confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 }, disableForReducedMotion: true });
   }, []);
   useKeys((e) => {

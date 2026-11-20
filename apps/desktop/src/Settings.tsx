@@ -1,11 +1,15 @@
-import { useState } from 'react';
+// Settings: every option in one place, grouped into sections. Each change is saved as soon as it is made.
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
+import { isDesktop } from './bridge';
 import i18next, { LANGUAGES, PSEUDO, formatPercent, setLanguage } from './i18n';
 import { THEMES } from '@lernlab/ui/tokens';
 import { applyTheme } from './theme';
+import { TEXT_SIZES, applyDisplay } from './display';
 import { LENGTHS } from './lengths';
+import { LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
 
 const TIMERS = [
   { key: 'off', blitz: 0, q: 0 },
@@ -21,171 +25,281 @@ const RETENTION = [
 
 type AppState = OutputOf<'state.get'>;
 type SettingsValue = AppState['settings'];
+type Info = OutputOf<'app.info'>;
+
+/** One labelled row: the label (with an optional hint) on the left, the control on the right. */
+function Row({ id, label, hint, children }: { id: string; label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="field settings-row">
+      <label htmlFor={id}>
+        {label}
+        {hint && <span className="settings-hint">{hint}</span>}
+      </label>
+      {children}
+    </div>
+  );
+}
+
+function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section className="card settings-section" aria-labelledby={`settings-${id}`}>
+      <h2 id={`settings-${id}`}>{title}</h2>
+      {children}
+    </section>
+  );
+}
 
 export function Settings({ state, onSaved }: { state: AppState; onSaved: () => void }) {
   const { t } = useTranslation();
   const [s, setS] = useState(state.settings);
+  const [newPerDay, setNewPerDay] = useState(String(state.settings.newPerDay));
+  const [dailyGoal, setDailyGoal] = useState(String(state.settings.dailyGoalSessions));
   const [msg, setMsg] = useState('');
-  const set = <K extends keyof SettingsValue>(k: K, v: SettingsValue[K]) => setS({ ...s, [k]: v });
-  const save = async (next = s) => {
-    await api.saveSettings(next);
-    await setLanguage(next.uiLanguage);
-    setMsg(i18next.t('common.saved')); // the new language, not the one this render started with
-    onSaved();
-    setTimeout(() => setMsg(''), 1500);
+  const [info, setInfo] = useState<Info | null>(null);
+  useEffect(() => {
+    api.appInfo().then(setInfo, (err: Error) => setMsg(err.message));
+  }, []);
+  useEffect(() => {
+    if (!msg) return;
+    const id = setTimeout(() => setMsg(''), 2500);
+    return () => clearTimeout(id);
+  }, [msg]);
+
+  const update = async (patch: Partial<SettingsValue>) => {
+    const next = { ...s, ...patch };
+    setS(next);
+    applyTheme(next.theme);
+    applyDisplay(next);
+    try {
+      const saved = await api.saveSettings(next);
+      setS(saved);
+      setNewPerDay(String(saved.newPerDay));
+      setDailyGoal(String(saved.dailyGoalSessions));
+      await setLanguage(saved.uiLanguage);
+      setMsg(i18next.t('common.saved')); // the new language, not the one this render started with
+      onSaved();
+    } catch (err) {
+      setMsg((err as Error).message);
+    }
+  };
+  const backup = async () => {
+    try {
+      setMsg(t('settings.backupDone', { file: (await api.backupNow()).file }));
+    } catch (err) {
+      setMsg((err as Error).message);
+    }
   };
   const timer = TIMERS.findIndex((x) => x.blitz === s.blitzSeconds && x.q === (s.questionTimer ?? 0));
+  const check = (key: 'sound' | 'teacherVoice' | 'reducedMotion' | 'betaUpdates', id: string, disabled = false) => (
+    <input
+      id={id}
+      type="checkbox"
+      checked={s[key] === true}
+      disabled={disabled}
+      onChange={(e) => update({ [key]: e.target.checked })}
+    />
+  );
+
   return (
-    <div className="card">
-      <div className="field">
-        <label htmlFor="set-lang">
-          {t('settings.language')}
-          <br />
-          <span className="small muted">{t('settings.languageHint')}</span>
-        </label>
-        <select
-          id="set-lang"
-          value={s.uiLanguage ?? 'en'}
-          onChange={(e) => {
-            const next = { ...s, uiLanguage: e.target.value };
-            setS(next);
-            save(next);
-          }}
-        >
-          {LANGUAGES.map((l) => (
-            <option key={l.code} value={l.code}>
-              {l.name}
-            </option>
-          ))}
-          <option value={PSEUDO}>{t('settings.pseudo')}</option>
-        </select>
+    <div className="settings">
+      <div className="settings-status" role="status" aria-live="polite">
+        {msg && <span className="toast">{msg}</span>}
       </div>
-      <div className="field">
-        <label htmlFor="set-theme">{t('settings.theme')}</label>
-        <select
-          id="set-theme"
-          value={s.theme ?? 'system'}
-          onChange={(e) => {
-            const next = { ...s, theme: e.target.value as SettingsValue['theme'] };
-            setS(next);
-            applyTheme(next.theme);
-            save(next);
-          }}
-        >
-          {THEMES.map((theme) => (
-            <option key={theme} value={theme}>
-              {t(`settings.themeOption.${theme}`)}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="field">
-        <span>{t('settings.dailyGoal')}</span>
-        <input
-          type="number"
-          value={s.dailyGoalSessions}
-          onChange={(e) => set('dailyGoalSessions', Number(e.target.value))}
-        />
-      </div>
-      <div className="field">
-        <span>{t('settings.sessionLength')}</span>
-        <select
-          value={s.sessionLength}
-          onChange={(e) => set('sessionLength', e.target.value as SettingsValue['sessionLength'])}
-        >
-          {LENGTHS.map((l) => (
-            <option key={l.key} value={l.key}>
-              {t('home.lengthMinutes', { count: l.minutes })}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="field">
-        <span>
-          {t('settings.timers')}
-          <br />
-          <span className="small muted">{t('settings.timersHint')}</span>
-        </span>
-        <div className="lengths" style={{ margin: 0, width: 360 }}>
-          {TIMERS.map((x, i) => (
-            <button
-              key={x.key}
-              className={timer === i ? 'on' : ''}
-              onClick={() => setS({ ...s, blitzSeconds: x.blitz, questionTimer: x.q })}
-            >
-              {t(`settings.timer.${x.key}`)}
-            </button>
-          ))}
+
+      <Section id="look" title={t('settings.section.look')}>
+        <Row id="set-lang" label={t('settings.language')} hint={t('settings.languageHint')}>
+          <select id="set-lang" value={s.uiLanguage ?? 'en'} onChange={(e) => update({ uiLanguage: e.target.value })}>
+            {LANGUAGES.map((l) => (
+              <option key={l.code} value={l.code}>
+                {l.name}
+              </option>
+            ))}
+            <option value={PSEUDO}>{t('settings.pseudo')}</option>
+          </select>
+        </Row>
+        <Row id="set-theme" label={t('settings.theme')}>
+          <select
+            id="set-theme"
+            value={s.theme ?? 'system'}
+            onChange={(e) => update({ theme: e.target.value as SettingsValue['theme'] })}
+          >
+            {THEMES.map((theme) => (
+              <option key={theme} value={theme}>
+                {t(`settings.themeOption.${theme}`)}
+              </option>
+            ))}
+          </select>
+        </Row>
+        <Row id="set-text" label={t('settings.textSize')}>
+          <select
+            id="set-text"
+            value={s.textSize}
+            onChange={(e) => update({ textSize: e.target.value as SettingsValue['textSize'] })}
+          >
+            {TEXT_SIZES.map((size) => (
+              <option key={size} value={size}>
+                {t(`settings.textSizeOption.${size}`)}
+              </option>
+            ))}
+          </select>
+        </Row>
+        <Row id="set-motion" label={t('settings.reducedMotion')} hint={t('settings.reducedMotionHint')}>
+          {check('reducedMotion', 'set-motion')}
+        </Row>
+        <Row id="set-sound" label={t('settings.sound')}>
+          {check('sound', 'set-sound')}
+        </Row>
+        <Row id="set-voice" label={t('settings.teacherVoice')}>
+          {check('teacherVoice', 'set-voice')}
+        </Row>
+      </Section>
+
+      <Section id="study" title={t('settings.section.study')}>
+        <Row id="set-length" label={t('settings.sessionLength')}>
+          <select
+            id="set-length"
+            value={s.sessionLength}
+            onChange={(e) => update({ sessionLength: e.target.value as SettingsValue['sessionLength'] })}
+          >
+            {LENGTHS.map((l) => (
+              <option key={l.key} value={l.key}>
+                {t('home.lengthMinutes', { count: l.minutes })}
+              </option>
+            ))}
+          </select>
+        </Row>
+        <Row id="set-goal" label={t('settings.dailyGoal')}>
+          <input
+            id="set-goal"
+            type="number"
+            min={1}
+            max={5}
+            value={dailyGoal}
+            onChange={(e) => setDailyGoal(e.target.value)}
+            onBlur={() => update({ dailyGoalSessions: Number(dailyGoal) })}
+          />
+        </Row>
+        <Row id="set-new" label={t('settings.newPerDay')} hint={t('settings.newPerDayHint')}>
+          <input
+            id="set-new"
+            type="number"
+            min={0}
+            max={100}
+            value={newPerDay}
+            onChange={(e) => setNewPerDay(e.target.value)}
+            onBlur={() => update({ newPerDay: Number(newPerDay) })}
+          />
+        </Row>
+        <div className="field settings-row">
+          <span id="set-timers">
+            {t('settings.timers')}
+            <span className="settings-hint">{t('settings.timersHint')}</span>
+          </span>
+          <div className="lengths settings-choice" role="group" aria-labelledby="set-timers">
+            {TIMERS.map((x, i) => (
+              <button
+                key={x.key}
+                className={timer === i ? 'on' : ''}
+                aria-pressed={timer === i}
+                onClick={() => update({ blitzSeconds: x.blitz, questionTimer: x.q })}
+              >
+                {t(`settings.timer.${x.key}`)}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
-      <div className="field">
-        <span>{t('settings.sound')}</span>
-        <input type="checkbox" checked={s.sound} onChange={(e) => set('sound', e.target.checked)} />
-      </div>
-      <div className="field">
-        <span>{t('settings.teacherVoice')}</span>
-        <input type="checkbox" checked={s.teacherVoice} onChange={(e) => set('teacherVoice', e.target.checked)} />
-      </div>
-      <div className="field">
-        <label htmlFor="set-updates">
-          {t('settings.autoUpdate')}
-          <br />
-          <span className="small muted">{t('settings.autoUpdateHint')}</span>
-        </label>
-        <input
-          id="set-updates"
-          type="checkbox"
-          checked={s.autoUpdate !== false}
-          onChange={(e) => set('autoUpdate', e.target.checked)}
-        />
-      </div>
-      <div className="field">
-        <label htmlFor="set-beta">
-          {t('settings.betaUpdates')}
-          <br />
-          <span className="small muted">{t('settings.betaUpdatesHint')}</span>
-        </label>
-        <input
-          id="set-beta"
-          type="checkbox"
-          checked={s.betaUpdates === true}
-          disabled={s.autoUpdate === false}
-          onChange={(e) => set('betaUpdates', e.target.checked)}
-        />
-      </div>
-      <div className="field">
-        <span>
-          {t('settings.retention')}
-          <br />
-          <span className="small muted">{t('settings.retentionHint')}</span>
-        </span>
-        <select value={s.retention} onChange={(e) => set('retention', Number(e.target.value))}>
-          {RETENTION.map((r) => (
-            <option key={r.key} value={r.value}>
-              {t(`settings.retentionLevel.${r.key}`, { percent: formatPercent(r.value) })}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="actions">
-        <button className="btn primary" onClick={() => save()}>
-          {t('common.save')}
-        </button>
-        <a
-          className="small muted"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            api.downloadSummary().catch((err: Error) => setMsg(err.message));
-          }}
-        >
-          {t('settings.summaryLink')}
-        </a>
-        {msg && <span className="small">{msg}</span>}
-      </div>
-      <p className="small muted" style={{ marginTop: 16 }}>
-        {t('settings.perDeckNote')}
-      </p>
+        <Row id="set-retention" label={t('settings.retention')} hint={t('settings.retentionHint')}>
+          <select
+            id="set-retention"
+            value={s.retention}
+            onChange={(e) => update({ retention: Number(e.target.value) })}
+          >
+            {RETENTION.map((r) => (
+              <option key={r.key} value={r.value}>
+                {t(`settings.retentionLevel.${r.key}`, { percent: formatPercent(r.value) })}
+              </option>
+            ))}
+          </select>
+        </Row>
+      </Section>
+
+      <Section id="data" title={t('settings.section.data')}>
+        <div className="settings-block">
+          <span className="settings-label">{t('settings.dataFolder')}</span>
+          <span className="settings-hint">{t('settings.dataFolderHint')}</span>
+          {info && <code className="settings-path">{info.dataDir}</code>}
+          {isDesktop() && <span className="settings-hint">{t('settings.dataFolderDesktop')}</span>}
+        </div>
+        <div className="settings-block">
+          <span className="settings-label">{t('settings.backups')}</span>
+          {info && <span className="settings-hint">{t('settings.backupsHint', { path: info.backupsDir })}</span>}
+          <div className="settings-actions">
+            <button className="btn" onClick={backup}>
+              {t('settings.backupNow')}
+            </button>
+            <a
+              className="small"
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                api.downloadSummary().catch((err: Error) => setMsg(err.message));
+              }}
+            >
+              {t('settings.summaryLink')}
+            </a>
+          </div>
+        </div>
+      </Section>
+
+      <Section id="privacy" title={t('settings.section.privacy')}>
+        <Row id="set-updates" label={t('settings.autoUpdate')} hint={t('settings.autoUpdateHint')}>
+          <input
+            id="set-updates"
+            type="checkbox"
+            checked={s.autoUpdate !== false}
+            onChange={(e) => update({ autoUpdate: e.target.checked })}
+          />
+        </Row>
+        <Row id="set-beta" label={t('settings.betaUpdates')} hint={t('settings.betaUpdatesHint')}>
+          {check('betaUpdates', 'set-beta', s.autoUpdate === false)}
+        </Row>
+        <div className="settings-block">
+          <span className="settings-label" id="set-online">
+            {t('settings.online.intro')}
+          </span>
+          <ol className="settings-online" aria-labelledby="set-online">
+            {ONLINE_CASES.map((c) => (
+              <li key={c}>{t(`settings.online.${c}`)}</li>
+            ))}
+          </ol>
+          <span className="settings-hint">{t('settings.online.outro')}</span>
+        </div>
+      </Section>
+
+      <Section id="about" title={t('settings.section.about')}>
+        <div className="settings-block">
+          {info && <span className="settings-label">{t('settings.about.version', { version: info.version })}</span>}
+          {info && <span>{t('settings.about.licence', { licence: info.licence })}</span>}
+          <div className="settings-actions">
+            <a href={LICENSE_URL} target="_blank" rel="noreferrer">
+              {t('settings.about.licenceLink')}
+            </a>
+            <a href={REPO_URL} target="_blank" rel="noreferrer">
+              {t('settings.about.source')}
+            </a>
+          </div>
+        </div>
+        <div className="settings-block">
+          <span className="settings-label" id="set-libs">
+            {t('settings.about.libraries')}
+          </span>
+          <ul className="settings-libs" aria-labelledby="set-libs">
+            {LIBRARIES.map((l) => (
+              <li key={l.pkg}>{t('settings.about.library', { name: l.name, licence: l.licence })}</li>
+            ))}
+          </ul>
+        </div>
+      </Section>
     </div>
   );
 }
