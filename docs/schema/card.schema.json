@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/n1m5l5ss/lernlab/blob/main/docs/schema/card.schema.json",
+  "title": "LernLab card (.lernpack format version 1)",
+  "description": "One card: one line of cards.jsonl, or one element of the cards.json array. See docs/FORMAT.md. Readers must ignore keys they do not know, so this schema allows additional properties. Text fields may use the safe HTML list in docs/FORMAT.md; everything else is removed on import.",
+  "type": "object",
+  "required": ["front"],
+  "properties": {
+    "id": {
+      "description": "Stable id chosen by the writer, so a re-import updates the card and keeps progress. Write a string; readers also accept a number. Without an id, cards are matched by deck name plus front and back.",
+      "type": ["string", "number"]
+    },
+    "type": {
+      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). Readers treat an unknown type as if it were missing.",
+      "type": "string",
+      "enum": ["basic", "cloze", "mcq", "order"]
+    },
+    "front": {
+      "description": "Term, question or prompt. Cloze: text with {{c1::answer}} or {{c1::answer::hint}} (Anki syntax). A card with an empty front is skipped.",
+      "type": "string",
+      "minLength": 1
+    },
+    "back": { "description": "Definition or answer.", "type": "string" },
+    "altAnswers": {
+      "description": "Other accepted answers, separated by |, e.g. \"colour|color\".",
+      "type": "string"
+    },
+    "example": {
+      "description": "Example sentence. Mark the studied word with <b>...</b> to get fill-the-gap rounds.",
+      "type": "string"
+    },
+    "exampleTranslation": { "description": "Translation of the example.", "type": "string" },
+    "explanation": { "description": "Shown after answering: a rule or rationale.", "type": "string" },
+    "notes": { "description": "Extra notes or mnemonics.", "type": "string" },
+    "category": {
+      "description": "Group for sorting rounds, e.g. der/die/das or Storage/Compute.",
+      "type": "string"
+    },
+    "choices": {
+      "description": "Multiple choice: the choices, separated by |.",
+      "type": "string"
+    },
+    "correct": {
+      "description": "Multiple choice: the correct choices as 1-based numbers or as texts, separated by |.",
+      "type": "string"
+    },
+    "steps": {
+      "description": "Ordering card: the steps in the correct order, separated by |.",
+      "type": "string"
+    },
+    "image": {
+      "description": "Image file name inside media/ (any subfolder; matched by file name), or an https:// URL. GIFs are images.",
+      "type": "string"
+    },
+    "audio": { "description": "Audio file name inside media/, or an https:// URL.", "type": "string" },
+    "video": { "description": "Video file name inside media/ (mp4 or webm), or an https:// URL.", "type": "string" },
+    "tags": {
+      "description": "Tags.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "subdeck": {
+      "description": "Sub-deck path, with :: between levels, e.g. \"Medicine::Cardio\".",
+      "type": "string"
+    },
+    "group": {
+      "description": "Lesson group: cards with the same group are taught together in a mini-lesson.",
+      "type": "string"
+    },
+    "rank": {
+      "description": "Introduction order, e.g. word frequency rank. Lower comes first.",
+      "type": "number"
+    },
+    "extra": {
+      "description": "Any other fields, as an object of strings, e.g. {\"reading\": \"...\"}.",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

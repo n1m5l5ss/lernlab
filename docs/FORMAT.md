@@ -14,15 +14,23 @@ LernLab imports and exports decks in open formats, so your cards never get locke
 
 Re-importing a deck **updates** cards instead of duplicating them, and keeps your progress. Cards are matched by their `id`, or, if there is none, by deck name plus front and back.
 
-## Deck package (format version 1)
+## Deck package: `.lernpack` format version 1
 
-A deck package is a zip file. It can end in `.zip` or `.lernpack`; the final file ending is decided together with the product name. Download a ready-made example from `examples/downloads/`.
+**Status: version 1, frozen (November 2026).** This section is the stable spec that other tools can build on. Version 1 will not change in a way that breaks an existing reader or writer: new optional fields may be added (see [Versioning](#versioning)), and anything that would break a version 1 reader gets a new version number. The machine-readable rules are the JSON Schemas in [`docs/schema/`](schema/):
+
+- [`manifest.schema.json`](schema/manifest.schema.json): `manifest.json`
+- [`card.schema.json`](schema/card.schema.json): one card (a line of `cards.jsonl`)
+
+Both use JSON Schema draft 2020-12. A complete example built by LernLab's own exporter is [`examples/german-colours-with-pictures.lernpack`](../examples/german-colours-with-pictures.lernpack) (rebuild it with `npx tsx scripts/build-example-lernpack.ts`). The unzipped decks in `examples/decks/` and the zips in `examples/downloads/` show the hand-made `cards.csv` style.
+
+A deck package is a zip file. It can end in `.lernpack` or `.zip`: readers recognise it by its content (a zip with a `manifest.json`), not by its ending. Which ending the app offers by default is decided together with the product name.
 
 ```
-german-colours.zip
-└── german-colours/          optional top folder (any name)
-    ├── manifest.json        recommended: deck name, language, description
-    ├── cards.csv            the cards: one row per card (main format, edit in Excel or Google Sheets)
+german-colours.lernpack
+└── german-colours/          optional single top folder (any name)
+    ├── manifest.json        required: format, version, deck name, language, description
+    ├── cards.csv            the cards, one row per card (edit in Excel or Google Sheets)
+    ├── cards.jsonl          or: one JSON card per line (lossless; what LernLab writes)
     └── media/               optional
         ├── images/          .jpg .png .webp .gif (animated GIFs work)
         │   ├── rot.png
@@ -34,20 +42,32 @@ german-colours.zip
 
 Rules:
 
-- **Cards file.** `cards.csv` is the main format: UTF-8, comma-separated, with a header row. The same columns as a plain CSV (below).
-  - `cards.jsonl` (one JSON card per line) is also accepted, for scripts and for card types that don't fit in a spreadsheet.
-  - If both are present, `cards.jsonl` wins.
-- **Media paths.** Write them in the `image`, `audio` and `video` columns relative to `media/`, for example `images/rot.png` or `audio/rot.mp3`.
-  - The importer also finds a file by its name alone, so `rot.png` works, and so do media folders with other names.
+- **Top folder.** The files may sit at the root of the zip or inside one top folder. The folder that holds `manifest.json` is the package root.
+- **Cards file.** A package has one cards file in its root. If there is more than one, readers use the first they find in this order:
+  1. `cards.jsonl`: one JSON card per line, UTF-8. Blank lines are ignored. Each card follows `card.schema.json`.
+  2. `cards.json`: a JSON array of the same cards.
+  3. `cards.csv` (or `cards.tsv`): UTF-8 (a byte order mark is allowed), with a header row and the same columns as a plain CSV (below). This is the easiest format to make by hand.
+  - A package without any of these is rejected.
+- **Media.** Every file under `media/`, in any subfolder, is a media file, except `.txt` and `.md` files (notes for people). Files are matched by **file name**, so names must be unique across subfolders.
+  - In a card, write the file name, with or without its subfolder: `rot.png`, `images/rot.png` and `media/images/rot.png` all find `media/images/rot.png`.
+  - `image`, `audio` and `video` may also be an `https://` URL; it is shown when the computer is online.
   - Missing files are listed in the import report, never silently dropped.
-- **GIFs** are images: put them in `images/`.
+  - GIFs are images: put them in `images/`.
 - **Limits** (enforced by the importer, ticket #25):
   - **Size:** images up to 20 MB, audio up to 50 MB, video up to 200 MB, 2 GB in total.
   - **Not accepted:** nested zips; file paths containing `..` or starting with `/`.
   - **File type:** checked by the file's content, not its name.
-- **Without a manifest.** A zip with just a CSV and media files also works. The deck is named after the CSV file.
+- **Without a manifest.** A zip with just a CSV and media files also imports, as a plain CSV with media (not a `.lernpack`). The deck is named after the CSV file.
 
-Exporting writes `cards.jsonl` (lossless). Writing a matching `cards.csv` beside it and sorting media into `images/`, `audio/` and `video/` is ticket #57.
+What LernLab writes when it exports: `manifest.json`, `cards.jsonl` and every media file the cards use, flat in `media/`. Writing a matching `cards.csv` beside it and sorting media into `images/`, `audio/` and `video/` is ticket #57; both are already valid version 1 packages, so readers must handle either layout.
+
+### Versioning
+
+- `version` is an integer. This spec is version 1.
+- **Readers ignore unknown fields.** A key that a reader does not know, in `manifest.json`, in `deck`, or in a card, is skipped without an error. So are unknown files in the zip. This lets a newer writer add optional fields without breaking older readers.
+- Readers ignore an unknown card `type` and pick the type from the card's content, as if `type` were missing.
+- A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
+- A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
 
 ### manifest.json
 
@@ -67,8 +87,20 @@ Exporting writes `cards.jsonl` (lossless). Writing a matching `cards.csv` beside
 }
 ```
 
-- `deck.language` is a language code (`de`, `ja`, `ko`, `fr`, …) for language decks, or `null` for any other subject.
-- Readers must ignore unknown keys. A higher `version` means a newer app is needed.
+| Key | Required | Meaning |
+|---|---|---|
+| `format` | yes | Always `"lernpack"` |
+| `version` | yes | Format version: `1` |
+| `deck` | yes | The deck: an object with the keys below |
+| `deck.name` | yes | Deck name. If it is missing or empty, readers use the file name |
+| `deck.language` | no | Language code (`de`, `ja`, `ko`, `fr`, …) for a language deck, or `null` for any other subject |
+| `deck.description` | no | Short description |
+| `deck.goal` | no | Study goal: `label` and `words` (required), `hoursLow`, `hoursHigh` and `tag` (optional) |
+| `cards` | no | Number of cards. Informational: readers count the cards file |
+| `created` | no | When the package was written (ISO 8601, UTC) |
+| `generator` | no | The program that wrote it, e.g. `LernLab` |
+
+When a package is imported into a deck that already exists (matched by name), the deck's name, language and goal stay as they are; the description is filled in only if the deck has none.
 
 ### cards.jsonl
 
@@ -84,9 +116,9 @@ Each line is one card. Only `front` is required.
 
 | Field | Meaning |
 |---|---|
-| `id` | Stable id (any string) so updates keep progress |
-| `type` | `basic` (default), `cloze`, `mcq`, `order` |
-| `front` | Term, question or prompt. Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
+| `id` | Stable id so updates keep progress. Write a string; readers also accept a number |
+| `type` | `basic` (default), `cloze`, `mcq`, `order`. Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card |
+| `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
 | `example` | Example sentence. Mark the studied word with `<b>…</b>` to get fill-the-gap rounds |
@@ -94,14 +126,19 @@ Each line is one card. Only `front` is required.
 | `explanation` | Shown after answering (rule, rationale) |
 | `notes` | Extra notes, mnemonics |
 | `category` | Group for sorting rounds (`der`/`die`/`das`, `Storage`/`Compute`, `Cardio`…) |
-| `choices`, `correct` | Multiple choice / multi-select: choices separated by `|`; correct as 1-based numbers or texts, separated by `|` |
+| `choices` | Multiple choice / multi-select: the choices, separated by `|` |
+| `correct` | Multiple choice: the correct choices as 1-based numbers or as texts, separated by `|` |
 | `steps` | Ordering card: steps in the correct order, separated by `|` |
-| `image`, `audio`, `video` | File name inside `media/` (or an `https://` URL). Video can be mp4/webm; GIFs work as images |
+| `image` | Image file name inside `media/` (or an `https://` URL). GIFs work as images |
+| `audio` | Audio file name inside `media/` (or an `https://` URL) |
+| `video` | Video file name inside `media/` (or an `https://` URL): mp4 or webm |
 | `tags` | Array of strings |
-| `subdeck` | Sub-deck path, e.g. `Medicine::Cardio` |
+| `subdeck` | Sub-deck path, e.g. `Medicine::Cardio`. Without it the card goes in the deck itself |
 | `group` | Lesson group: cards with the same group are taught together in a mini-lesson |
-| `rank` | Introduction order (e.g. word frequency rank) |
+| `rank` | Introduction order (e.g. word frequency rank); lower comes first |
 | `extra` | Any other fields (object of strings), e.g. `{"reading": "…"}` |
+
+Without an `id`, a card is matched on re-import by deck name plus front and back.
 
 Allowed formatting in text (the safe list): `<b> <strong> <i> <em> <u> <s> <mark> <sup> <sub> <small> <code> <pre> <br> <p> <div> <span> <ul> <ol> <li>`. They are kept without attributes; every other tag is removed when a card is saved and again when it is shown, because decks are shared files. In CSV and in the card editor you can also write `**bold**`, `*italic*` and `` `code` ``.
 

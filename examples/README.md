@@ -10,6 +10,8 @@ Ready-to-import decks, also useful as templates for making your own.
 | [biology-the-cell.zip](downloads/biology-the-cell.zip) | Parts of the cell and what they do |
 | [template.zip](downloads/template.zip) | An empty template: manifest, a `cards.csv` with every column, and empty `images/`, `audio/` and `video/` folders |
 
+[german-colours-with-pictures.lernpack](german-colours-with-pictures.lernpack) is the same colours deck as LernLab exports it: a `.lernpack` version 1 package with `manifest.json`, `cards.jsonl` and `media/`. Rebuild it with `npx tsx scripts/build-example-lernpack.ts`.
+
 The unzipped versions are in [`decks/`](decks/), so you can see exactly how a package looks. The plain spreadsheet files (`*.csv`, `*.tsv`) in this folder also import on their own.
 
 To make your own: download `template.zip`, unzip it, edit `cards.csv` in Excel or Google Sheets, drop your pictures into `media/images/`, zip the folder again and import it. The full format is in [docs/FORMAT.md](../docs/FORMAT.md).
