@@ -1,2 +1,4 @@
 # Check out text files with LF on every OS, so Prettier's check agrees on Windows too.
 * text=auto eol=lf
+# Sample decks keep their line endings exactly as stored.
+examples/** -text
