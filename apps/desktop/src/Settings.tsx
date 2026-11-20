@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { isDesktop } from './bridge';
-import i18next, { LANGUAGES, PSEUDO, formatPercent, setLanguage } from './i18n';
+import i18next, { LANGUAGES, PSEUDO, PSEUDO_RTL, formatPercent, setLanguage } from './i18n';
 import { THEMES } from '@lernlab/ui/tokens';
 import { applyTheme } from './theme';
 import { TEXT_SIZES, applyDisplay } from './display';
@@ -121,6 +121,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
               </option>
             ))}
             <option value={PSEUDO}>{t('settings.pseudo')}</option>
+            <option value={PSEUDO_RTL}>{t('settings.pseudoRtl')}</option>
           </select>
         </Row>
         <Row id="set-theme" label={t('settings.theme')}>

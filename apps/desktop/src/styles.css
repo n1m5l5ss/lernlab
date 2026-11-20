@@ -294,7 +294,8 @@ input {
 .bubble {
   background: var(--card2);
   padding: 10px 14px;
-  border-radius: 4px 16px 16px 16px;
+  border-radius: 16px;
+  border-start-start-radius: 4px;
 }
 .bubble .en {
   color: var(--muted);
@@ -734,8 +735,7 @@ input {
 }
 .ground {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
   bottom: 0;
   height: var(--size-progress-bar);
   background: var(--color-incorrect);
@@ -851,7 +851,7 @@ table.t td,
 table.t th {
   padding: 8px 6px;
   border-bottom: 1px solid var(--line);
-  text-align: left;
+  text-align: start;
 }
 .field {
   display: flex;
@@ -872,7 +872,7 @@ table.t th {
 .toast {
   position: fixed;
   bottom: 24px;
-  left: 50%;
+  left: 50%; /* rtl-ignore: centred */
   transform: translateX(-50%);
   background: var(--card2);
   border: 1px solid var(--accent);
@@ -1628,8 +1628,7 @@ kbd {
 }
 .browse-scroll .browse-row {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline: 0;
 }
 .browse-row > span,
 .browse-open {
@@ -1895,7 +1894,7 @@ kbd {
 }
 .journey-bar-value {
   position: absolute;
-  left: 50%;
+  left: 50%; /* rtl-ignore: centred */
   transform: translateX(-50%);
   z-index: 2;
   margin-bottom: var(--space-1);
@@ -2090,6 +2089,9 @@ kbd {
 }
 .editor-more[open] summary::before {
   content: '▾';
+}
+[dir='rtl'] .editor-more:not([open]) summary::before {
+  content: '◂';
 }
 .editor-more summary::-webkit-details-marker {
   display: none;
@@ -2625,4 +2627,9 @@ div.deck-drop {
 .update-notes summary {
   cursor: pointer;
   color: var(--color-accent);
+}
+
+/* ---- Right-to-left (#36): icons that point the way text runs are mirrored under <html dir="rtl">. ---- */
+[dir='rtl'] .icon-dir {
+  transform: scaleX(-1);
 }

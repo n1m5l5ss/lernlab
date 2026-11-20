@@ -44,3 +44,6 @@ export function monthStarts(weeks: HeatCell[][]): { column: number; day: string 
 
 /** Share of reviews recalled, or null for a week without reviews (an empty week is not 0 %). */
 export const recallRate = (w: { reviews: number; recalled: number }) => (w.reviews ? w.recalled / w.reviews : null);
+
+/** Where week `x` of `count` is drawn: oldest first in reading order, so right to left mirrors the calendar. */
+export const heatColumn = (x: number, count: number, dir: 'ltr' | 'rtl') => (dir === 'rtl' ? count - 1 - x : x);
