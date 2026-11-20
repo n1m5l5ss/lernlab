@@ -76,6 +76,8 @@ export function readApkg(buf: Uint8Array): ApkgResult {
         arr[Number(r.ord)] = r.name;
         fieldNames.set(Number(r.ntid), arr);
       }
+      // Anki separates deck levels with the \x1f control character.
+      // eslint-disable-next-line no-control-regex
       for (const r of db.prepare('SELECT id, name FROM decks').all() as any[]) deckNames.set(Number(r.id), String(r.name).replace(/\x1f/g, '::'));
     } else {
       const col = db.prepare('SELECT models, decks FROM col').get() as any;

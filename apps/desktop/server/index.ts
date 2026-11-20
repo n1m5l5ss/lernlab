@@ -1,8 +1,14 @@
 // CLI entry: `npm start` / `npm run dev`. The desktop app uses server.ts directly.
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getDb } from './db';
 import { ankiAvailable } from './anki';
 import { runAnkiImport } from './app';
 import { startServer } from './server';
+
+// The app's own folder (apps/desktop), so the UI build is found wherever the command runs from.
+// Data still goes to ./data in the folder you start from (the repo root for `npm start`).
+const appDir = fileURLToPath(new URL('..', import.meta.url));
 
 const [major, minor] = process.versions.node.split('.').map(Number);
 if (major < 22 || (major === 22 && minor < 13)) {
@@ -10,7 +16,7 @@ if (major < 22 || (major === 22 && minor < 13)) {
   process.exit(1);
 }
 
-startServer({ port: Number(process.env.PORT ?? 5179), dev: process.env.LERNLAB_DEV === '1' }).then(async ({ port }) => {
+startServer({ port: Number(process.env.PORT ?? 5179), dev: process.env.LERNLAB_DEV === '1', distDir: join(appDir, 'dist'), root: appDir }).then(async ({ port }) => {
   console.log(`\n  LernLab is running → http://localhost:${port}\n`);
   const decks = Number(getDb().prepare('SELECT COUNT(*) AS n FROM decks').get().n);
   if (decks === 0 && process.env.LERNLAB_AUTO_ANKI !== '0' && (await ankiAvailable())) {

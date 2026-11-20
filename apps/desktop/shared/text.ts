@@ -34,7 +34,7 @@ export function normalize(s: string): string {
     .replace(/ö/g, 'oe')
     .replace(/ü/g, 'ue')
     .replace(/ß/g, 'ss')
-    .replace(/[.,!?;:"'„“”‚‘’()«»–—\-]/g, ' ')
+    .replace(/[.,!?;:"'„“”‚‘’()«»–—-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -44,7 +44,7 @@ export function normalizeLoose(s: string): string {
   return s
     .toLowerCase()
     .normalize('NFC')
-    .replace(/[.,!?;:"'„“”‚‘’()«»–—\-]/g, ' ')
+    .replace(/[.,!?;:"'„“”‚‘’()«»–—-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 }
@@ -159,7 +159,7 @@ export function tokenize(sentence: string): string[] {
 /** Accepted answers for a vocabulary target: the full target plus each slash/semicolon alternative. */
 export function acceptedAnswers(target: string): string[] {
   const clean = stripHtml(target).replace(/\s*\(\d+\)\s*$/, '').trim();
-  const parts = clean.split(/\s*[\/;]\s*/).map((p) => p.trim()).filter(Boolean);
+  const parts = clean.split(/\s*[/;]\s*/).map((p) => p.trim()).filter(Boolean);
   const set = new Set([clean, ...(parts.length > 1 ? parts : [])]);
   return [...set];
 }

@@ -21,19 +21,24 @@ LernLab is a free, open-source desktop flashcard app for any subject. It makes s
 7. **One obvious action.** The home screen leads with a single Start button.
 
 ## Current state
-The repo holds the **v0.2 prototype**, which is a working reference. Its layout:
-- `shared/`: answer checking, grading, XP and streaks, card logic. Pure TypeScript.
-- `server/`: SQLite (`node:sqlite`), FSRS, session planner, importers and exporters, Hono HTTP API.
-- `src/`: React screens.
-- `electron/`: desktop shell.
+The repo is an npm workspace. It holds the **v0.2 prototype**, which is a working reference. Its layout:
+- `packages/core/`: the domain engine (pure TypeScript, no Node, DOM or Electron). Empty until #6 moves the engine in.
+- `apps/desktop/`: the v0.2 prototype app.
+  - `shared/`: answer checking, grading, XP and streaks, card logic. Pure TypeScript.
+  - `server/`: SQLite (`node:sqlite`), FSRS, session planner, importers and exporters, Hono HTTP API.
+  - `src/`: React screens.
+  - `electron/`: desktop shell.
+- `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`: one shared config for every package.
 
-Tickets in the Foundation epic (#5–#11) restructure it into `packages/core` and `apps/desktop`, and replace the HTTP API with typed IPC. **Don't redesign screens until the mockups in `docs/design/` are approved (issue #1).**
+The rest of the Foundation epic (#6–#11) moves the engine into `packages/core` and replaces the HTTP API with typed IPC. **Don't redesign screens until the mockups in `docs/design/` are approved (issue #1).**
 
 ## Commands
 ```bash
 npm install
-npm test              # unit + integration tests (node:test via tsx)
-npm run typecheck
+npm test              # unit + integration tests in every workspace (node:test via tsx)
+npm run typecheck     # strict TypeScript in every workspace
+npm run lint          # ESLint (one shared config)
+npm run format        # Prettier
 npm start             # web version at http://localhost:5179
 npm run desktop       # Electron app
 npm run dist:linux    # installers → release/ (dist:mac on a Mac, dist:win on Windows)
@@ -44,7 +49,7 @@ Node 22.13+ is required (`node:sqlite`).
 1. Read the issue and its acceptance criteria. If something is unclear or conflicts with `docs/PLAN.md`, ask in the issue before coding.
 2. Branch from `dev`: `feature/<issue>-short-name` or `fix/<issue>-short-name`. One ticket per branch and per pull request. Never commit to `main` or `dev` directly.
 3. Test first: write the failing test, make it pass, then refactor. Every feature and bug fix has a test.
-4. Run `npm test && npm run typecheck` before pushing.
+4. Run `npm test && npm run typecheck && npm run lint` from the repo root before pushing.
 5. Open a pull request into `dev`. Its title is a Conventional Commit in plain user language (`feat: add session length picker`, `fix: keep streak when the clock changes`), because it becomes the changelog line. The body says `Closes #<issue>` and lists:
    - what changed;
    - how it was tested;
