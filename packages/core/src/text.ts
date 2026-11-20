@@ -1,4 +1,5 @@
 // Text helpers shared by server (exercise generation) and client (instant answer checking).
+import type { Line } from './teacher';
 
 export const ARTICLES = ['der', 'die', 'das'] as const;
 export type Article = (typeof ARTICLES)[number];
@@ -70,8 +71,8 @@ export type CheckResult = {
   nearMiss: boolean;
   /** For nouns: the word was right but the article was wrong (or missing). */
   articleError: boolean;
-  /** Short human-readable note shown in feedback. */
-  note?: string;
+  /** Short note shown in feedback, as a locale key (check.*) with its values. */
+  note?: Line;
   /** Which accepted answer the input matched (or the canonical one). */
   matched: string;
 };
@@ -113,7 +114,9 @@ function compareOne(given: string, answer: string, requireArticle: boolean): Omi
         correct: false,
         nearMiss: false,
         articleError: true,
-        note: g.article ? `Artikel: ${a.article}, nicht ${g.article}` : `Artikel fehlt: ${a.article} ${a.word}`,
+        note: g.article
+          ? { key: 'check.articleWrong', params: { right: a.article, given: g.article } }
+          : { key: 'check.articleMissing', params: { article: a.article, word: a.word } },
       };
     }
     return { correct: true, nearMiss: wordResult.near, articleError: false, note: wordResult.note };
@@ -124,7 +127,7 @@ function compareOne(given: string, answer: string, requireArticle: boolean): Omi
   return { correct: true, nearMiss: r.near, articleError: false, note: r.note };
 }
 
-function compareWords(given: string, answer: string): { near: boolean; note?: string } | null {
+function compareWords(given: string, answer: string): { near: boolean; note?: Line } | null {
   if (given.trim() === answer.trim()) return { near: false };
   const gl = normalizeLoose(given);
   const al = normalizeLoose(answer);
@@ -132,13 +135,14 @@ function compareWords(given: string, answer: string): { near: boolean; note?: st
     // Only case or punctuation differs. German nouns need capitals, so flag it gently.
     const caseOnly = given.trim().toLowerCase() === answer.trim().toLowerCase();
     return caseOnly && given.trim() !== answer.trim()
-      ? { near: true, note: `Großschreibung: ${answer}` }
+      ? { near: true, note: { key: 'check.capitals', params: { answer } } }
       : { near: false };
   }
   const gn = normalize(given);
   const an = normalize(answer);
-  if (gn === an) return { near: true, note: `Schreibweise: ${answer}` };
-  if (an.length >= 5 && levenshtein(gn, an) <= 1) return { near: true, note: `Fast! Richtig: ${answer}` };
+  if (gn === an) return { near: true, note: { key: 'check.spelling', params: { answer } } };
+  if (an.length >= 5 && levenshtein(gn, an) <= 1)
+    return { near: true, note: { key: 'check.almost', params: { answer } } };
   return null;
 }
 

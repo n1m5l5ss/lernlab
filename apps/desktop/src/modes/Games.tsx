@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Block, Item } from '@lernlab/core/types';
 import { shuffle, splitArticle, normalize, stripHtml } from '@lernlab/core/text';
@@ -36,6 +37,7 @@ function useCountdown(seconds: number, onEnd: () => void) {
 
 /* ───────────── Category sprint: der/die/das, or any card categories ───────────── */
 export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
+  const { t } = useTranslation();
   const items = useMemo(() => shuffle(block.itemIds.map(ctx.item).filter((i) => i.category)), []);
   const cats = useMemo(() => {
     const set = [...new Set(items.map((i) => i.category!))];
@@ -105,10 +107,10 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
       </div>
       <div className="row">
         <div className="blocktitle grow">
-          {isArticles ? 'Der · die · das' : 'Category sprint'} · {left}s
+          {isArticles ? t('games.sprintArticles', { seconds: left }) : t('games.sprint', { seconds: left })}
         </div>
-        <span className="pill">✓ {stats.current.correct}</span>
-        <span className="pill">Best {best}</span>
+        <span className="pill">{t('games.hits', { count: stats.current.correct })}</span>
+        <span className="pill">{t('games.best', { count: best })}</span>
       </div>
       <div className="center" style={{ margin: '28px 0' }}>
         <div className="prompt de" style={{ fontSize: label.length > 24 ? 34 : 52, marginBottom: 4 }}>
@@ -140,6 +142,7 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
 
 /* ───────────── Match pairs on the clock ───────────── */
 export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
+  const { t } = useTranslation();
   const items = useMemo(() => block.itemIds.map(ctx.item), []);
   const left = useMemo(() => shuffle(items), []);
   const right = useMemo(() => shuffle(items), []);
@@ -177,8 +180,8 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
   return (
     <div>
       <div className="row">
-        <div className="blocktitle grow">Match pairs</div>
-        <span className="pill">⏱ {elapsed}s</span>
+        <div className="blocktitle grow">{t('games.match')}</div>
+        <span className="pill">{t('games.elapsed', { count: elapsed })}</span>
       </div>
       <div className="match" style={{ marginTop: 10 }}>
         <div className="col">
@@ -214,6 +217,7 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
 /* ───────────── Word rain: type the German before the English word lands ───────────── */
 type Drop = { key: number; item: Item; x: number; y: number; speed: number; hit?: boolean };
 export function WordRain({ block, ctx, onDone }: G<'rain'>) {
+  const { t } = useTranslation();
   const items = useMemo(() => shuffle(block.itemIds.map(ctx.item)), []);
   const [drops, setDrops] = useState<Drop[]>([]);
   const [value, setValue] = useState('');
@@ -301,9 +305,9 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
         <i style={{ width: `${(left / block.seconds) * 100}%` }} />
       </div>
       <div className="row">
-        <div className="blocktitle grow">Word rain · {left}s</div>
-        <span className="pill">💥 {score.hit}</span>
-        <span className="pill">💧 {score.miss}</span>
+        <div className="blocktitle grow">{t('games.rain', { seconds: left })}</div>
+        <span className="pill">{t('games.rainHit', { count: score.hit })}</span>
+        <span className="pill">{t('games.rainMiss', { count: score.miss })}</span>
       </div>
       <div className="rain" style={{ marginTop: 8 }}>
         {drops.map((d) => (
@@ -319,12 +323,13 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
         style={{ marginTop: 12 }}
         value={value}
         onChange={(e) => tryType(e.target.value)}
-        placeholder="Type the answer…"
+        placeholder={t('games.rainPlaceholder')}
         spellCheck={false}
         autoComplete="off"
       />
       <div className="small muted" style={{ marginTop: 6 }}>
-        {ctx.lang === 'de' ? 'Article optional here. ' : ''}Speed rises as you go ({elapsed}s in).
+        {ctx.lang === 'de' ? `${t('games.articleOptional')} ` : ''}
+        {t('games.rainSpeed', { seconds: elapsed })}
       </div>
     </div>
   );
@@ -332,6 +337,7 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
 
 /* ───────────── Boss battle: today's mistakes and your hardest words; three lives ───────────── */
 export function Boss({ block, ctx, onDone }: G<'boss'>) {
+  const { t } = useTranslation();
   const ids = useMemo(
     () => [...new Set([...ctx.missed, ...block.itemIds])].filter((id) => ctx.item(id)?.kind !== 'grammar').slice(0, 8),
     [],
@@ -384,8 +390,8 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
         <div className={`bossface ${hit ? 'hit' : ''}`}>{over === true ? '💀' : '👾'}</div>
         <div className="hp">
           <div className="row">
-            <b className="grow">Boss</b>
-            <span className="lives">
+            <b className="grow">{t('games.boss')}</b>
+            <span className="lives" title={t('games.lives', { count: Math.max(0, lives), total: block.lives })}>
               {'❤️'.repeat(Math.max(0, lives))}
               {'🖤'.repeat(Math.max(0, block.lives - lives))}
             </span>
@@ -422,16 +428,14 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
       ) : (
         <div className="card center">
           <div className="big" style={{ fontSize: 40, fontWeight: 900 }}>
-            {over ? 'Defeated! 🏆' : 'Not yet…'}
+            {over ? t('games.won') : t('games.lost')}
           </div>
-          <p className="muted">
-            {over ? `+30 XP bonus. ${correct.current} hits.` : 'These cards come back tomorrow. No penalty.'}
-          </p>
+          <p className="muted">{over ? t('games.wonText', { xp: 30, count: correct.current }) : t('games.lostText')}</p>
           <button
             className="btn primary"
             onClick={() => onDone({ correct: correct.current, total: i + 1, bossWon: over })}
           >
-            Continue <span className="kbd">Enter</span>
+            {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         </div>
       )}

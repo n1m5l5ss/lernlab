@@ -20,7 +20,13 @@
     "close": "Close",
     "delete": "Delete",
     "importing": "Importing…",
-    "noDate": "—"
+    "noDate": "—",
+    "continue": "Continue",
+    "check": "Check",
+    "correctAnswer": "Correct answer:",
+    "correctIs": "Correct: {{answer}}",
+    "correctOrder": "Correct order:",
+    "correctLabel": "Correct:"
   },
   "settings": {
     "dailyGoal": "Daily goal (sessions)",
@@ -435,5 +441,125 @@
     "xp": "⭐ {{xp, number}}",
     "xpLabel": "XP this session",
     "xpFloat": "+{{xp}}"
+  },
+  "keys": {
+    "enter": "Enter",
+    "space": "Space",
+    "tab": "Tab"
+  },
+  "ex": {
+    "intro": {
+      "guessTitle": "New word · guess the article",
+      "guessHint": "{{meaning}} · just guess – you learn either way",
+      "title": "New card",
+      "sayWord": "🔊 Word",
+      "playAudio": "🔊 Audio",
+      "gotIt": "Got it"
+    },
+    "choice": {
+      "listen": "Listen",
+      "listenHint": "What does it mean? <kbd>{{key}}</kbd> replays",
+      "picture": "What is this?",
+      "meaning": "What does it mean?",
+      "pick": "Pick the answer",
+      "sayIt": "How do you say…",
+      "matches": "Which one matches?",
+      "replay": "Play again"
+    },
+    "tf": {
+      "title": "True or false?",
+      "false": "✗ False",
+      "true": "✓ True"
+    },
+    "flip": {
+      "title": "Recall · think of the answer",
+      "show": "Show answer",
+      "hint": "Say or think your answer first – that's what makes it stick.",
+      "no": "Didn't know",
+      "partly": "Partly",
+      "yes": "Knew it"
+    },
+    "typed": {
+      "overridden": "Okay – counted as correct.",
+      "hint": "Hint: {{hint}}",
+      "placeholder": "Type your answer…",
+      "copyHint": "Type it exactly to continue – writing it fixes it in memory.",
+      "copy": "Copy it",
+      "showAnswer": "Show answer",
+      "hintButton": "Hint",
+      "iWasRightTitle": "The checker was too strict – count it as correct",
+      "iWasRight": "I was right",
+      "titleLanguage": "Type it in the language",
+      "title": "Type the answer"
+    },
+    "cloze": {
+      "title": "Fill the gap"
+    },
+    "unscramble": {
+      "title": "Build the sentence",
+      "help": "Click tiles or press numbers · Backspace undoes"
+    },
+    "dictation": {
+      "title": "Dictation",
+      "hint": "Type exactly what you hear.",
+      "play": "Play the sentence"
+    },
+    "speak": {
+      "title": "Say it out loud",
+      "listening": "Listening…",
+      "pressSpace": "Press Space and speak",
+      "sayThenSpace": "Say it out loud, then press Space",
+      "heard": "I heard: “{{heard}}” – {{retry}}",
+      "noMic": "No mic? Say it aloud and check yourself",
+      "didYouSay": "Did you say it like this?",
+      "no": "No",
+      "yes": "Yes",
+      "repeat": "Listen and repeat:",
+      "heardShort": "Heard: “{{heard}}”",
+      "again": "🔊 again",
+      "mic": "Start speaking",
+      "playModel": "Play the model answer"
+    },
+    "lesson": {
+      "title": "Lesson · {{group}}",
+      "gotIt": "Got it – practise!"
+    },
+    "mcq": {
+      "title": "Question",
+      "titleMulti_one": "Question · choose {{count}}",
+      "titleMulti_other": "Question · choose {{count}}"
+    },
+    "order": {
+      "title": "Put in order",
+      "help": "Click steps in order or press numbers · Backspace undoes"
+    }
+  },
+  "check": {
+    "articleWrong": "Article: {{right}}, not {{given}}",
+    "articleMissing": "Article missing: {{article}} {{word}}",
+    "capitals": "Capitals: {{answer}}",
+    "spelling": "Spelling: {{answer}}",
+    "almost": "Almost! Correct: {{answer}}"
+  },
+  "games": {
+    "sprintArticles": "Der · die · das · {{seconds}}s",
+    "sprint": "Category sprint · {{seconds}}s",
+    "hits": "✓ {{count}}",
+    "best": "Best {{count}}",
+    "match": "Match pairs",
+    "elapsed": "⏱ {{count}}s",
+    "rain": "Word rain · {{seconds}}s",
+    "rainHit": "💥 {{count}}",
+    "rainMiss": "💧 {{count}}",
+    "rainPlaceholder": "Type the answer…",
+    "articleOptional": "Article optional here.",
+    "rainSpeed": "Speed rises as you go ({{seconds}}s in).",
+    "boss": "Boss",
+    "lives": "{{count}} of {{total}} lives left",
+    "won": "Defeated! 🏆",
+    "lost": "Not yet…",
+    "wonText_one": "+{{xp}} XP bonus. {{count}} hit.",
+    "wonText_other": "+{{xp}} XP bonus. {{count}} hits.",
+    "lostText": "These cards come back tomorrow. No penalty."
   }
 }
