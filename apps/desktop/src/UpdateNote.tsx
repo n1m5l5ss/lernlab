@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { UpdateReady } from './bridge';
+import { ReleaseNoteList } from './WhatsNew';
 
 export function UpdateNote() {
   const { t } = useTranslation();
@@ -15,8 +16,14 @@ export function UpdateNote() {
   }, [updates]);
   if (!ready) return null;
   return (
-    <div className="card row" role="status" style={{ borderColor: 'var(--accent)' }}>
+    <div className="card row update-note" role="status" style={{ borderColor: 'var(--accent)' }}>
       <span className="grow">{t('update.ready', { version: ready.version })}</span>
+      {ready.notes && ready.notes.added.length + ready.notes.fixed.length > 0 && (
+        <details className="update-notes">
+          <summary>{t('update.notes')}</summary>
+          <ReleaseNoteList notes={ready.notes} compact />
+        </details>
+      )}
       <button
         className="btn primary"
         disabled={busy}

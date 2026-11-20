@@ -11,8 +11,8 @@
   },
   "homepage": "https://github.com/",
   "scripts": {
-    "build": "vite build",
-    "build:electron": "vite build && tsx electron/build.ts",
+    "build": "tsx ../../scripts/whats-new.ts && vite build",
+    "build:electron": "npm run build && tsx electron/build.ts",
     "desktop": "npm run build:electron && electron .",
     "dist": "npm run build:electron && electron-builder --publish never",
     "dist:mac": "npm run build:electron && electron-builder --mac --publish never",

@@ -4,7 +4,8 @@ import type { Channel, InputOf, OutputOf, Result } from '../backend/handlers';
 import { fromWire, toWire } from '../backend/wire';
 import i18next from './i18n';
 
-export type UpdateReady = { version: string };
+/** A downloaded update and the New and Fixed items from its GitHub Release (electron/update-policy.ts). */
+export type UpdateReady = { version: string; notes?: { added: string[]; fixed: string[] } };
 type Bridge = {
   invoke(channel: string, input?: unknown): Promise<Result<unknown>>;
   /** Desktop only: app updates (electron/updates.ts). */

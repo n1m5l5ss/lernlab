@@ -18,3 +18,5 @@ export const ONLINE_CASES = ['updates', 'gallery', 'aiKey'] as const;
 
 export const REPO_URL = 'https://github.com/n1m5l5ss/lernlab';
 export const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
+/** Every release's notes ("Full changelog" on What's new). Opens in the browser only when clicked. */
+export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;

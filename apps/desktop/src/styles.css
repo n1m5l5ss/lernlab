@@ -2564,3 +2564,65 @@ div.deck-drop {
 .anki-decks input:disabled + span {
   color: var(--color-text-muted);
 }
+
+/* ── What's new after an update (issue #58). Reuses the welcome page layout. ── */
+.whats-new-groups {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0 0 var(--space-7);
+}
+.whats-new-group {
+  padding: var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+.whats-new-group ul {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  line-height: var(--line-body);
+}
+.whats-new-group li + li {
+  margin-top: var(--space-2);
+}
+.whats-new-tag {
+  display: inline-block;
+  margin: 0 0 var(--space-3);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  font-size: var(--text-body);
+  font-weight: 700;
+}
+.whats-new-tag.added {
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+}
+.whats-new-tag.fixed {
+  background: var(--color-subtle);
+  color: var(--color-correct);
+}
+.whats-new .welcome-link {
+  display: inline-flex;
+  align-items: center;
+}
+.whats-new .welcome-title:focus {
+  outline: none;
+}
+.whats-new-groups.compact {
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+}
+.whats-new-groups.compact .whats-new-group {
+  padding: var(--space-3) var(--space-4);
+}
+.update-note {
+  flex-wrap: wrap;
+}
+.update-notes {
+  order: 1;
+  flex-basis: 100%;
+}
+.update-notes summary {
+  cursor: pointer;
+  color: var(--color-accent);
+}
