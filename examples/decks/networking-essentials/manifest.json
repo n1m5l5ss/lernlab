@@ -1,0 +1,10 @@
+{
+  "format": "lernpack",
+  "version": 1,
+  "deck": {
+    "name": "Networking essentials",
+    "language": null,
+    "description": "Ports, protocols, OSI layers and IP addressing: the core of entry-level networking certifications such as CompTIA Network+."
+  },
+  "generator": "LernLab sample decks"
+}
