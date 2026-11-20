@@ -34,7 +34,7 @@ There is no separate staging branch. A **beta release** cut from `dev` plays tha
 1. **Beta (optional).** Run the "Beta release" workflow on `dev`. It tags `vX.Y.Z-beta.N` and publishes a GitHub pre-release with installers for all three systems. Testers on the beta channel get it.
 2. **Stable.** Open a pull request `dev → main` titled `release: X.Y.Z` and merge it with a merge commit (not squash).
 3. **release-please** sees the new commits on `main`, opens a release PR that bumps the version in `package.json` and adds the section to `CHANGELOG.md`, and updates that PR as more commits arrive.
-4. Merging the release PR creates the tag `vX.Y.Z` and the GitHub Release. The release workflow then builds, signs and publishes the installers, and `latest*.yml` lets installed apps auto-update.
+4. Merging the release PR creates the tag `vX.Y.Z` and the GitHub Release. The release-please workflow then calls the "Build installers" workflow directly (a tag made with `GITHUB_TOKEN` can't trigger other workflows), which builds, signs and publishes the installers, and `latest*.yml` lets installed apps auto-update.
 5. A workflow merges `main` back into `dev`, so the version bump and changelog are in both.
 
 ## Version numbers (SemVer)
@@ -60,7 +60,7 @@ There is no separate staging branch. A **beta release** cut from `dev` plays tha
 | Pull request into `dev` or `main` | lint, type check, unit + property tests, coverage gate, component tests, visual + accessibility tests, Linux packaged end-to-end smoke test, performance comparison, bundle size, PR-title check |
 | Push to `dev` | the above + end-to-end tests on all 3 systems + unsigned nightly build artifact |
 | "Beta release" workflow on `dev` | signed builds for all 3 systems → GitHub pre-release |
-| Tag `vX.Y.Z` (from the release PR) | signed and notarised builds → GitHub Release (stable channel) |
+| Release PR merged (release-please calls "Build installers"); or a tag `vX.Y.Z` pushed by hand (draft release) | signed and notarised builds → GitHub Release (stable channel) |
 
 ## Branch protection (set once in GitHub → Settings → Rules → Rulesets)
 
