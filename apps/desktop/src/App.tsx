@@ -22,7 +22,13 @@ type AppState = OutputOf<'state.get'>;
 /** The study session and its summary fill the window; everything else sits in the shell. */
 type FullScreen =
   | { name: 'play'; plan: SessionPlan }
-  | { name: 'summary'; result: SessionResult; server: OutputOf<'session.finish'> | null; lang: string | null };
+  | {
+      name: 'summary';
+      result: SessionResult;
+      server: OutputOf<'session.finish'> | null;
+      lang: string | null;
+      items: SessionPlan['items'];
+    };
 
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
@@ -83,9 +89,9 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const finish = async (result: SessionResult, lang: string | null) => {
+  const finish = async (result: SessionResult, plan: SessionPlan) => {
     const server = await api.finish(result).catch(() => null);
-    setFull({ name: 'summary', result, server, lang });
+    setFull({ name: 'summary', result, server, lang: plan.lang, items: { ...plan.extras, ...plan.items } });
     refresh();
   };
 
@@ -112,7 +118,7 @@ export function App() {
       <Session
         plan={full.plan}
         settings={state.settings}
-        onFinish={(r) => finish(r, full.plan.lang)}
+        onFinish={(r) => finish(r, full.plan)}
         onQuit={() => {
           go('home');
           refresh();
@@ -125,6 +131,7 @@ export function App() {
         result={full.result}
         server={full.server}
         lang={full.lang}
+        items={full.items}
         onAgain={() => start('mini', full.result.practice)}
         onHome={() => go('home')}
       />
