@@ -3,9 +3,13 @@ name: Build installers
 # Runs three ways:
 # - called by release-please.yml right after it creates a release (its tag is made with GITHUB_TOKEN,
 #   and such tags never trigger `on: push: tags`, so release-please calls this workflow directly);
-# - on a tag pushed by a person (draft release);
+#   beta.yml calls it the same way for pre-releases;
+# - on a tag vX.Y.Z pushed by a person: a draft GitHub Release to review before publishing;
 # - by hand (Actions → Build installers → Run workflow): builds artifacts only, or, with a tag,
 #   rebuilds that release's installers and attaches them (e.g. after a failed run).
+#
+# Every installer is installed (or mounted) on its own system and started with --smoke-test, which
+# passes only once Home is on screen (apps/desktop/electron/smoke.ts).
 on:
   workflow_call:
     inputs:
@@ -28,6 +32,8 @@ permissions:
 env:
   # The tag to build: the input when called, otherwise the pushed ref.
   REF: ${{ inputs.tag || github.ref }}
+  # The release tag (empty for a plain build by hand from a branch).
+  TAG: ${{ inputs.tag || (github.ref_type == 'tag' && github.ref_name) || '' }}
 
 jobs:
   test:
@@ -38,12 +44,16 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
+      # Fail fast on a tag that doesn't match package.json (see apps/desktop/electron/release-version.ts).
+      - if: env.TAG != ''
+        run: npx tsx apps/desktop/electron/release-version.ts "$TAG"
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
 
   build:
     needs: test
+    name: build (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -61,16 +71,74 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
-      # Installer names and the in-app version come from package.json; match the tag being built.
-      - if: inputs.tag != ''
+      # Installer names and the in-app version come from package.json; match the tag being built
+      # (a beta tag leads up to the next version, so its number is newer than package.json).
+      - if: env.TAG != ''
         shell: bash
-        env:
-          TAG: ${{ inputs.tag }}
-        run: npm pkg set "version=${TAG#v}" --workspace apps/desktop
+        run: |
+          version=$(npx tsx apps/desktop/electron/release-version.ts "$TAG")
+          npm pkg set "version=$version" --workspace apps/desktop
       - run: npm run ${{ matrix.script }}
         env:
-          # Unsigned builds. Add CSC_LINK / CSC_KEY_PASSWORD (and APPLE_ID… for notarization) as secrets to sign.
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          # Signing (#39) is optional: with no secrets set, the builds are unsigned.
+          # macOS: MAC_CSC_LINK (base64 .p12) + MAC_CSC_KEY_PASSWORD sign; APPLE_ID,
+          # APPLE_APP_SPECIFIC_PASSWORD and APPLE_TEAM_ID also notarise.
+          CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' && secrets.MAC_CSC_LINK != '' }}
+          CSC_LINK: ${{ runner.os == 'macOS' && secrets.MAC_CSC_LINK || '' }}
+          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          # Windows: WIN_CSC_LINK (base64 .pfx) + WIN_CSC_KEY_PASSWORD. (#39 may use SignPath instead.)
+          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
+          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+
+      # ── Smoke tests: install each installer the way a user would, start it, wait for Home. ──
+      - name: Smoke test (Linux AppImage and deb)
+        if: runner.os == 'Linux'
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Chromium's sandbox needs a setuid helper or user namespaces; CI runners allow neither.
+          app=$(ls release/*.AppImage)
+          chmod +x "$app"
+          xvfb-run -a "$app" --appimage-extract-and-run --no-sandbox --smoke-test | tee smoke.log
+          grep -q LERNLAB_SMOKE_OK smoke.log
+          sudo apt-get install -y ./release/*.deb
+          xvfb-run -a /opt/LernLab/lernlab --no-sandbox --smoke-test | tee smoke.log
+          grep -q LERNLAB_SMOKE_OK smoke.log
+      - name: Smoke test (macOS dmg, Apple Silicon and Intel)
+        if: runner.os == 'macOS'
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          # The runner is Apple Silicon; the Intel build runs under Rosetta 2.
+          arch -x86_64 /usr/bin/true 2>/dev/null || sudo softwareupdate --install-rosetta --agree-to-license
+          for arch in arm64 x64; do
+            dmg=$(ls release/*-"$arch".dmg)
+            hdiutil attach -nobrowse -readonly -mountpoint "/Volumes/lernlab-$arch" "$dmg"
+            "/Volumes/lernlab-$arch/LernLab.app/Contents/MacOS/LernLab" --smoke-test | tee smoke.log
+            grep -q LERNLAB_SMOKE_OK smoke.log
+            hdiutil detach "/Volumes/lernlab-$arch"
+          done
+      - name: Smoke test (Windows installer, per user)
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $setup = (Get-ChildItem release/*.exe | Select-Object -First 1).FullName
+          Start-Process -Wait -FilePath $setup -ArgumentList '/S'
+          # A per-user install lands in %LOCALAPPDATA%\Programs, never in Program Files.
+          $app = Get-ChildItem "$env:LOCALAPPDATA\Programs" -Recurse -Filter LernLab.exe | Select-Object -First 1
+          if (-not $app) { throw 'LernLab.exe is not in %LOCALAPPDATA%\Programs: not a per-user install' }
+          $p = Start-Process -Wait -PassThru -FilePath $app.FullName -ArgumentList '--smoke-test' `
+            -RedirectStandardOutput smoke.log -RedirectStandardError smoke.err
+          Get-Content smoke.log, smoke.err
+          if ($p.ExitCode -ne 0 -or -not (Select-String -Quiet LERNLAB_SMOKE_OK smoke.log)) { throw 'Smoke test failed' }
+
       - uses: actions/upload-artifact@v4
         with:
           name: lernlab-${{ matrix.os }}
@@ -81,7 +149,7 @@ jobs:
             release/*.deb
             release/*.blockmap
             release/latest*.yml
-          if-no-files-found: ignore
+          if-no-files-found: error
 
   release:
     needs: build
@@ -91,11 +159,10 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with: { path: artifacts, merge-multiple: true }
-      # Called by release-please: the GitHub Release already exists, so attach the installers to it.
+      # Called by release-please or the beta workflow: the GitHub Release already exists, so attach to it.
       - if: inputs.tag != ''
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ inputs.tag }}
         run: gh release upload "$TAG" artifacts/* --clobber --repo "$GITHUB_REPOSITORY"
       # A tag pushed by a person: make a draft release to review before publishing.
       - if: inputs.tag == ''
@@ -103,3 +170,6 @@ jobs:
         with:
           files: artifacts/*
           draft: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          fail_on_unmatched_files: true
+          generate_release_notes: true

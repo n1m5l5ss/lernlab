@@ -17,8 +17,9 @@ import {
   type UtilityProcess,
   type WebFrameMain,
 } from 'electron';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { windowBackground, type Theme } from '@lernlab/ui/tokens';
@@ -27,6 +28,11 @@ import { themeOf } from './theme';
 import { applyPrefs, setupReminders, type ReminderStatus } from './reminders';
 import { reminderPrefsOf, startedAtLogin } from './reminder-policy';
 import { MIN_SIZE, restoreWindow, type WindowState } from './window-state';
+import { HOME_SELECTOR, isSmokeTest, SMOKE_FAIL, SMOKE_OK, waitFor } from './smoke';
+
+// Installer smoke test (see smoke.ts): a fresh, throw-away profile, so it never touches real data.
+const smoke = isSmokeTest(process.argv);
+if (smoke) app.setPath('userData', mkdtempSync(join(tmpdir(), 'lernlab-smoke-')));
 
 const configFile = () => join(app.getPath('userData'), 'config.json');
 type Config = {
@@ -96,6 +102,10 @@ function startDataProcess() {
 /** The data could not be opened (e.g. a failed update, already rolled back). Explain and quit. */
 function fatal(message: string) {
   quitting = true;
+  if (smoke) {
+    console.error(`${SMOKE_FAIL} ${message}`);
+    return app.exit(1);
+  }
   dialog.showErrorBox('LernLab could not open your data', message);
   app.exit(1);
 }
@@ -321,6 +331,7 @@ async function main() {
   });
   await win.loadFile(join(distDir, 'index.html'));
   ready = true;
+  if (smoke) return runSmokeTest(win);
 
   // One shortcut from anywhere straight into a session: the "zero friction" start.
   globalShortcut.register('CommandOrControl+Shift+L', startSession);
@@ -359,7 +370,25 @@ app.on('activate', () => {
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 
+/** Skip the welcome (it adds the sample deck), reload, and pass once Home is on screen. */
+async function runSmokeTest(w: BrowserWindow) {
+  const finished = await callData('welcome.finish', { choice: 'language' });
+  if (!finished.ok) return fatal(finished.error.message);
+  w.webContents.reload();
+  const shown = await waitFor(
+    () => w.webContents.executeJavaScript(`!!document.querySelector(${JSON.stringify(HOME_SELECTOR)})`),
+    { timeoutMs: 60_000, intervalMs: 250 },
+  );
+  console.log(shown ? `${SMOKE_OK} ${app.getVersion()}` : `${SMOKE_FAIL} Home did not appear within 60 s`);
+  quitting = true;
+  app.exit(shown ? 0 : 1);
+}
+
 main().catch((e) => {
+  if (smoke) {
+    console.error(`${SMOKE_FAIL} ${String(e?.stack ?? e)}`);
+    return app.exit(1);
+  }
   dialog.showErrorBox('LernLab could not start', String(e?.stack ?? e));
   app.exit(1);
 });

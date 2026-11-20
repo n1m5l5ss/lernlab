@@ -13,3 +13,17 @@ test('updates come from this repository, and beta builds publish latest*.yml too
   assert.deepEqual(pkg.build.publish, [{ provider: 'github', owner: 'n1m5l5ss', repo: 'lernlab' }]);
   assert.equal(pkg.build.detectUpdateChannel, false);
 });
+
+test('Windows installs per user without admin rights (NSIS one-click, not per machine)', () => {
+  assert.deepEqual(pkg.build.win.target, ['nsis']);
+  const nsis: { oneClick?: boolean; perMachine?: boolean } = pkg.build.nsis;
+  assert.notEqual(nsis.oneClick, false);
+  assert.notEqual(nsis.perMachine, true);
+});
+
+test('macOS gets one dmg each for Apple Silicon and Intel; Linux gets an AppImage and a deb', () => {
+  assert.deepEqual(pkg.build.mac.target, [{ target: 'dmg', arch: ['arm64', 'x64'] }]);
+  const mac: { artifactName?: string } = pkg.build.mac;
+  assert.match(mac.artifactName ?? '', /\$\{arch\}/);
+  assert.deepEqual(pkg.build.linux.target, ['AppImage', 'deb']);
+});
