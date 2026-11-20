@@ -11,6 +11,7 @@ import {
   EMPTY,
   fieldsToSave,
   previewOf,
+  showImageAlt,
   sortDrop,
   type Form,
   type MediaSlot,
@@ -249,6 +250,7 @@ export function CardEditor({
           )}
         </div>
       </div>
+      {showImageAlt(c) && f('imageAlt', t('browse.editor.imageAlt'), t('browse.editor.imageAltPlaceholder'))}
       <CardPreview preview={preview} lang={deck.language} />
       <details className="editor-more" open={hasMore(card)}>
         <summary>{t('browse.editor.moreFields')}</summary>

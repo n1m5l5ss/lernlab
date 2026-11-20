@@ -2,6 +2,10 @@
 import { acceptedAnswers, stripHtml } from './text';
 import type { Item } from './types';
 
+/** The alt text for a card's image: its description, or '' (a decorative image) when it has none. */
+export const imageAltOf = (item: Pick<Item, 'image' | 'extra'>): string =>
+  item.image ? (item.extra?.imageAlt ?? '') : '';
+
 const SHORT = (s: string) => s.length > 0 && s.length <= 40 && s.split(/\s+/).length <= 6;
 
 /**

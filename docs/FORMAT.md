@@ -66,6 +66,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV).
 
 ### manifest.json
 
@@ -128,6 +129,7 @@ Each line is one card. Only `front` is required.
 | `correct` | Multiple choice: the correct choices as 1-based numbers or as texts, separated by `|` |
 | `steps` | Ordering card: steps in the correct order, separated by `|` |
 | `image` | Image file name inside `media/` (or an `https://` URL). GIFs work as images |
+| `imageAlt` | Description of the image, in plain text, read out by screen readers (its alt text). Write what a picture question needs to be answered (optional, added after v1 was published; older readers ignore it) |
 | `audio` | Audio file name inside `media/` (or an `https://` URL) |
 | `video` | Video file name inside `media/` (or an `https://` URL): mp4 or webm |
 | `tags` | Array of strings |
@@ -163,6 +165,7 @@ Recognised column names (case-insensitive):
 | `steps` | sequence |
 | `alt_answers` | alternatives, also accept |
 | `image`, `audio`, `video` | picture, sound, gif |
+| `image_alt` | image alt, image description, alt text: the image's description for screen readers |
 | `deck` | subdeck, chapter, section, topic |
 | `rank` | frequency, order |
 | `id` | guid |

@@ -52,6 +52,10 @@
       "description": "Image file name inside media/ (any subfolder; matched by file name), or an https:// URL. GIFs are images.",
       "type": "string"
     },
+    "imageAlt": {
+      "description": "Optional, added after v1 was published; older readers ignore it. A short plain-text description of the image, read out by screen readers (its alt text), so picture questions can be answered without seeing them. Leave it out for a decorative image.",
+      "type": "string"
+    },
     "audio": { "description": "Audio file name inside media/, or an https:// URL.", "type": "string" },
     "video": { "description": "Video file name inside media/ (mp4 or webm), or an https:// URL.", "type": "string" },
     "tags": {

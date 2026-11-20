@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EMPTY, fieldsToSave, previewOf, sortDrop, type Form } from './card-editor-logic';
+import { EMPTY, fieldsToSave, formFor, previewOf, showImageAlt, sortDrop, type Form } from './card-editor-logic';
 
 const deck = { id: 1, language: null };
 const form = (f: Partial<Form>): Form => ({ ...EMPTY, ...f });
@@ -87,4 +87,17 @@ test('dropped files go to the image, audio or video slot; GIFs are images; other
   ]);
   assert.deepEqual(r.slots, { image: 2, audio: 1, video: 4 });
   assert.deepEqual(r.rejected, ['notes.pdf']);
+});
+
+test('the image description is asked for only when the card has an image, and is saved with it', () => {
+  assert.equal(showImageAlt(form({ front: 'x' })), false);
+  assert.equal(showImageAlt(form({ front: 'x', image: 'heart.png' })), true);
+  const f = form({ front: 'What is this?', back: 'heart', image: 'heart.png', imageAlt: 'A red heart' });
+  assert.equal(fieldsToSave(f).imageAlt, 'A red heart');
+  assert.equal(previewOf(f, deck)!.item.extra.imageAlt, 'A red heart', 'the preview picture has the alt text');
+  const removed = previewOf({ ...f, image: '' }, deck)!;
+  assert.ok(!('imageAlt' in removed.item.extra), 'removing the image drops its description');
+  const card = { ...previewOf(f, deck)!.item, suspended: false, starred: false };
+  assert.equal(formFor(card).imageAlt, 'A red heart', 'an existing description fills the field');
+  assert.equal(formFor({ ...card, extra: {} }).imageAlt, '');
 });

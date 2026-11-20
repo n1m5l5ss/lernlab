@@ -17,7 +17,7 @@ Status: **Pass**, **Partial** (works, with a known gap), **Open** (fails or unte
 
 | Criterion | Status | Notes |
 |---|---|---|
-| 1.1.1 Non-text content | Partial | Icons are `aria-hidden` next to visible text, and icon buttons have a label (sound, replay). The study calendar is an image whose label gives the number of study days. **Gap:** card images have empty alt text because decks have no field for it, so the picture quiz ("What is this?") cannot be answered with a screen reader. **Proposal:** an `image_alt` column in CSV and `.lernpack` (a `docs/FORMAT.md` change). |
+| 1.1.1 Non-text content | Pass | Icons are `aria-hidden` next to visible text, and icon buttons have a label (sound, replay). The study calendar is an image whose label gives the number of study days. **Fixed:** cards have an optional image description (`imageAlt` in `.lernpack` and JSON, `image_alt` in CSV; see `docs/FORMAT.md`), set in the card editor under "Image description" once a card has an image. It is the image's alt text everywhere a card image is shown (exercises, the picture quiz, games, the editor preview), so the picture quiz ("What is this?") can be answered with a screen reader. An image without a description keeps `alt=""`. |
 | 1.2.1–1.2.5 Audio and video | N/A | Recordings and videos come from users' decks; the card's text is shown with them. |
 | 1.3.1 Info and relationships | Pass | Landmarks (`nav`, `main`), one `h1` per screen (the session's block title is now an `h1`), labelled fields, fieldsets for radio groups, `role="radiogroup"` and `role="tablist"`. The import tabs have no `tabpanel` wrapper yet (see below). |
 | 1.3.2 Meaningful sequence | Pass | DOM order matches reading order, also right to left. |
@@ -78,7 +78,6 @@ The system setting and Settings → Reduce motion both turn movement into short 
 - **Screen-reader testing** with NVDA (Windows), VoiceOver (macOS) and Orca (Linux) on the packaged app. It needs real machines and is not possible in CI here. The issue's acceptance box stays open until someone runs it. Focus on the exercise cards (`aria-live` regions may be chatty), the games, and the import preview table.
 - **Automated axe checks in the end-to-end tests.** `@axe-core/playwright` is not a dependency yet (`docs/TESTING.md` plans it). Adding it needs approval in the issue; once added, run it on every screen in both themes.
 - **Single-key shortcuts setting** (2.1.4), proposed above.
-- **Alt text for card images** (1.1.1), proposed above.
 - **`lang` on every card field** (3.1.2): exercise prompts, answers and the Cards list.
 - **Import tabs:** wrap the tab content in a `role="tabpanel"` linked with `aria-controls`.
 - **Windows high-contrast (`forced-colors`)** is not checked. Native controls adapt; custom outlines, the progress bars and the heat map need a look.

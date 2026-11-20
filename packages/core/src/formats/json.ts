@@ -10,6 +10,7 @@ const TEXT_FIELDS = [
   'explanation',
   'notes',
   'image',
+  'imageAlt',
   'audio',
   'video',
   'category',

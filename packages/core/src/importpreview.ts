@@ -21,6 +21,7 @@ export const MAPPABLE_FIELDS = {
   category: 'category',
   tags: 'tags',
   image: 'image',
+  imageAlt: 'image_alt',
   audio: 'audio',
   video: 'video',
   subdeck: 'deck',

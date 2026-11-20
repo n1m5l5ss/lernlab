@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { qa, parseCloze, sanitizeHtml, markdownLite, SAFE_TAGS } from './cards';
+import { qa, parseCloze, sanitizeHtml, markdownLite, SAFE_TAGS, imageAltOf } from './cards';
+import { cardToItem } from './library';
 
 const base = {
   id: 1,
@@ -108,4 +109,33 @@ test('markdown lite', () => {
     markdownLite('**S3** is *object* storage, see `aws s3 ls`'),
     '<b>S3</b> is <i>object</i> storage, see <code>aws s3 ls</code>',
   );
+});
+
+test('image description: plain text, kept only while the card has an image, and the alt text of that image', () => {
+  const deck = { id: 1, name: 'D', language: null };
+  const item = cardToItem(deck, {
+    front: 'What is this?',
+    back: 'a heart',
+    image: 'heart.png',
+    imageAlt: ' A <b>red</b> heart ',
+  })!;
+  assert.equal(item.extra.imageAlt, 'A red heart');
+  assert.equal(imageAltOf(item), 'A red heart');
+  const noImage = cardToItem(deck, { front: 'x', back: 'y', imageAlt: 'A red heart' })!;
+  assert.ok(!('imageAlt' in noImage.extra), 'no image, no description');
+  assert.equal(imageAltOf(noImage), '');
+  const blank = cardToItem(deck, { front: 'x', back: 'y', image: 'a.png', imageAlt: '  ' })!;
+  assert.ok(!('imageAlt' in blank.extra));
+  assert.equal(imageAltOf(blank), '', 'an empty description keeps alt=""');
+  // The editor sends an empty description to clear one already stored in extra.
+  const cleared = cardToItem(deck, {
+    front: 'x',
+    back: 'y',
+    image: 'a.png',
+    imageAlt: '',
+    extra: { imageAlt: 'old' },
+  })!;
+  assert.ok(!('imageAlt' in cleared.extra));
+  const kept = cardToItem(deck, { front: 'x', back: 'y', image: 'a.png', extra: { imageAlt: 'old' } })!;
+  assert.equal(kept.extra.imageAlt, 'old', 'a card saved without the field keeps its description');
 });

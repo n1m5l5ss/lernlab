@@ -7,8 +7,14 @@ import { writeLernpack } from './formats/lernpack';
 import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
 
-/** Extra keys the card fields `choices`, `correct`, `steps` and `altAnswers` are stored under. */
-const FROM_EXTRA = { choices: 'choices', correct: 'correct', steps: 'steps', alt: 'altAnswers' } as const;
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers` and `imageAlt` are stored under. */
+const FROM_EXTRA = {
+  choices: 'choices',
+  correct: 'correct',
+  steps: 'steps',
+  alt: 'altAnswers',
+  imageAlt: 'imageAlt',
+} as const;
 
 function deckCards(deckId: number, deckName: string, d: DB): NormalizedCard[] {
   return d
