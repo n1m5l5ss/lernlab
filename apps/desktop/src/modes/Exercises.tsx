@@ -1,7 +1,7 @@
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Exercise, Item } from '../../shared/types';
-import { checkAnswer, similarity, normalize, type CheckResult } from '../../shared/text';
+import type { Exercise, Item } from '@lernlab/core/types';
+import { checkAnswer, similarity, normalize, type CheckResult } from '@lernlab/core/text';
 import { playMedia, say, recognizer, sfx } from '../audio';
 import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { SessionLength, SessionPlan } from '../shared/types';
+import type { SessionLength, SessionPlan } from '@lernlab/core/types';
 import { api } from './api';
 import { setSound } from './audio';
 import { Home } from './Home';

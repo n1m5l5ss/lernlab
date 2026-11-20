@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import type { SessionLength } from '../shared/types';
-import { teacherFor } from '../shared/teacher';
+import type { SessionLength } from '@lernlab/core/types';
+import { teacherFor } from '@lernlab/core/teacher';
 import { api } from './api';
 import { useKeys } from './ctx';
 

@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import { getRequestListener } from '@hono/node-server';
 import { createApp } from './app';
-import { getDb } from './db';
+import { getDb } from './storage';
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',

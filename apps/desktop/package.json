@@ -18,11 +18,13 @@
     "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
     "dist:win": "npm run build:electron && electron-builder --win --publish never",
     "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
-    "test": "tsx --no-warnings --test \"shared/*.test.ts\" \"server/*.test.ts\"",
+    "test": "tsx --no-warnings --test \"server/*.test.ts\"",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@hono/node-server": "2.1.9",
+    "@lernlab/core": "*",
+    "@lernlab/storage-sqlite": "*",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -31,12 +33,9 @@
     "electron": "45.4.1",
     "electron-builder": "^26.18.0",
     "esbuild": "^0.28.2",
-    "fflate": "^0.8.3",
-    "fzstd": "^0.1.1",
     "hono": "4.13.19",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "ts-fsrs": "5.4.2",
     "vite": "8.3.8"
   },
   "build": {

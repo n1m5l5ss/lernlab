@@ -1,11 +1,9 @@
 // Anki .apkg / .colpkg import: legacy collection.anki2/anki21 and the newer zstd-compressed anki21b.
+import type { Row } from '../host';
 import { unzipSync, strFromU8 } from 'fflate';
 import { decompress } from 'fzstd';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
-import { openReadonly } from '../db';
-import { stripHtml } from '../../shared/text';
+import { host } from '../host';
+import { stripHtml } from '../text';
 import type { NormalizedCard } from '../library';
 
 const ZSTD = [0x28, 0xb5, 0x2f, 0xfd];
@@ -73,49 +71,55 @@ export function readApkg(buf: Uint8Array): ApkgResult {
   const files = unzipSync(buf);
   const colName = ['collection.anki21b', 'collection.anki21', 'collection.anki2'].find((n) => files[n]);
   if (!colName) throw new Error('Not an Anki package (no collection inside)');
-  const dir = mkdtempSync(join(tmpdir(), 'apkg-'));
+  const db = host().openSqliteBytes(unz(files[colName]));
   try {
-    const dbFile = join(dir, 'col.db');
-    writeFileSync(dbFile, unz(files[colName]));
-    const db = openReadonly(dbFile);
-
     // Note types → ordered field names. Newer collections keep them in tables, older ones in col.models JSON.
     const fieldNames = new Map<number, string[]>();
     const deckNames = new Map<number, string>();
     const hasTable = (t: string) => !!db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name=?").get(t);
     if (hasTable('fields')) {
-      for (const r of db.prepare('SELECT ntid, ord, name FROM fields ORDER BY ntid, ord').all() as any[]) {
+      for (const r of db.prepare('SELECT ntid, ord, name FROM fields ORDER BY ntid, ord').all() as Row[]) {
         const arr = fieldNames.get(Number(r.ntid)) ?? [];
-        arr[Number(r.ord)] = r.name;
+        arr[Number(r.ord)] = String(r.name);
         fieldNames.set(Number(r.ntid), arr);
       }
       // Anki separates deck levels with the \x1f control character.
-      for (const r of db.prepare('SELECT id, name FROM decks').all() as any[])
+      for (const r of db.prepare('SELECT id, name FROM decks').all() as Row[])
         // eslint-disable-next-line no-control-regex
         deckNames.set(Number(r.id), String(r.name).replace(/\x1f/g, '::'));
     } else {
-      const col = db.prepare('SELECT models, decks FROM col').get() as any;
-      for (const m of Object.values(JSON.parse(col.models)) as any[])
+      // Older collections keep note types and decks as JSON in the single `col` row.
+      type ModelJson = { id: number; flds: { name: string; ord: number }[] };
+      type DeckJson = { id: number; name: string };
+      const col = db.prepare('SELECT models, decks FROM col').get() as { models: string; decks: string };
+      for (const m of Object.values(JSON.parse(col.models)) as ModelJson[])
         fieldNames.set(
           Number(m.id),
-          m.flds.sort((a: any, b: any) => a.ord - b.ord).map((f: any) => f.name),
+          m.flds.sort((a, b) => a.ord - b.ord).map((f) => f.name),
         );
-      for (const dk of Object.values(JSON.parse(col.decks)) as any[]) deckNames.set(Number(dk.id), dk.name);
+      for (const dk of Object.values(JSON.parse(col.decks)) as DeckJson[]) deckNames.set(Number(dk.id), dk.name);
     }
 
     const noteDeck = new Map<number, number>();
-    for (const r of db.prepare('SELECT nid, did FROM cards ORDER BY ord').all() as any[])
+    for (const r of db.prepare('SELECT nid, did FROM cards ORDER BY ord').all() as Row[])
       if (!noteDeck.has(Number(r.nid))) noteDeck.set(Number(r.nid), Number(r.did));
 
     const cards: NormalizedCard[] = [];
     const usedDecks = new Set<string>();
-    for (const n of db.prepare('SELECT id, mid, flds, tags FROM notes').all() as any[]) {
+    for (const n of db.prepare('SELECT id, mid, flds, tags FROM notes').all() as Row[]) {
       const values: string[] = String(n.flds).split('\x1f');
       if (values.length === 1 && /please update to the latest anki/i.test(values[0])) continue; // placeholder in new exports
       const names =
         fieldNames.get(Number(n.mid)) ??
         values.map((_, i) => (i === 0 ? 'Front' : i === 1 ? 'Back' : `Field ${i + 1}`));
-      const card: any = { sourceId: Number(n.id), tags: String(n.tags).trim().split(/\s+/).filter(Boolean), extra: {} };
+      // Built field by field from the note type's field names (see FIELD_MAP).
+      const card: NormalizedCard & { extra: Record<string, string> } & Record<string, unknown> = {
+        front: '',
+        back: '',
+        sourceId: Number(n.id),
+        tags: String(n.tags).trim().split(/\s+/).filter(Boolean),
+        extra: {},
+      };
       const all = values.join(' ');
       const sound = all.match(/\[sound:([^\]]+)\]/)?.[1];
       const img = all.match(/<img[^>]+src=["']?([^"' >]+)/i)?.[1];
@@ -129,7 +133,7 @@ export function readApkg(buf: Uint8Array): ApkgResult {
         if (!raw) return;
         const hit = FIELD_MAP.find(([, re]) => re.test(name.trim()));
         if (hit && !card[hit[0]] && hit[0] !== 'reading')
-          card[hit[0]] = hit[0] === 'rank' ? Number(stripHtml(raw)) || undefined : raw;
+          (card as Record<string, unknown>)[hit[0]] = hit[0] === 'rank' ? Number(stripHtml(raw)) || undefined : raw;
         else if (hit?.[0] === 'reading') card.extra.reading = stripHtml(raw);
         else card.extra[name] = raw;
       });
@@ -151,7 +155,6 @@ export function readApkg(buf: Uint8Array): ApkgResult {
       }
       cards.push(card);
     }
-    db.close();
 
     // Media: a map from zip entry ("0", "1"…) to file name; JSON in old packages, zstd protobuf in new ones.
     const media: Record<string, Uint8Array> = {};
@@ -167,6 +170,6 @@ export function readApkg(buf: Uint8Array): ApkgResult {
     }
     return { cards, media, decks: [...usedDecks] };
   } finally {
-    rmSync(dir, { recursive: true, force: true });
+    db.close();
   }
 }

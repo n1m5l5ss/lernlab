@@ -2,7 +2,7 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
-import { cleanupTempDir } from '../shared/test-utils';
+import { cleanupTempDir } from '../test/test-utils';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -11,11 +11,12 @@ process.env.LERNLAB_DATA = dir;
 process.env.ANKICONNECT_URL = 'http://127.0.0.1:8799';
 
 const { startMockAnki } = await import('../test/mock-anki');
-const { importDeck } = await import('./importer');
-const { planSession } = await import('./session');
-const { recordAttempt, dueItemIds } = await import('./learn');
-const { finishSession, appState, dailySummary } = await import('./progress');
-const { getDb } = await import('./db');
+await import('./storage');
+const { importDeck } = await import('./anki');
+const { planSession } = await import('@lernlab/core/session');
+const { recordAttempt, dueItemIds } = await import('@lernlab/core/learn');
+const { finishSession, appState, dailySummary } = await import('@lernlab/core/progress');
+const { getDb } = await import('@lernlab/core/db');
 
 let server: any;
 before(async () => {
@@ -72,7 +73,7 @@ test('answering: intro, recognition (no grade), recall (one grade per day)', () 
     null,
     'second recall same day is not graded',
   );
-  const st = getDb().prepare('SELECT * FROM item_state WHERE item_id = ?').get(id);
+  const st = getDb().prepare('SELECT * FROM item_state WHERE item_id = ?').get(id)!;
   assert.equal(Number(st.mastery), 3);
 
   // Introduce and pass the rest of the new words so we have a learned set.
@@ -146,7 +147,7 @@ test('next days: failed item comes back as due; streak continues', () => {
 });
 
 test('progress report counts learned words and forecasts', async () => {
-  const { progressReport } = await import('./progress');
+  const { progressReport } = await import('@lernlab/core/progress');
   const p = progressReport(getDb(), new Date(2026, 10, 24, 10, 0));
   assert.ok(p.totals.producible >= 5);
   assert.equal(p.totals.vocabTotal, 33);

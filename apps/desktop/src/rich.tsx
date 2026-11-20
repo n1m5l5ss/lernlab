@@ -1,6 +1,6 @@
 // Safe rendering of card text (decks are shared files: only a few formatting tags survive) and media.
-import { sanitizeHtml } from '../shared/cards';
-import type { Item } from '../shared/types';
+import { sanitizeHtml } from '@lernlab/core/cards';
+import type { Item } from '@lernlab/core/types';
 
 export function Rich({ html, className }: { html: string; className?: string }) {
   return <span className={className} dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />;

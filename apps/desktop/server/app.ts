@@ -1,9 +1,10 @@
 import { Hono } from 'hono';
 import { basename, extname } from 'node:path';
-import { getDb, setMeta } from './db';
-import { ankiAvailable, anki } from './anki';
-import { importFile, importFromAnki } from './importer';
-import { exportDeck } from './exporter';
+import { getDb } from './storage';
+import { setMeta } from '@lernlab/core/db';
+import { ankiAvailable, anki, ankiConnect } from './anki';
+import { importFile, importFromAnki } from '@lernlab/core/importer';
+import { exportDeck } from '@lernlab/core/exporter';
 import {
   activeDeckId,
   getSettings,
@@ -12,7 +13,7 @@ import {
   rowToItem,
   ITEM_SELECT,
   type Settings,
-} from './learn';
+} from '@lernlab/core/learn';
 import {
   createDeck,
   deckByName,
@@ -25,11 +26,11 @@ import {
   updateDeck,
   upsertCards,
   LANGUAGES,
-} from './library';
-import { pastedToCards } from './formats/csv';
-import { planSession } from './session';
-import { appState, dailySummary, finishSession, progressReport, stats, ACHIEVEMENTS } from './progress';
-import type { Attempt, SessionLength } from '../shared/types';
+} from '@lernlab/core/library';
+import { pastedToCards } from '@lernlab/core/formats/csv';
+import { planSession } from '@lernlab/core/session';
+import { appState, dailySummary, finishSession, progressReport, stats, ACHIEVEMENTS } from '@lernlab/core/progress';
+import type { Attempt, SessionLength } from '@lernlab/core/types';
 
 export const importStatus = { running: false, log: [] as string[], error: null as string | null, result: null as any };
 
@@ -37,7 +38,7 @@ export async function runAnkiImport(source?: string, deckName?: string) {
   if (importStatus.running) return;
   Object.assign(importStatus, { running: true, error: null, log: [], result: null });
   try {
-    importStatus.result = await importFromAnki(source ?? getSettings().deck, { deckName }, (m) => {
+    importStatus.result = await importFromAnki(ankiConnect, source ?? getSettings().deck, { deckName }, (m) => {
       importStatus.log.push(m);
       console.log(`[import] ${m}`);
     });
@@ -130,7 +131,7 @@ export function createApp() {
         .prepare(
           `SELECT COUNT(*) AS n FROM items i WHERE i.deck_id = ? AND (i.target LIKE ? OR i.meaning LIKE ? OR i.tags LIKE ? OR i.sentence LIKE ?)`,
         )
-        .get(id, q, q, q, q).n,
+        .get(id, q, q, q, q)!.n,
     );
     const state = new Map(
       d
@@ -197,15 +198,15 @@ export function createApp() {
           video: b.video || undefined,
           category: b.category,
           tags: typeof b.tags === 'string' ? b.tags.split(/[\s,]+/) : b.tags,
-          subdeck: r.deck,
-          group: r.grp,
+          subdeck: r.deck as string | undefined,
+          group: r.grp as string | undefined,
           rank: Number(r.rank),
           type: b.type,
           choices: b.choices,
           correct: b.correct,
           steps: b.steps,
           altAnswers: b.alt,
-          extra: JSON.parse(r.extra ?? '{}'),
+          extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);
     }

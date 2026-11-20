@@ -1,5 +1,5 @@
 import { test, after } from 'node:test';
-import { cleanupTempDir } from '../shared/test-utils';
+import { cleanupTempDir } from './test-utils';
 import assert from 'node:assert/strict';
 import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -9,11 +9,13 @@ import { compress as zstdCompress } from './zstd-test-helper';
 
 const dir = mkdtempSync(join(tmpdir(), 'lernlab-fmt-'));
 process.env.LERNLAB_DATA = dir;
-const { importFile } = await import('./importer');
-const { exportDeck } = await import('./exporter');
-const { planSession } = await import('./session');
-const { getDb, openRaw } = await import('./db');
-const { deckByName } = await import('./library');
+const { importFile } = await import('../src/importer');
+const { exportDeck } = await import('../src/exporter');
+const { planSession } = await import('../src/session');
+const { installNodeHost, openRaw } = await import('@lernlab/storage-sqlite');
+installNodeHost();
+const { getDb } = await import('../src/db');
+const { deckByName } = await import('../src/library');
 after(() => cleanupTempDir(dir));
 
 const AWS_CSV = `term,definition,category,tags,notes
@@ -33,7 +35,7 @@ test('CSV with header: columns by name, categories, tags, markdown-free', () => 
   assert.equal(r.added, 8);
   assert.equal(r.deck.name, 'AWS SAA');
   assert.equal(r.deck.language, null);
-  const row = getDb().prepare("SELECT * FROM items WHERE target = 'Amazon EFS'").get();
+  const row = getDb().prepare("SELECT * FROM items WHERE target = 'Amazon EFS'").get()!;
   assert.equal(row.meaning, 'Managed NFS file system, shared across instances');
   assert.equal(row.category, 'Storage');
   assert.equal(row.kind, 'card');
@@ -58,7 +60,7 @@ test('cloze cards', () => {
     strToU8('front,back\n"The {{c1::mitochondria}} is the powerhouse of the cell",Biology 101\n'),
   );
   assert.equal(r.added, 1);
-  assert.equal(getDb().prepare("SELECT kind FROM items WHERE target LIKE '%mitochondria%'").get().kind, 'cloze');
+  assert.equal(getDb().prepare("SELECT kind FROM items WHERE target LIKE '%mitochondria%'").get()!.kind, 'cloze');
 });
 
 test('a non-language deck gets a sensible, varied session', () => {
@@ -143,13 +145,15 @@ for (const newFormat of [false, true]) {
     assert.equal(r.format, 'apkg');
     assert.equal(r.total, 3);
     assert.equal(r.media, 2);
-    const lv = getDb().prepare(`SELECT * FROM items WHERE deck_id = ? AND target LIKE 'Heart chamber%'`).get(r.deck.id);
+    const lv = getDb()
+      .prepare(`SELECT * FROM items WHERE deck_id = ? AND target LIKE 'Heart chamber%'`)
+      .get(r.deck.id)!;
     assert.equal(lv.meaning, 'Left ventricle');
     assert.equal(lv.image, 'lv.png');
     assert.equal(lv.audio, 'lv.mp3');
     assert.equal(lv.deck, 'Medicine::Cardio');
     assert.equal(
-      getDb().prepare(`SELECT kind FROM items WHERE deck_id = ? AND target LIKE '%Aspirin%'`).get(r.deck.id).kind,
+      getDb().prepare(`SELECT kind FROM items WHERE deck_id = ? AND target LIKE '%Aspirin%'`).get(r.deck.id)!.kind,
       'cloze',
     );
   });
@@ -168,13 +172,13 @@ order,Order the TCP handshake,,,,SYN|SYN-ACK|ACK
     .all(r.deck.id)
     .map((x: any) => x.kind);
   assert.equal(
-    getDb().prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id = ? AND category IS NOT NULL').get(r.deck.id).n,
+    getDb().prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id = ? AND category IS NOT NULL').get(r.deck.id)!.n,
     0,
     'the type column is not a category',
   );
   assert.deepEqual(kinds, ['mcq', 'mcq', 'order']);
-  const { recall } = await import('./exercises');
-  const { allItems } = await import('./learn');
+  const { recall } = await import('../src/exercises');
+  const { allItems } = await import('../src/learn');
   const items = allItems(getDb(), r.deck.id);
   const ex: any = recall(items[0]);
   assert.equal(ex.type, 'mcq');
@@ -187,9 +191,11 @@ order,Order the TCP handshake,,,,SYN|SYN-ACK|ACK
 });
 
 test('"I was right" turns today\'s Again into Good', async () => {
-  const { recordAttempt, overrideToCorrect } = await import('./learn');
+  const { recordAttempt, overrideToCorrect } = await import('../src/learn');
   const deck = deckByName('AWS SAA')!;
-  const id = Number(getDb().prepare("SELECT id FROM items WHERE deck_id = ? AND target = 'Amazon S3'").get(deck.id).id);
+  const id = Number(
+    getDb().prepare("SELECT id FROM items WHERE deck_id = ? AND target = 'Amazon S3'").get(deck.id)!.id,
+  );
   const t = new Date(2026, 10, 22, 10);
   recordAttempt({ sessionId: 's', itemId: id, format: 'intro', correct: true, responseMs: 1, xp: 0 }, getDb(), t);
   assert.equal(
@@ -208,10 +214,10 @@ test('"I was right" turns today\'s Again into Good', async () => {
     ).grade,
     1,
   );
-  const againDue = getDb().prepare('SELECT due FROM srs WHERE item_id = ?').get(id).due;
+  const againDue = getDb().prepare('SELECT due FROM srs WHERE item_id = ?').get(id)!.due;
   assert.equal(overrideToCorrect(id, getDb(), t).ok, true);
-  const goodDue = getDb().prepare('SELECT due FROM srs WHERE item_id = ?').get(id).due;
-  assert.ok(goodDue > againDue, 'due date moved later');
+  const goodDue = getDb().prepare('SELECT due FROM srs WHERE item_id = ?').get(id)!.due;
+  assert.ok((goodDue as string) > (againDue as string), 'due date moved later');
   assert.equal(overrideToCorrect(id, getDb(), t).ok, false, 'only once');
 });
 
@@ -222,8 +228,8 @@ test('alternative answers', async () => {
       'front,back,alt_answers\nThe shade of the sky,blue,azure|sky blue\nOpposite of left,right,\nFrozen water,ice,\nNot hot,cold,chilly\n',
     ),
   );
-  const { allItems } = await import('./learn');
-  const { qa } = await import('../shared/cards');
+  const { allItems } = await import('../src/learn');
+  const { qa } = await import('../src/cards');
   const sky = allItems(getDb(), r.deck.id).find((i) => i.meaning === 'blue')!;
   assert.deepEqual(qa(sky).accepted, ['blue', 'azure', 'sky blue']);
 });

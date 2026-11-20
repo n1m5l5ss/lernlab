@@ -22,10 +22,10 @@ LernLab is a free, open-source desktop flashcard app for any subject. It makes s
 
 ## Current state
 The repo is an npm workspace. It holds the **v0.2 prototype**, which is a working reference. Its layout:
-- `packages/core/`: the domain engine (pure TypeScript, no Node, DOM or Electron). Empty until #6 moves the engine in.
+- `packages/core/`: the engine. Answer checking, grading, XP and streaks, card logic, FSRS, session planner, importers and exporters, and the SQLite schema. Pure TypeScript: no Node, DOM, Electron, React or HTTP imports (ESLint enforces it). Platform services (database connection, media files, ids) come in through the `Host` port in `src/host.ts`. Import modules by path, e.g. `@lernlab/core/text`.
+- `packages/storage-sqlite/`: the Node/Electron host: `node:sqlite` plus media and progress files in the data folder. Call `installNodeHost()` once at startup.
 - `apps/desktop/`: the v0.2 prototype app.
-  - `shared/`: answer checking, grading, XP and streaks, card logic. Pure TypeScript.
-  - `server/`: SQLite (`node:sqlite`), FSRS, session planner, importers and exporters, Hono HTTP API.
+  - `server/`: Hono HTTP API, AnkiConnect client, CLI entry (replaced by typed IPC in #7).
   - `src/`: React screens.
   - `electron/`: desktop shell.
 - `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`: one shared config for every package.

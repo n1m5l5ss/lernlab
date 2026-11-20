@@ -1,7 +1,7 @@
 // Exercise generators: turn one card into many kinds of exercises (works for any subject).
-import { acceptedAnswers, shuffle, splitBold, stripHtml, tokenize } from '../shared/text';
-import { clozeText, mcqOf, parseCloze, qa, stepsOf } from '../shared/cards';
-import type { Exercise, Item } from '../shared/types';
+import { acceptedAnswers, shuffle, splitBold, stripHtml, tokenize } from './text';
+import { clozeText, mcqOf, parseCloze, qa, stepsOf } from './cards';
+import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
 export const frontText = (i: Item) => (i.kind === 'cloze' ? clozeText(stripHtml(i.target)) : stripHtml(i.target));

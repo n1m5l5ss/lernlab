@@ -1,4 +1,4 @@
-import type { Format, Item, SessionPlan } from '../shared/types';
+import type { Format, Item, SessionPlan } from '@lernlab/core/types';
 
 export type AnswerInput = {
   itemId: number;
@@ -17,7 +17,7 @@ export type AnswerInput = {
 export type Ctx = {
   plan: SessionPlan;
   lang: string | null;
-  t: ReturnType<typeof import('../shared/teacher').teacherFor>;
+  t: ReturnType<typeof import('@lernlab/core/teacher').teacherFor>;
   /** Seconds per multiple-choice/true-false question (0 = untimed). */
   timer: number;
   item: (id: number) => Item;

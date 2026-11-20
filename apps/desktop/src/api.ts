@@ -1,4 +1,4 @@
-import type { Attempt, SessionLength, SessionPlan } from '../shared/types';
+import type { Attempt, SessionLength, SessionPlan } from '@lernlab/core/types';
 
 async function j<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, { headers: { 'Content-Type': 'application/json' }, ...init });

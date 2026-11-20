@@ -54,7 +54,7 @@ bench/           performance benchmarks + fixture generators
 docs/adr/        architecture decision records
 ```
 
-**Prototype today:** `packages/core` exists but is empty, and the whole v0.2 prototype (`shared/`, `server/`, `src/`, `electron/`) lives in `apps/desktop/` (#5). #6 moves the engine into core.
+**Prototype today:** the engine is in `packages/core` (#6). It reaches storage through one SQL-level `Host` port (a synchronous SQLite connection, a media store, ids), implemented by `packages/storage-sqlite` on `node:sqlite`. The finer repository ports in §3 come later. The HTTP API, AnkiConnect client and screens are still in `apps/desktop/`.
 
 **Import rules, enforced by `dependency-cruiser` in CI:**
 

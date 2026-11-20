@@ -1,11 +1,13 @@
 // Decks and cards: create, update, import (any format → NormalizedCard), export.
-import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { basename, extname, resolve } from 'node:path';
-import { getDb, getMeta, mediaDir, setMeta, tx, type DB } from './db';
-import { stripHtml, splitArticle } from '../shared/text';
-import { markdownLite, sanitizeHtml } from '../shared/cards';
-import type { ItemKind } from '../shared/types';
+import type { Row } from './host';
+import type { DeckRow } from './schema';
+import { getDb, getMeta, setMeta, tx, type DB } from './db';
+import { host } from './host';
+import { basename, extname } from './paths';
+import { sha1Hex } from './sha1';
+import { stripHtml, splitArticle } from './text';
+import { markdownLite, sanitizeHtml } from './cards';
+import type { ItemKind } from './types';
 
 export type DeckSettings = {
   newPerDay?: number;
@@ -66,7 +68,8 @@ export const LANGUAGES: Record<string, string> = {
   en: 'English',
 };
 
-const rowToDeck = (r: any): Deck => ({
+const rowToDeck = (row: Row): Deck => rowToDeckTyped(row as unknown as DeckRow);
+const rowToDeckTyped = (r: DeckRow): Deck => ({
   id: Number(r.id),
   name: r.name,
   language: r.language,
@@ -131,7 +134,7 @@ export function deleteDeck(id: number, d: DB = getDb()) {
     const ids = d
       .prepare('SELECT id FROM items WHERE deck_id = ?')
       .all(id)
-      .map((r: any) => r.id);
+      .map((r: Row) => r.id);
     for (const t of ['srs', 'item_state'])
       d.prepare(`DELETE FROM ${t} WHERE item_id IN (SELECT id FROM items WHERE deck_id = ?)`).run(id);
     d.prepare('DELETE FROM items WHERE deck_id = ?').run(id);
@@ -143,7 +146,7 @@ export function deleteDeck(id: number, d: DB = getDb()) {
 
 /** Stable 53-bit id from a string, so CSV/JSON re-imports update cards instead of duplicating them. */
 export function stableId(s: string): number {
-  return parseInt(createHash('sha1').update(s).digest('hex').slice(0, 13), 16);
+  return parseInt(sha1Hex(s).slice(0, 13), 16);
 }
 
 export function detectKind(
@@ -171,15 +174,16 @@ export function detectKind(
 }
 
 /** Store a media file in the library, keeping the name unless a different file already uses it. */
-export function storeMedia(name: string, data: Buffer): string {
+export function storeMedia(name: string, data: Uint8Array): string {
+  const media = host().media;
   let file = basename(name).replace(/[^\w.\-() ]+/g, '_');
-  const dest = () => resolve(mediaDir(), file);
-  if (existsSync(dest())) {
-    if (statSync(dest()).size === data.length) return file;
-    file = `${createHash('sha1').update(data).digest('hex').slice(0, 8)}-${file}`;
-    if (existsSync(dest())) return file;
+  const size = media.size(file);
+  if (size !== null) {
+    if (size === data.length) return file;
+    file = `${sha1Hex(data).slice(0, 8)}-${file}`;
+    if (media.size(file) !== null) return file;
   }
-  writeFileSync(dest(), data);
+  media.write(file, data);
   return file;
 }
 
@@ -208,7 +212,7 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
   const now = new Date().toISOString();
   let added = 0;
   let updated = 0;
-  const maxOrd = Number(d.prepare('SELECT COALESCE(MAX(ord), -1) AS n FROM items WHERE deck_id = ?').get(deck.id).n);
+  const maxOrd = Number(d.prepare('SELECT COALESCE(MAX(ord), -1) AS n FROM items WHERE deck_id = ?').get(deck.id)!.n);
   const ranked = cards.map((c, i) => ({ c, i })).sort((a, b) => (a.c.rank || 1e9) - (b.c.rank || 1e9) || a.i - b.i);
   tx(d, () => {
     const exists = d.prepare('SELECT ord FROM items WHERE id = ?');
@@ -268,7 +272,7 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
       );
     });
   });
-  const total = Number(d.prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id = ?').get(deck.id).n);
+  const total = Number(d.prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id = ?').get(deck.id)!.n);
   return { deck, added, updated, total };
 }
 
@@ -284,14 +288,13 @@ export function deckCounts(d: DB = getDb()) {
     )
     .all();
   return Object.fromEntries(
-    rows.map((r: any) => [
+    rows.map((r: Row) => [
       Number(r.id),
       { cards: Number(r.cards), fresh: Number(r.fresh), learned: Number(r.learned) },
     ]),
   );
 }
 
-export function readMedia(file: string): Buffer | null {
-  const p = resolve(mediaDir(), basename(file));
-  return existsSync(p) ? readFileSync(p) : null;
+export function readMedia(file: string): Uint8Array | null {
+  return host().media.read(basename(file));
 }

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { teacherFor } from '../shared/teacher';
+import { teacherFor } from '@lernlab/core/teacher';
 import { sfx } from './audio';
 import { useKeys } from './ctx';
 import type { SessionResult } from './Session';
