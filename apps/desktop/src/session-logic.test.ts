@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import en from '../../../locales/en.json';
-import { blockKey, blockProgress, needsRescue, requeue } from './session-logic';
+import { blockKey, blockProgress, needsRescue, playableOnly, requeue } from './session-logic';
 
 test('a missed card comes back after three other exercises', () => {
   const q = requeue(['a', 'b', 'c', 'd', 'e', 'f'], 1, 'b again');
@@ -34,4 +34,18 @@ test('every block the planner and runner make has a translated title', () => {
   assert.ok(titles.length >= 15);
   const blocks = en.session.blocks as Record<string, string>;
   for (const title of titles) assert.ok(blocks[blockKey(title)], `session.blocks.${blockKey(title)} for "${title}"`);
+});
+
+test('listening and dictation are skipped when the card cannot be played', () => {
+  const exs = [
+    { type: 'listen', itemId: 1 },
+    { type: 'dictation', itemId: 2 },
+    { type: 'typed', itemId: 2 },
+    { type: 'listen', itemId: 3 },
+  ];
+  const kept = playableOnly(exs, (id) => id === 3);
+  assert.deepEqual(kept, [
+    { type: 'typed', itemId: 2 },
+    { type: 'listen', itemId: 3 },
+  ]);
 });
