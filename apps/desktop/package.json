@@ -78,6 +78,7 @@
           ]
         }
       ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "icon": "build/icon.png",
       "extendInfo": {
         "NSMicrophoneUsageDescription": "LernLab listens when you practise speaking out loud."
@@ -90,8 +91,8 @@
       "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true,
+      "oneClick": true,
+      "perMachine": false,
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "linux": {

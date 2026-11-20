@@ -34,8 +34,26 @@ There is no separate staging branch. A **beta release** cut from `dev` plays tha
 1. **Beta (optional).** Run the "Beta release" workflow on `dev`. It tags `vX.Y.Z-beta.N` and publishes a GitHub pre-release with installers for all three systems. `X.Y.Z` defaults to the next patch after the last release; type another version when running it if the next release is a minor or major one. Testers on the beta channel get it.
 2. **Stable.** Open a pull request `dev → main` titled `release: X.Y.Z` and merge it with a merge commit (not squash).
 3. **release-please** sees the new commits on `main`, opens a release PR that bumps the version in `package.json` and adds the section to `CHANGELOG.md`, and updates that PR as more commits arrive.
-4. Merging the release PR creates the tag `vX.Y.Z` and the GitHub Release. The release-please workflow then calls the "Build installers" workflow directly (a tag made with `GITHUB_TOKEN` can't trigger other workflows), which builds, signs and publishes the installers, and `latest*.yml` lets installed apps auto-update.
+4. Merging the release PR creates the tag `vX.Y.Z` and the GitHub Release. The release-please workflow then calls the "Build installers" workflow directly (a tag made with `GITHUB_TOKEN` can't trigger other workflows), which builds, smoke-tests and publishes the installers (see [Installers](#installers)), and `latest*.yml` lets installed apps auto-update.
 5. A workflow opens a pull request `main → dev`, so the version bump and changelog reach `dev` too. Merge it with a merge commit.
+
+**By hand.** Pushing a tag `vX.Y.Z` (admins only) runs "Build installers" too and attaches everything to a **draft** GitHub Release, to review and publish yourself. A stable tag must equal the version in `package.json`, and a pre-release tag (`vX.Y.Z-beta.N`) must lead up to a newer version; otherwise the run stops before building (`apps/desktop/electron/release-version.ts`). "Run workflow" on "Build installers" with a tag rebuilds that release's installers and re-attaches them, e.g. after a failed run; without a tag it only builds artifacts.
+
+## Installers
+
+"Build installers" (`.github/workflows/release.yml`) runs the tests once, then builds on real Windows, macOS and Linux runners (`npm run dist:win`, `dist:mac`, `dist:linux`). The version inside the app and in the file names comes from the tag.
+
+| System | Files | Installs |
+|---|---|---|
+| Windows 10 and 11 | `LernLab-Setup-X.Y.Z.exe` | NSIS one-click, per user into `%LOCALAPPDATA%\Programs`, no admin rights |
+| macOS | `LernLab-X.Y.Z-arm64.dmg`, `LernLab-X.Y.Z-x64.dmg` | Open, drag to Applications |
+| Linux | `LernLab-X.Y.Z.AppImage`, `lernlab_X.Y.Z_amd64.deb` | AppImage runs as is; the deb installs to `/opt/LernLab` |
+
+Each release also carries `latest*.yml` and `.blockmap` files for auto-update.
+
+**Smoke test.** Before uploading, each runner installs its installers the way a user would (runs the Windows setup silently, mounts both dmgs, runs the AppImage and installs the deb) and starts the app with `--smoke-test`. In that mode the app uses a fresh, throw-away data folder, skips the welcome, waits until Home is on screen, prints `LERNLAB_SMOKE_OK` and quits; anything else fails the run (`apps/desktop/electron/smoke.ts`). On a Linux computer: `npm run dist:linux`, then `xvfb-run -a release/linux-unpacked/lernlab --no-sandbox --smoke-test` (or without `xvfb-run` on a desktop).
+
+**Signing.** Builds are unsigned until #39. The workflow already passes these repository secrets to electron-builder when they exist, and the release-please and beta workflows hand them on with `secrets: inherit`: `MAC_CSC_LINK` and `MAC_CSC_KEY_PASSWORD` (Developer ID certificate, base64 `.p12`), `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` (notarisation), `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD` (Windows certificate). With none set, the builds are unsigned and still pass.
 
 Pull requests opened by a workflow (the release PR and the `main → dev` sync) don't trigger `pull_request` runs, because GitHub doesn't let `GITHUB_TOKEN` start other workflows that way. The release-please workflow therefore starts `ci` and `pr-title` on them with `workflow_dispatch`, which `GITHUB_TOKEN` may do. The check runs land on the PR's head commit under the same names, so the required checks pass without a personal token or an admin bypass.
 
@@ -69,7 +87,7 @@ Pull requests opened by a workflow (the release PR and the `main → dev` sync) 
 | Pull request into `dev` or `main` | lint, type check, unit + property tests, coverage gate, component tests, visual + accessibility tests, Linux packaged end-to-end smoke test, performance comparison, bundle size, PR-title check |
 | Push to `dev` | the above + end-to-end tests on all 3 systems + unsigned nightly build artifact |
 | "Beta release" workflow on `dev` | signed builds for all 3 systems → GitHub pre-release |
-| Release PR merged (release-please calls "Build installers"); or a tag `vX.Y.Z` pushed by hand (draft release) | signed and notarised builds → GitHub Release (stable channel) |
+| Release PR merged (release-please calls "Build installers"); or a tag `vX.Y.Z` pushed by hand (draft release) | tag check, tests, builds for all 3 systems, installer smoke tests → GitHub Release (stable channel); signed and notarised once #39 adds the secrets |
 
 ## Branch protection (set once in GitHub → Settings → Rules → Rulesets)
 
