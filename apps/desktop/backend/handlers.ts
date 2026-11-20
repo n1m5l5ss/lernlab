@@ -5,13 +5,14 @@ import { exportDeck } from '@lernlab/core/exporter';
 import { pastedToCards } from '@lernlab/core/formats/csv';
 import { importFile, importFromAnki, type ImportResult } from '@lernlab/core/importer';
 import {
-  activeDeckId,
+  asStudySource,
   getSettings,
   ITEM_SELECT,
   overrideToCorrect,
   recordAttempt,
   rowToItem,
   type Settings,
+  type StudySource,
 } from '@lernlab/core/learn';
 import {
   createDeck,
@@ -72,6 +73,18 @@ const splitTags = (t: string | string[] | undefined) => (typeof t === 'string' ?
 
 /* ── Anki import runs in the background; the window polls its status ── */
 
+/** Study one deck (or every deck, with null): it becomes the session source too. */
+function chooseDeck(id: number | null) {
+  setMeta(getDb(), 'activeDeck', id);
+  setMeta(getDb(), 'studySource', null);
+}
+
+const studySource: Check<StudySource> = (value, path = '') => {
+  const source = asStudySource(value);
+  if (!source) throw new InvalidInput(`${path || 'input'} must be a study source`);
+  return source;
+};
+
 export const importStatus = {
   running: false,
   log: [] as string[],
@@ -117,7 +130,7 @@ export const handlers = {
         b.goal ? { goal: b.goal as DeckSettings['goal'] } : {},
         b.description ?? '',
       );
-      setMeta(getDb(), 'activeDeck', deck.id);
+      chooseDeck(deck.id);
       return deck;
     },
   ),
@@ -140,7 +153,14 @@ export const handlers = {
   /** Study one deck, or every deck when `id` is null. */
   'decks.activate': h(v.object({ id: v.nullable(v.id) }), ({ id }) => {
     if (id !== null && !getDeck(id)) throw new AppError('deck_not_found', 'Deck not found');
-    setMeta(getDb(), 'activeDeck', id);
+    chooseDeck(id);
+    return { ok: true };
+  }),
+  'study.choose': h(v.object({ source: studySource }), ({ source }) => {
+    const ids = source.kind === 'deck' ? [source.deckId] : source.kind === 'decks' ? source.deckIds : [];
+    if (ids.some((id) => !getDeck(id))) throw new AppError('deck_not_found', 'Deck not found');
+    if (source.kind === 'deck' || source.kind === 'all') chooseDeck(source.kind === 'deck' ? source.deckId : null);
+    else setMeta(getDb(), 'studySource', source);
     return { ok: true };
   }),
   'decks.export': h(v.object({ id: v.id, format: v.oneOf('csv', 'lernpack') }), ({ id, format }) =>
@@ -261,7 +281,7 @@ export const handlers = {
     }),
     ({ name, data, deckId, deckName, language }) => {
       const res = importFile(name, data, { deckId, deckName: deckName || undefined, language });
-      setMeta(getDb(), 'activeDeck', res.deck.id);
+      chooseDeck(res.deck.id);
       return res;
     },
   ),
@@ -280,7 +300,7 @@ export const handlers = {
       const name = (b.deckName || 'Pasted cards').trim();
       const deck = (b.deckId && getDeck(b.deckId)) || deckByName(name) || createDeck(name, b.language || null);
       const res = upsertCards(deck, cards);
-      setMeta(getDb(), 'activeDeck', deck.id);
+      chooseDeck(deck.id);
       return { ...res, format: 'paste', media: 0, mediaMissing: 0 };
     },
   ),
@@ -312,7 +332,7 @@ export const handlers = {
     const length = (
       ['mini', 'standard', 'long'].includes(body?.length ?? '') ? body!.length : getSettings().sessionLength
     ) as SessionLength;
-    return planSession(length, getDb(), new Date(), body?.deckId ?? activeDeckId());
+    return planSession(length, getDb(), new Date(), body?.deckId);
   }),
   'attempt.record': h(
     v.object({

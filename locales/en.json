@@ -75,7 +75,7 @@
     "welcomeTitle": "Welcome to LernLab",
     "welcomeBody": "Learn anything – languages, cloud certifications, medicine, physics – with short game rounds and smart spaced repetition. Everything stays on your computer.",
     "welcomeAction": "Import or create your first deck",
-    "deckPicker": "Deck",
+    "deckPicker": "What to study",
     "startKey": "Enter",
     "repairTitle": "Streak repair quest:",
     "repairBody": "do 2 sessions by {{deadline}} to restore your {{days}}-day streak ({{done}}/2).",
@@ -100,7 +100,17 @@
     "goalTitle": "Goal · {{goal}}",
     "knownTitle": "Known from memory",
     "knownOf": "{{known, number}} of {{total, number}}",
-    "teacherInitial": "L"
+    "teacherInitial": "L",
+    "source": {
+      "decks_one": "{{count}} deck",
+      "decks_other": "{{count}} decks",
+      "starred_one": "Starred card ({{count}})",
+      "starred_other": "Starred cards ({{count}})",
+      "hardest_one": "Hardest card ({{count}})",
+      "hardest_other": "Hardest cards ({{count}})",
+      "tags": "Tags",
+      "tag": "Tag: {{tag}}"
+    }
   },
   "decks": {
     "title": "Your decks",

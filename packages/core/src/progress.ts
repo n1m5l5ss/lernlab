@@ -13,7 +13,17 @@ import {
   type StreakState,
   weekDays,
 } from './game';
-import { activeDeckId, deckNewPerDay, dueItemIds, getSettings, introducedTodayCount, newItemIds } from './learn';
+import {
+  activeDeckId,
+  allItems,
+  currentSource,
+  deckNewPerDay,
+  dueItemIds,
+  freshPerDeck,
+  getSettings,
+  introducedTodayCount,
+  scopeFor,
+} from './learn';
 import { deckCounts, getDeck, listDecks, LANGUAGES } from './library';
 
 /** Badge ids, in display order. Their names and descriptions live in locales/<code>.json under badges.<id>. */
@@ -81,6 +91,15 @@ function goalProgress(deckId: number | null, d: DB) {
   return { label: goal.label, known, total };
 }
 
+/** Every tag in use, sorted, for the "study a tag" choice. */
+function allTags(d: DB): string[] {
+  const seen = new Map<string, string>();
+  for (const r of d.prepare("SELECT DISTINCT tags FROM items WHERE tags != '[]'").all())
+    for (const t of JSON.parse(r.tags as string) as string[])
+      if (!seen.has(t.toLowerCase())) seen.set(t.toLowerCase(), t);
+  return [...seen.values()].sort((a, b) => a.localeCompare(b)).slice(0, 300);
+}
+
 export function appState(d: DB = getDb(), now = new Date()) {
   const settings = getSettings(d);
   const today = dayKey(now);
@@ -92,6 +111,8 @@ export function appState(d: DB = getDb(), now = new Date()) {
     d.prepare(`SELECT COUNT(*) AS n FROM days WHERE day LIKE ? AND sessions > 0`).get(`${month}%`)!.n,
   );
   const deckId = activeDeckId(d);
+  const source = currentSource(d);
+  const scope = scopeFor(source, d);
   const where = deckId ? ` WHERE deck_id = ${Number(deckId)}` : '';
   const itemCount = Number(d.prepare(`SELECT COUNT(*) AS n FROM items${where}`).get()!.n);
   const introduced = Number(
@@ -116,11 +137,13 @@ export function appState(d: DB = getDb(), now = new Date()) {
     activeDeck: deckId,
     itemCount,
     introduced,
-    due: dueItemIds(d, now, 2000, deckId).length,
-    newLeftToday: Math.min(
-      Math.max(0, deckNewPerDay(deckId, d) - introducedTodayCount(d, now, deckId)),
-      newItemIds(d, 1000, undefined, deckId).length,
-    ),
+    // Due and new counts follow what the next session covers (a deck, all decks, a tag, starred, hardest).
+    source,
+    due: dueItemIds(d, now, 2000, scope).length,
+    newLeftToday: freshPerDeck(d, now, scope, 1000).length,
+    tags: allTags(d),
+    starredCount: Number(d.prepare('SELECT COUNT(*) AS n FROM items WHERE starred = 1 AND suspended = 0').get()!.n),
+    hardestCount: allItems(d, scopeFor({ kind: 'hardest' }, d)).length,
     totalXp,
     level: levelFor(totalXp),
     streak,

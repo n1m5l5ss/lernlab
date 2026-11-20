@@ -1,4 +1,5 @@
 import type { Attempt, SessionLength } from '@lernlab/core/types';
+import type { StudySource } from '@lernlab/core/learn';
 
 import type { InputOf } from '../backend/handlers';
 import { call, saveFile } from './bridge';
@@ -20,6 +21,7 @@ export const api = {
     call('decks.update', { id, patch }),
   deleteDeck: (id: number) => call('decks.delete', { id }),
   activate: (id: number | null) => call('decks.activate', { id }),
+  chooseSource: (source: StudySource) => call('study.choose', { source }),
   exportDeck: async (id: number, format: 'csv' | 'lernpack') => {
     const f = await call('decks.export', { id, format });
     saveFile(f.name, f.data, f.type);
