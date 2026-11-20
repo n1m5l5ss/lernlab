@@ -1,5 +1,6 @@
 // The teacher's voice: short lines that rotate so they stay fresh. German for German decks, English otherwise.
 const pick = <T>(a: T[]): T => a[Math.floor(Math.random() * a.length)];
+const rotate = <T>(n: number, a: T[]): T => a[n % a.length];
 
 const DE = {
   start: () =>
@@ -39,6 +40,14 @@ const DE = {
   ],
   timeUp: () => pick(['Zeit um!', 'Zu langsam – weiter!']),
   goalMet: () => ['Tagesziel geschafft! Noch eine Runde?', 'Daily goal done! One more round?'],
+  /** A small task for after the session, rotating by day of the month. */
+  homework: (day: number) =>
+    rotate(day, [
+      ['Schau eine Folge „Nicos Weg“ (A1).', 'Watch one episode of Nicos Weg (A1) on DW.'],
+      ['Schau ein „Easy German“-Video mit Untertiteln.', 'Watch one Easy German video with subtitles.'],
+      ['3 Minuten Shadowing: sprich einen Satz 5× nach.', '3 minutes of shadowing: repeat one sentence 5 times.'],
+      ['Sag 5 Sätze über deinen Tag – laut!', 'Say 5 sentences about your day – out loud!'],
+    ]),
 };
 
 const EN: typeof DE = {
@@ -75,6 +84,12 @@ const EN: typeof DE = {
   missedDay: () => ["You took yesterday off. No problem – let's continue today.", ''],
   timeUp: () => pick(["Time's up!", 'Too slow – next!']),
   goalMet: () => ['Daily goal done! One more round?', ''],
+  homework: (day: number) =>
+    rotate(day, [
+      ['Explain one card from today to someone – or out loud to yourself.', ''],
+      ['Write 3 new cards about something you read today.', ''],
+      ['Skim your weak cards in Stats before bed.', ''],
+    ]),
 };
 
 export const teacherFor = (lang: string | null | undefined) => (lang === 'de' ? DE : EN);

@@ -11,7 +11,7 @@ import { pseudoString, pseudoize } from './pseudo';
 const SRC = import.meta.dirname;
 
 /** Screens whose text has not moved to locales/en.json yet (issue #10). Remove a file once it is converted. */
-const NOT_YET_TRANSLATED = new Set(['Progress.tsx', 'Session.tsx', 'Stats.tsx', 'Summary.tsx']);
+const NOT_YET_TRANSLATED = new Set(['Session.tsx']);
 
 /** JSX attributes a person reads or hears. */
 const VISIBLE_ATTRS = new Set(['placeholder', 'title', 'alt', 'aria-label', 'aria-description', 'label']);

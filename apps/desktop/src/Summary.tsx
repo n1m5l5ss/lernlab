@@ -1,21 +1,11 @@
 import { useEffect } from 'react';
 import confetti from 'canvas-confetti';
+import { Trans, useTranslation } from 'react-i18next';
 import { teacherFor } from '@lernlab/core/teacher';
 import { sfx } from './audio';
+import { formatPercent } from './i18n';
 import { useKeys } from './ctx';
 import type { SessionResult } from './Session';
-
-const HOMEWORK_DE = [
-  ['Schau eine Folge „Nicos Weg“ (A1).', 'Watch one episode of Nicos Weg (A1) on DW.'],
-  ['Schau ein „Easy German“-Video mit Untertiteln.', 'Watch one Easy German video with subtitles.'],
-  ['3 Minuten Shadowing: sprich einen Satz 5× nach.', '3 minutes of shadowing: repeat one sentence 5 times.'],
-  ['Sag 5 Sätze über deinen Tag – laut!', 'Say 5 sentences about your day – out loud!'],
-];
-const HOMEWORK = [
-  ['Explain one card from today to someone – or out loud to yourself.', ''],
-  ['Write 3 new cards about something you read today.', ''],
-  ['Skim your weak cards in Stats before bed.', ''],
-];
 
 export function Summary({
   result,
@@ -30,10 +20,11 @@ export function Summary({
   onAgain: () => void;
   onHome: () => void;
 }) {
-  const acc = result.answers ? Math.round((result.correct / result.answers) * 100) : 0;
-  const [done, doneEn] = teacherFor(lang).done();
-  const list = lang === 'de' ? HOMEWORK_DE : HOMEWORK;
-  const hw = list[new Date().getDate() % list.length];
+  const { t } = useTranslation();
+  const acc = result.answers ? result.correct / result.answers : 0;
+  const teacher = teacherFor(lang);
+  const [done, doneEn] = teacher.done();
+  const hw = teacher.homework(new Date().getDate());
   useEffect(() => {
     sfx.win();
     if (server?.goalMetNow || server?.unlocked?.length)
@@ -49,53 +40,57 @@ export function Summary({
   return (
     <div className="wrap summary col" style={{ gap: 16 }}>
       <div className="teacher" style={{ justifyContent: 'center' }}>
-        <div className="avatar">L</div>
+        <div className="avatar" aria-hidden="true">
+          {t('home.teacherInitial')}
+        </div>
         <div className="bubble" style={{ textAlign: 'left' }}>
           <div>{done}</div>
           {doneEn && <div className="en">{doneEn}</div>}
         </div>
       </div>
-      <div className="big">+{result.xp + (server?.bonus ?? 0)} XP</div>
+      <div className="big">{t('summary.xp', { xp: result.xp + (server?.bonus ?? 0) })}</div>
       <div className="statgrid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
         <div className="stat">
-          <b>{acc}%</b>
-          <span>accuracy</span>
+          <b>{formatPercent(acc)}</b>
+          <span>{t('summary.accuracy')}</span>
         </div>
         <div className="stat">
           <b>{result.answers}</b>
-          <span>answers</span>
+          <span>{t('summary.answers')}</span>
         </div>
         <div className="stat">
           <b>{Math.max(1, Math.round(result.seconds / 60))}</b>
-          <span>minutes</span>
+          <span>{t('summary.minutes')}</span>
         </div>
         <div className="stat">
-          <b className="flame">🔥{server?.streak?.current ?? '–'}</b>
-          <span>day streak</span>
+          <b className="flame">
+            {server?.streak ? t('summary.streak', { count: server.streak.current }) : t('summary.noStreak')}
+          </b>
+          <span>{t('summary.dayStreak')}</span>
         </div>
       </div>
       {server?.goalMetNow && (
         <div className="card" style={{ borderColor: 'var(--good)' }}>
-          ✅ Daily goal reached (+25 XP)
+          {t('summary.goalReached', { xp: 25 })}
         </div>
       )}
       {server?.unlocked?.map((u: any) => (
         <div key={u.key} className="card" style={{ borderColor: 'var(--accent)' }}>
-          🏅 New badge: <b>{u.title}</b> – {u.desc}
+          <Trans i18nKey="summary.newBadge" values={{ title: u.title, desc: u.desc }} components={{ b: <b /> }} />
         </div>
       ))}
-      {result.bossWon === true && <div className="card">👾 Boss defeated (+30 XP)</div>}
+      {result.bossWon === true && <div className="card">{t('summary.bossDefeated', { xp: 30 })}</div>}
       <div className="card" style={{ textAlign: 'left' }}>
-        <b>{lang === 'de' ? 'Hausaufgabe' : 'Homework'}</b>
+        <b>{t('summary.homework')}</b>
         <div style={{ marginTop: 6 }}>{hw[0]}</div>
         {hw[1] && <div className="small muted">{hw[1]}</div>}
       </div>
       <div className="row" style={{ justifyContent: 'center' }}>
         <button className="btn primary" onClick={onAgain}>
-          One more mini round <span className="kbd">Space</span>
+          {t('summary.again')} <span className="kbd">{t('summary.againKey')}</span>
         </button>
         <button className="btn" onClick={onHome}>
-          Done <span className="kbd">Enter</span>
+          {t('summary.done')} <span className="kbd">{t('summary.doneKey')}</span>
         </button>
       </div>
     </div>
