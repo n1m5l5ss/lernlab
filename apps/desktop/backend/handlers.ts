@@ -351,7 +351,7 @@ export const handlers = {
   ),
 
   /* ── Progress ── */
-  'stats.get': h(v.none, () => ({ ...stats(), achievements: ACHIEVEMENTS })),
+  'stats.get': h(v.none, () => ({ ...stats(), achievements: [...ACHIEVEMENTS] })),
   'summary.today': h(v.none, () => dailySummary()),
   'progress.get': h(v.none, () => progressReport()),
   'settings.save': h(v.record, (body) => {

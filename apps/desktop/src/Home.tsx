@@ -4,6 +4,7 @@ import type { SessionLength } from '@lernlab/core/types';
 import { teacherFor } from '@lernlab/core/teacher';
 import { api } from './api';
 import { useKeys } from './ctx';
+import { bubbleFor } from './lines';
 
 const LENGTHS: { key: SessionLength; minutes: number }[] = [
   { key: 'mini', minutes: 4 },
@@ -50,7 +51,10 @@ export function Home({
   const teacher = teacherFor(deck?.language);
   const s = state.streak;
   const lvl = state.level;
-  const greet = state.missedYesterday ? teacher.missedDay() : state.today.goalMet ? teacher.goalMet() : teacher.start();
+  const greet = bubbleFor(
+    state.missedYesterday ? teacher.missedDay() : state.today.goalMet ? teacher.goalMet() : teacher.start(),
+    t,
+  );
   const pct = (a: number, b: number) => `${b ? Math.min(100, Math.round((a / b) * 100)) : 0}%`;
 
   return (
@@ -61,8 +65,8 @@ export function Home({
             {t('home.teacherInitial')}
           </div>
           <div className="bubble">
-            <div>{greet[0]}</div>
-            {greet[1] && <div className="en">{greet[1]}</div>}
+            <div>{greet.main}</div>
+            {greet.gloss && <div className="en">{greet.gloss}</div>}
           </div>
         </div>
         <select
@@ -163,7 +167,7 @@ export function Home({
 
 function Achievements({ got }: { got: Record<string, string> }) {
   const { t } = useTranslation();
-  const [all, setAll] = useState<Record<string, { title: string; desc: string }>>({});
+  const [all, setAll] = useState<string[]>([]);
   useEffect(() => {
     api
       .stats()
@@ -174,9 +178,9 @@ function Achievements({ got }: { got: Record<string, string> }) {
     <div className="card">
       <b>{t('home.badges')}</b>
       <div className="badges" style={{ marginTop: 10 }}>
-        {Object.entries(all).map(([k, a]) => (
-          <span key={k} className={`badge ${got[k] ? 'on' : ''}`} title={a.desc}>
-            {got[k] ? '🏅' : '🔒'} {a.title}
+        {all.map((k) => (
+          <span key={k} className={`badge ${got[k] ? 'on' : ''}`} title={t(`badges.${k}.desc`)}>
+            {got[k] ? '🏅' : '🔒'} {t(`badges.${k}.title`)}
           </span>
         ))}
       </div>
