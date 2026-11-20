@@ -4,6 +4,9 @@ on:
     branches: [dev, main]
   push:
     branches: [dev, main]
+  # Pull requests opened by workflows (release-please, the main -> dev sync) don't trigger
+  # pull_request runs, so those workflows start this one by hand on the PR's branch.
+  workflow_dispatch:
 permissions:
   contents: read
 # A newer push to the same PR or branch cancels the run that is still going.
