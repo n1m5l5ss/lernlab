@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { heatLevel, heatmapWeeks, monthStarts, recallRate } from './progress-logic';
+import { heatColumn, heatLevel, heatmapWeeks, monthStarts, recallRate } from './progress-logic';
 
 test('heat levels follow session lengths; a studied day is never level 0', () => {
   assert.equal(heatLevel(0, false), 0);
@@ -34,4 +34,11 @@ test('month labels go where the 1st of a month falls', () => {
 test('a week without reviews has no rate', () => {
   assert.equal(recallRate({ reviews: 0, recalled: 0 }), null);
   assert.equal(recallRate({ reviews: 4, recalled: 3 }), 0.75);
+});
+
+test('the study-days calendar runs the way the language reads: right to left puts today on the left', () => {
+  assert.equal(heatColumn(0, 52, 'ltr'), 0);
+  assert.equal(heatColumn(51, 52, 'ltr'), 51);
+  assert.equal(heatColumn(0, 52, 'rtl'), 51);
+  assert.equal(heatColumn(51, 52, 'rtl'), 0);
 });

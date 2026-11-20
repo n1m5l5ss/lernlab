@@ -81,6 +81,7 @@
       "dark": "Dark"
     },
     "pseudo": "Pseudo-locale (shows untranslated text)",
+    "pseudoRtl": "Pseudo right-to-left (checks Arabic, Hebrew and Urdu layouts)",
     "summaryLink": "Today's summary (JSON for tutors/scripts)",
     "autoUpdate": "Update automatically",
     "autoUpdateHint": "Looks for a new version once a day and installs it when you restart. Your data is backed up first.",

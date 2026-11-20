@@ -339,7 +339,7 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
             key={d.key}
             className={`drop ${d.hit ? 'hit' : ''}`}
             lang={d.hit ? (ctx.lang ?? undefined) : undefined}
-            style={{ left: `${d.x}%`, top: d.y }}
+            style={{ left: `${d.x}%` /* rtl-ignore: a random spot, centred */, top: d.y }}
           >
             {d.hit ? qa(d.item).answer : stripHtml(qa(d.item).prompt)}
           </div>

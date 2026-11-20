@@ -4,16 +4,19 @@
 import i18next from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import en from '../../../locales/en.json';
-import { pseudoize } from './pseudo';
+import { PSEUDO_RTL, directionOf } from './direction';
+import { pseudoRtlString, pseudoize, withPluralForms } from './pseudo';
 
 /** Languages offered in Settings. Add one here when its locales/<code>.json lands. */
 export const LANGUAGES: { code: string; name: string }[] = [{ code: 'en', name: 'English' }];
 /** Pseudo-locale for spotting text that bypasses the translation system. */
 export const PSEUDO = 'en-XA';
+export { PSEUDO_RTL };
 
 export const resources = {
   en: { translation: en },
   [PSEUDO]: { translation: pseudoize(en) },
+  [PSEUDO_RTL]: { translation: withPluralForms(pseudoize(en, pseudoRtlString), PSEUDO_RTL) },
 };
 
 void i18next.use(initReactI18next).init({
@@ -24,12 +27,14 @@ void i18next.use(initReactI18next).init({
   initAsync: false,
 });
 
-export const isSupported = (code: string) => code === PSEUDO || LANGUAGES.some((l) => l.code === code);
+export const isSupported = (code: string) =>
+  code === PSEUDO || code === PSEUDO_RTL || LANGUAGES.some((l) => l.code === code);
 
 /** Switch the interface language (unknown codes fall back to English). */
 export async function setLanguage(code: string | undefined | null) {
   const lng = code && isSupported(code) ? code : 'en';
   document.documentElement.lang = lng;
+  document.documentElement.dir = directionOf(lng);
   if (i18next.language !== lng) await i18next.changeLanguage(lng);
 }
 

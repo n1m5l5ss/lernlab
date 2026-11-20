@@ -35,6 +35,7 @@ function NavLink({ route, current }: { route: Route; current: Route }) {
     <a className="nav-link" href={hashFor(route)} aria-current={route === current ? 'page' : undefined}>
       <svg
         aria-hidden="true"
+        className={route === 'cards' ? 'icon-dir' : undefined}
         width="20"
         height="20"
         viewBox="0 0 24 24"

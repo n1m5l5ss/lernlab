@@ -3,8 +3,9 @@ import { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
+import { directionOf } from './direction';
 import { formatDate, formatNumber, formatPercent } from './i18n';
-import { heatmapWeeks, monthStarts, recallRate } from './progress-logic';
+import { heatColumn, heatmapWeeks, monthStarts, recallRate } from './progress-logic';
 
 type Journey = OutputOf<'progress.get'>;
 type DeckJourney = Journey['decks'][number];
@@ -98,17 +99,19 @@ function DeckProgress({ d }: { d: DeckJourney }) {
 
 /** One square per day, a column per week; darker means more minutes. */
 function StudyDays({ p }: { p: Journey }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const weeks = heatmapWeeks(p.heatmapSince, p.today, p.studyDays);
+  const dir = directionOf(i18n.language);
+  const col = (x: number) => heatColumn(x, weeks.length, dir) * STEP;
   const STEP = 15;
   const CELL = 12;
   const TOP = 16;
   const label = t('progress.days.summary', { count: p.studyDays.length });
   const wrap = useRef<HTMLDivElement>(null);
-  // Open at today: the most recent weeks are on the right.
+  // Open at today: the most recent weeks are at the end of the line (right, or left when right to left).
   useEffect(() => {
-    if (wrap.current) wrap.current.scrollLeft = wrap.current.scrollWidth;
-  }, []);
+    if (wrap.current) wrap.current.scrollLeft = (dir === 'rtl' ? -1 : 1) * wrap.current.scrollWidth;
+  }, [dir]);
   return (
     <section className="panel journey-panel" aria-labelledby="journey-days">
       <h2 id="journey-days">{t('progress.days.title')}</h2>
@@ -121,7 +124,7 @@ function StudyDays({ p }: { p: Journey }) {
           aria-label={label}
         >
           {monthStarts(weeks).map((m) => (
-            <text key={m.day} x={m.column * STEP} y={TOP - 5} className="journey-axis">
+            <text key={m.day} x={col(m.column) + (dir === 'rtl' ? CELL : 0)} y={TOP - 5} className="journey-axis">
               {date(m.day, { month: 'short' })}
             </text>
           ))}
@@ -130,7 +133,7 @@ function StudyDays({ p }: { p: Journey }) {
               c.future ? null : (
                 <rect
                   key={c.day}
-                  x={x * STEP}
+                  x={col(x)}
                   y={TOP + y * STEP}
                   width={CELL}
                   height={CELL}

@@ -401,7 +401,7 @@ export function Flip({
           <Rich html={ex.prompt} />
         </div>
         {shownAns && (
-          <div role="status" className="feedback right" style={{ textAlign: 'left' }}>
+          <div role="status" className="feedback right" style={{ textAlign: 'start' }}>
             <div className="ans">
               <Rich html={ex.answer} />
             </div>
@@ -848,7 +848,7 @@ export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'uns
               <button key={i} className={`tile ${used ? 'used' : ''}`} onClick={() => add(i)}>
                 {tile}
                 {label && label < 10 ? (
-                  <span className="kbd" style={{ marginLeft: 6 }}>
+                  <span className="kbd" style={{ marginInlineStart: 6 }}>
                     {label}
                   </span>
                 ) : null}
@@ -1260,7 +1260,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
       <div className="prompt" style={{ fontSize: 24 }}>
         <Rich html={ex.prompt} />
       </div>
-      <ol className="col" style={{ paddingLeft: 22, minHeight: 40 }}>
+      <ol className="col" style={{ paddingInlineStart: 22, minHeight: 40 }}>
         {placed.map((s, k) => (
           <li key={k}>
             <button
