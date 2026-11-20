@@ -1027,31 +1027,6 @@ label.lbl {
   border-color: var(--accent);
   background: var(--color-accent-tint);
 }
-.deckgrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 12px;
-}
-.deck {
-  cursor: default;
-}
-.deck.on {
-  border-color: var(--accent);
-}
-.deck h3 {
-  margin: 0 0 4px;
-  font-size: 18px;
-}
-.deckstats {
-  display: flex;
-  gap: 12px;
-  font-size: 13px;
-  color: var(--muted);
-  margin: 8px 0 12px;
-}
-.deckstats b {
-  color: var(--text);
-}
 select {
   background: var(--bg2);
   color: var(--text);
@@ -1459,4 +1434,139 @@ kbd {
   display: flex;
   justify-content: flex-end;
   gap: var(--space-3);
+}
+.decks {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+.decks-head {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+  margin-top: calc(-1 * var(--space-8));
+}
+.decks-notice {
+  margin: 0;
+}
+.deckgrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: var(--space-5);
+}
+.deck {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.deck.on {
+  border-color: var(--color-accent);
+}
+.deck-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+.deck-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-subhead);
+}
+.btn.deck-more {
+  border: none;
+  min-width: var(--size-min-target);
+  padding: 0 var(--space-2);
+  letter-spacing: 0.1em;
+}
+.deck-sub {
+  margin: calc(-1 * var(--space-2)) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.deckstats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.deckstats b {
+  color: var(--color-text);
+}
+.deck-actions {
+  display: flex;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.deck-children {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.deck-children .deck-children {
+  padding-inline-start: var(--space-5);
+}
+.deck-child {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  border-top: 1px solid var(--color-border);
+  min-height: var(--size-min-target);
+}
+.deck-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 200px;
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-card);
+  background: transparent;
+  color: var(--color-text);
+  font: inherit;
+  cursor: pointer;
+}
+.deck-drop span {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.deck-drop:hover,
+.deck-drop:focus-visible {
+  border-color: var(--color-accent);
+}
+.deck-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.deck-editor h2 {
+  margin: 0;
+  font-size: var(--text-subhead);
+}
+.deck-editor p {
+  margin: 0;
+}
+.deck-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  font-weight: 700;
+  font-size: var(--text-caption);
+}
+.deck-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.deck-editor-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-3);
+}
+.btn.danger {
+  border: 1px solid var(--color-incorrect);
+  color: var(--color-incorrect);
+  background: var(--color-surface);
 }

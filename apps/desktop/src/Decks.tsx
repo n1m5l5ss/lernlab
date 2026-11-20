@@ -1,42 +1,155 @@
-import { useEffect, useRef, useState } from 'react';
+// Decks: a grid of your decks (sub-decks as a tree), with study, settings, export and delete.
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
+import { deckTree, type DeckNode } from '@lernlab/core/decktree';
+import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
+import { formatDate, formatNumber } from './i18n';
 
 /** CSV column names are file format, not text: they stay in English in every language. */
 const CSV_REQUIRED = 'front, back';
 const CSV_OPTIONAL =
   'example, explanation, notes, category, tags, image, audio, video, alt_answers, type, choices, correct, steps';
 
-type Props = { state: any; refresh: () => Promise<any>; onStudy: () => void; onBrowse: (deckId: number) => void };
+type AppState = OutputOf<'state.get'>;
+type DeckRow = AppState['decks'][number];
+type Node = DeckNode<DeckRow & { fresh: number }>;
+type Props = {
+  state: AppState;
+  refresh: () => Promise<unknown>;
+  onStudy: () => void;
+  onPractice: () => void;
+  onBrowse: (deckId: number) => void;
+};
+type Form = {
+  id?: number;
+  name: string;
+  language: string;
+  newPerDay: string;
+  goalLabel: string;
+  goalWords: string;
+  examDate: string;
+};
 
-export function Decks({ state, refresh, onStudy, onBrowse }: Props) {
+const formFor = (d?: DeckRow): Form => ({
+  id: d?.id,
+  name: d?.name ?? '',
+  language: d?.language ?? '',
+  newPerDay: String(d?.settings.newPerDay ?? 10),
+  goalLabel: d?.settings.goal?.label ?? '',
+  goalWords: d?.settings.goal?.words ? String(d.settings.goal.words) : '',
+  examDate: d?.settings.examDate ?? '',
+});
+
+export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) {
   const { t } = useTranslation();
-  const [editing, setEditing] = useState<any>(null);
+  const [editing, setEditing] = useState<Form | null>(null);
   const [showImport, setShowImport] = useState(!state.decks.length);
-  const open = async (id: number, then: () => void) => {
-    await api.activate(id);
+  const [removing, setRemoving] = useState<DeckRow | null>(null);
+  const [notice, setNotice] = useState('');
+  const confirmDialog = useRef<HTMLDialogElement>(null);
+  const cancelButton = useRef<HTMLButtonElement>(null);
+  // "New" on a deck card means new cards available today, so the tree adds those up.
+  const tree = useMemo(() => deckTree(state.decks.map((d) => ({ ...d, fresh: d.newToday }))), [state.decks]);
+
+  const study = async (node: Node, then: () => void) => {
+    if (node.deckIds.length === 1) await api.activate(node.deckIds[0]);
+    else await api.chooseSource({ kind: 'decks', deckIds: node.deckIds });
     await refresh();
     then();
   };
+  const askDelete = (d: DeckRow) => {
+    setEditing(null);
+    setRemoving(d);
+    confirmDialog.current?.showModal();
+    cancelButton.current?.focus(); // keeping the deck is the safe default
+  };
+  const remove = async () => {
+    if (!removing) return;
+    confirmDialog.current?.close();
+    const r = await api.deleteDeck(removing.id);
+    setNotice(t('decks.deleted', { name: removing.name, file: r.backup }));
+    setRemoving(null);
+    await refresh();
+  };
+
+  const card = (node: Node) => {
+    const d = node.deck;
+    const n = node.totals;
+    const subtitle = d?.languageName
+      ? t('decks.languageDeck', { language: d.languageName })
+      : t('decks.subjectDeck', { count: n.cards });
+    const extra = [
+      d?.settings.goal?.label,
+      d?.settings.examDate && t('decks.examOn', { date: formatDate(`${d.settings.examDate}T12:00:00`) }),
+    ].filter(Boolean);
+    return (
+      <section key={node.path} className={`panel deck ${d && d.id === state.activeDeck ? 'on' : ''}`}>
+        <div className="deck-head">
+          <h2>{node.label}</h2>
+          {d && (
+            <button
+              className="btn ghost deck-more"
+              aria-label={t('decks.options', { name: d.name })}
+              onClick={() => setEditing(formFor(d))}
+            >
+              <span aria-hidden="true">···</span>
+            </button>
+          )}
+        </div>
+        <p className="deck-sub">{[subtitle, ...extra].join(' · ')}</p>
+        <DeckStats due={n.due} fresh={n.fresh} learned={n.learned} cards={n.cards} />
+        <div className="meter" aria-hidden="true">
+          <i style={{ width: `${n.cards ? (n.learned / n.cards) * 100 : 0}%` }} />
+        </div>
+        <div className="deck-actions">
+          {n.due + n.fresh > 0 ? (
+            <button className="btn" onClick={() => study(node, onStudy)}>
+              {t('decks.study')}
+            </button>
+          ) : (
+            <button className="btn" onClick={() => study(node, onPractice)}>
+              {t('decks.practice')}
+            </button>
+          )}
+          {d && (
+            <button className="btn ghost" onClick={() => api.activate(d.id).then(() => onBrowse(d.id))}>
+              {t('decks.browse')}
+            </button>
+          )}
+        </div>
+        {node.children.length > 0 && (
+          <SubDecks nodes={node.children} onStudy={(c) => study(c, onStudy)} onEdit={(x) => setEditing(formFor(x))} />
+        )}
+      </section>
+    );
+  };
+
   return (
-    <div className="col" style={{ gap: 16 }}>
-      <div className="row">
-        <h2 className="grow" style={{ margin: 0 }}>
-          {t('decks.title')}
-        </h2>
-        <button className="btn" onClick={() => setEditing({ name: '', language: '', newPerDay: 10 })}>
-          {t('decks.newDeck')}
-        </button>
-        <button className="btn primary" onClick={() => setShowImport((v) => !v)}>
+    <div className="decks">
+      <div className="decks-head">
+        <button className="btn" onClick={() => setShowImport((v) => !v)} aria-expanded={showImport}>
           {t('decks.import')}
         </button>
+        <button className="btn primary" onClick={() => setEditing(formFor())}>
+          {t('decks.newDeck')}
+        </button>
       </div>
+      {notice && (
+        <p className="panel decks-notice" role="status">
+          {notice}
+        </p>
+      )}
       {showImport && <ImportPanel state={state} refresh={refresh} onDone={() => setShowImport(false)} />}
       {editing && (
         <DeckEditor
-          deck={editing}
+          form={editing}
           languages={state.languages}
           onClose={() => setEditing(null)}
+          onDelete={() => {
+            const d = state.decks.find((x) => x.id === editing.id);
+            if (d) askDelete(d);
+          }}
           onSaved={async () => {
             setEditing(null);
             await refresh();
@@ -44,176 +157,195 @@ export function Decks({ state, refresh, onStudy, onBrowse }: Props) {
         />
       )}
       <div className="deckgrid">
-        {state.decks.map((d: any) => (
-          <div key={d.id} className={`card deck ${d.id === state.activeDeck ? 'on' : ''}`}>
-            <h3>{d.name}</h3>
-            <div className="small muted">
-              {d.languageName ? t('decks.languageDeck', { language: d.languageName }) : t('decks.anySubject')}
-              {d.settings.goal ? t('decks.goalSuffix', { goal: d.settings.goal.label }) : ''}
-            </div>
-            <div className="deckstats">
-              <span>
-                <Trans i18nKey="decks.cards" count={d.cards} components={{ b: <b /> }} />
-              </span>
-              <span>
-                <Trans i18nKey="decks.due" count={d.due} components={{ b: <b /> }} />
-              </span>
-              <span>
-                <Trans i18nKey="decks.learned" count={d.learned} components={{ b: <b /> }} />
-              </span>
-            </div>
-            <div className="bar green">
-              <i style={{ width: `${d.cards ? (d.learned / d.cards) * 100 : 0}%` }} />
-            </div>
-            <div className="row" style={{ marginTop: 12, flexWrap: 'wrap', gap: 8 }}>
-              <button className="btn primary" onClick={() => open(d.id, onStudy)}>
-                {t('decks.study')}
-              </button>
-              <button className="btn" onClick={() => open(d.id, () => onBrowse(d.id))}>
-                {t('decks.browse')}
-              </button>
-              <button
-                className="btn ghost"
-                title={t('decks.settingsButton')}
-                aria-label={t('decks.settingsButton')}
-                onClick={() =>
-                  setEditing({
-                    ...d,
-                    newPerDay: d.settings.newPerDay ?? 10,
-                    goalLabel: d.settings.goal?.label ?? '',
-                    goalWords: d.settings.goal?.words ?? '',
-                  })
-                }
-              >
-                ⚙
-              </button>
-            </div>
-          </div>
-        ))}
+        {tree.map(card)}
+        {!showImport && (
+          <button className="deck-drop" onClick={() => setShowImport(true)}>
+            <b>{t('decks.importPanel.drop')}</b>
+            <span>{t('decks.dropFormats')}</span>
+          </button>
+        )}
       </div>
-      {!state.decks.length && !showImport && <div className="card muted">{t('decks.empty')}</div>}
+      <dialog
+        ref={confirmDialog}
+        className="panel session-dialog"
+        aria-labelledby="delete-title"
+        onClose={() => setRemoving(null)}
+      >
+        <h2 id="delete-title">{t('decks.deleteTitle', { name: removing?.name ?? '' })}</h2>
+        <p className="muted">{t('decks.deleteBody', { count: removing?.cards ?? 0 })}</p>
+        <div className="session-dialog-actions">
+          <button className="btn danger" onClick={remove}>
+            {t('common.delete')}
+          </button>
+          <button ref={cancelButton} className="btn primary" onClick={() => confirmDialog.current?.close()}>
+            {t('decks.keep')}
+          </button>
+        </div>
+      </dialog>
     </div>
   );
 }
 
+function DeckStats({ due, fresh, learned, cards }: { due: number; fresh: number; learned: number; cards: number }) {
+  return (
+    <p className="deckstats">
+      <span>
+        <Trans i18nKey="decks.due" values={{ count: formatNumber(due) }} components={{ b: <b /> }} />
+      </span>
+      <span>
+        <Trans i18nKey="decks.new" values={{ count: formatNumber(fresh) }} components={{ b: <b /> }} />
+      </span>
+      <span>
+        <Trans
+          i18nKey="decks.known"
+          values={{ count: formatNumber(learned), total: formatNumber(cards) }}
+          components={{ b: <b /> }}
+        />
+      </span>
+    </p>
+  );
+}
+
+/** Sub-decks inside their parent's card, one row each, nested as deep as the path goes. */
+function SubDecks({
+  nodes,
+  onStudy,
+  onEdit,
+}: {
+  nodes: Node[];
+  onStudy: (n: Node) => void;
+  onEdit: (d: DeckRow) => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <ul className="deck-children">
+      {nodes.map((c) => (
+        <li key={c.path}>
+          <div className="deck-child">
+            <span className="grow">
+              <b>{c.label}</b>
+              <span className="muted"> · {t('decks.childCounts', { due: c.totals.due, fresh: c.totals.fresh })}</span>
+            </span>
+            {c.totals.due + c.totals.fresh > 0 && (
+              <button
+                className="btn ghost"
+                onClick={() => onStudy(c)}
+                aria-label={t('decks.studyNamed', { name: c.path })}
+              >
+                {t('decks.study')}
+              </button>
+            )}
+            {c.deck && (
+              <button
+                className="btn ghost deck-more"
+                aria-label={t('decks.options', { name: c.path })}
+                onClick={() => onEdit(c.deck!)}
+              >
+                <span aria-hidden="true">···</span>
+              </button>
+            )}
+          </div>
+          {c.children.length > 0 && <SubDecks nodes={c.children} onStudy={onStudy} onEdit={onEdit} />}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function DeckEditor({
-  deck,
+  form,
   languages,
   onClose,
+  onDelete,
   onSaved,
 }: {
-  deck: any;
+  form: Form;
   languages: Record<string, string>;
   onClose: () => void;
+  onDelete: () => void;
   onSaved: () => void;
 }) {
   const { t } = useTranslation();
-  const [d, setD] = useState(deck);
+  const [f, setF] = useState(form);
   const [err, setErr] = useState('');
-  const set = (k: string, v: any) => setD({ ...d, [k]: v });
+  const set = (k: keyof Form, v: string) => setF({ ...f, [k]: v });
   const save = async () => {
+    const settings = {
+      newPerDay: Number(f.newPerDay),
+      goal: f.goalLabel.trim() ? { label: f.goalLabel, words: Number(f.goalWords) || 0 } : null,
+      examDate: f.examDate,
+    };
     try {
-      const goal = d.goalLabel
-        ? { ...(deck.settings?.goal ?? {}), label: d.goalLabel, words: Number(d.goalWords) || 0 }
-        : undefined;
-      if (d.id)
-        await api.updateDeck(d.id, {
-          name: d.name,
-          language: d.language || null,
-          description: d.description ?? '',
-          settings: { newPerDay: Number(d.newPerDay), goal },
-        });
-      else await api.createDeck({ name: d.name, language: d.language || null, goal });
+      if (f.id) await api.updateDeck(f.id, { name: f.name, language: f.language || null, settings });
+      else await api.createDeck({ name: f.name, language: f.language || null, settings });
       onSaved();
-    } catch (e: any) {
-      setErr(e.message);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
     }
   };
-  const exportAs = (e: React.MouseEvent, format: 'csv' | 'lernpack') => {
-    e.preventDefault();
-    api.exportDeck(d.id, format).catch((x: Error) => setErr(x.message));
-  };
-  const remove = async () => {
-    if (!confirm(t('decks.editor.confirmDelete', { name: d.name }))) return;
-    await api.deleteDeck(d.id);
-    onSaved();
-  };
+  const exportAs = (format: 'csv' | 'lernpack') =>
+    f.id && api.exportDeck(f.id, format).catch((x: Error) => setErr(x.message));
+  const field = (k: keyof Form, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
+    <label className="deck-field">
+      <span>{label}</span>
+      <input className="input" value={f[k] ?? ''} onChange={(e) => set(k, e.target.value)} {...props} />
+    </label>
+  );
   return (
-    <div className="card">
-      <b>{d.id ? t('decks.editor.settingsTitle') : t('decks.editor.newTitle')}</b>
-      <label className="lbl">{t('decks.editor.name')}</label>
-      <input
-        className="input"
-        value={d.name}
-        onChange={(e) => set('name', e.target.value)}
-        placeholder={t('decks.editor.namePlaceholder')}
-      />
-      <label className="lbl">{t('decks.editor.frontLanguage')}</label>
-      <select className="input" value={d.language ?? ''} onChange={(e) => set('language', e.target.value)}>
-        <option value="">{t('decks.editor.notLanguage')}</option>
-        {Object.entries(languages).map(([k, v]) => (
-          <option key={k} value={k}>
-            {v}
-          </option>
-        ))}
-      </select>
-      <div className="small muted">{t('decks.editor.languageHint')}</div>
-      <div className="row" style={{ gap: 12 }}>
-        <div className="grow">
-          <label className="lbl">{t('decks.editor.newPerDay')}</label>
-          <input
-            className="input"
-            type="number"
-            value={d.newPerDay ?? 10}
-            onChange={(e) => set('newPerDay', e.target.value)}
-          />
-        </div>
-        <div className="grow">
-          <label className="lbl">{t('decks.editor.goal')}</label>
-          <input
-            className="input"
-            value={d.goalLabel ?? ''}
-            onChange={(e) => set('goalLabel', e.target.value)}
-            placeholder={t('decks.editor.goalPlaceholder')}
-          />
-        </div>
-        <div style={{ width: 130 }}>
-          <label className="lbl">{t('decks.editor.goalSize')}</label>
-          <input
-            className="input"
-            type="number"
-            value={d.goalWords ?? ''}
-            onChange={(e) => set('goalWords', e.target.value)}
-            placeholder={t('decks.editor.goalSizePlaceholder')}
-          />
-        </div>
+    <section className="panel deck-editor" aria-labelledby="deck-editor-title">
+      <h2 id="deck-editor-title">{f.id ? t('decks.editor.settingsTitle') : t('decks.editor.newTitle')}</h2>
+      {field('name', t('decks.editor.name'), { placeholder: t('decks.editor.namePlaceholder'), autoFocus: true })}
+      <p className="small muted">{t('decks.editor.subdeckHint')}</p>
+      <label className="deck-field">
+        <span>{t('decks.editor.frontLanguage')}</span>
+        <select className="input" value={f.language} onChange={(e) => set('language', e.target.value)}>
+          <option value="">{t('decks.editor.notLanguage')}</option>
+          {Object.entries(languages).map(([k, v]) => (
+            <option key={k} value={k}>
+              {v}
+            </option>
+          ))}
+        </select>
+      </label>
+      <p className="small muted">{t('decks.editor.languageHint')}</p>
+      <div className="deck-editor-row">
+        {field('newPerDay', t('decks.editor.newPerDay'), { type: 'number', min: 0, max: 999 })}
+        {field('goalLabel', t('decks.editor.goal'), { placeholder: t('decks.editor.goalPlaceholder') })}
+        {field('goalWords', t('decks.editor.goalSize'), {
+          type: 'number',
+          min: 0,
+          placeholder: t('decks.editor.goalSizePlaceholder'),
+        })}
+        {field('examDate', t('decks.editor.examDate'), { type: 'date' })}
       </div>
-      {err && <div className="feedback wrong">{err}</div>}
-      <div className="actions">
-        <button className="btn primary" onClick={save} disabled={!d.name?.trim()}>
+      {err && (
+        <p role="alert" className="feedback wrong">
+          {err}
+        </p>
+      )}
+      <div className="deck-editor-actions">
+        <button className="btn primary" onClick={save} disabled={!f.name.trim()}>
           {t('common.save')}
         </button>
         <button className="btn ghost" onClick={onClose}>
           {t('common.cancel')}
         </button>
         <span className="grow" />
-        {d.id && (
-          <a className="btn ghost" href="#" onClick={(e) => exportAs(e, 'lernpack')}>
-            {t('decks.editor.exportLernpack')}
-          </a>
-        )}
-        {d.id && (
-          <a className="btn ghost" href="#" onClick={(e) => exportAs(e, 'csv')}>
-            {t('decks.editor.exportCsv')}
-          </a>
-        )}
-        {d.id && (
-          <button className="btn" style={{ background: 'var(--bad)', color: '#fff' }} onClick={remove}>
-            {t('common.delete')}
-          </button>
+        {f.id && (
+          <>
+            <button className="btn ghost" onClick={() => exportAs('lernpack')}>
+              {t('decks.editor.exportLernpack')}
+            </button>
+            <button className="btn ghost" onClick={() => exportAs('csv')}>
+              {t('decks.editor.exportCsv')}
+            </button>
+            <button className="btn danger" onClick={onDelete}>
+              {t('common.delete')}
+            </button>
+          </>
         )}
       </div>
-    </div>
+    </section>
   );
 }
 

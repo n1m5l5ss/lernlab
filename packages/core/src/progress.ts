@@ -127,6 +127,7 @@ export function appState(d: DB = getDb(), now = new Date()) {
     ...dk,
     ...(counts[dk.id] ?? { cards: 0, fresh: 0, learned: 0 }),
     due: dueItemIds(d, now, 2000, dk.id).length,
+    newToday: freshPerDeck(d, now, dk.id, 1000).length,
     languageName: dk.language ? (LANGUAGES[dk.language] ?? dk.language) : null,
   }));
   const lastDay = d.prepare('SELECT MAX(day) AS d FROM days WHERE sessions > 0 AND day < ?').get(today)!.d as

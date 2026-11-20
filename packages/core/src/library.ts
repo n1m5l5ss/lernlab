@@ -13,8 +13,36 @@ import { UserError } from './errors';
 export type DeckSettings = {
   newPerDay?: number;
   goal?: { label: string; words: number; hoursLow?: number; hoursHigh?: number; tag?: string };
+  /** The day of the exam or deadline this deck works towards (YYYY-MM-DD). */
+  examDate?: string;
   ankiSource?: string;
 };
+
+/**
+ * Deck settings from the screen, checked: only known fields, in range. A field set to null or ''
+ * is cleared (returned as undefined, which drops it when merged and saved).
+ */
+export function cleanDeckSettings(input: Record<string, unknown>): Partial<Record<keyof DeckSettings, unknown>> {
+  const out: Partial<Record<keyof DeckSettings, unknown>> = {};
+  if ('newPerDay' in input) {
+    const n = Math.round(Number(input.newPerDay));
+    if (Number.isFinite(n)) out.newPerDay = Math.max(0, Math.min(999, n));
+  }
+  if ('goal' in input) {
+    const g = input.goal as Record<string, unknown> | null;
+    const label = typeof g?.label === 'string' ? g.label.trim().slice(0, 100) : '';
+    const words = Math.max(0, Math.min(1_000_000, Math.round(Number(g?.words)) || 0));
+    out.goal = label
+      ? { label, words, ...(typeof g?.tag === 'string' ? { tag: g.tag.slice(0, 100) } : {}) }
+      : undefined;
+  }
+  if ('examDate' in input) {
+    const v = input.examDate;
+    const ok = typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T12:00:00`));
+    out.examDate = ok ? v : undefined;
+  }
+  return out;
+}
 
 export type Deck = {
   id: number;

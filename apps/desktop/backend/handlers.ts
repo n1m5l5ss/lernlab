@@ -15,6 +15,7 @@ import {
   type StudySource,
 } from '@lernlab/core/learn';
 import {
+  cleanDeckSettings,
   createDeck,
   deckByName,
   deleteDeck,
@@ -120,16 +121,13 @@ export const handlers = {
       name: v.string(200),
       language: v.optional(v.nullable(v.string(20))),
       goal: v.optional(v.record),
+      settings: v.optional(v.record),
       description: v.optional(v.string(10_000)),
     }),
     (b) => {
       if (!b.name.trim()) throw new AppError('name_required', 'Name required');
-      const deck = createDeck(
-        b.name.trim(),
-        b.language || null,
-        b.goal ? { goal: b.goal as DeckSettings['goal'] } : {},
-        b.description ?? '',
-      );
+      const settings = cleanDeckSettings({ ...(b.goal ? { goal: b.goal } : {}), ...(b.settings ?? {}) });
+      const deck = createDeck(b.name.trim(), b.language || null, settings as DeckSettings, b.description ?? '');
       chooseDeck(deck.id);
       return deck;
     },
@@ -144,11 +142,21 @@ export const handlers = {
         settings: v.optional(v.record),
       }),
     }),
-    ({ id, patch }) => updateDeck(id, patch),
+    ({ id, patch }) => {
+      if (patch.name !== undefined && !patch.name.trim()) throw new AppError('name_required', 'Name required');
+      return updateDeck(id, {
+        ...patch,
+        ...(patch.name !== undefined ? { name: patch.name.trim() } : {}),
+        settings: patch.settings ? (cleanDeckSettings(patch.settings) as DeckSettings) : undefined,
+      });
+    },
   ),
+  /** Deleting a deck takes a backup of the whole database first, so it can be undone from backups/. */
   'decks.delete': h(v.object({ id: v.id }), ({ id }) => {
+    if (!getDeck(id)) throw new AppError('deck_not_found', 'Deck not found');
+    const backup = basename(backupAppDb());
     deleteDeck(id);
-    return { ok: true };
+    return { ok: true, backup };
   }),
   /** Study one deck, or every deck when `id` is null. */
   'decks.activate': h(v.object({ id: v.nullable(v.id) }), ({ id }) => {
