@@ -96,7 +96,7 @@ docs/adr/        architecture decision records
 - **FSRS state** is stored in columns, not JSON, so it can be sorted and filtered.
 - **Statements:** prepared statements are cached per process, and SQL is never built from strings.
 - **Imports** run in transactions of 1,000–5,000 rows, followed by `ANALYZE`.
-- **Migrations:** numbered SQL files tracked in `PRAGMA user_version`. Each runs forward-only in a transaction.
+- **Migrations:** numbered files `packages/core/src/migrations/NNN-name.ts`, tracked in a `schema_version` table (#8). Each runs forward-only in its own transaction. Before any pending migration runs on an existing database, a `VACUUM INTO` backup is written to `backups/`; if a migration fails, the backup is put back and the app explains what happened and quits. `001-v02-schema` brings v0.1 and v0.2 prototype databases up to date.
 - **Backups:**
   - **Triggers:** before migrating, before every import, and once a day. The command is `VACUUM INTO 'backups/lernlab-YYYYMMDD-vN.db'`.
   - **Retention:** keep 7 daily and 4 weekly copies.

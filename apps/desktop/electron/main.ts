@@ -56,9 +56,10 @@ function startDataProcess() {
     serviceName: 'LernLab data',
     env: { ...process.env, LERNLAB_DATA: dataDir(), LERNLAB_AUTO_ANKI: '0' },
   });
-  child.on('message', ({ id, result }: { id: number; result: Result }) => {
-    pending.get(id)?.(result);
-    pending.delete(id);
+  child.on('message', (msg: { id: number; result: Result } | { fatal: string }) => {
+    if ('fatal' in msg) return fatal(msg.fatal);
+    pending.get(msg.id)?.(msg.result);
+    pending.delete(msg.id);
   });
   child.on('exit', (code) => {
     data = null;
@@ -72,6 +73,13 @@ function startDataProcess() {
   });
   child.once('spawn', () => (restarts = 0));
   data = child;
+}
+
+/** The data could not be opened (e.g. a failed update, already rolled back). Explain and quit. */
+function fatal(message: string) {
+  quitting = true;
+  dialog.showErrorBox('LernLab could not open your data', message);
+  app.exit(1);
 }
 
 /** Send one request to the data process. Never throws. */
