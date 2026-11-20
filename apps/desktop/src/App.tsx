@@ -7,7 +7,6 @@ import { setSound } from './audio';
 import { Home } from './Home';
 import { Session, type SessionResult } from './Session';
 import { Summary } from './Summary';
-import { Stats } from './Stats';
 import { Settings } from './Settings';
 import { Progress } from './Progress';
 import { Decks } from './Decks';
@@ -61,6 +60,17 @@ export function App() {
     } catch (e) {
       setError(message(e));
     }
+  };
+  /** "Study these" on Progress: the next session covers the hardest cards, the same source Home can pick. */
+  const studyHardest = async () => {
+    const s = await api
+      .chooseSource({ kind: 'hardest' })
+      .then(refresh)
+      .catch((e: unknown) => {
+        setError(message(e));
+        return null;
+      });
+    if (s) await start(s.settings.sessionLength);
   };
   const go = (r: Route) => {
     setFull(null);
@@ -157,9 +167,8 @@ export function App() {
       {route === 'cards' && <Browse state={state} refresh={refresh} />}
       {route === 'progress' && (
         <div className="col" style={{ gap: 'var(--space-5)' }}>
-          <Progress />
+          <Progress onStudyHardest={studyHardest} />
           <Badges got={state.achievements} />
-          <Stats />
         </div>
       )}
       {route === 'settings' && <Settings state={state} onSaved={refresh} />}

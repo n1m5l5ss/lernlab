@@ -85,7 +85,20 @@ const dk = (scope: Scope) =>
   scope == null ? '' : typeof scope === 'number' ? (scope ? ` AND i.deck_id = ${Number(scope)}` : '') : scope.where;
 
 /** How many of the hardest cards a "hardest" session draws from. */
-export const HARDEST_LIMIT = 40;
+export const HARDEST_LIMIT = 20;
+
+/** The cards you lapse on most (then those you miss most in games), hardest first. */
+export function hardestCards(limit: number, d: DB = getDb()): { id: number; lapses: number; wrong: number }[] {
+  return d
+    .prepare(
+      `SELECT s.item_id, s.lapses, COALESCE(st.wrong, 0) AS wrong FROM srs s JOIN items i ON i.id = s.item_id
+       LEFT JOIN item_state st ON st.item_id = s.item_id
+       WHERE i.suspended = 0 AND s.reps > 0 AND (s.lapses > 0 OR COALESCE(st.wrong, 0) > 0)
+       ORDER BY s.lapses DESC, COALESCE(st.wrong, 0) DESC, s.item_id LIMIT ?`,
+    )
+    .all(limit)
+    .map((r: Row) => ({ id: Number(r.item_id), lapses: Number(r.lapses), wrong: Number(r.wrong) }));
+}
 
 /** Turn a study source into a query scope. Only numbers are written into SQL; tags are matched in code. */
 export function scopeFor(source: StudySource, d: DB = getDb()): Scope {
@@ -107,17 +120,8 @@ export function scopeFor(source: StudySource, d: DB = getDb()): Scope {
         .map((r: Row) => Number(r.id));
       return { source, where: idList(ids) };
     }
-    case 'hardest': {
-      const ids = d
-        .prepare(
-          `SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id LEFT JOIN item_state st ON st.item_id = s.item_id
-           WHERE i.suspended = 0 AND s.reps > 0 AND (s.lapses > 0 OR COALESCE(st.wrong, 0) > 0)
-           ORDER BY s.lapses DESC, COALESCE(st.wrong, 0) DESC, s.item_id LIMIT ?`,
-        )
-        .all(HARDEST_LIMIT)
-        .map((r: Row) => Number(r.item_id));
-      return { source, where: idList(ids) };
-    }
+    case 'hardest':
+      return { source, where: idList(hardestCards(HARDEST_LIMIT, d).map((c) => c.id)) };
   }
 }
 

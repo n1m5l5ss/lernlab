@@ -12,6 +12,7 @@ import {
   settleStreak,
   type StreakState,
   weekDays,
+  weekStart,
 } from './game';
 import {
   activeDeckId,
@@ -21,10 +22,14 @@ import {
   dueItemIds,
   freshPerDeck,
   getSettings,
+  hardestCards,
+  HARDEST_LIMIT,
   introducedTodayCount,
   scopeFor,
 } from './learn';
 import { deckCounts, getDeck, listDecks, LANGUAGES } from './library';
+import { KNOWN_MASTERY } from './browse';
+import { stripHtml } from './text';
 
 /** Badge ids, in display order. Their names and descriptions live in locales/<code>.json under badges.<id>. */
 export const ACHIEVEMENTS = [
@@ -470,5 +475,129 @@ export function progressReport(d: DB = getDb(), now = new Date(), deckIdArg?: nu
         : null,
     },
     series,
+  };
+}
+
+/** How the Progress screen measures the journey. */
+export const JOURNEY = {
+  /** Pace is the average over this many weeks, so one busy or missed week doesn't swing the forecast. */
+  paceWeeks: 4,
+  retentionWeeks: 12,
+  /** A year of study days, in whole weeks. */
+  heatmapWeeks: 53,
+  hardest: HARDEST_LIMIT,
+} as const;
+
+/**
+ * The Progress screen: per deck learned vs remaining, pace and forecast; study days; retention; hardest cards.
+ * A card is learned once it is known (mastery ≥ KNOWN_MASTERY). Pace counts the cards first recalled in a real
+ * review (graded, not practice) over the last few weeks. Retention is the share of real reviews recalled.
+ */
+export function journey(d: DB = getDb(), now = new Date()) {
+  const today = dayKey(now);
+  const thisWeek = weekStart(today);
+
+  const counts = new Map(
+    d
+      .prepare(
+        `SELECT i.deck_id, COUNT(*) AS cards, COALESCE(SUM(COALESCE(st.mastery, 0) >= ${KNOWN_MASTERY}), 0) AS learned
+         FROM items i LEFT JOIN item_state st ON st.item_id = i.id WHERE i.suspended = 0 GROUP BY i.deck_id`,
+      )
+      .all()
+      .map((r: Row) => [Number(r.deck_id), { cards: Number(r.cards), learned: Number(r.learned) }]),
+  );
+  const paceSince = addDays(today, -7 * JOURNEY.paceWeeks + 1);
+  const recent = new Map(
+    d
+      .prepare(
+        `SELECT deck_id, COUNT(*) AS n FROM (
+           SELECT i.deck_id, MIN(a.day) AS first FROM attempts a JOIN items i ON i.id = a.item_id
+           WHERE a.practice = 0 AND a.grade >= 2 GROUP BY a.item_id)
+         WHERE first >= ? GROUP BY deck_id`,
+      )
+      .all(paceSince)
+      .map((r: Row) => [Number(r.deck_id), Number(r.n)]),
+  );
+  const perWeekOf = (n: number) => Math.round((n / JOURNEY.paceWeeks) * 10) / 10;
+  const decks = listDecks(d).map((dk) => {
+    const { cards, learned } = counts.get(dk.id) ?? { cards: 0, learned: 0 };
+    const goal = dk.settings.goal?.words ? { label: dk.settings.goal.label, target: dk.settings.goal.words } : null;
+    const left = Math.max(0, (goal?.target ?? cards) - learned);
+    const perWeek = perWeekOf(recent.get(dk.id) ?? 0);
+    return {
+      id: dk.id,
+      name: dk.name,
+      cards,
+      learned,
+      remaining: Math.max(0, cards - learned),
+      perWeek,
+      goal,
+      examDate: dk.settings.examDate ?? null,
+      reached: cards > 0 && left === 0,
+      /** The day the goal (or the whole deck) is reached at this pace; null without a pace. */
+      forecast: left > 0 && perWeek > 0 ? addDays(today, Math.ceil((left / perWeek) * 7)) : null,
+    };
+  });
+
+  const heatmapSince = addDays(thisWeek, -7 * (JOURNEY.heatmapWeeks - 1));
+  const studyDays = d
+    .prepare('SELECT day, seconds FROM days WHERE sessions > 0 AND day >= ? AND day <= ? ORDER BY day')
+    .all(heatmapSince, today)
+    .map((r: Row) => ({ day: r.day as string, minutes: Math.round(Number(r.seconds) / 60) }));
+
+  const weeks = Array.from({ length: JOURNEY.retentionWeeks }, (_, i) => ({
+    week: addDays(thisWeek, -7 * (JOURNEY.retentionWeeks - 1 - i)),
+    reviews: 0,
+    recalled: 0,
+  }));
+  const byWeek = new Map(weeks.map((w) => [w.week, w]));
+  for (const r of d
+    .prepare(
+      `SELECT day, COUNT(*) AS n, SUM(grade >= 2) AS ok FROM attempts
+       WHERE practice = 0 AND grade >= 1 AND day >= ? AND day <= ? GROUP BY day`,
+    )
+    .all(weeks[0].week, today)) {
+    const w = byWeek.get(weekStart(r.day as string));
+    if (!w) continue;
+    w.reviews += Number(r.n);
+    w.recalled += Number(r.ok);
+  }
+
+  const hard = hardestCards(JOURNEY.hardest, d);
+  const text = new Map(
+    (hard.length
+      ? d
+          .prepare(
+            `SELECT i.id, i.target, i.meaning, dk.language FROM items i JOIN decks dk ON dk.id = i.deck_id
+             WHERE i.id IN (${hard.map((h) => Number(h.id)).join(',')})`,
+          )
+          .all()
+      : []
+    ).map((r: Row) => [Number(r.id), r]),
+  );
+  const plain = (html: unknown) => stripHtml(String(html ?? '')).slice(0, 120);
+
+  return {
+    today,
+    decks,
+    totals: {
+      learned: decks.reduce((s, x) => s + x.learned, 0),
+      remaining: decks.reduce((s, x) => s + x.remaining, 0),
+      perWeek: perWeekOf([...recent.values()].reduce((s, n) => s + n, 0)),
+    },
+    heatmapSince,
+    studyDays,
+    retention: {
+      weeks,
+      reviews: weeks.reduce((s, w) => s + w.reviews, 0),
+      recalled: weeks.reduce((s, w) => s + w.recalled, 0),
+      target: getSettings(d).retention,
+    },
+    hardest: hard.map((h) => ({
+      ...h,
+      front: plain(text.get(h.id)?.target),
+      back: plain(text.get(h.id)?.meaning),
+      lang: (text.get(h.id)?.language as string | null | undefined) ?? null,
+    })),
   };
 }

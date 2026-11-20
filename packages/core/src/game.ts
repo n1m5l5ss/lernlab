@@ -101,6 +101,12 @@ export function addDays(key: string, n: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
 
+/** The Monday of the week a day key falls in. */
+export function weekStart(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return addDays(day, -((new Date(y, m - 1, d, 12).getDay() + 6) % 7));
+}
+
 /** This week, Monday to Sunday, around `today` (a day key): which days had a session. Weekly consistency, not a streak. */
 export function weekDays(today: string, studied: Set<string>): { day: string; studied: boolean; today: boolean }[] {
   const [y, m, d] = today.split('-').map(Number);

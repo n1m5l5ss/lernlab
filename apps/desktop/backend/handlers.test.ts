@@ -187,3 +187,14 @@ test('the card browser filters across decks and changes many cards at once', asy
   const missing = await handle('cards.bulk', { ids, action: { kind: 'move', deckId: 99999 } });
   assert.equal(!missing.ok && missing.error.code, 'deck_not_found');
 });
+
+test('progress lists every deck with learned vs remaining, and the hardest cards can be studied', async () => {
+  const p = await ok('progress.get');
+  const decks = (await ok('state.get')).decks;
+  assert.deepEqual(p.decks.map((d: { id: number }) => d.id).sort(), decks.map((d: { id: number }) => d.id).sort());
+  for (const d of p.decks) assert.equal(d.learned + d.remaining, d.cards);
+  assert.equal(p.retention.weeks.length, 12);
+  assert.ok(Array.isArray(p.studyDays) && Array.isArray(p.hardest));
+  await ok('study.choose', { source: { kind: 'hardest' } });
+  assert.deepEqual((await ok('state.get')).source, { kind: 'hardest' });
+});
