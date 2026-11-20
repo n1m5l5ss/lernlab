@@ -1,0 +1,2279 @@
+[
+ {
+  "noteId": 1001,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "der / die / das",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "the (m. / f. / n.)",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "<b>Der</b> Mann, <b>die</b> Frau und <b>das</b> Kind sind hier.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The man, the woman and the child are here.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1001.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "1",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10010,
+   10011
+  ]
+ },
+ {
+  "noteId": 1002,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "und",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "and",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich <b>und</b> du.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "You and me.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1002.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "2",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10020,
+   10021
+  ]
+ },
+ {
+  "noteId": 1003,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "in",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "in, into",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich bin <b>in</b> Berlin.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I'm in Berlin.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1003.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "3",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10030,
+   10031
+  ]
+ },
+ {
+  "noteId": 1004,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "ich",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "I",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "<b>Ich</b> heiße Anna.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "My name is Anna.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1004.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "4",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10040,
+   10041
+  ]
+ },
+ {
+  "noteId": 1005,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "sein",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "to be",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Das kann nicht <b>sein</b>.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "That can't be.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1005.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "5",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10050,
+   10051
+  ]
+ },
+ {
+  "noteId": 1006,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "nicht",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "not",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich weiß es <b>nicht</b>.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I don't know.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1006.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "6",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10060,
+   10061
+  ]
+ },
+ {
+  "noteId": 1007,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "ja",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "yes",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "<b>Ja</b>, gerne!",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "Yes, gladly!",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1007.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "7",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10070,
+   10071
+  ]
+ },
+ {
+  "noteId": 1008,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "haben",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "to have",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Wir <b>haben</b> Zeit.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "We have time.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1008.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "8",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10080,
+   10081
+  ]
+ },
+ {
+  "noteId": 1009,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "gehen",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "to go",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich <b>gehe</b> nach Hause.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I'm going home.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1009.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "9",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10090,
+   10091
+  ]
+ },
+ {
+  "noteId": 1010,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "gut",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "good",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Das ist <b>gut</b>.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "That is good.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1010.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "10",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10100,
+   10101
+  ]
+ },
+ {
+  "noteId": 1011,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "der Mann",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "man",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Der <b>Mann</b> ist groß.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The man is tall.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "der Mann, -¨er",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1011.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "20",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10110,
+   10111
+  ]
+ },
+ {
+  "noteId": 1012,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "die Frau",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "woman; wife",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Die <b>Frau</b> liest.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The woman is reading.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1012.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "21",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10120,
+   10121
+  ]
+ },
+ {
+  "noteId": 1013,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "das Kind",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "child",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Das <b>Kind</b> spielt.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The child is playing.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1013.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "22",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10130,
+   10131
+  ]
+ },
+ {
+  "noteId": 1014,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "die Zeit",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "time",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich habe keine <b>Zeit</b>.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I have no time.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1014.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "30",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10140,
+   10141
+  ]
+ },
+ {
+  "noteId": 1015,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "das Haus",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "house",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Das <b>Haus</b> ist alt.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The house is old.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1015.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "31",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10150,
+   10151
+  ]
+ },
+ {
+  "noteId": 1016,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "der Tag",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "day",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Guten <b>Tag</b>!",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "Good day!",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1016.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "32",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10160,
+   10161
+  ]
+ },
+ {
+  "noteId": 1017,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "die Stadt",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "city",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Die <b>Stadt</b> ist schön.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The city is beautiful.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1017.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "33",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10170,
+   10171
+  ]
+ },
+ {
+  "noteId": 1018,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "das Wasser",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "water",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ein Glas <b>Wasser</b>, bitte.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "A glass of water, please.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1018.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "34",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10180,
+   10181
+  ]
+ },
+ {
+  "noteId": 1019,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "der Freund",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "friend (m)",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Mein <b>Freund</b> kommt.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "My friend is coming.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1019.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "35",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10190,
+   10191
+  ]
+ },
+ {
+  "noteId": 1020,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "die Arbeit",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "work",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich gehe zur <b>Arbeit</b>.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I'm going to work.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1020.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "36",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10200,
+   10201
+  ]
+ },
+ {
+  "noteId": 1021,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "das Auto",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "car",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Das <b>Auto</b> ist neu.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The car is new.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1021.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "37",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10210,
+   10211
+  ]
+ },
+ {
+  "noteId": 1022,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "der Bahnhof",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "train station",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Wo ist der <b>Bahnhof</b>?",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "Where is the train station?",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1022.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "38",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10220,
+   10221
+  ]
+ },
+ {
+  "noteId": 1023,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "die Straße",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "street",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Die <b>Straße</b> ist lang.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The street is long.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1023.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "39",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10230,
+   10231
+  ]
+ },
+ {
+  "noteId": 1024,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "das Buch",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "book",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Das <b>Buch</b> ist gut.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "The book is good.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1024.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "40",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10240,
+   10241
+  ]
+ },
+ {
+  "noteId": 1025,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "kommen",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "to come",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Woher <b>kommst</b> du?",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "Where are you from?",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1025.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "41",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10250,
+   10251
+  ]
+ },
+ {
+  "noteId": 1026,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "machen",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "to make, to do",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Was <b>machst</b> du?",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "What are you doing?",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1026.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "42",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10260,
+   10261
+  ]
+ },
+ {
+  "noteId": 1027,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "sprechen",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "to speak",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich <b>spreche</b> Deutsch.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I speak German.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1027.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "43",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10270,
+   10271
+  ]
+ },
+ {
+  "noteId": 1028,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "exam_goethe_b1",
+   "tier1",
+   "vocab"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "heute",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "today",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "<b>Heute</b> ist Montag.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "Today is Monday.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1028.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "44",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10280,
+   10281
+  ]
+ },
+ {
+  "noteId": 1029,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "phrase",
+   "survival",
+   "tier1"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "Guten Morgen",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "good morning",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "<b>Guten Morgen</b>, Anna!",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "Good morning, Anna!",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1029.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10290,
+   10291
+  ]
+ },
+ {
+  "noteId": 1030,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "phrase",
+   "survival",
+   "tier1"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "Wie geht's?",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "How are you?",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Hallo, <b>wie geht's</b>?",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "Hi, how are you?",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1030.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10300,
+   10301
+  ]
+ },
+ {
+  "noteId": 1031,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "number",
+   "tier1"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "eins",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "one",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich habe <b>eins</b>.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I have one.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1031.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10310,
+   10311
+  ]
+ },
+ {
+  "noteId": 1032,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "aboutme",
+   "tier1"
+  ],
+  "deck": "Lang::German::AboutMe",
+  "fields": {
+   "Target": {
+    "value": "der Softwareentwickler",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "software developer (m)",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich bin <b>Softwareentwickler</b>.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I'm a software developer.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1032.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10320,
+   10321
+  ]
+ },
+ {
+  "noteId": 1033,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "aboutme",
+   "tier1"
+  ],
+  "deck": "Lang::German::AboutMe",
+  "fields": {
+   "Target": {
+    "value": "das Telugu",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "Telugu (language)",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich spreche <b>Telugu</b>.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I speak Telugu.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1033.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10330,
+   10331
+  ]
+ },
+ {
+  "noteId": 1034,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "G01",
+   "grammar",
+   "tier1"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "sein: ich bin, du bist, er ist (1)",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "Grammar: sein: ich bin, du bist, er ist",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich <b>bin</b> müde.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I'm tired.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "The most-used verb is irregular: ich bin, du bist, er/sie/es ist, wir sind, ihr seid, sie/Sie sind.",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1034.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10340,
+   10341
+  ]
+ },
+ {
+  "noteId": 1035,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "G01",
+   "grammar",
+   "tier1"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "sein: ich bin, du bist, er ist (2)",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "Grammar: sein: ich bin, du bist, er ist",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "<b>Bist</b> du zu Hause?",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "Are you at home?",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "The most-used verb is irregular: ich bin, du bist, er/sie/es ist, wir sind, ihr seid, sie/Sie sind.",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1035.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10350,
+   10351
+  ]
+ },
+ {
+  "noteId": 1036,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "G01",
+   "grammar",
+   "tier1"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "sein: ich bin, du bist, er ist (3)",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "Grammar: sein: ich bin, du bist, er ist",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Er <b>ist</b> mein Bruder.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "He is my brother.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "The most-used verb is irregular: ich bin, du bist, er/sie/es ist, wir sind, ihr seid, sie/Sie sind.",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1036.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10360,
+   10361
+  ]
+ },
+ {
+  "noteId": 1037,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "G02",
+   "grammar",
+   "tier1"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "nicht vs. kein (1)",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "Grammar: nicht vs. kein",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Ich habe <b>keine</b> Zeit.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "I have no time.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "Negate verbs and adjectives with nicht; negate nouns with kein/keine.",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1037.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10370,
+   10371
+  ]
+ },
+ {
+  "noteId": 1038,
+  "modelName": "LangLab Sentence",
+  "tags": [
+   "G02",
+   "grammar",
+   "tier1"
+  ],
+  "deck": "Lang::German::Tier1",
+  "fields": {
+   "Target": {
+    "value": "nicht vs. kein (2)",
+    "order": 0
+   },
+   "Reading": {
+    "value": "",
+    "order": 1
+   },
+   "Meaning": {
+    "value": "Grammar: nicht vs. kein",
+    "order": 2
+   },
+   "Sentence": {
+    "value": "Das ist <b>nicht</b> gut.",
+    "order": 3
+   },
+   "SentenceReading": {
+    "value": "",
+    "order": 4
+   },
+   "SentenceMeaning": {
+    "value": "That is not good.",
+    "order": 5
+   },
+   "Grammar": {
+    "value": "Negate verbs and adjectives with nicht; negate nouns with kein/keine.",
+    "order": 6
+   },
+   "Notes": {
+    "value": "",
+    "order": 7
+   },
+   "Audio": {
+    "value": "[sound:hypertts-1038.mp3]",
+    "order": 8
+   },
+   "Rank": {
+    "value": "0",
+    "order": 9
+   },
+   "Source": {
+    "value": "fixture",
+    "order": 10
+   }
+  },
+  "cards": [
+   10380,
+   10381
+  ]
+ }
+]

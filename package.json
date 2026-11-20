@@ -1,0 +1,38 @@
+{
+  "name": "lernlab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A gamified, never-boring vocabulary and grammar trainer that imports your Anki decks. Built for learning German fast.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "start": "npm run build && npm run serve",
+    "serve": "NODE_NO_WARNINGS=1 tsx server/index.ts",
+    "dev": "NODE_NO_WARNINGS=1 LERNLAB_DEV=1 tsx watch --ignore ./data server/index.ts",
+    "build": "vite build",
+    "import": "NODE_NO_WARNINGS=1 tsx server/cli-import.ts",
+    "test": "NODE_NO_WARNINGS=1 tsx --test shared/*.test.ts server/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "2.1.9",
+    "canvas-confetti": "1.9.4",
+    "hono": "4.13.19",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "ts-fsrs": "5.4.2",
+    "tsx": "4.23.15",
+    "vite": "8.3.8",
+    "@vitejs/plugin-react": "6.3.0"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "5.9.3"
+  }
+}
