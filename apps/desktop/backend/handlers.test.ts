@@ -63,6 +63,14 @@ test('update settings default to on and stable, and a backup can be taken before
   assert.ok(existsSync(join(dir, 'backups', file)));
 });
 
+test('Home can study every deck at once and shows this week', async () => {
+  await ok('decks.activate', { id: null });
+  const state = await ok('state.get');
+  assert.equal(state.activeDeck, null);
+  assert.equal(state.week.length, 7);
+  assert.equal(state.week.filter((d: { today: boolean }) => d.today).length, 1);
+});
+
 test('the theme follows the system unless light or dark is chosen', async () => {
   assert.equal((await ok('state.get')).settings.theme, 'system');
   assert.equal((await ok('settings.save', { theme: 'dark' })).theme, 'dark');

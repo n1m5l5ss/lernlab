@@ -51,7 +51,7 @@ function NavLink({ route, current }: { route: Route; current: Route }) {
   );
 }
 
-export function Shell({ route, children }: { route: Route; children: ReactNode }) {
+export function Shell({ route, kicker, children }: { route: Route; kicker?: string; children: ReactNode }) {
   const { t } = useTranslation();
   const heading = useRef<HTMLHeadingElement>(null);
   const first = useRef(true);
@@ -80,6 +80,7 @@ export function Shell({ route, children }: { route: Route; children: ReactNode }
       </nav>
       <main id="main" className="shell-main">
         <div className="shell-content">
+          {kicker && <p className="page-kicker">{kicker}</p>}
           <h1 ref={heading} tabIndex={-1} className="page-title">
             {t(`pages.${route}`)}
           </h1>

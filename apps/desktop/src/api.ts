@@ -19,7 +19,7 @@ export const api = {
   updateDeck: (id: number, patch: Parameters<typeof call<'decks.update'>>[1]['patch']) =>
     call('decks.update', { id, patch }),
   deleteDeck: (id: number) => call('decks.delete', { id }),
-  activate: (id: number) => call('decks.activate', { id }),
+  activate: (id: number | null) => call('decks.activate', { id }),
   exportDeck: async (id: number, format: 'csv' | 'lernpack') => {
     const f = await call('decks.export', { id, format });
     saveFile(f.name, f.data, f.type);
