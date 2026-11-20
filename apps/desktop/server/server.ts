@@ -11,14 +11,14 @@ const MIME: Record<string, string> = {
   '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2',
 };
 
-export async function startServer(opts: { port?: number; distDir?: string; dev?: boolean } = {}): Promise<{ server: Server; port: number }> {
+export async function startServer(opts: { port?: number; distDir?: string; dev?: boolean; root?: string } = {}): Promise<{ server: Server; port: number }> {
   getDb();
   const api = getRequestListener(createApp().fetch);
   const dist = resolve(opts.distDir ?? 'dist');
   let vite: any = null;
   if (opts.dev) {
     const { createServer: createVite } = await import('vite');
-    vite = await createVite({ server: { middlewareMode: true }, appType: 'spa' });
+    vite = await createVite({ root: opts.root, server: { middlewareMode: true }, appType: 'spa' });
   } else if (!existsSync(join(dist, 'index.html'))) {
     throw new Error('No UI build found. Run "npm run build" first.');
   }

@@ -1,0 +1,110 @@
+{
+  "name": "lernlab",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Free, open-source, local-first study app: turn any deck into short game rounds with spaced repetition. Like Anki, but fun.",
+  "type": "module",
+  "license": "MIT",
+  "main": "dist-electron/main.cjs",
+  "author": {
+    "name": "LernLab contributors"
+  },
+  "homepage": "https://github.com/",
+  "scripts": {
+    "build": "vite build",
+    "build:electron": "vite build && esbuild electron/main.ts --bundle --platform=node --format=cjs --target=node22 --outfile=dist-electron/main.cjs --external:electron --external:vite --log-level=warning",
+    "desktop": "npm run build:electron && electron .",
+    "dist": "npm run build:electron && electron-builder --publish never",
+    "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
+    "dist:win": "npm run build:electron && electron-builder --win --publish never",
+    "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
+    "test": "tsx --no-warnings --test \"shared/*.test.ts\" \"server/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@hono/node-server": "2.1.9",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "canvas-confetti": "1.9.4",
+    "electron": "45.4.1",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "fflate": "^0.8.3",
+    "fzstd": "^0.1.1",
+    "hono": "4.13.19",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "ts-fsrs": "5.4.2",
+    "vite": "8.3.8"
+  },
+  "build": {
+    "appId": "dev.lernlab.app",
+    "productName": "LernLab",
+    "directories": {
+      "output": "../../release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "npmRebuild": false,
+    "fileAssociations": [
+      {
+        "ext": "lernpack",
+        "name": "LernLab deck",
+        "role": "Editor"
+      },
+      {
+        "ext": "apkg",
+        "name": "Anki deck package",
+        "role": "Viewer"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "LernLab listens when you practise speaking out loud."
+      }
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Education",
+      "icon": "build/icon.png",
+      "maintainer": "LernLab contributors <lernlab@users.noreply.github.com>",
+      "syncDesktopName": true
+    },
+    "publish": null
+  },
+  "desktopName": "lernlab.desktop",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/n1m5l5ss/lernlab.git"
+  }
+}

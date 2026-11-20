@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-electron/
+release/
+data/
+examples/
+package-lock.json
+CHANGELOG.md
+docs/design/canvas/

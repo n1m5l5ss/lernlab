@@ -54,6 +54,8 @@ bench/           performance benchmarks + fixture generators
 docs/adr/        architecture decision records
 ```
 
+**Prototype today:** `packages/core` exists but is empty, and the whole v0.2 prototype (`shared/`, `server/`, `src/`, `electron/`) lives in `apps/desktop/` (#5). #6 moves the engine into core.
+
 **Import rules, enforced by `dependency-cruiser` in CI:**
 
 | Package | May import |

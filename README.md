@@ -124,8 +124,10 @@ To move it, use **File → Use a different data folder…**, for example a Dropb
 ## Contributing
 
 ```bash
-npm test && npm run typecheck
+npm test && npm run typecheck && npm run lint
 ```
+
+The repo is an npm workspace: the engine lives in `packages/core` and the app in `apps/desktop`. Run every command from the repo root.
 
 Issues and pull requests are welcome, especially new importers, card types, translations of the interface, and shared decks for `examples/`. Shared decks must be your own work or openly licensed. No copyrighted exam questions, please.
 
