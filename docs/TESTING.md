@@ -74,3 +74,13 @@ npm run test:e2e       # packaged app, Playwright
 npm run bench          # performance benchmarks
 npm run test:all       # everything CI runs
 ```
+
+## End-to-end tests today
+
+`npm run test:e2e` builds the app, then Playwright's `_electron` starts it and clicks through it like a user (`apps/desktop/e2e/*.e2e.ts`, run by `node:test`; `npm test` never starts them):
+
+- **Study loop:** first start → welcome → sample deck → a full 5-minute session → summary → progress, then a restart that opens Home and keeps the streak.
+- **Looking after cards:** import a CSV, find and edit a card, switch to the dark theme, back up, then a restart that keeps all of it.
+- **Accessibility:** axe (`@axe-core/playwright`, WCAG 2.0–2.2 A and AA) checks every main screen in the light and the dark theme. A serious or critical violation fails the test. A rule may be switched off only in `AXE_DISABLED` in `apps/desktop/e2e/app.ts`, with the reason.
+
+Each test uses a fresh, throw-away profile (`--user-data-dir`). Screenshots go to `apps/desktop/e2e-results/`, which CI keeps as an artifact. CI runs the tests on Windows, macOS and Linux (under `xvfb-run`) against the app it has just built, not the installer: the installers are smoke-tested in `release.yml`. To test a packaged build, set `LERNLAB_E2E_APP` to its executable.
