@@ -190,6 +190,7 @@ export function Session({
   });
   const [floats, setFloats] = useState<{ id: number; xp: number }[]>([]);
   const [step, setStep] = useState<Step>(null);
+  const [paused, setPaused] = useState(false);
   const [sound, setSoundOn] = useState(settings.sound);
   const leaveDialog = useRef<HTMLDialogElement>(null);
   const started = useRef({ at: Date.now(), iso: new Date().toISOString() });
@@ -314,6 +315,7 @@ export function Session({
     lang: plan.lang,
     t,
     timer: settings.questionTimer ?? 0,
+    paused,
     item,
     pool,
     answer,
@@ -410,6 +412,7 @@ export function Session({
   const keepButton = useRef<HTMLButtonElement>(null);
   const askLeave = () => {
     leaveDialog.current?.showModal();
+    setPaused(true);
     keepButton.current?.focus(); // the safe choice is the default
   };
   const leave = () => {
@@ -501,14 +504,18 @@ export function Session({
         {bubble.gloss && bubble.gloss !== bubble.main && <span className="muted"> · {bubble.gloss}</span>}
       </p>
       <main className="stage" key={b.id}>
-        {b.kind === 'gender' ? (
-          <GenderSprint block={b} ctx={ctx} onDone={blockDone} />
-        ) : b.kind === 'match' ? (
-          <MatchPairs block={b} ctx={ctx} onDone={blockDone} />
-        ) : b.kind === 'rain' ? (
-          <WordRain block={b} ctx={ctx} onDone={blockDone} />
-        ) : b.kind === 'boss' ? (
-          <Boss block={b} ctx={ctx} onDone={blockDone} />
+        {b.kind === 'gender' || b.kind === 'match' || b.kind === 'rain' || b.kind === 'boss' ? (
+          <div className="panel ex-card round">
+            {b.kind === 'gender' ? (
+              <GenderSprint block={b} ctx={ctx} onDone={blockDone} />
+            ) : b.kind === 'match' ? (
+              <MatchPairs block={b} ctx={ctx} onDone={blockDone} />
+            ) : b.kind === 'rain' ? (
+              <WordRain block={b} ctx={ctx} onDone={blockDone} />
+            ) : (
+              <Boss block={b} ctx={ctx} onDone={blockDone} />
+            )}
+          </div>
         ) : b.kind === 'blitz' ? (
           <div className="panel ex-card" aria-live="polite">
             <BlitzBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
@@ -523,6 +530,7 @@ export function Session({
         ref={leaveDialog}
         className="panel session-dialog"
         aria-labelledby="leave-title"
+        onClose={() => setPaused(false)}
         onKeyDown={(e) => e.stopPropagation()}
       >
         <h2 id="leave-title">{tr('session.leaveTitle')}</h2>

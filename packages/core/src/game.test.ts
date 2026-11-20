@@ -10,6 +10,9 @@ import {
   dayKey,
   weekDays,
   estimateMinutes,
+  timerLevel,
+  arcadeSeconds,
+  ARCADE_FORMATS,
 } from './game';
 
 test('recognition formats never produce an SRS grade', () => {
@@ -92,4 +95,20 @@ test("today's estimate counts reviews quickly and new cards slowly, and is never
   assert.equal(estimateMinutes(24, 10), 8);
   assert.equal(estimateMinutes(0, 0), 1);
   assert.equal(estimateMinutes(120, 0), 16);
+});
+
+test('arcade rounds pay a flat rate, whatever the combo', () => {
+  for (const f of ARCADE_FORMATS) assert.equal(xpFor(f, true, 1), xpFor(f, true, 30), f);
+});
+
+test('arcade round length follows the timer setting: off, relaxed, normal, challenge', () => {
+  assert.deepEqual(
+    [0, 20, 8, 5].map((blitzSeconds) => timerLevel({ blitzSeconds })),
+    ['off', 'relaxed', 'normal', 'challenge'],
+  );
+  assert.equal(timerLevel({}), 'normal');
+  assert.deepEqual(
+    [0, 20, 8, 5].map((blitzSeconds) => arcadeSeconds(40, { blitzSeconds })),
+    [0, 60, 40, 30],
+  );
 });

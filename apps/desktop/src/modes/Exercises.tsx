@@ -224,7 +224,7 @@ export function Choice({
 
   return (
     <div>
-      <QuestionTimer seconds={timer} running={picked === null} onTimeout={timeout} />
+      <QuestionTimer seconds={timer} running={picked === null && !ctx.paused} onTimeout={timeout} />
       {listen ? (
         <>
           <div className="blocktitle">{t('ex.choice.listen')}</div>
@@ -331,7 +331,7 @@ export function TrueFalse({
   const ok = ans !== null && ans === ex.isTrue;
   return (
     <div>
-      <QuestionTimer seconds={timer} running={ans === null} onTimeout={() => answer(null)} />
+      <QuestionTimer seconds={timer} running={ans === null && !ctx.paused} onTimeout={() => answer(null)} />
       <div className="blocktitle">{t('ex.tf.title')}</div>
       <Media item={item} size="sm" />
       <div className="prompt" style={{ fontSize: 28 }}>

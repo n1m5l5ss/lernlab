@@ -27,10 +27,25 @@ export function xpFor(format: Format, correct: boolean, combo: number): number {
   if (!correct) return 1; // showing up still counts a little
   const base = Math.round(10 * XP_WEIGHT[format]);
   // Timed arcade rounds pay a flat rate: speed-tapping must never out-earn real recall.
-  if (format === 'gender' || format === 'rain' || format === 'match' || format === 'truefalse' || format === 'blitz')
-    return base;
+  if (ARCADE_FORMATS.includes(format)) return base;
   const comboBonus = Math.min(10, Math.max(0, combo - 1) * 2);
   return base + comboBonus;
+}
+
+/** True for the practice-only arcade formats: flat XP, never an FSRS grade. */
+export const ARCADE_FORMATS: readonly Format[] = ['gender', 'rain', 'match', 'truefalse', 'blitz'];
+
+/** The timer setting (Off / Relaxed / Normal / Challenge), read from the Blitz seconds it stores. */
+export type TimerLevel = 'off' | 'relaxed' | 'normal' | 'challenge';
+export function timerLevel(s: { blitzSeconds?: number }): TimerLevel {
+  const b = s.blitzSeconds ?? 8;
+  return b === 0 ? 'off' : b >= 15 ? 'relaxed' : b <= 5 ? 'challenge' : 'normal';
+}
+const PACE: Record<TimerLevel, number> = { off: 0, relaxed: 1.5, normal: 1, challenge: 0.75 };
+
+/** How long a timed arcade round lasts under the timer setting; 0 means no clock. */
+export function arcadeSeconds(base: number, s: { blitzSeconds?: number }): number {
+  return Math.round(base * PACE[timerLevel(s)]);
 }
 
 export const BONUS = { perfectBlock: 20, dailyGoal: 25, bossWin: 30 };
