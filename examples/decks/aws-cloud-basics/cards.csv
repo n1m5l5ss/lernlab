@@ -1,0 +1,17 @@
+type,front,back,category,choices,correct,explanation,steps,tags
+,Amazon S3,Object storage for any amount of data,Storage,,,,,aws storage
+,Amazon EBS,Block storage volumes for EC2 instances,Storage,,,,,aws storage
+,Amazon EFS,Managed NFS file system shared across instances,Storage,,,,,aws storage
+,Amazon S3 Glacier,Low-cost archive storage,Storage,,,,,aws storage
+,AWS Lambda,Run code without provisioning servers,Compute,,,,,aws compute
+,Amazon EC2,Resizable virtual servers,Compute,,,,,aws compute
+,AWS Fargate,Serverless compute for containers,Compute,,,,,aws compute
+,Amazon RDS,Managed relational databases,Database,,,,,aws database
+,Amazon DynamoDB,Managed NoSQL key-value database,Database,,,,,aws database
+,Amazon Aurora,MySQL/PostgreSQL-compatible cloud database,Database,,,,,aws database
+,Amazon CloudFront,Content delivery network (CDN),Networking,,,,,aws networking
+,Amazon Route 53,DNS web service,Networking,,,,,aws networking
+,Amazon VPC,Your own isolated virtual network,Networking,,,,,aws networking
+mcq,Which TWO services let you run code without managing servers?,,,Amazon EC2|AWS Lambda|AWS Fargate|Amazon RDS,2|3,Lambda runs functions and Fargate runs containers; you manage no servers for either.,,aws
+mcq,A team needs a file system that many EC2 instances can mount at the same time. Which service fits?,,,Amazon EBS|Amazon EFS|Amazon S3|Instance store,2,EFS is a shared NFS file system; an EBS volume normally attaches to one instance.,,aws
+order,Put the request path in order for a static website on CloudFront,,,,,,User|Route 53 DNS|CloudFront edge|S3 origin,aws networking

@@ -173,3 +173,23 @@ test('alternative answers', async () => {
   const sky = allItems(getDb(), r.deck.id).find((i) => i.meaning === 'blue')!;
   assert.deepEqual(qa(sky).accepted, ['blue', 'azure', 'sky blue']);
 });
+
+test('deck package with cards.csv and media in subfolders (images/, audio/)', () => {
+  const png = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 1, 2, 3]);
+  const gif = strToU8('GIF89a-test');
+  const zip = zipSync({
+    'colours/manifest.json': strToU8(JSON.stringify({ format: 'lernpack', version: 1, deck: { name: 'Colours test', language: 'de' } })),
+    'colours/cards.csv': strToU8('front,back,image\nrot,red,images/rot.png\ndrehen,to turn,images/drehen.gif\nblau,blue,images/missing.png\n'),
+    'colours/media/images/rot.png': png,
+    'colours/media/images/drehen.gif': gif,
+    'colours/media/audio/': new Uint8Array(),
+  });
+  const r = importFile('colours.lernpack', zip);
+  assert.equal(r.format, 'lernpack');
+  assert.equal(r.total, 3);
+  assert.equal(r.media, 2);
+  assert.equal(r.mediaMissing, 1);
+  const rows = getDb().prepare("SELECT target, image FROM items WHERE deck_id = ? ORDER BY target").all(deckByName('Colours test')!.id) as any[];
+  assert.ok(rows.find((x) => x.target === 'rot').image, 'rot has its image');
+  assert.ok(rows.find((x) => x.target === 'drehen').image, 'GIF resolved from images/');
+});

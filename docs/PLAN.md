@@ -19,8 +19,14 @@ This plan is the single source of truth: it is reviewed first, then built in thi
 | Name | Not decided; see Name options | "LernLab" reads as German for a global product |
 | Prototype code | Keep the engine (scheduling, grading, importers); redesign the screens | The engine is tested; the UI was never designed |
 | Repo | `github.com/n1m5l5ss/lernlab`, public | Decided Nov 20, 2026 |
+| Branches | `main` (released) + `dev` (integration); `feature/*` and `fix/*` from `dev`; beta releases replace a staging branch | Decided Nov 20, 2026; see `docs/RELEASING.md` |
+| Versions and changelog | SemVer, Conventional Commit PR titles, release-please writes `CHANGELOG.md`; in-app "What's new" after each update | Decided Nov 20, 2026 |
+| Deck package | Zip with `manifest.json`, `cards.csv` (main; `cards.jsonl` also read) and `media/images`, `media/audio`, `media/video`; file ending decided with the name | Decided Nov 20, 2026; see `docs/FORMAT.md` |
+| Look | Warm neutral surfaces, one blue accent, Atkinson Hyperlegible Next, green/vermillion feedback with icon + word, light and dark | Based on design research; mockups awaiting approval (#1) |
+| Quality | Test-first; performance budgets (P50/P95) checked in CI; screenshot tests so a UI change can't silently break other parts | See `docs/TESTING.md` |
+| Database process | SQLite runs in a separate background process, never in the main process | See `docs/ARCHITECTURE.md` |
 
-Still open: the deck format, the visual design, code signing and the final name. Each is listed under Open questions.
+Still open: approval of the mockups, code signing and the final name. Each is listed under Open questions.
 
 ## Vision, users and principles
 
@@ -95,7 +101,7 @@ The first public release, 1.0, has 29 features. The prototype already has 12 of 
 
 ## Screens and UX
 
-The app has 8 screens behind one sidebar. The look is not decided yet. After this review, the next step is clickable mockups of the first 5 screens for approval. Until those mockups are approved and saved in `docs/design/`, no screen gets built.
+The app has 8 screens behind one sidebar. Mockups of 6 screens in light and dark, plus the style sheet, are in `docs/design/` and await approval (issue #1). No screen gets rebuilt until they are approved.
 
 | Screen | Purpose | What's on it |
 | --- | --- | --- |
@@ -395,7 +401,9 @@ None of these names has been checked yet. Ticket T03 checks the GitHub name, dom
 
 ## Open questions
 
-- [ ] Approve the deck formats: CSV for everyday use and `.lernpack` for complete decks?
+- [x] Deck format: zip with `cards.csv` (main) + media folders, decided Nov 20, 2026
+- [x] Branches: `main` + `dev`, decided Nov 20, 2026
+- [ ] Approve the mockups (issue #1)
 - [ ] Product name?
 - [ ] Mac signing: pay $99 a year for Apple, or ship unsigned for 1.0?
 - [ ] License: MIT for code, Creative Commons for shared decks?

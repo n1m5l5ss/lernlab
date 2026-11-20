@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LernLab — Study session</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 100%; height: 800px; display: flex; flex-direction: column; background: {{t.bg}}; color: {{t.text}}; font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif; box-sizing: border-box">
+  <div role="progressbar" aria-label="Block progress" aria-valuemin="0" aria-valuemax="12" aria-valuenow="5" style="height: 4px; background: {{t.subtle}}; flex: none">
+    <div style="width: 42%; height: 4px; background: {{t.accent}}"></div>
+  </div>
+  <header style="display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; flex: none">
+    <a href="Summary.dc.html" style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 12px; border-radius: 6px; color: {{t.muted}}; font-size: 16px; text-decoration: none">
+      <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>End block<span style="font-size: 13px; padding: 1px 6px; border-radius: 4px; border: 1px solid {{t.border}}">Esc</span></a>
+    <span style="font-size: 16px; color: {{t.muted}}">Type the answer</span>
+    <span style="font-size: 16px; color: {{t.muted}}; min-width: 140px; text-align: right">5 of 12</span>
+  </header>
+  <main style="flex: 1 1 auto; display: flex; align-items: center; justify-content: center; padding: 0 24px 96px; box-sizing: border-box">
+    <section aria-label="Flashcard" style="width: 100%; max-width: 720px; background: {{t.surface}}; border: {{cardBorder}}; border-radius: 12px; padding: 48px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px">
+      <div style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 13px; font-weight: 700; color: {{t.muted}}; letter-spacing: 0.04em">GERMAN · NOUN</span>
+        <p lang="en" style="margin: 0; font-size: 39px; line-height: 1.2; font-weight: 700">the dog</p>
+      </div>
+
+      <sc-if value="{{isQuestion}}" hint-placeholder-val="{{ true }}">
+        <div style="display: flex; flex-direction: column; gap: 8px">
+          <label for="answer" style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Your answer, with der / die / das</label>
+          <input id="answer" lang="de" autocomplete="off" spellcheck="false" value="{{answer}}" onChange="{{onType}}" onKeyDown="{{onKey}}" placeholder="der …" style="height: 60px; padding: 0 16px; border-radius: 6px; border: 2px solid {{t.border}}; background: {{t.bg}}; color: {{t.text}}; font: inherit; font-size: 25px; outline-color: {{t.accent}}">
+        </div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+          <div style="display: flex; gap: 8px" aria-label="Accent letters">
+            <button type="button" onClick="{{addUmlautA}}" style="width: 44px; height: 44px; border-radius: 6px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.text}}; font: inherit; font-size: 20px; cursor: pointer">ä</button>
+            <button type="button" onClick="{{addUmlautO}}" style="width: 44px; height: 44px; border-radius: 6px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.text}}; font: inherit; font-size: 20px; cursor: pointer">ö</button>
+            <button type="button" onClick="{{addUmlautU}}" style="width: 44px; height: 44px; border-radius: 6px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.text}}; font: inherit; font-size: 20px; cursor: pointer">ü</button>
+            <button type="button" onClick="{{addEszett}}" style="width: 44px; height: 44px; border-radius: 6px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.text}}; font: inherit; font-size: 20px; cursor: pointer">ß</button>
+          </div>
+          <button type="button" onClick="{{check}}" style="height: 52px; padding: 0 32px; border: 0; border-radius: 6px; background: {{t.accent}}; color: {{t.onAccent}}; font: inherit; font-size: 20px; font-weight: 700; cursor: pointer">Check <span style="font-size: 13px; font-weight: 400; opacity: 0.85">Enter</span></button>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isIncorrect}}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="display: flex; flex-direction: column; gap: 20px">
+          <div style="display: flex; align-items: center; gap: 10px; color: {{t.incorrect}}; font-size: 20px; font-weight: 700">
+            <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="10"></circle><path d="M9 9l6 6M15 9l-6 6"></path></svg>
+            Not quite — here's the answer
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">You typed</span>
+              <span lang="de" style="font-size: 25px">{{typedOk}}<span style="background: {{t.incorrectTint}}; text-decoration: underline wavy {{t.incorrect}}; text-underline-offset: 4px">{{typedBad}}</span></span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Answer</span>
+              <span lang="de" style="font-size: 25px; font-weight: 700">{{ansOk}}<span style="background: {{t.correctTint}}; color: {{t.correct}}">{{ansFix}}</span></span>
+            </div>
+          </div>
+          <div style="padding: 16px 20px; border-radius: 8px; background: {{t.subtle}}; display: flex; flex-direction: column; gap: 4px">
+            <span lang="de" style="font-size: 20px">Der <strong>Hund</strong> bellt.</span>
+            <span style="font-size: 16px; color: {{t.muted}}">The dog barks.</span>
+          </div>
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+            <button type="button" onClick="{{override}}" style="height: 44px; padding: 0 12px; border: 0; background: transparent; color: {{t.accent}}; font: inherit; font-size: 16px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer">I was right</button>
+            <div style="display: flex; align-items: center; gap: 16px">
+              <span style="font-size: 13px; color: {{t.muted}}">Comes back in a few cards</span>
+              <button type="button" onClick="{{next}}" style="height: 52px; padding: 0 32px; border: 0; border-radius: 6px; background: {{t.accent}}; color: {{t.onAccent}}; font: inherit; font-size: 20px; font-weight: 700; cursor: pointer">Continue <span style="font-size: 13px; font-weight: 400; opacity: 0.85">Enter</span></button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{isCorrect}}" hint-placeholder-val="{{ false }}">
+        <div role="status" style="display: flex; flex-direction: column; gap: 20px">
+          <div style="display: flex; align-items: center; gap: 10px; color: {{t.correct}}; font-size: 20px; font-weight: 700">
+            <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M7.5 12.5l3 3 6-6.5"></path></svg>
+            Correct
+          </div>
+          <span lang="de" style="font-size: 31px; font-weight: 700">der Hund</span>
+          <div style="padding: 16px 20px; border-radius: 8px; background: {{t.subtle}}; display: flex; flex-direction: column; gap: 4px">
+            <span lang="de" style="font-size: 20px">Der <strong>Hund</strong> bellt.</span>
+            <span style="font-size: 16px; color: {{t.muted}}">The dog barks.</span>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 16px">
+            <span style="font-size: 13px; color: {{t.muted}}">Next review in 3 days</span>
+            <button type="button" onClick="{{next}}" style="height: 52px; padding: 0 32px; border: 0; border-radius: 6px; background: {{t.accent}}; color: {{t.onAccent}}; font: inherit; font-size: 20px; font-weight: 700; cursor: pointer">Continue <span style="font-size: 13px; font-weight: 400; opacity: 0.85">Enter</span></button>
+          </div>
+        </div>
+      </sc-if>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"step":{"editor":"enum","options":["question","correct","incorrect"],"default":"question"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { answer: '', step: null }; }
+  renderVals() {
+    var L = { bg: '#FAF8F5', surface: '#FFFFFF', text: '#1F1D1A', muted: '#5C574F', accent: '#2F5BB7', onAccent: '#FFFFFF', border: '#E4DED6', subtle: '#F1EDE7', correct: '#007A5E', incorrect: '#B04A00', correctTint: 'rgba(0,158,115,0.14)', incorrectTint: 'rgba(213,94,0,0.14)' };
+    var D = { bg: '#1A1917', surface: '#24221F', text: '#ECE9E4', muted: '#A8A39B', accent: '#8FA8F0', onAccent: '#1A1917', border: '#3A3732', subtle: '#2D2B27', correct: '#4FC4A0', incorrect: '#F0A070', correctTint: 'rgba(79,196,160,0.16)', incorrectTint: 'rgba(240,160,112,0.16)' };
+    var t = (this.props.theme ?? 'light') === 'dark' ? D : L;
+    var self = this;
+    var step = this.state.step || this.props.step || 'question';
+    var target = 'der Hund';
+    var typed = this.state.answer || (step === 'incorrect' ? 'der Hunt' : '');
+    var p = 0;
+    while (p < typed.length && p < target.length && typed[p].toLowerCase() === target[p].toLowerCase()) p++;
+    var add = function (ch) { return function () { self.setState({ answer: (self.state.answer || '') + ch }); }; };
+    var check = function () {
+      var a = (self.state.answer || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      self.setState({ step: a === 'der hund' ? 'correct' : 'incorrect' });
+    };
+    var border = step === 'incorrect' ? '2px solid ' + t.incorrect : step === 'correct' ? '2px solid ' + t.correct : '1px solid ' + t.border;
+    return {
+      t: t, answer: this.state.answer,
+      isQuestion: step === 'question', isIncorrect: step === 'incorrect', isCorrect: step === 'correct',
+      cardBorder: border,
+      typedOk: typed.slice(0, p), typedBad: typed.slice(p), ansOk: target.slice(0, p), ansFix: target.slice(p),
+      onType: function (e) { self.setState({ answer: e.target.value }); },
+      onKey: function (e) { if (e.key === 'Enter') check(); },
+      addUmlautA: add('ä'), addUmlautO: add('ö'), addUmlautU: add('ü'), addEszett: add('ß'),
+      check: check,
+      override: function () { self.setState({ step: 'correct' }); },
+      next: function () { self.setState({ step: 'question', answer: '' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

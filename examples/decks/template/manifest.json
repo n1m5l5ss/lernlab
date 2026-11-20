@@ -1,0 +1,10 @@
+{
+  "format": "lernpack",
+  "version": 1,
+  "deck": {
+    "name": "My deck",
+    "language": null,
+    "description": "Replace this with what the deck is about."
+  },
+  "generator": "LernLab sample decks"
+}

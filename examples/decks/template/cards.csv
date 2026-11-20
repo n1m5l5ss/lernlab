@@ -1,0 +1,4 @@
+front,back,example,category,tags,image,audio,video,type,choices,correct
+What is the front?,The question or the word to learn,,basics,,,,,,,
+Which two are fruits?,,,basics,,,,,mcq,apple|carrot|banana|potato,1|3
+the dog,der Hund,Der Hund bellt.,animals,german,images/dog.jpg,audio/dog.mp3,,,,

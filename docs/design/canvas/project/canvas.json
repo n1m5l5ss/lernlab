@@ -1,0 +1,23 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-20T09:23:34Z"},"title":"LernLab — Screen Mockups (light & dark)","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Welcome.dc.html":{"x":0,"y":300,"w":1280,"h":800,"title":"Welcome (first run)","expand":"fill","is_interactive":true},
+"Main.dc.html":{"x":1360,"y":300,"w":1280,"h":800,"title":"Home","expand":"fill","is_interactive":true},
+"Session.dc.html":{"x":2720,"y":300,"w":1280,"h":800,"title":"Study session — question","expand":"fill","is_interactive":true},
+"Feedback.dc.html":{"x":4080,"y":300,"w":1280,"h":800,"title":"Study session — answer was wrong","expand":"fill"},
+"Summary.dc.html":{"x":5440,"y":300,"w":1280,"h":800,"title":"Block summary","expand":"fill","is_interactive":true},
+"Decks.dc.html":{"x":6800,"y":300,"w":1280,"h":800,"title":"Decks","expand":"fill","is_interactive":true},
+"WelcomeDark.dc.html":{"x":0,"y":1500,"w":1280,"h":800,"title":"Welcome — dark","expand":"fill"},
+"HomeDark.dc.html":{"x":1360,"y":1500,"w":1280,"h":800,"title":"Home — dark","expand":"fill"},
+"SessionDark.dc.html":{"x":2720,"y":1500,"w":1280,"h":800,"title":"Study session — dark","expand":"fill"},
+"FeedbackDark.dc.html":{"x":4080,"y":1500,"w":1280,"h":800,"title":"Answer was wrong — dark","expand":"fill"},
+"SummaryDark.dc.html":{"x":5440,"y":1500,"w":1280,"h":800,"title":"Block summary — dark","expand":"fill"},
+"DecksDark.dc.html":{"x":6800,"y":1500,"w":1280,"h":800,"title":"Decks — dark","expand":"fill"},
+"Style.dc.html":{"x":0,"y":2700,"w":1280,"h":1100,"title":"Visual style: colours, type, feedback","expand":"fill"}
+},
+"order":["Main.dc.html","Welcome.dc.html","Session.dc.html","Feedback.dc.html","Summary.dc.html","Decks.dc.html","WelcomeDark.dc.html","HomeDark.dc.html","SessionDark.dc.html","FeedbackDark.dc.html","SummaryDark.dc.html","DecksDark.dc.html","Style.dc.html"],
+"notes":{
+"lightTitle":{"x":0,"y":0,"text":"Light theme","kind":"title1","maxW":8080},
+"darkTitle":{"x":0,"y":1200,"text":"Dark theme","kind":"title1","maxW":8080},
+"styleTitle":{"x":0,"y":2400,"text":"Visual style","kind":"title1","maxW":1280}
+},
+"designSystems":[]}

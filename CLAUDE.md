@@ -3,7 +3,13 @@
 ## What this is
 LernLab is a free, open-source desktop flashcard app for any subject. It makes spaced repetition feel like a game. It runs locally, with no account and no server, on Windows, macOS and Linux (Electron + React + TypeScript).
 
-**Read `docs/PLAN.md` before starting any ticket.** It is the source of truth for features, UX, data, formats and architecture. Research is in `docs/research.md`; the deck format is in `docs/FORMAT.md`.
+**Read `docs/PLAN.md` before starting any ticket.** It is the source of truth. Also read the doc that matches your ticket:
+- `docs/ARCHITECTURE.md` — processes, packages, IPC, storage, startup
+- `docs/TESTING.md` — test layers, performance budgets
+- `docs/RELEASING.md` — branches, PR titles, versions, changelog
+- `docs/design/` — mockups, `tokens.json`, design rules
+- `docs/FORMAT.md` — deck files
+- `docs/research.md` — learning-science research
 
 ## Principles (never break these)
 1. **Recall over recognition.** Only real recall attempts change the FSRS schedule, once per card per day. Games never mark a card as known.
@@ -36,10 +42,10 @@ Node 22.13+ is required (`node:sqlite`).
 
 ## How to work a ticket
 1. Read the issue and its acceptance criteria. If something is unclear or conflicts with `docs/PLAN.md`, ask in the issue before coding.
-2. Create a branch named `t<NN>-short-name`. One ticket per branch and per pull request.
-3. Write the tests together with the code. Every feature and bug fix has a test.
+2. Branch from `dev`: `feature/<issue>-short-name` or `fix/<issue>-short-name`. One ticket per branch and per pull request. Never commit to `main` or `dev` directly.
+3. Test first: write the failing test, make it pass, then refactor. Every feature and bug fix has a test.
 4. Run `npm test && npm run typecheck` before pushing.
-5. Open a pull request that says `Closes #<issue>` and lists:
+5. Open a pull request into `dev`. Its title is a Conventional Commit in plain user language (`feat: add session length picker`, `fix: keep streak when the clock changes`), because it becomes the changelog line. The body says `Closes #<issue>` and lists:
    - what changed;
    - how it was tested;
    - screenshots of any screen change.
@@ -53,6 +59,8 @@ Node 22.13+ is required (`node:sqlite`).
 - Treat deck files as untrusted. Sanitise HTML, never run scripts, and check paths inside zip files.
 - Changing the data model needs a numbered migration and a backup before it runs.
 - Don't change `docs/PLAN.md` decisions on your own. Propose the change in the pull request.
+- Keep within the performance budgets in `docs/TESTING.md`. Never run SQL or heavy work in the Electron main process.
+- Use design tokens only; no raw colours in components.
 
 ## Definition of done
 - Every acceptance box in the issue is ticked.

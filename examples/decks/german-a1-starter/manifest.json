@@ -1,0 +1,10 @@
+{
+  "format": "lernpack",
+  "version": 1,
+  "deck": {
+    "name": "German A1 starter",
+    "language": "de",
+    "description": "First words for German A1."
+  },
+  "generator": "LernLab sample decks"
+}

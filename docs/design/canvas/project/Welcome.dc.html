@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LernLab — Welcome</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 100%; height: 800px; display: flex; align-items: center; justify-content: center; padding: 48px; box-sizing: border-box; background: {{t.bg}}; color: {{t.text}}; font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif">
+  <main style="width: 100%; max-width: 760px; display: flex; flex-direction: column; gap: 40px">
+    <div style="display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 20px; font-weight: 700">LernLab</span>
+      <h1 style="margin: 0; font-size: 39px; line-height: 1.2; font-weight: 700">Learn anything, a few minutes a day.</h1>
+      <p style="margin: 0; font-size: 20px; line-height: 1.5; color: {{t.muted}}">Short, varied rounds that help you remember for good. Everything stays on this computer — no account needed.</p>
+    </div>
+    <fieldset style="border: 0; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px">
+      <legend style="font-size: 16px; font-weight: 700; margin-bottom: 12px; padding: 0">What would you like to do?</legend>
+      <sc-for list="{{choices}}" as="c" hint-placeholder-count="3">
+        <button type="button" aria-pressed="{{c.pressed}}" onClick="{{c.pick}}" style="{{c.style}}">
+          <span style="{{c.radio}}" aria-hidden="true"></span>
+          <span style="display: flex; flex-direction: column; gap: 4px; text-align: left">
+            <span style="font-size: 20px; font-weight: 700">{{c.title}}</span>
+            <span style="font-size: 16px; color: {{t.muted}}">{{c.body}}</span>
+          </span>
+        </button>
+      </sc-for>
+    </fieldset>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 24px">
+      <a href="Main.dc.html" style="display: flex; align-items: center; justify-content: center; height: 56px; padding: 0 40px; border-radius: 6px; background: {{t.accent}}; color: {{t.onAccent}}; font-size: 20px; font-weight: 700; text-decoration: none">Continue</a>
+      <a href="Session.dc.html" style="font-size: 16px; color: {{t.accent}}; text-decoration: underline; text-underline-offset: 3px">Try a 2-minute sample first</a>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { pick: 'lang' }; }
+  renderVals() {
+    var L = { bg: '#FAF8F5', surface: '#FFFFFF', text: '#1F1D1A', muted: '#5C574F', accent: '#2F5BB7', onAccent: '#FFFFFF', border: '#E4DED6', accentTint: 'rgba(47,91,183,0.08)' };
+    var D = { bg: '#1A1917', surface: '#24221F', text: '#ECE9E4', muted: '#A8A39B', accent: '#8FA8F0', onAccent: '#1A1917', border: '#3A3732', accentTint: 'rgba(143,168,240,0.12)' };
+    var t = (this.props.theme ?? 'light') === 'dark' ? D : L;
+    var self = this;
+    var items = [
+      { id: 'lang', title: 'Learn a language', body: 'Words, sentences, listening and speaking — with sample starter decks.' },
+      { id: 'subject', title: 'Study a subject', body: 'Certifications, medicine, science, history — anything you can put on a card.' },
+      { id: 'own', title: 'I have my own cards', body: 'Import a CSV, an Anki deck or a LernLab deck file.' }
+    ];
+    var choices = items.map(function (c) {
+      var on = self.state.pick === c.id;
+      return {
+        title: c.title, body: c.body, pressed: on ? 'true' : 'false',
+        pick: function () { self.setState({ pick: c.id }); },
+        style: 'display: flex; align-items: center; gap: 20px; width: 100%; min-height: 88px; padding: 20px 24px; border-radius: 12px; font: inherit; color: ' + t.text + '; cursor: pointer; box-sizing: border-box; ' +
+          (on ? 'background: ' + t.accentTint + '; border: 2px solid ' + t.accent + ';' : 'background: ' + t.surface + '; border: 2px solid ' + t.border + ';'),
+        radio: 'flex: none; width: 22px; height: 22px; border-radius: 999px; box-sizing: border-box; ' +
+          (on ? 'border: 7px solid ' + t.accent + ';' : 'border: 2px solid ' + t.muted + ';')
+      };
+    });
+    return { t: t, choices: choices };
+  }
+}
+</script>
+</body>
+</html>

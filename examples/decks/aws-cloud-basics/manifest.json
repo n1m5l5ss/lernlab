@@ -1,0 +1,10 @@
+{
+  "format": "lernpack",
+  "version": 1,
+  "deck": {
+    "name": "AWS Cloud basics",
+    "language": null,
+    "description": "Core AWS services for the Cloud Practitioner exam."
+  },
+  "generator": "LernLab sample decks"
+}

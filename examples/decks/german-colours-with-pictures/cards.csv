@@ -1,0 +1,11 @@
+front,back,example,example translation,category,image,audio
+rot,red,Der Ball ist <b>rot</b>.,The ball is red.,colours,images/rot.png,
+blau,blue,Der Ball ist <b>blau</b>.,The ball is blue.,colours,images/blau.png,
+grün,green,Der Ball ist <b>grün</b>.,The ball is green.,colours,images/gruen.png,
+gelb,yellow,Der Ball ist <b>gelb</b>.,The ball is yellow.,colours,images/gelb.png,
+schwarz,black,Der Ball ist <b>schwarz</b>.,The ball is black.,colours,images/schwarz.png,
+weiß,white,Der Ball ist <b>weiß</b>.,The ball is white.,colours,images/weiss.png,
+orange,orange,Der Ball ist <b>orange</b>.,The ball is orange.,colours,images/orange.png,
+lila,purple,Der Ball ist <b>lila</b>.,The ball is purple.,colours,images/lila.png,
+drehen,"to turn, to spin",Das Rad <b>dreht</b> sich.,The wheel turns.,verbs,images/drehen.gif,
+blinken,"to blink, to flash",Das Licht <b>blinkt</b>.,The light blinks.,verbs,images/blinken.gif,

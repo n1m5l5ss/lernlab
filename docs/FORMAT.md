@@ -14,16 +14,40 @@ LernLab imports and exports decks in open formats, so your cards never get locke
 
 Re-importing a deck **updates** cards instead of duplicating them, and keeps your progress. Cards are matched by their `id`, or, if there is none, by deck name plus front and back.
 
-## `.lernpack` (format version 1)
+## Deck package (format version 1)
 
-A `.lernpack` is a zip file:
+A deck package is a zip file. It can end in `.zip` or `.lernpack`; the final file ending is decided together with the product name. Download a ready-made example from `examples/downloads/`.
 
 ```
-my-deck.lernpack
-├── manifest.json     required
-├── cards.jsonl       required: one card per line (cards.json with an array also works)
-└── media/            optional: images, audio, video/GIF referenced by file name
+german-colours.zip
+└── german-colours/          optional top folder (any name)
+    ├── manifest.json        recommended: deck name, language, description
+    ├── cards.csv            the cards: one row per card (main format, edit in Excel or Google Sheets)
+    └── media/               optional
+        ├── images/          .jpg .png .webp .gif (animated GIFs work)
+        │   ├── rot.png
+        │   └── drehen.gif
+        ├── audio/           .mp3 .ogg .m4a .wav
+        │   └── rot.mp3
+        └── video/           .mp4 .webm
 ```
+
+Rules:
+
+- **Cards file.** `cards.csv` is the main format: UTF-8, comma-separated, with a header row. The same columns as a plain CSV (below).
+  - `cards.jsonl` (one JSON card per line) is also accepted, for scripts and for card types that don't fit in a spreadsheet.
+  - If both are present, `cards.jsonl` wins.
+- **Media paths.** Write them in the `image`, `audio` and `video` columns relative to `media/`, for example `images/rot.png` or `audio/rot.mp3`.
+  - The importer also finds a file by its name alone, so `rot.png` works, and so do media folders with other names.
+  - Missing files are listed in the import report, never silently dropped.
+- **GIFs** are images: put them in `images/`.
+- **Limits** (enforced by the importer, ticket #25):
+  - **Size:** images up to 20 MB, audio up to 50 MB, video up to 200 MB, 2 GB in total.
+  - **Not accepted:** nested zips; file paths containing `..` or starting with `/`.
+  - **File type:** checked by the file's content, not its name.
+- **Without a manifest.** A zip with just a CSV and media files also works. The deck is named after the CSV file.
+
+Exporting writes `cards.jsonl` (lossless). Writing a matching `cards.csv` beside it and sorting media into `images/`, `audio/` and `video/` is ticket #57.
 
 ### manifest.json
 

@@ -18,15 +18,15 @@ npm run desktop
 ```
 
 ## Pull requests
-1. Make one branch per issue, named like `t12-home-screen`.
+1. Branch from `dev`, one branch per issue: `feature/12-home-screen` or `fix/80-streak-reset`.
 2. Add tests for what you change.
 3. Run `npm test && npm run typecheck` before you push.
-4. In the pull request description:
+4. Open the pull request into `dev`. Its title follows Conventional Commits (`feat: …`, `fix: …`) because it becomes the changelog line. In the description:
    - Write `Closes #<issue>`.
    - Say what changed and how you tested it.
    - Add screenshots for screen changes.
 5. Keep it small and focused.
 
-Read [docs/PLAN.md](docs/PLAN.md) for the product plan and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the code fits together.
+Read [docs/PLAN.md](docs/PLAN.md) for the product plan, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for how the code fits together, [docs/TESTING.md](docs/TESTING.md) for tests and performance budgets, and [docs/RELEASING.md](docs/RELEASING.md) for branches and releases.
 
 By contributing, you agree that your code is licensed under MIT.

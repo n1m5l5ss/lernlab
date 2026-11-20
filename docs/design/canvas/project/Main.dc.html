@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LernLab — Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;700&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 100%; height: 800px; display: flex; flex-wrap: wrap; background: {{t.bg}}; color: {{t.text}}; font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', sans-serif; box-sizing: border-box; overflow: hidden">
+  <nav aria-label="Main" style="width: 232px; flex: 1 1 232px; max-width: 232px; border-right: 1px solid {{t.border}}; padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; box-sizing: border-box">
+    <div style="font-size: 20px; font-weight: 700; padding: 8px 12px 24px; letter-spacing: 0.01em">LernLab</div>
+    <a href="Main.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 6px; background: {{t.accentTint}}; color: {{t.accent}}; font-weight: 700; font-size: 16px; text-decoration: none">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"></path><path d="M5 10v10h14V10"></path></svg>Home</a>
+    <a href="Decks.dc.html" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 6px; color: {{t.text}}; font-size: 16px; text-decoration: none">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="7" width="16" height="13" rx="2"></rect><path d="M7 4h10"></path></svg>Decks</a>
+    <a href="#cards" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 6px; color: {{t.text}}; font-size: 16px; text-decoration: none">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"></path></svg>Cards</a>
+    <a href="#progress" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 6px; color: {{t.text}}; font-size: 16px; text-decoration: none">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg>Progress</a>
+    <div style="flex-grow: 1"></div>
+    <a href="#settings" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 6px; color: {{t.muted}}; font-size: 16px; text-decoration: none">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"></path></svg>Settings</a>
+  </nav>
+  <main style="flex: 999 1 560px; min-width: 0; display: flex; justify-content: center; padding: 56px 48px; box-sizing: border-box; overflow: auto">
+    <div style="width: 100%; max-width: 820px; display: flex; flex-direction: column; gap: 24px">
+      <div>
+        <p style="margin: 0; font-size: 16px; color: {{t.muted}}">Friday, 20 November</p>
+        <h1 style="margin: 4px 0 0; font-size: 31px; line-height: 1.25; font-weight: 700">Today</h1>
+      </div>
+      <section aria-label="Today's session" style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 12px; padding: 40px; display: flex; flex-direction: column; gap: 32px">
+        <div style="display: flex; flex-wrap: wrap; gap: 48px">
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 49px; font-weight: 700; line-height: 1">24</span>
+            <span style="font-size: 16px; color: {{t.muted}}">reviews due</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 49px; font-weight: 700; line-height: 1">10</span>
+            <span style="font-size: 16px; color: {{t.muted}}">new cards</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <span style="font-size: 49px; font-weight: 700; line-height: 1">~8<span style="font-size: 25px"> min</span></span>
+            <span style="font-size: 16px; color: {{t.muted}}">estimated</span>
+          </div>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-end">
+          <div style="display: flex; flex-direction: column; gap: 8px; flex: 1 1 260px">
+            <label for="deck" style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Deck</label>
+            <select id="deck" style="height: 44px; padding: 0 12px; border-radius: 6px; border: 1px solid {{t.border}}; background: {{t.bg}}; color: {{t.text}}; font: inherit; font-size: 16px">
+              <option>German A1 starter</option>
+              <option>AWS Cloud Practitioner</option>
+              <option>All due cards</option>
+            </select>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <span id="len-label" style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Session length</span>
+            <div role="group" aria-labelledby="len-label" style="display: flex; gap: 4px; padding: 4px; border-radius: 8px; background: {{t.subtle}}">
+              <sc-for list="{{lengths}}" as="l" hint-placeholder-count="3">
+                <button type="button" aria-pressed="{{l.pressed}}" onClick="{{l.pick}}" style="{{l.style}}">{{l.label}}</button>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <a href="Session.dc.html" style="display: flex; align-items: center; justify-content: center; gap: 12px; height: 56px; border-radius: 6px; background: {{t.accent}}; color: {{t.onAccent}}; font-size: 20px; font-weight: 700; text-decoration: none">Start studying<span style="font-size: 13px; font-weight: 400; padding: 2px 8px; border-radius: 4px; border: 1px solid currentColor; opacity: 0.85">Enter</span></a>
+      </section>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+        <section aria-label="This week" style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">This week</span>
+          <span style="font-size: 20px; font-weight: 700">4 of 7 days</span>
+          <div style="display: flex; gap: 6px" aria-hidden="true">
+            <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 4px">
+                <div style="{{d.dot}}"></div>
+                <span style="font-size: 11px; color: {{t.muted}}">{{d.label}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+        <section aria-label="Level" style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Level 6</span>
+          <span style="font-size: 20px; font-weight: 700">340 / 520 XP</span>
+          <div style="height: 8px; border-radius: 999px; background: {{t.subtle}}"><div style="width: 65%; height: 8px; border-radius: 999px; background: {{t.accent}}"></div></div>
+        </section>
+        <section aria-label="Goal" style="background: {{t.surface}}; border: 1px solid {{t.border}}; border-radius: 12px; padding: 20px 24px; display: flex; flex-direction: column; gap: 10px">
+          <span style="font-size: 13px; font-weight: 700; color: {{t.muted}}">Goal · Goethe B1</span>
+          <span style="font-size: 20px; font-weight: 700">812 of 2,400 words</span>
+          <div style="height: 8px; border-radius: 999px; background: {{t.subtle}}"><div style="width: 34%; height: 8px; border-radius: 999px; background: {{t.accent}}"></div></div>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["light","dark"],"default":"light"},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { len: 10 }; }
+  renderVals() {
+    var L = { bg: '#FAF8F5', surface: '#FFFFFF', text: '#1F1D1A', muted: '#5C574F', accent: '#2F5BB7', onAccent: '#FFFFFF', border: '#E4DED6', subtle: '#F1EDE7', accentTint: 'rgba(47,91,183,0.10)' };
+    var D = { bg: '#1A1917', surface: '#24221F', text: '#ECE9E4', muted: '#A8A39B', accent: '#8FA8F0', onAccent: '#1A1917', border: '#3A3732', subtle: '#2D2B27', accentTint: 'rgba(143,168,240,0.14)' };
+    var t = (this.props.theme ?? 'light') === 'dark' ? D : L;
+    var self = this;
+    var lengths = [5, 10, 20].map(function (n) {
+      var on = self.state.len === n;
+      return {
+        label: n + ' min', pressed: on ? 'true' : 'false',
+        pick: function () { self.setState({ len: n }); },
+        style: 'min-width: 72px; height: 36px; border: 0; border-radius: 6px; font: inherit; font-size: 16px; cursor: pointer; ' +
+          (on ? 'background: ' + t.surface + '; color: ' + t.text + '; font-weight: 700; box-shadow: 0 0 0 1px ' + t.border : 'background: transparent; color: ' + t.muted)
+      };
+    });
+    var done = [true, true, false, true, true, false, false];
+    var week = ['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(function (label, i) {
+      var today = i === 4;
+      return { label: label, dot: 'width: 18px; height: 18px; border-radius: 999px; box-sizing: border-box; ' +
+        (done[i] ? 'background: ' + t.accent + ';' : 'border: 1.5px solid ' + t.border + ';') +
+        (today ? ' outline: 2px solid ' + t.accent + '; outline-offset: 2px;' : '') };
+    });
+    return { t: t, lengths: lengths, week: week };
+  }
+}
+</script>
+</body>
+</html>

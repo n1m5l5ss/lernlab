@@ -1,93 +1,146 @@
-# Architecture
+# Architecture (target for 1.0)
 
-One TypeScript codebase. The same engine runs in the desktop app (Electron) and as a local web server for development.
+This is the low-level design that the Foundation tickets (#5–#11) build. Research and sources are in `docs/research.md` and the design research report (Part C). Some of it describes the current prototype; that is marked **Prototype today**.
+
+## 1. Process model
+
+The app runs as four separate parts. Only the data process touches the database, so the window never freezes while SQL runs.
 
 ```
-┌──────────────────────── Desktop app (Electron) ────────────────────────┐
-│  electron/main.ts                                                      │
-│   • picks the data folder (OS app-data, or one you choose)             │
-│   • starts the local server on 127.0.0.1:<random port>                 │
-│   • window, menu, global shortcut Ctrl/Cmd+Shift+L → start a session   │
-│   • opens .lernpack / .apkg files → import                             │
-│                                                                        │
-│  ┌──────────── server/ (Node) ────────────┐   ┌──── src/ (React) ────┐ │
-│  │ app.ts       HTTP API (Hono)           │◀─▶│ Study / Decks / Cards│ │
-│  │ library.ts   decks, cards, media       │   │ Progress / Stats     │ │
-│  │ importer.ts  CSV, JSON, .lernpack,     │   │ Session runner       │ │
-│  │              .apkg, AnkiConnect        │   │ modes/: exercises,   │ │
-│  │ session.ts   session planner           │   │ arcade games         │ │
-│  │ exercises.ts card → exercise builders  │   └──────────────────────┘ │
-│  │ learn.ts     FSRS scheduling, mastery  │                            │
-│  │ progress.ts  streaks, goals, stats     │   shared/: answer checking,│
-│  │ db.ts        node:sqlite (built in)    │   grading, XP/streak rules,│
-│  └────────────────────────────────────────┘   card logic, teacher text │
-└────────────────────────────────────────────────────────────────────────┘
+┌────────────────────────── Electron app ───────────────────────────┐
+│                                                                    │
+│  Renderer (React, sandboxed)          Main process (thin)          │
+│  · screens, session state machine     · app lifecycle, windows     │
+│  · TanStack Query cache               · menu, shortcuts, deep links│
+│  · no Node, no fs, no SQL             · auto-update, notifications │
+│        │  window.lernlab.* (typed)    · routes IPC, nothing heavy  │
+│        ▼                                        │                  │
+│  Preload (contextBridge)  ──── IPC ────────────►│                  │
+│  · validates with zod                            │ MessagePort      │
+│                                                  ▼                  │
+│                              Data process (utilityProcess)         │
+│                              · node:sqlite DatabaseSync            │
+│                              · migrations, backups, import/export  │
+│                              · FSRS scheduling, session planning   │
+│                              · uses packages/core + storage-sqlite │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
-## Data
+| Part | Owns | Must never |
+|---|---|---|
+| Main | Windows, menus, updater, file associations, IPC routing, starting and restarting the data process | Run SQL, parse files, do anything over ~5 ms |
+| Preload | A minimal typed `window.lernlab` API via `contextBridge` | Expose `ipcRenderer` or Node APIs |
+| Renderer | UI only, at `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false` | Touch files, network or the database directly |
+| Data process | The only database connection, all domain work, imports and backups | Know about windows or React |
 
-- **SQLite via `node:sqlite`.** It is built into Node 22.13+ and Electron 45, so there are no native modules to compile on any platform.
-- **Tables:**
-  - `decks`, `items` (cards)
-  - `srs` (FSRS state per card, plus the previous state for "I was right")
-  - `item_state` (mastery ladder, counters)
-  - `attempts` (every answer)
-  - `days`, `sessions`
-  - `meta` (settings, streak, achievements, active deck)
-- **Media** files live in `data/media/`.
+**Why a separate data process?** `node:sqlite` is synchronous. In the main process, a slow query or a 10,000-card import would freeze the whole app. **Prototype today:** a Hono HTTP server on localhost runs the database in the main process. #7 replaces it.
 
-## Learning engine
+## 2. Packages
 
-- **Scheduler:** FSRS (`ts-fsrs`), at 90% target retention by default.
-- **One grade per card per day.** It comes from the card's first recall attempt that day:
-  - wrong → Again;
-  - hint, typo or article slip → Hard;
-  - right → Good;
-  - fast and already known → Easy.
-- **Recognition and arcade rounds never change the schedule.** These are multiple choice, matching, true/false, Blitz, sprint and word rain.
-- **Mastery ladder per card:**
-  - 0 seen
-  - 1 recognised
-  - 2 matched
-  - 3 recalled
-  - 4 in context
-  - 5 spoken
+```
+apps/desktop/src/
+  main/          lifecycle, windows, menu, updater, ipc router
+  preload/       contextBridge API (generated from the contract)
+  data/          utilityProcess entry: opens DB, handles requests
+  renderer/      React app: routes/, features/, components/
+packages/
+  core/          pure TypeScript domain — no Node, DOM or Electron imports
+  shared/        IPC contract (zod schemas + types), error types
+  storage-sqlite/ repositories implemented on node:sqlite
+  ui/            design-system components + stories
+locales/         en.json (all user-visible text)
+e2e/             Playwright tests of the packaged app
+bench/           performance benchmarks + fixture generators
+docs/adr/        architecture decision records
+```
 
-  "Known" means level 3 or higher.
-- **Session planner** (`server/session.ts`): builds 60–90-second blocks and never runs the same format twice in a row. It starts with an easy warm-up and ends with a boss fight over the cards you missed.
-  - New cards are met, recognised, then recalled within the same session.
-  - Timed rounds use only cards you already know.
-- **Client runtime** (`src/Session.tsx`):
-  - A missed card comes back 3 exercises later.
-  - A 60% accuracy floor triggers a rescue round.
-  - An idle or attention-drop detector inserts a short action round.
-  - Answers are checked instantly in the browser with `shared/text.ts`, and attempts are posted in the background.
+**Import rules, enforced by `dependency-cruiser` in CI:**
 
-## Card logic for any subject (`shared/cards.ts`)
-
-The question and the answer are chosen per card:
-
-| Deck / card | Question → answer |
+| Package | May import |
 |---|---|
-| Language deck | meaning → word (nouns need the article) |
-| Other subject, back is short | front → type the back |
-| Other subject, front is short | back → type the front |
-| Both sides long | flip and rate yourself |
-| `mcq` card | single or multi-select question with explanation |
-| `order` card | put the steps in order |
-| `cloze` card | fill the `{{c1::…}}` gap |
+| `core` | nothing internal |
+| `shared` | `core` types only |
+| `storage-sqlite` | `core`, `shared` |
+| `data` | `core`, `storage-sqlite`, `shared` |
+| `main` | `shared` |
+| `renderer` | `shared`, `ui` |
+| `ui` | nothing internal; design tokens only |
 
-## Security
+## 3. Domain core (`packages/core`)
 
-- Deck HTML is sanitised to a small allow-list before display (`sanitizeHtml`).
-- The Electron renderer runs with `contextIsolation`, `sandbox` and no Node integration.
-- The server listens only on `127.0.0.1`. The only permission granted is the microphone.
+- **Entities:** `Deck`, `Card` (front, back, fields, media refs, tags), `CardState` (FSRS due, stability, difficulty, reps, lapses), `ReviewLog`, `Attempt`, `SessionPlan`, `Block`, `Exercise`.
+- **Services:**
+  - `Scheduler`: a wrapper over ts-fsrs enforcing one grade per card per day.
+  - `Grader`: answer checking with typo, accent and article tolerance.
+  - `SessionPlanner`: plans blocks and rotates formats.
+  - `Progress`: XP, levels, weekly consistency, forecasts.
+  - `Importers` and `Exporters`: pure parsers that take bytes and return cards.
+- **Ports (interfaces):** `CardRepository`, `ReviewRepository`, `DeckRepository`, `SettingsRepository`, `MediaStore`, `UnitOfWork`, `Clock`, `Random`.
+- **Determinism:** all time and randomness come through `Clock` and `Random`, so every test is repeatable.
+- **The session state machine** (block → exercise → feedback → next, plus rescue and attention rounds) lives in core as a pure reducer. The renderer only displays it.
 
-## Tests
+## 4. IPC contract (`packages/shared/contract.ts`)
 
-```bash
-npm test          # shared rules, full learning loop, all import formats (incl. generated .apkg), override, multi-select
-npm run typecheck
-```
+- Each channel has a name, a zod request schema and a zod response schema, for example `deck.list`, `session.plan`, `attempt.record`, `import.start`, `import.progress`, `media.url`.
+- Requests are validated in preload, and again in the data process. The renderer is treated as untrusted.
+- Responses are `Result<T, AppError>`; nothing throws across IPC. `AppError` has a code, a message key into the language file, and optional details.
+- Long jobs (import, export, backup) return a job id and stream progress events, and can be cancelled.
+- Media is served through a custom protocol `lernlab-media://<sha256>`, scoped to the media folder. `file://` is never used.
 
-`test/mock-anki.ts` is a fake AnkiConnect for development without Anki.
+## 5. Storage
+
+- **Pragmas:** `journal_mode=WAL`, `synchronous=NORMAL`, `foreign_keys=ON`, `busy_timeout=5000`, `temp_store=MEMORY`, `cache_size=-20000`. Run `PRAGMA optimize` on close.
+- **Indexes:** `cards(deck_id, due)` for the due queue, `cards(note_id)`, `review_logs(card_id, reviewed_at)`, `attempts(day, card_id)`.
+- **FSRS state** is stored in columns, not JSON, so it can be sorted and filtered.
+- **Statements:** prepared statements are cached per process, and SQL is never built from strings.
+- **Imports** run in transactions of 1,000–5,000 rows, followed by `ANALYZE`.
+- **Migrations:** numbered SQL files tracked in `PRAGMA user_version`. Each runs forward-only in a transaction.
+- **Backups:**
+  - **Triggers:** before migrating, before every import, and once a day. The command is `VACUUM INTO 'backups/lernlab-YYYYMMDD-vN.db'`.
+  - **Retention:** keep 7 daily and 4 weekly copies.
+  - **Health check:** `PRAGMA quick_check` runs at startup, in the background.
+- **Media store:** files are content-addressed (`media/<sha256>.<ext>`), so the same image used in two decks is stored once.
+
+## 6. Renderer
+
+- React and TypeScript. Routes are lazy-loaded; only Home and the study screen load at start.
+- TanStack Query holds data from IPC (caching and invalidation).
+- Zustand holds tiny UI state. The session state comes from core's reducer.
+- Styles come from design tokens only (`packages/ui/tokens`). CSS Modules scope every component. A lint rule bans raw hex colours outside the tokens.
+- All visible text comes from `t('key')` via i18next.
+- Every card field gets its `lang` attribute.
+- Accessibility is built in from the start: an `aria-live` region announces feedback, focus is managed per screen, and everything works from the keyboard.
+
+## 7. Startup path (target: study-ready in ≤ 2 s at P95)
+
+1. Main: `app.whenReady()`. Set a minimal menu (`Menu.setApplicationMenu`). Create the `BrowserWindow` with `show: false` and a `backgroundColor` matching the theme.
+2. In parallel: spawn the data process (open the DB, check migrations) and load the renderer bundle, with V8 code caching on.
+3. The renderer paints the app shell, then asks for `home.summary`.
+4. Show the window on `ready-to-show`, so there is no white flash.
+5. Deferred work: the update check (after 30 s), backups, `PRAGMA optimize`.
+
+## 8. Errors, logging and crash safety
+
+- `electron-log` writes rotating files in `userData/logs`. Card content is never logged at info level.
+- Every process has an `uncaughtException` handler. The renderer has an error boundary with "Reload view".
+- If the data process crashes, main restarts it with backoff and the renderer shows "Reconnecting…".
+- Crash reports stay local. A user can choose to attach one to a GitHub issue.
+
+## 9. Security
+
+- Deck files are untrusted. Zip extraction:
+  - counts bytes while streaming;
+  - rejects `..`, absolute paths, symlinks and nested archives;
+  - caps the number of entries, the total size and the compression ratio;
+  - checks media types by magic bytes.
+- Card HTML is sanitised (DOMPurify allow-list), and a strict Content-Security-Policy applies.
+- There are only three network destinations: GitHub Releases, the deck gallery and the user's own AI provider.
+- Fork pull requests run without secrets. Signing keys live only in the protected `release` environment.
+
+## 10. Decisions log
+
+Short ADRs go in `docs/adr/NNNN-title.md`. Recorded so far:
+- **0001:** Electron over Tauri. One language; the owner can read it.
+- **0002:** node:sqlite in a utilityProcess, behind repositories, so the driver can be swapped.
+- **0003:** CSV is the main card file in deck packages; JSONL is also accepted.
+- **0004:** Branching is `main` + `dev` (see `docs/RELEASING.md`).

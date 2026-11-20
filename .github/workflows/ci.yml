@@ -1,11 +1,19 @@
-name: CI
+name: ci
 on:
   pull_request:
+    branches: [dev, main]
   push:
-    branches: [main]
+    branches: [dev, main]
+permissions:
+  contents: read
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -14,3 +22,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build:electron
+      # Added by later tickets: lint (#5), coverage gate (#6), visual + axe (#2/#11),
+      # packaged e2e (#40), performance comparison (#54).

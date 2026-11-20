@@ -1,0 +1,10 @@
+{
+  "format": "lernpack",
+  "version": 1,
+  "deck": {
+    "name": "Biology: the cell",
+    "language": null,
+    "description": "Parts of the cell and what they do."
+  },
+  "generator": "LernLab sample decks"
+}

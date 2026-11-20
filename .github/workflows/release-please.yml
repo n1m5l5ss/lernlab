@@ -1,0 +1,36 @@
+name: release-please
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.rp.outputs.release_created }}
+      tag: ${{ steps.rp.outputs.tag_name }}
+    steps:
+      - id: rp
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
+  sync-dev:
+    # Keep dev up to date with version bumps, changelog and hotfixes on main.
+    # Opens a pull request main -> dev (rulesets block direct pushes to dev).
+    needs: release-please
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ "$(git rev-parse HEAD)" != "" ]; then
+            gh pr create --base dev --head main --title "chore: sync main into dev" \
+              --body "Automatic: brings release and hotfix commits from main back into dev." || echo "PR already open or nothing to sync"
+          fi
