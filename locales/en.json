@@ -375,7 +375,8 @@
       "total_other": "The deck now has {{count}} cards.",
       "again": "Import more",
       "done": "Done"
-    }
+    },
+    "csvTemplate": "Download the CSV template"
   },
   "browse": {
     "noDeck": "Pick or import a deck first.",

@@ -4,6 +4,7 @@ import type { BulkAction } from '@lernlab/core/browse';
 import type { ColumnMapping } from '@lernlab/core/importpreview';
 
 import type { InputOf } from '../backend/handlers';
+import { CSV_TEMPLATE, CSV_TEMPLATE_NAME } from '@lernlab/core/csvtemplate';
 import { call, saveFile } from './bridge';
 
 let chain = Promise.resolve();
@@ -35,6 +36,8 @@ export const api = {
   deleteDeck: (id: number) => call('decks.delete', { id }),
   activate: (id: number | null) => call('decks.activate', { id }),
   chooseSource: (source: StudySource) => call('study.choose', { source }),
+  /** Save the CSV template (column names and three example cards). */
+  downloadTemplate: () => saveFile(CSV_TEMPLATE_NAME, CSV_TEMPLATE, 'text/csv'),
   exportDeck: async (id: number, format: 'csv' | 'lernpack') => {
     const f = await call('decks.export', { id, format });
     saveFile(f.name, f.data, f.type);

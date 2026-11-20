@@ -172,9 +172,8 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
       <div className="deckgrid">
         {tree.map(card)}
         {!showImport && (
-          <button
+          <div
             className="deck-drop"
-            onClick={() => setShowImport(true)}
             onDragOver={(e) => e.preventDefault()}
             onDrop={(e) => {
               e.preventDefault();
@@ -182,9 +181,14 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
               setShowImport(true);
             }}
           >
-            <b>{t('decks.importPanel.drop')}</b>
-            <span>{t('decks.dropFormats')}</span>
-          </button>
+            <button className="deck-drop-open" onClick={() => setShowImport(true)}>
+              <b>{t('decks.importPanel.drop')}</b>
+              <span>{t('decks.dropFormats')}</span>
+            </button>
+            <button className="deck-drop-template" onClick={api.downloadTemplate}>
+              {t('decks.csvTemplate')}
+            </button>
+          </div>
         )}
       </div>
       <dialog
