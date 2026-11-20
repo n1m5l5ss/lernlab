@@ -32,7 +32,7 @@ import {
 import { ACHIEVEMENTS, appState, dailySummary, finishSession, journey, stats } from '@lernlab/core/progress';
 import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
-import { bulkCards, CARD_STATES, findCards, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
+import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import { anki, ankiAvailable, ankiConnect } from './anki';
@@ -220,6 +220,11 @@ export const handlers = {
       extra: JSON.parse((r.extra as string | null) ?? '{}') as Record<string, string>,
     };
   }),
+  /** Cards in the deck with the same front (as plain text), so the editor can warn before adding a twin. */
+  'cards.duplicates': h(
+    v.object({ deckId: v.id, front: v.string(10_000), excludeId: v.optional(v.id) }),
+    ({ deckId, front, excludeId }) => ({ matches: findDuplicates(deckId, front, excludeId) }),
+  ),
   /** One change to many cards. Deleting takes a backup of the whole database first. */
   'cards.bulk': h(v.object({ ids: v.array(v.id, 100_000), action: bulkAction }), ({ ids, action }) => {
     if (action.kind === 'move' && !getDeck(action.deckId)) throw new AppError('deck_not_found', 'Deck not found');

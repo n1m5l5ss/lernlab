@@ -198,3 +198,19 @@ test('progress lists every deck with learned vs remaining, and the hardest cards
   await ok('study.choose', { source: { kind: 'hardest' } });
   assert.deepEqual((await ok('state.get')).source, { kind: 'hardest' });
 });
+
+test('the card editor warns about a card with the same front in the deck, and saves only safe formatting', async () => {
+  const deck = await ok('decks.create', { name: 'Dupes', language: null });
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { front: 'Mitochondrion', back: 'powerhouse', explanation: '<a href="x">see</a> <b onclick="y()">this</b>' },
+  });
+  const same = await ok('cards.duplicates', { deckId: deck.id, front: '  **mitochondrion** ' });
+  assert.deepEqual(same.matches, [{ id, front: 'Mitochondrion', back: 'powerhouse' }]);
+  const self = await ok('cards.duplicates', { deckId: deck.id, front: 'Mitochondrion', excludeId: id });
+  assert.deepEqual(self.matches, []);
+  assert.deepEqual((await ok('cards.duplicates', { deckId: deck.id, front: 'Ribosome' })).matches, []);
+  const bad = await handle('cards.duplicates', { deckId: 'x', front: 'a' });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  assert.equal((await ok('cards.get', { id })).grammar, 'see <b>this</b>');
+});

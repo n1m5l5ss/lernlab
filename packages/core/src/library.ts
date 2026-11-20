@@ -7,7 +7,7 @@ import { basename, extname } from './paths';
 import { sha1Hex } from './sha1';
 import { stripHtml, splitArticle } from './text';
 import { markdownLite, sanitizeHtml } from './cards';
-import type { ItemKind } from './types';
+import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 
 export type DeckSettings = {
@@ -234,6 +234,50 @@ export const mediaKind = (f: string) => {
 
 const clean = (s: string | undefined) => sanitizeHtml(markdownLite(String(s ?? '').trim()));
 
+/**
+ * A card as it is stored and studied: formatting cleaned to the safe list, kind detected. The card
+ * editor's preview uses this too, so what you see is what you get. Null for a card with no front.
+ */
+export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: NormalizedCard, id = 0): Item | null {
+  const front = clean(c.front);
+  const back = clean(c.back);
+  if (!stripHtml(front) && !/\{\{c\d+::/.test(front)) return null;
+  const tags = (c.tags ?? []).map((t) => t.trim()).filter(Boolean);
+  const kind = detectKind(stripHtml(front), stripHtml(back), tags, deck.language, c);
+  const extra: Record<string, string> = { ...(c.extra ?? {}) };
+  if (c.choices) extra.choices = sanitizeHtml(c.choices);
+  if (c.correct) extra.correct = c.correct;
+  if (c.steps) extra.steps = sanitizeHtml(c.steps);
+  if (c.altAnswers) extra.alt = c.altAnswers;
+  const { article, word } = splitArticle(stripHtml(front));
+  const example = clean(c.example);
+  const isNoun = kind === 'noun';
+  return {
+    id,
+    deckId: deck.id,
+    lang: deck.language,
+    deck: c.subdeck ?? deck.name,
+    kind,
+    target: kind === 'cloze' ? front : stripHtml(front),
+    article: isNoun ? article : null,
+    word: isNoun ? word : stripHtml(front),
+    meaning: ['cloze', 'mcq', 'order'].includes(kind) ? back : stripHtml(back),
+    sentenceHtml: example,
+    sentence: stripHtml(example),
+    sentenceMeaning: stripHtml(c.exampleTranslation ?? ''),
+    grammar: clean(c.explanation),
+    notes: clean(c.notes),
+    audio: c.audio || null,
+    image: c.image || null,
+    video: c.video || null,
+    category: (c.category ?? (isNoun ? article : null)) || null,
+    rank: c.rank ?? 0,
+    tags,
+    group: c.group || null,
+    extra,
+  };
+}
+
 export type UpsertResult = { deck: Deck; added: number; updated: number; total: number };
 
 /** Insert or update cards in a deck. Progress (srs/item_state) is untouched for existing cards. */
@@ -255,48 +299,37 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
         audio=excluded.audio, image=excluded.image, video=excluded.video, category=excluded.category, rank=excluded.rank,
         tags=excluded.tags, grp=excluded.grp, extra=excluded.extra, updated_at=excluded.updated_at`);
     ranked.forEach(({ c }, i) => {
-      const front = clean(c.front);
-      const back = clean(c.back);
-      if (!stripHtml(front) && !/\{\{c\d+::/.test(front)) return;
-      const tags = (c.tags ?? []).map((t) => t.trim()).filter(Boolean);
-      const kind = detectKind(stripHtml(front), stripHtml(back), tags, deck.language, c);
-      const extra: Record<string, string> = { ...(c.extra ?? {}) };
-      if (c.choices) extra.choices = c.choices;
-      if (c.correct) extra.correct = c.correct;
-      if (c.steps) extra.steps = c.steps;
-      if (c.altAnswers) extra.alt = c.altAnswers;
-      const { article, word } = splitArticle(stripHtml(front));
+      const item = cardToItem(deck, c);
+      if (!item) return;
       const id =
         typeof c.sourceId === 'number'
           ? c.sourceId
-          : stableId(`${deck.name}\u0000${c.sourceId ?? `${front}\u0000${back}`}`);
+          : stableId(`${deck.name}\u0000${c.sourceId ?? `${clean(c.front)}\u0000${clean(c.back)}`}`);
       const prev = exists.get(id);
       prev ? updated++ : added++;
-      const example = clean(c.example);
-      const isNoun = kind === 'noun';
       up.run(
         id,
         deck.id,
-        c.subdeck ?? deck.name,
-        kind,
-        kind === 'cloze' ? front : stripHtml(front),
-        isNoun ? article : null,
-        isNoun ? word : stripHtml(front),
-        ['cloze', 'mcq', 'order'].includes(kind) ? back : stripHtml(back),
-        example,
-        stripHtml(example),
-        stripHtml(c.exampleTranslation ?? ''),
-        clean(c.explanation),
-        clean(c.notes),
-        c.audio || null,
-        c.image || null,
-        c.video || null,
-        (c.category ?? (isNoun ? article : null)) || null,
-        c.rank ?? 0,
-        JSON.stringify(tags),
-        c.group || null,
+        item.deck,
+        item.kind,
+        item.target,
+        item.article,
+        item.word,
+        item.meaning,
+        item.sentenceHtml,
+        item.sentence,
+        item.sentenceMeaning,
+        item.grammar,
+        item.notes,
+        item.audio,
+        item.image,
+        item.video,
+        item.category,
+        item.rank,
+        JSON.stringify(item.tags),
+        item.group,
         prev ? Number(prev.ord) : maxOrd + 1 + i,
-        JSON.stringify(extra),
+        JSON.stringify(item.extra),
         now,
       );
     });

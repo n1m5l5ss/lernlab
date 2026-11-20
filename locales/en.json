@@ -284,17 +284,37 @@
       "tagsPlaceholder": "space separated",
       "media": "Media",
       "mediaSet": {
-        "image": "✓ image",
-        "audio": "✓ audio",
-        "video": "✓ video/GIF"
+        "image": "✓ Image",
+        "audio": "✓ Audio",
+        "video": "✓ Video"
       },
       "mediaAdd": {
-        "image": "+ image",
-        "audio": "+ audio",
-        "video": "+ video/GIF"
+        "image": "+ Image or GIF",
+        "audio": "+ Audio",
+        "video": "+ Video"
       },
-      "removeMedia": "Remove media",
-      "preview": "Preview:",
+      "mediaRemove": {
+        "image": "Remove image",
+        "audio": "Remove audio",
+        "video": "Remove video"
+      },
+      "dropHint": "Drop images, GIFs, audio or video here, or choose a file.",
+      "uploading": "Adding media…",
+      "dropRejected": "Can't put these on a card: {{names}}. Use an image, GIF, audio or video file.",
+      "duplicate_one": "This deck already has a card with this front: “{{front}}” → {{back}}. You can still add it.",
+      "duplicate_other": "This deck already has {{count}} cards with this front, like “{{front}}” → {{back}}. You can still add it.",
+      "formatHint": "Formatting: **bold**, *italic*, `code`, or the tags {{tags}}. Anything else is removed.",
+      "preview": "Preview",
+      "previewQuestion": "Preview · question",
+      "previewAnswer": "Preview · answer",
+      "moreFields": "More: explanation, example, category, tags",
+      "previewShuffled": "When you study, the order is shuffled.",
+      "alsoAccepted": "Also accepted: {{answers}}",
+      "problem": {
+        "noGap": "Add a gap like {{open}}word{{close}} to the front, or this card is studied as a basic card.",
+        "choices": "Add at least two choices and say which are correct, or this card is studied as a basic card.",
+        "steps": "Add at least two steps, or this card is studied as a basic card."
+      },
       "add": "Add card",
       "starred": "★ Starred",
       "star": "☆ Star",
