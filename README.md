@@ -1,5 +1,7 @@
 # LernLab
 
+[![CI](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml)
+
 **Free, open-source flashcards that feel like a game, for any subject.**
 
 > **Status:** Working prototype (v0.2). We are planning version 1.0 now: see [docs/PLAN.md](docs/PLAN.md) and the [issues](https://github.com/n1m5l5ss/lernlab/issues). There are no installers to download yet.

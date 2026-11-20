@@ -6,6 +6,10 @@ on:
     branches: [dev, main]
 permissions:
   contents: read
+# A newer push to the same PR or branch cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: test (${{ matrix.os }})
@@ -19,8 +23,8 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
-      - run: npm run typecheck
       - run: npm run lint
+      - run: npm run typecheck
       - run: npm run format:check
       - run: npm test
       - run: npm run build:electron

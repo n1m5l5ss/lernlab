@@ -66,7 +66,7 @@ There is no separate staging branch. A **beta release** cut from `dev` plays tha
 
 **`main` and `dev`:**
 - Require a pull request before merging.
-- Require status checks: `ci / test (ubuntu)`, `ci / test (windows)`, `ci / test (macos)`, `pr-title`. Branches must be up to date.
+- Require status checks (use these exact check names): `test (ubuntu-latest)`, `test (windows-latest)`, `test (macos-latest)`, `conventional-title`. Branches must be up to date.
 - Require conversations to be resolved.
 - Block force pushes and deletion.
 - Allowed merges: squash on `dev`; merge commits on `main` (for release PRs from `dev`).
