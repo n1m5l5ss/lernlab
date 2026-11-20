@@ -77,3 +77,20 @@ test('the theme follows the system unless light or dark is chosen', async () => 
   assert.equal((await ok('settings.save', { theme: 'purple' })).theme, 'system');
   assert.equal((await ok('settings.save', { theme: 'light' })).theme, 'light');
 });
+
+test('choose what to study: a tag or starred cards, checked first; picking a deck resets it', async () => {
+  const bad = await handle('study.choose', { source: { kind: 'tag', tag: '' } });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  const missing = await handle('study.choose', { source: { kind: 'decks', deckIds: [9999] } });
+  assert.equal(!missing.ok && missing.error.code, 'deck_not_found');
+  const deck = await ok('decks.create', { name: 'Rivers', language: null });
+  await ok('cards.add', { deckId: deck.id, card: { front: 'Longest river', back: 'Nile', tags: 'geo' } });
+  await ok('study.choose', { source: { kind: 'tag', tag: 'geo' } });
+  const state = await ok('state.get');
+  assert.deepEqual(state.source, { kind: 'tag', tag: 'geo' });
+  assert.ok(state.tags.includes('geo'), JSON.stringify(state.tags));
+  const plan = await ok('session.plan', { length: 'mini' });
+  assert.ok(Object.values(plan.items).every((i) => (i as { tags: string[] }).tags.includes('geo')));
+  await ok('decks.activate', { id: null });
+  assert.deepEqual((await ok('state.get')).source, { kind: 'all' });
+});

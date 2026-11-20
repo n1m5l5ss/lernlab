@@ -8,6 +8,7 @@ import { api } from './api';
 import { useKeys } from './ctx';
 import { formatDate, formatNumber } from './i18n';
 import { LENGTHS } from './lengths';
+import { parseSourceValue, sourceValue } from './sources';
 import { UpdateNote } from './UpdateNote';
 
 type AppState = OutputOf<'state.get'>;
@@ -83,18 +84,40 @@ export function Home({
             <label htmlFor="home-deck">{t('home.deckPicker')}</label>
             <select
               id="home-deck"
-              value={state.activeDeck ?? ''}
+              value={sourceValue(state.source)}
               onChange={async (e) => {
-                await api.activate(e.target.value ? Number(e.target.value) : null);
+                const source = parseSourceValue(e.target.value);
+                if (!source) return;
+                await api.chooseSource(source);
                 refresh();
               }}
             >
               {state.decks.map((d) => (
-                <option key={d.id} value={d.id}>
+                <option key={d.id} value={`deck:${d.id}`}>
                   {d.name}
                 </option>
               ))}
-              <option value="">{t('home.allDecks')}</option>
+              {state.source.kind === 'decks' && (
+                <option value={sourceValue(state.source)}>
+                  {t('home.source.decks', { count: state.source.deckIds.length })}
+                </option>
+              )}
+              <option value="all">{t('home.allDecks')}</option>
+              {state.starredCount > 0 && (
+                <option value="starred">{t('home.source.starred', { count: state.starredCount })}</option>
+              )}
+              {state.hardestCount > 0 && (
+                <option value="hardest">{t('home.source.hardest', { count: state.hardestCount })}</option>
+              )}
+              {state.tags.length > 0 && (
+                <optgroup label={t('home.source.tags')}>
+                  {state.tags.map((tag) => (
+                    <option key={tag} value={`tag:${tag}`}>
+                      {t('home.source.tag', { tag })}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
             </select>
           </div>
           <div className="home-field">
