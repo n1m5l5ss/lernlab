@@ -179,7 +179,7 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
     if (sel === null) return;
     if (it.id === sel) {
       ctx.answer({ itemId: it.id, format: 'match', correct: !missedOnce.current.has(it.id), shownAt: start.current });
-      if (ctx.lang) say(it.target, 0.95, ctx.lang);
+      if (ctx.lang) say(it.target, 0.95, ctx.lang, it.deckId);
       const g = new Set(gone).add(it.id);
       setGone(g);
       setSel(null);

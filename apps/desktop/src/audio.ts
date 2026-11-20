@@ -1,5 +1,6 @@
-// Game feel: tiny synthesized sound effects (no files), Anki audio playback and German text-to-speech.
+// Game feel: tiny synthesized sound effects (no files), Anki audio playback and reading cards aloud.
 import { mediaUrl } from './bridge';
+import { clampRate, localeFor, pickVoice, prefFor, type SpeechPref } from './voice-logic';
 
 let ctx: AudioContext | null = null;
 let enabled = true;
@@ -55,73 +56,108 @@ export function playMedia(file: string | null | undefined, rate = 1): Promise<vo
   });
 }
 
-const LOCALES: Record<string, string> = {
-  de: 'de-DE',
-  ja: 'ja-JP',
-  ko: 'ko-KR',
-  fr: 'fr-FR',
-  es: 'es-ES',
-  it: 'it-IT',
-  pt: 'pt-BR',
-  nl: 'nl-NL',
-  sv: 'sv-SE',
-  ru: 'ru-RU',
-  zh: 'zh-CN',
-  ar: 'ar-SA',
-  hi: 'hi-IN',
-  te: 'te-IN',
-  en: 'en-US',
-};
-const locale = (lang: string) => LOCALES[lang] ?? lang;
+// Reading aloud: system voices (Web Speech), chosen by the card's language and its deck's voice and speed.
+const synth = () => (typeof speechSynthesis === 'undefined' ? null : speechSynthesis);
+let warmedAt = 0;
+let voicesArrived = false;
 
-function voiceFor(lang: string): SpeechSynthesisVoice | null {
-  if (typeof speechSynthesis === 'undefined') return null;
-  const voices = speechSynthesis.getVoices();
-  const loc = locale(lang);
-  return (
-    voices.find((v) => v.lang === loc && /Anna|Helena|Google|Premium|Enhanced/i.test(v.name)) ??
-    voices.find((v) => v.lang === loc) ??
-    voices.find((v) => v.lang.startsWith(lang)) ??
-    null
-  );
+/** Installed system voices. Chromium fills the list a moment after start, so call warmVoices() early. */
+export function systemVoices(): SpeechSynthesisVoice[] {
+  return synth()?.getVoices() ?? [];
 }
 
-/** Is there a system voice for this language? Voices load late in Chromium, so call warmVoices() at start. */
-export function hasVoice(lang: string | null | undefined): boolean {
-  return !!lang && voiceFor(lang) !== null;
-}
+/** True once the voice list is final: some arrived, or a moment has passed and there are none. */
+const voicesKnown = () => voicesArrived || systemVoices().length > 0 || (warmedAt > 0 && Date.now() - warmedAt > 2000);
 
 /** Ask for the voice list early so hasVoice() is right by the time a session starts. */
 export function warmVoices() {
-  if (typeof speechSynthesis === 'undefined') return;
-  speechSynthesis.getVoices();
-  speechSynthesis.addEventListener?.('voiceschanged', () => speechSynthesis.getVoices());
+  const s = synth();
+  if (!s) return;
+  warmedAt = Date.now();
+  s.getVoices();
+  s.addEventListener?.('voiceschanged', () => {
+    voicesArrived = true;
+    s.getVoices();
+  });
 }
+
+/** Call `fn` whenever the installed voices change. Returns the unsubscribe function. */
+export function onVoicesChanged(fn: () => void): () => void {
+  const s = synth();
+  s?.addEventListener?.('voiceschanged', fn);
+  return () => s?.removeEventListener?.('voiceschanged', fn);
+}
+
+let prefs: Record<number, SpeechPref> = {};
+/** Each deck's chosen voice and speed for this session (from the session plan). */
+export function setSpeechPrefs(p: Record<number, SpeechPref> | undefined) {
+  prefs = p ?? {};
+}
+
+const noVoiceListeners = new Set<(lang: string) => void>();
+/** Hear about a card that should have been read aloud but has no voice for its language. */
+export function onNoVoice(fn: (lang: string) => void): () => void {
+  noVoiceListeners.add(fn);
+  return () => noVoiceListeners.delete(fn);
+}
+
+/** Is there a system voice for this language? */
+export function hasVoice(lang: string | null | undefined): boolean {
+  return pickVoice(lang, systemVoices()) !== null;
+}
+
+type Hearable = { audio: string | null; lang: string | null; deckId?: number };
 
 /**
  * Play a card aloud: its own recording, or `text` in the system voice for its language.
  * `preferVoice` reads `text` even when there is a recording (the recording may be the word, not the sentence).
  */
 export function hear(
-  item: { audio: string | null; lang: string | null },
+  item: Hearable,
   text: string,
   { rate = 1, preferVoice = false }: { rate?: number; preferVoice?: boolean } = {},
 ): Promise<void> {
   if (item.audio && !(preferVoice && hasVoice(item.lang))) return playMedia(item.audio, rate);
-  if (item.lang) say(text, 0.95 * rate, item.lang);
+  if (item.lang) say(text, 0.95 * rate, item.lang, item.deckId);
   return Promise.resolve();
 }
 
-/** Text-to-speech in the deck's language (system voices). */
-export function say(text: string, rate = 0.95, lang = 'de') {
-  if (typeof speechSynthesis === 'undefined' || !text) return;
-  speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ''));
-  u.lang = locale(lang);
-  const v = voiceFor(lang);
-  if (v) u.voice = v;
-  u.rate = rate;
-  speechSynthesis.speak(u);
+/**
+ * Text-to-speech in the deck's language, in the deck's chosen voice and speed. When the computer has no voice
+ * for that language it stays silent (never a voice in another language) and tells onNoVoice listeners.
+ */
+export function say(text: string, rate = 0.95, lang = 'de', deckId?: number | null) {
+  const s = synth();
+  if (!s || !text) return;
+  const pref = prefFor(prefs, deckId);
+  const voice = pickVoice(lang, s.getVoices(), pref.voice);
+  const tellNoVoice = () => noVoiceListeners.forEach((fn) => fn(lang));
+  if (!voice && voicesKnown()) return tellNoVoice();
+  // Voices may still be loading: try the engine's own pick now, and check again once the list is final.
+  if (!voice) setTimeout(() => !pickVoice(lang, s.getVoices()) && tellNoVoice(), 2100);
+  speakWith(text, lang, voice as SpeechSynthesisVoice | null, rate * clampRate(pref.rate ?? 1));
+}
+
+/** "Try it" in the deck settings: read `text` in exactly this voice and speed. */
+export function tryVoice(text: string, lang: string, voiceURI: string, rate: number) {
+  const s = synth();
+  if (!s) return;
+  speakWith(text, lang, pickVoice(lang, s.getVoices(), voiceURI) as SpeechSynthesisVoice | null, clampRate(rate));
+}
+
+function speakWith(text: string, lang: string, voice: SpeechSynthesisVoice | null, rate: number) {
+  // A speech engine that fails must never stop a session, so errors here are swallowed.
+  try {
+    const s = synth()!;
+    s.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ''));
+    u.lang = voice?.lang ?? localeFor(lang);
+    if (voice) u.voice = voice;
+    u.rate = rate;
+    s.speak(u);
+  } catch {
+    /* no sound this time */
+  }
 }
 
 /** Speech recognition (Chrome, Edge, Safari). Returns null if the browser has none. */
@@ -129,7 +165,7 @@ export function recognizer(lang = 'de'): any | null {
   const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
   if (!SR) return null;
   const r = new SR();
-  r.lang = locale(lang);
+  r.lang = localeFor(lang);
   r.interimResults = false;
   r.maxAlternatives = 4;
   return r;

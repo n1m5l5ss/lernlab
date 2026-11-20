@@ -149,6 +149,11 @@ test('deck settings are checked, and deleting a deck takes a backup first', asyn
     patch: { settings: { goal: { label: 'Board exam', words: 300 }, examDate: '' } },
   });
   assert.deepEqual(upd.settings, { newPerDay: 7, goal: { label: 'Board exam', words: 300 } });
+  const voiced = await ok('decks.update', { id: deck.id, patch: { settings: { voice: 'uri:Anna', rate: 2 } } });
+  assert.equal(voiced.settings.voice, 'uri:Anna');
+  assert.equal(voiced.settings.rate, 1.5, 'reading speed is clamped');
+  const auto = await ok('decks.update', { id: deck.id, patch: { settings: { voice: '', rate: 1 } } });
+  assert.equal(auto.settings.voice, undefined, 'an empty voice means the best match again');
   const blank = await handle('decks.update', { id: deck.id, patch: { name: '  ' } });
   assert.equal(!blank.ok && blank.error.code, 'name_required');
   const del = await ok('decks.delete', { id: deck.id });

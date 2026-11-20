@@ -126,3 +126,13 @@ test('the chosen source is remembered, falls back to the active deck, and bad va
   const scope = scopeFor({ kind: 'tag', tag: "x' OR 1=1 --" });
   assert.ok(scope && typeof scope === 'object' && scope.where === ' AND 0', 'tags never reach SQL');
 });
+
+test("a session carries each deck's reading voice and speed, so cards are read the way their deck asks", async () => {
+  const { updateDeck } = await import('../src/library');
+  updateDeck(a.id, { settings: { voice: 'uri:Anna', rate: 0.8 } });
+  updateDeck(b.id, { settings: { rate: 1.2 } });
+  const plan = planSession('long', getDb(), day, { kind: 'decks', deckIds: [a.id, b.id] });
+  assert.deepEqual(plan.speech, { [a.id]: { voice: 'uri:Anna', rate: 0.8 }, [b.id]: { rate: 1.2 } });
+  const one = planSession('long', getDb(), day, { kind: 'deck', deckId: c.id });
+  assert.deepEqual(one.speech, { [c.id]: {} });
+});
