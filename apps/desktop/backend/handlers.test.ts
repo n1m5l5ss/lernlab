@@ -65,6 +65,32 @@ test('update settings default to on and stable, and a backup can be taken before
   assert.ok(existsSync(join(dir, 'backups', file)));
 });
 
+test('backups: before an update, listed with counts, restored; export and import everything; delete all', async () => {
+  const { file } = await ok('backup.create', { reason: 'update' });
+  assert.match(file, /-before-update-v\d+\.db$/);
+  const listed = (await ok('backup.list')).find((b: { file: string }) => b.file === file);
+  const decks = (await ok('state.get')).decks.length;
+  assert.equal(listed.counts.decks, decks);
+  const zip = await ok('data.export');
+  assert.match(zip.name, /^lernlab-data-\d{8}\.zip$/);
+
+  const refused = await handle('data.deleteAll', { confirm: 'yes' });
+  assert.equal(!refused.ok && refused.error.code, 'invalid_input', 'deleting everything needs the confirmation');
+  const gone = await ok('data.deleteAll', { confirm: 'delete-all-data' });
+  assert.match(gone.backup, /-before-delete-all-/);
+  assert.equal((await ok('state.get')).decks.length, 0);
+
+  assert.equal((await ok('data.import', { data: zip.data })).counts.decks, decks);
+  assert.equal((await ok('state.get')).decks.length, decks);
+  await ok('data.deleteAll', { confirm: 'delete-all-data' });
+  assert.equal((await ok('backup.restore', { file })).counts.decks, decks);
+  assert.equal((await ok('state.get')).decks.length, decks);
+  const bad = await handle('data.import', { data: new TextEncoder().encode('nope') });
+  assert.equal(!bad.ok && bad.error.code, 'not_data_export');
+  const missing = await handle('backup.restore', { file: '../lernlab.db' });
+  assert.equal(!missing.ok && missing.error.code, 'backup_not_found');
+});
+
 test('Home can study every deck at once and shows this week', async () => {
   await ok('decks.activate', { id: null });
   const state = await ok('state.get');

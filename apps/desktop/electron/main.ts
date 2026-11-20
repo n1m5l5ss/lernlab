@@ -308,7 +308,7 @@ async function main() {
       const s = res.ok ? (res.value as { settings?: { autoUpdate?: boolean; betaUpdates?: boolean } }).settings : {};
       return { autoUpdate: s?.autoUpdate !== false, betaUpdates: s?.betaUpdates === true };
     },
-    backup: () => callData('backup.create', undefined),
+    backup: () => callData('backup.create', { reason: 'update' }),
     lastCheck: () => readConfig().lastUpdateCheck,
     setLastCheck: (time) => writeConfig({ lastUpdateCheck: time }),
   });
