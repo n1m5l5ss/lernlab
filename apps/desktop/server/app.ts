@@ -4,8 +4,28 @@ import { getDb, setMeta } from './db';
 import { ankiAvailable, anki } from './anki';
 import { importFile, importFromAnki } from './importer';
 import { exportDeck } from './exporter';
-import { activeDeckId, getSettings, overrideToCorrect, recordAttempt, rowToItem, ITEM_SELECT, type Settings } from './learn';
-import { createDeck, deckByName, deleteDeck, getDeck, mediaKind, readMedia, stableId, storeMedia, updateDeck, upsertCards, LANGUAGES } from './library';
+import {
+  activeDeckId,
+  getSettings,
+  overrideToCorrect,
+  recordAttempt,
+  rowToItem,
+  ITEM_SELECT,
+  type Settings,
+} from './learn';
+import {
+  createDeck,
+  deckByName,
+  deleteDeck,
+  getDeck,
+  mediaKind,
+  readMedia,
+  stableId,
+  storeMedia,
+  updateDeck,
+  upsertCards,
+  LANGUAGES,
+} from './library';
 import { pastedToCards } from './formats/csv';
 import { planSession } from './session';
 import { appState, dailySummary, finishSession, progressReport, stats, ACHIEVEMENTS } from './progress';
@@ -17,7 +37,10 @@ export async function runAnkiImport(source?: string, deckName?: string) {
   if (importStatus.running) return;
   Object.assign(importStatus, { running: true, error: null, log: [], result: null });
   try {
-    importStatus.result = await importFromAnki(source ?? getSettings().deck, { deckName }, (m) => { importStatus.log.push(m); console.log(`[import] ${m}`); });
+    importStatus.result = await importFromAnki(source ?? getSettings().deck, { deckName }, (m) => {
+      importStatus.log.push(m);
+      console.log(`[import] ${m}`);
+    });
   } catch (e: any) {
     importStatus.error = e.message;
   } finally {
@@ -26,9 +49,24 @@ export async function runAnkiImport(source?: string, deckName?: string) {
 }
 
 const MIME: Record<string, string> = {
-  '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg', '.m4a': 'audio/mp4', '.aac': 'audio/aac', '.opus': 'audio/ogg', '.flac': 'audio/flac',
-  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.avif': 'image/avif',
-  '.mp4': 'video/mp4', '.webm': 'video/webm', '.mov': 'video/quicktime', '.m4v': 'video/mp4',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4',
+  '.aac': 'audio/aac',
+  '.opus': 'audio/ogg',
+  '.flac': 'audio/flac',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.webp': 'image/webp',
+  '.svg': 'image/svg+xml',
+  '.avif': 'image/avif',
+  '.mp4': 'video/mp4',
+  '.webm': 'video/webm',
+  '.mov': 'video/quicktime',
+  '.m4v': 'video/mp4',
 };
 
 export function createApp() {
@@ -46,9 +84,16 @@ export function createApp() {
     return c.json(deck);
   });
   app.put('/api/decks/:id', async (c) => {
-    try { return c.json(updateDeck(Number(c.req.param('id')), await c.req.json())); } catch (e) { return err(c, e); }
+    try {
+      return c.json(updateDeck(Number(c.req.param('id')), await c.req.json()));
+    } catch (e) {
+      return err(c, e);
+    }
   });
-  app.delete('/api/decks/:id', (c) => { deleteDeck(Number(c.req.param('id'))); return c.json({ ok: true }); });
+  app.delete('/api/decks/:id', (c) => {
+    deleteDeck(Number(c.req.param('id')));
+    return c.json({ ok: true });
+  });
   app.post('/api/decks/:id/activate', (c) => {
     const id = Number(c.req.param('id'));
     if (!getDeck(id)) return err(c, 'Deck not found', 404);
@@ -58,8 +103,15 @@ export function createApp() {
   app.get('/api/decks/:id/export', (c) => {
     try {
       const f = exportDeck(Number(c.req.param('id')), c.req.query('format') === 'csv' ? 'csv' : 'lernpack');
-      return new Response(f.data as unknown as BodyInit, { headers: { 'Content-Type': f.type, 'Content-Disposition': `attachment; filename="${encodeURIComponent(f.name)}"` } });
-    } catch (e) { return err(c, e); }
+      return new Response(f.data as unknown as BodyInit, {
+        headers: {
+          'Content-Type': f.type,
+          'Content-Disposition': `attachment; filename="${encodeURIComponent(f.name)}"`,
+        },
+      });
+    } catch (e) {
+      return err(c, e);
+    }
   });
 
   /* ── Cards ─────────────────────────────────────────── */
@@ -68,14 +120,36 @@ export function createApp() {
     const q = `%${c.req.query('q') ?? ''}%`;
     const offset = Number(c.req.query('offset') ?? 0);
     const d = getDb();
-    const rows = d.prepare(
-      `${ITEM_SELECT} WHERE i.deck_id = ? AND (i.target LIKE ? OR i.meaning LIKE ? OR i.tags LIKE ? OR i.sentence LIKE ?) ORDER BY i.ord LIMIT 100 OFFSET ?`,
-    ).all(id, q, q, q, q, offset);
-    const total = Number(d.prepare(`SELECT COUNT(*) AS n FROM items i WHERE i.deck_id = ? AND (i.target LIKE ? OR i.meaning LIKE ? OR i.tags LIKE ? OR i.sentence LIKE ?)`).get(id, q, q, q, q).n);
-    const state = new Map(d.prepare(`SELECT st.item_id, st.mastery, s.due FROM item_state st LEFT JOIN srs s ON s.item_id = st.item_id WHERE st.item_id IN (SELECT id FROM items WHERE deck_id = ?)`).all(id).map((r: any) => [Number(r.item_id), r]));
+    const rows = d
+      .prepare(
+        `${ITEM_SELECT} WHERE i.deck_id = ? AND (i.target LIKE ? OR i.meaning LIKE ? OR i.tags LIKE ? OR i.sentence LIKE ?) ORDER BY i.ord LIMIT 100 OFFSET ?`,
+      )
+      .all(id, q, q, q, q, offset);
+    const total = Number(
+      d
+        .prepare(
+          `SELECT COUNT(*) AS n FROM items i WHERE i.deck_id = ? AND (i.target LIKE ? OR i.meaning LIKE ? OR i.tags LIKE ? OR i.sentence LIKE ?)`,
+        )
+        .get(id, q, q, q, q).n,
+    );
+    const state = new Map(
+      d
+        .prepare(
+          `SELECT st.item_id, st.mastery, s.due FROM item_state st LEFT JOIN srs s ON s.item_id = st.item_id WHERE st.item_id IN (SELECT id FROM items WHERE deck_id = ?)`,
+        )
+        .all(id)
+        .map((r: any) => [Number(r.item_id), r]),
+    );
     return c.json({
       total,
-      cards: rows.map((r: any) => ({ ...rowToItem(r), suspended: !!r.suspended, starred: !!r.starred, mastery: Number(state.get(Number(r.id))?.mastery ?? 0), due: state.get(Number(r.id))?.due ?? null, extra: JSON.parse(r.extra ?? '{}') })),
+      cards: rows.map((r: any) => ({
+        ...rowToItem(r),
+        suspended: !!r.suspended,
+        starred: !!r.starred,
+        mastery: Number(state.get(Number(r.id))?.mastery ?? 0),
+        due: state.get(Number(r.id))?.due ?? null,
+        extra: JSON.parse(r.extra ?? '{}'),
+      })),
     });
   });
   app.post('/api/decks/:id/cards', async (c) => {
@@ -84,7 +158,17 @@ export function createApp() {
     const b = await c.req.json();
     if (!b.front?.trim()) return err(c, 'Front required');
     const sourceId = stableId(`${deck.name}\u0000manual\u0000${Date.now()}\u0000${Math.random()}`);
-    upsertCards(deck, [{ ...b, altAnswers: b.alt, image: b.image || undefined, audio: b.audio || undefined, video: b.video || undefined, sourceId, tags: typeof b.tags === 'string' ? b.tags.split(/[\s,]+/) : b.tags }]);
+    upsertCards(deck, [
+      {
+        ...b,
+        altAnswers: b.alt,
+        image: b.image || undefined,
+        audio: b.audio || undefined,
+        video: b.video || undefined,
+        sourceId,
+        tags: typeof b.tags === 'string' ? b.tags.split(/[\s,]+/) : b.tags,
+      },
+    ]);
     return c.json({ id: sourceId });
   });
   app.put('/api/cards/:id', async (c) => {
@@ -93,13 +177,37 @@ export function createApp() {
     const r = d.prepare('SELECT * FROM items WHERE id = ?').get(id);
     if (!r) return err(c, 'Card not found', 404);
     const b = await c.req.json();
-    if (typeof b.suspended === 'boolean') d.prepare('UPDATE items SET suspended = ? WHERE id = ?').run(b.suspended ? 1 : 0, id);
-    if (typeof b.starred === 'boolean') d.prepare('UPDATE items SET starred = ? WHERE id = ?').run(b.starred ? 1 : 0, id);
+    if (typeof b.suspended === 'boolean')
+      d.prepare('UPDATE items SET suspended = ? WHERE id = ?').run(b.suspended ? 1 : 0, id);
+    if (typeof b.starred === 'boolean')
+      d.prepare('UPDATE items SET starred = ? WHERE id = ?').run(b.starred ? 1 : 0, id);
     if (b.front !== undefined) {
       const deck = getDeck(Number(r.deck_id))!;
-      upsertCards(deck, [{ sourceId: id, front: b.front, back: b.back ?? '', example: b.example, exampleTranslation: b.exampleTranslation, explanation: b.explanation, notes: b.notes,
-        image: b.image || undefined, audio: b.audio || undefined, video: b.video || undefined, category: b.category, tags: typeof b.tags === 'string' ? b.tags.split(/[\s,]+/) : b.tags, subdeck: r.deck, group: r.grp, rank: Number(r.rank),
-        type: b.type, choices: b.choices, correct: b.correct, steps: b.steps, altAnswers: b.alt, extra: JSON.parse(r.extra ?? '{}') }]);
+      upsertCards(deck, [
+        {
+          sourceId: id,
+          front: b.front,
+          back: b.back ?? '',
+          example: b.example,
+          exampleTranslation: b.exampleTranslation,
+          explanation: b.explanation,
+          notes: b.notes,
+          image: b.image || undefined,
+          audio: b.audio || undefined,
+          video: b.video || undefined,
+          category: b.category,
+          tags: typeof b.tags === 'string' ? b.tags.split(/[\s,]+/) : b.tags,
+          subdeck: r.deck,
+          group: r.grp,
+          rank: Number(r.rank),
+          type: b.type,
+          choices: b.choices,
+          correct: b.correct,
+          steps: b.steps,
+          altAnswers: b.alt,
+          extra: JSON.parse(r.extra ?? '{}'),
+        },
+      ]);
     }
     return c.json({ ok: true });
   });
@@ -123,7 +231,9 @@ export function createApp() {
       });
       setMeta(getDb(), 'activeDeck', res.deck.id);
       return c.json(res);
-    } catch (e) { return err(c, e); }
+    } catch (e) {
+      return err(c, e);
+    }
   });
   app.post('/api/import/text', async (c) => {
     const b = await c.req.json();
@@ -142,7 +252,8 @@ export function createApp() {
   });
   app.post('/api/import/anki', async (c) => {
     const b = await c.req.json().catch(() => ({}));
-    if (!(await ankiAvailable())) return err(c, 'Anki is not reachable. Open Anki (with the AnkiConnect add-on) and try again.', 503);
+    if (!(await ankiAvailable()))
+      return err(c, 'Anki is not reachable. Open Anki (with the AnkiConnect add-on) and try again.', 503);
     void runAnkiImport(b.source, b.deckName);
     return c.json({ started: true });
   });
@@ -165,13 +276,20 @@ export function createApp() {
     const file = basename(c.req.param('file'));
     const buf = readMedia(file);
     if (!buf) return c.notFound();
-    return new Response(buf as unknown as BodyInit, { headers: { 'Content-Type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream', 'Cache-Control': 'max-age=31536000' } });
+    return new Response(buf as unknown as BodyInit, {
+      headers: {
+        'Content-Type': MIME[extname(file).toLowerCase()] ?? 'application/octet-stream',
+        'Cache-Control': 'max-age=31536000',
+      },
+    });
   });
 
   /* ── Study ─────────────────────────────────────────── */
   app.post('/api/session', async (c) => {
     const body = await c.req.json().catch(() => ({}));
-    const length = (['mini', 'standard', 'long'].includes(body.length) ? body.length : getSettings().sessionLength) as SessionLength;
+    const length = (
+      ['mini', 'standard', 'long'].includes(body.length) ? body.length : getSettings().sessionLength
+    ) as SessionLength;
     return c.json(planSession(length, getDb(), new Date(), body.deckId ?? activeDeckId()));
   });
   app.post('/api/attempt', async (c) => c.json(recordAttempt((await c.req.json()) as Attempt)));

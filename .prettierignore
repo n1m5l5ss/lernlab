@@ -6,4 +6,10 @@ data/
 examples/
 package-lock.json
 CHANGELOG.md
-docs/design/canvas/
+# Prose is left as written: docs/PLAN.md is kept in step with a Claude doc, and
+# reflowing tables and lists would hide real changes in review.
+*.md
+# Design exports and data fixtures are generated elsewhere.
+docs/design/
+apps/desktop/test/fixture-notes.json
+scripts/backlog.json

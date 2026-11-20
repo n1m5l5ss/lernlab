@@ -16,11 +16,19 @@ function useCountdown(seconds: number, onEnd: () => void) {
   const end = useRef(onEnd);
   end.current = onEnd;
   useEffect(() => {
-    const t = setInterval(() => setLeft((l) => {
-      if (l <= 1) { clearInterval(t); setTimeout(() => end.current(), 0); return 0; }
-      if (l <= 6) sfx.tick();
-      return l - 1;
-    }), 1000);
+    const t = setInterval(
+      () =>
+        setLeft((l) => {
+          if (l <= 1) {
+            clearInterval(t);
+            setTimeout(() => end.current(), 0);
+            return 0;
+          }
+          if (l <= 6) sfx.tick();
+          return l - 1;
+        }),
+      1000,
+    );
     return () => clearInterval(t);
   }, []);
   return left;
@@ -55,30 +63,73 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
     const ok = c === item.category;
     const st = stats.current;
     st.total++;
-    if (ok) { st.correct++; st.combo++; st.best = Math.max(st.best, st.combo); } else st.combo = 0;
+    if (ok) {
+      st.correct++;
+      st.combo++;
+      st.best = Math.max(st.best, st.combo);
+    } else st.combo = 0;
     ctx.answer({ itemId: item.id, format: 'gender', genderOnly: true, correct: ok, shownAt: shown.current });
     setFlash({ ok, cat: item.category! });
-    setTimeout(() => { setFlash(null); setIdx((i) => i + 1); shown.current = now(); }, ok ? 220 : 900);
+    setTimeout(
+      () => {
+        setFlash(null);
+        setIdx((i) => i + 1);
+        shown.current = now();
+      },
+      ok ? 220 : 900,
+    );
   };
   useKeys((e) => {
-    const keys: Record<string, number> = { '1': 0, '2': 1, '3': 2, '4': 3, ArrowLeft: 0, ArrowDown: 1, ArrowRight: 2, j: 0, k: 1, l: 2 };
-    if (e.key in keys && cats[keys[e.key]]) { e.preventDefault(); pick(cats[keys[e.key]]); }
+    const keys: Record<string, number> = {
+      '1': 0,
+      '2': 1,
+      '3': 2,
+      '4': 3,
+      ArrowLeft: 0,
+      ArrowDown: 1,
+      ArrowRight: 2,
+      j: 0,
+      k: 1,
+      l: 2,
+    };
+    if (e.key in keys && cats[keys[e.key]]) {
+      e.preventDefault();
+      pick(cats[keys[e.key]]);
+    }
   });
   const label = isArticles ? item.word : stripHtml(item.target);
   return (
     <div>
-      <div className="timer"><i style={{ width: `${(left / block.seconds) * 100}%` }} /></div>
-      <div className="row"><div className="blocktitle grow">{isArticles ? 'Der · die · das' : 'Category sprint'} · {left}s</div><span className="pill">✓ {stats.current.correct}</span><span className="pill">Best {best}</span></div>
+      <div className="timer">
+        <i style={{ width: `${(left / block.seconds) * 100}%` }} />
+      </div>
+      <div className="row">
+        <div className="blocktitle grow">
+          {isArticles ? 'Der · die · das' : 'Category sprint'} · {left}s
+        </div>
+        <span className="pill">✓ {stats.current.correct}</span>
+        <span className="pill">Best {best}</span>
+      </div>
       <div className="center" style={{ margin: '28px 0' }}>
         <div className="prompt de" style={{ fontSize: label.length > 24 ? 34 : 52, marginBottom: 4 }}>
-          {flash && isArticles ? <span className={`art-${flash.cat}`}>{flash.cat} </span> : null}{label}
+          {flash && isArticles ? <span className={`art-${flash.cat}`}>{flash.cat} </span> : null}
+          {label}
         </div>
         <div className="muted">{isArticles ? item.meaning : ''}</div>
-        {flash && !isArticles && <div className={`feedback ${flash.ok ? 'right' : 'wrong'}`} style={{ display: 'inline-block' }}>{flash.cat}</div>}
+        {flash && !isArticles && (
+          <div className={`feedback ${flash.ok ? 'right' : 'wrong'}`} style={{ display: 'inline-block' }}>
+            {flash.cat}
+          </div>
+        )}
       </div>
       <div className="gender3" style={{ gridTemplateColumns: `repeat(${cats.length}, 1fr)` }}>
         {cats.map((c, i) => (
-          <button key={c} className={`gbtn ${isArticles ? c : `cat-${i}`} ${flash && c !== flash.cat ? 'dim' : ''}`} style={{ fontSize: c.length > 8 ? 18 : undefined }} onClick={() => pick(c)}>
+          <button
+            key={c}
+            className={`gbtn ${isArticles ? c : `cat-${i}`} ${flash && c !== flash.cat ? 'dim' : ''}`}
+            style={{ fontSize: c.length > 8 ? 18 : undefined }}
+            onClick={() => pick(c)}
+          >
             {c} <span className="kbd">{i + 1}</span>
           </button>
         ))}
@@ -98,7 +149,10 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
   const missedOnce = useRef(new Set<number>());
   const start = useRef(now());
   const [elapsed, setElapsed] = useState(0);
-  useEffect(() => { const t = setInterval(() => setElapsed(Math.floor((now() - start.current) / 1000)), 250); return () => clearInterval(t); }, []);
+  useEffect(() => {
+    const t = setInterval(() => setElapsed(Math.floor((now() - start.current) / 1000)), 250);
+    return () => clearInterval(t);
+  }, []);
 
   const pickRight = (it: Item) => {
     if (sel === null) return;
@@ -122,16 +176,34 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
 
   return (
     <div>
-      <div className="row"><div className="blocktitle grow">Match pairs</div><span className="pill">⏱ {elapsed}s</span></div>
+      <div className="row">
+        <div className="blocktitle grow">Match pairs</div>
+        <span className="pill">⏱ {elapsed}s</span>
+      </div>
       <div className="match" style={{ marginTop: 10 }}>
         <div className="col">
           {left.map((it) => (
-            <button key={it.id} className={`${gone.has(it.id) ? 'gone' : ''} ${sel === it.id ? 'sel' : ''}`} onClick={() => { sfx.tap(); setSel(it.id); }}>{stripHtml(it.target)}</button>
+            <button
+              key={it.id}
+              className={`${gone.has(it.id) ? 'gone' : ''} ${sel === it.id ? 'sel' : ''}`}
+              onClick={() => {
+                sfx.tap();
+                setSel(it.id);
+              }}
+            >
+              {stripHtml(it.target)}
+            </button>
           ))}
         </div>
         <div className="col">
           {right.map((it) => (
-            <button key={it.id} className={`${gone.has(it.id) ? 'gone' : ''} ${bad === `r${it.id}` ? 'bad' : ''}`} onClick={() => pickRight(it)}>{stripHtml(it.meaning)}</button>
+            <button
+              key={it.id}
+              className={`${gone.has(it.id) ? 'gone' : ''} ${bad === `r${it.id}` ? 'bad' : ''}`}
+              onClick={() => pickRight(it)}
+            >
+              {stripHtml(it.meaning)}
+            </button>
           ))}
         </div>
       </div>
@@ -150,11 +222,18 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
   const keyN = useRef(0);
   const done = useRef(false);
   const input = useRef<HTMLInputElement>(null);
-  const finish = () => { if (!done.current) { done.current = true; onDone({ correct: score.hit, total: score.hit + score.miss }); } };
+  const finish = () => {
+    if (!done.current) {
+      done.current = true;
+      onDone({ correct: score.hit, total: score.hit + score.miss });
+    }
+  };
   const left = useCountdown(block.seconds, finish);
   const elapsed = block.seconds - left;
 
-  useEffect(() => { input.current?.focus(); }, []);
+  useEffect(() => {
+    input.current?.focus();
+  }, []);
   useEffect(() => {
     let raf = 0;
     let last = now();
@@ -169,13 +248,24 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
         const landed = out.filter((d) => !d.hit && d.y > 350);
         if (landed.length) {
           sfx.wrong();
-          landed.forEach((d) => ctx.answer({ itemId: d.item.id, format: 'rain', correct: false, shownAt: t, silent: true }));
+          landed.forEach((d) =>
+            ctx.answer({ itemId: d.item.id, format: 'rain', correct: false, shownAt: t, silent: true }),
+          );
           setScore((s) => ({ ...s, miss: s.miss + landed.length }));
           out = out.filter((d) => !landed.includes(d));
         }
         if (spawnIn <= 0 && out.filter((d) => !d.hit).length < 4 && !done.current) {
           const item = items[next.current++ % items.length];
-          out = [...out, { key: keyN.current++, item, x: 15 + Math.random() * 70, y: 0, speed: 26 + Math.min(40, next.current * 2.2) }];
+          out = [
+            ...out,
+            {
+              key: keyN.current++,
+              item,
+              x: 15 + Math.random() * 70,
+              y: 0,
+              speed: 26 + Math.min(40, next.current * 2.2),
+            },
+          ];
           spawnIn = Math.max(1.1, 2.6 - next.current * 0.08);
         }
         return out;
@@ -188,10 +278,14 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
 
   const tryType = (v: string) => {
     setValue(v);
-    const target = drops.find((d) => !d.hit && qa(d.item).accepted.some((a) => {
-      const bare = splitArticle(a).word;
-      return normalize(v) === normalize(a) || normalize(v) === normalize(bare);
-    }));
+    const target = drops.find(
+      (d) =>
+        !d.hit &&
+        qa(d.item).accepted.some((a) => {
+          const bare = splitArticle(a).word;
+          return normalize(v) === normalize(a) || normalize(v) === normalize(bare);
+        }),
+    );
     if (target) {
       ctx.answer({ itemId: target.item.id, format: 'rain', correct: true, shownAt: now() - 3000 });
       setScore((s) => ({ ...s, hit: s.hit + 1 }));
@@ -203,23 +297,45 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
 
   return (
     <div>
-      <div className="timer"><i style={{ width: `${(left / block.seconds) * 100}%` }} /></div>
-      <div className="row"><div className="blocktitle grow">Word rain · {left}s</div><span className="pill">💥 {score.hit}</span><span className="pill">💧 {score.miss}</span></div>
+      <div className="timer">
+        <i style={{ width: `${(left / block.seconds) * 100}%` }} />
+      </div>
+      <div className="row">
+        <div className="blocktitle grow">Word rain · {left}s</div>
+        <span className="pill">💥 {score.hit}</span>
+        <span className="pill">💧 {score.miss}</span>
+      </div>
       <div className="rain" style={{ marginTop: 8 }}>
         {drops.map((d) => (
-          <div key={d.key} className={`drop ${d.hit ? 'hit' : ''}`} style={{ left: `${d.x}%`, top: d.y }}>{d.hit ? qa(d.item).answer : stripHtml(qa(d.item).prompt)}</div>
+          <div key={d.key} className={`drop ${d.hit ? 'hit' : ''}`} style={{ left: `${d.x}%`, top: d.y }}>
+            {d.hit ? qa(d.item).answer : stripHtml(qa(d.item).prompt)}
+          </div>
         ))}
         <div className="ground" />
       </div>
-      <input ref={input} className="typed" style={{ marginTop: 12 }} value={value} onChange={(e) => tryType(e.target.value)} placeholder="Type the answer…" spellCheck={false} autoComplete="off" />
-      <div className="small muted" style={{ marginTop: 6 }}>{ctx.lang === 'de' ? 'Article optional here. ' : ''}Speed rises as you go ({elapsed}s in).</div>
+      <input
+        ref={input}
+        className="typed"
+        style={{ marginTop: 12 }}
+        value={value}
+        onChange={(e) => tryType(e.target.value)}
+        placeholder="Type the answer…"
+        spellCheck={false}
+        autoComplete="off"
+      />
+      <div className="small muted" style={{ marginTop: 6 }}>
+        {ctx.lang === 'de' ? 'Article optional here. ' : ''}Speed rises as you go ({elapsed}s in).
+      </div>
     </div>
   );
 }
 
 /* ───────────── Boss battle: today's mistakes and your hardest words; three lives ───────────── */
 export function Boss({ block, ctx, onDone }: G<'boss'>) {
-  const ids = useMemo(() => [...new Set([...ctx.missed, ...block.itemIds])].filter((id) => ctx.item(id)?.kind !== 'grammar').slice(0, 8), []);
+  const ids = useMemo(
+    () => [...new Set([...ctx.missed, ...block.itemIds])].filter((id) => ctx.item(id)?.kind !== 'grammar').slice(0, 8),
+    [],
+  );
   const [i, setI] = useState(0);
   const [hp, setHp] = useState(ids.length);
   const [lives, setLives] = useState(block.lives);
@@ -227,17 +343,36 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
   const [over, setOver] = useState<null | boolean>(null);
   const correct = useRef(0);
 
-  useEffect(() => { if (!ids.length) onDone({ correct: 0, total: 0, bossWon: null }); }, []);
-  useKeys((e) => { if (over !== null && e.key === 'Enter') onDone({ correct: correct.current, total: i, bossWon: over }); });
+  useEffect(() => {
+    if (!ids.length) onDone({ correct: 0, total: 0, bossWon: null });
+  }, []);
+  useKeys((e) => {
+    if (over !== null && e.key === 'Enter') onDone({ correct: correct.current, total: i, bossWon: over });
+  });
   if (!ids.length) return null;
 
   const after = (r: { correct: boolean }) => {
     const h = r.correct ? hp - 1 : hp;
     const l = r.correct ? lives : lives - 1;
-    if (r.correct) { correct.current++; sfx.hit(); setHit(true); setTimeout(() => setHit(false), 300); }
-    setHp(h); setLives(l);
-    if (h <= 0) { setOver(true); sfx.win(); ctx.teacher(ctx.t.bossWin()); return; }
-    if (l <= 0) { setOver(false); ctx.teacher(ctx.t.bossLose()); return; }
+    if (r.correct) {
+      correct.current++;
+      sfx.hit();
+      setHit(true);
+      setTimeout(() => setHit(false), 300);
+    }
+    setHp(h);
+    setLives(l);
+    if (h <= 0) {
+      setOver(true);
+      sfx.win();
+      ctx.teacher(ctx.t.bossWin());
+      return;
+    }
+    if (l <= 0) {
+      setOver(false);
+      ctx.teacher(ctx.t.bossLose());
+      return;
+    }
     setI((x) => x + 1);
   };
 
@@ -248,21 +383,56 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
       <div className="boss">
         <div className={`bossface ${hit ? 'hit' : ''}`}>{over === true ? '💀' : '👾'}</div>
         <div className="hp">
-          <div className="row"><b className="grow">Boss</b><span className="lives">{'❤️'.repeat(Math.max(0, lives))}{'🖤'.repeat(Math.max(0, block.lives - lives))}</span></div>
-          <div className="bar"><i style={{ width: `${(hp / ids.length) * 100}%` }} /></div>
+          <div className="row">
+            <b className="grow">Boss</b>
+            <span className="lives">
+              {'❤️'.repeat(Math.max(0, lives))}
+              {'🖤'.repeat(Math.max(0, block.lives - lives))}
+            </span>
+          </div>
+          <div className="bar">
+            <i style={{ width: `${(hp / ids.length) * 100}%` }} />
+          </div>
         </div>
       </div>
       {over === null ? (
         ex.type === 'typed' ? (
-          <TypedEngine key={i} ctx={ctx} itemId={item.id} format="boss" accepted={ex.accepted} requireArticle={ex.requireArticle} hint={ex.hint}
+          <TypedEngine
+            key={i}
+            ctx={ctx}
+            itemId={item.id}
+            format="boss"
+            accepted={ex.accepted}
+            requireArticle={ex.requireArticle}
+            hint={ex.hint}
             onNext={after}
-            render={(input) => (<><Media item={item} size="sm" /><div className="prompt"><Rich html={ex.prompt} /></div>{input}</>)} />
-        ) : ex.type === 'flip' ? <Flip key={i} ex={ex} ctx={ctx} onNext={after} format="boss" /> : null
+            render={(input) => (
+              <>
+                <Media item={item} size="sm" />
+                <div className="prompt">
+                  <Rich html={ex.prompt} />
+                </div>
+                {input}
+              </>
+            )}
+          />
+        ) : ex.type === 'flip' ? (
+          <Flip key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
+        ) : null
       ) : (
         <div className="card center">
-          <div className="big" style={{ fontSize: 40, fontWeight: 900 }}>{over ? 'Defeated! 🏆' : 'Not yet…'}</div>
-          <p className="muted">{over ? `+30 XP bonus. ${correct.current} hits.` : 'These cards come back tomorrow. No penalty.'}</p>
-          <button className="btn primary" onClick={() => onDone({ correct: correct.current, total: i + 1, bossWon: over })}>Continue <span className="kbd">Enter</span></button>
+          <div className="big" style={{ fontSize: 40, fontWeight: 900 }}>
+            {over ? 'Defeated! 🏆' : 'Not yet…'}
+          </div>
+          <p className="muted">
+            {over ? `+30 XP bonus. ${correct.current} hits.` : 'These cards come back tomorrow. No penalty.'}
+          </p>
+          <button
+            className="btn primary"
+            onClick={() => onDone({ correct: correct.current, total: i + 1, bossWon: over })}
+          >
+            Continue <span className="kbd">Enter</span>
+          </button>
         </div>
       )}
     </div>

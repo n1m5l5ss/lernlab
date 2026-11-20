@@ -16,7 +16,17 @@ const unz = (b: Uint8Array) => (isZstd(b) ? decompress(b) : b);
 function mediaNamesFromProto(buf: Uint8Array): string[] {
   const names: string[] = [];
   let i = 0;
-  const varint = (): number => { let r = 0, s = 0, b; do { b = buf[i++]; r += (b & 0x7f) * 2 ** s; s += 7; } while (b & 0x80); return r; };
+  const varint = (): number => {
+    let r = 0,
+      s = 0,
+      b;
+    do {
+      b = buf[i++];
+      r += (b & 0x7f) * 2 ** s;
+      s += 7;
+    } while (b & 0x80);
+    return r;
+  };
   while (i < buf.length) {
     const key = varint();
     const wire = key & 7;
@@ -27,8 +37,11 @@ function mediaNamesFromProto(buf: Uint8Array): string[] {
         let name = '';
         while (i < end) {
           const k = varint();
-          if ((k & 7) === 2) { const l = varint(); if (k >> 3 === 1) name = new TextDecoder().decode(buf.subarray(i, i + l)); i += l; }
-          else if ((k & 7) === 0) varint();
+          if ((k & 7) === 2) {
+            const l = varint();
+            if (k >> 3 === 1) name = new TextDecoder().decode(buf.subarray(i, i + l));
+            i += l;
+          } else if ((k & 7) === 0) varint();
           else if ((k & 7) === 5) i += 4;
           else if ((k & 7) === 1) i += 8;
         }
@@ -77,23 +90,31 @@ export function readApkg(buf: Uint8Array): ApkgResult {
         fieldNames.set(Number(r.ntid), arr);
       }
       // Anki separates deck levels with the \x1f control character.
-      // eslint-disable-next-line no-control-regex
-      for (const r of db.prepare('SELECT id, name FROM decks').all() as any[]) deckNames.set(Number(r.id), String(r.name).replace(/\x1f/g, '::'));
+      for (const r of db.prepare('SELECT id, name FROM decks').all() as any[])
+        // eslint-disable-next-line no-control-regex
+        deckNames.set(Number(r.id), String(r.name).replace(/\x1f/g, '::'));
     } else {
       const col = db.prepare('SELECT models, decks FROM col').get() as any;
-      for (const m of Object.values(JSON.parse(col.models)) as any[]) fieldNames.set(Number(m.id), m.flds.sort((a: any, b: any) => a.ord - b.ord).map((f: any) => f.name));
+      for (const m of Object.values(JSON.parse(col.models)) as any[])
+        fieldNames.set(
+          Number(m.id),
+          m.flds.sort((a: any, b: any) => a.ord - b.ord).map((f: any) => f.name),
+        );
       for (const dk of Object.values(JSON.parse(col.decks)) as any[]) deckNames.set(Number(dk.id), dk.name);
     }
 
     const noteDeck = new Map<number, number>();
-    for (const r of db.prepare('SELECT nid, did FROM cards ORDER BY ord').all() as any[]) if (!noteDeck.has(Number(r.nid))) noteDeck.set(Number(r.nid), Number(r.did));
+    for (const r of db.prepare('SELECT nid, did FROM cards ORDER BY ord').all() as any[])
+      if (!noteDeck.has(Number(r.nid))) noteDeck.set(Number(r.nid), Number(r.did));
 
     const cards: NormalizedCard[] = [];
     const usedDecks = new Set<string>();
     for (const n of db.prepare('SELECT id, mid, flds, tags FROM notes').all() as any[]) {
       const values: string[] = String(n.flds).split('\x1f');
       if (values.length === 1 && /please update to the latest anki/i.test(values[0])) continue; // placeholder in new exports
-      const names = fieldNames.get(Number(n.mid)) ?? values.map((_, i) => (i === 0 ? 'Front' : i === 1 ? 'Back' : `Field ${i + 1}`));
+      const names =
+        fieldNames.get(Number(n.mid)) ??
+        values.map((_, i) => (i === 0 ? 'Front' : i === 1 ? 'Back' : `Field ${i + 1}`));
       const card: any = { sourceId: Number(n.id), tags: String(n.tags).trim().split(/\s+/).filter(Boolean), extra: {} };
       const all = values.join(' ');
       const sound = all.match(/\[sound:([^\]]+)\]/)?.[1];
@@ -101,20 +122,33 @@ export function readApkg(buf: Uint8Array): ApkgResult {
       if (sound) card.audio = sound;
       if (img) card.image = decodeURIComponent(img);
       names.forEach((name, i) => {
-        const raw = (values[i] ?? '').replace(/\[sound:[^\]]+\]/g, '').replace(/<img[^>]*>/gi, '').trim();
+        const raw = (values[i] ?? '')
+          .replace(/\[sound:[^\]]+\]/g, '')
+          .replace(/<img[^>]*>/gi, '')
+          .trim();
         if (!raw) return;
         const hit = FIELD_MAP.find(([, re]) => re.test(name.trim()));
-        if (hit && !card[hit[0]] && hit[0] !== 'reading') card[hit[0]] = hit[0] === 'rank' ? Number(stripHtml(raw)) || undefined : raw;
+        if (hit && !card[hit[0]] && hit[0] !== 'reading')
+          card[hit[0]] = hit[0] === 'rank' ? Number(stripHtml(raw)) || undefined : raw;
         else if (hit?.[0] === 'reading') card.extra.reading = stripHtml(raw);
         else card.extra[name] = raw;
       });
       // Fall back to the first two non-empty fields.
-      const plain = names.map((_, i) => (values[i] ?? '').replace(/\[sound:[^\]]+\]/g, '').replace(/<img[^>]*>/gi, '').trim());
+      const plain = names.map((_, i) =>
+        (values[i] ?? '')
+          .replace(/\[sound:[^\]]+\]/g, '')
+          .replace(/<img[^>]*>/gi, '')
+          .trim(),
+      );
       if (!card.front) card.front = plain.find((v) => v) ?? '';
       if (!card.back) card.back = plain.find((v) => v && v !== card.front) ?? '';
-      if (/\{\{c\d+::/.test(card.back) && !/\{\{c\d+::/.test(card.front)) [card.front, card.back] = [card.back, card.front];
+      if (/\{\{c\d+::/.test(card.back) && !/\{\{c\d+::/.test(card.front))
+        [card.front, card.back] = [card.back, card.front];
       const deckName = deckNames.get(noteDeck.get(Number(n.id)) ?? -1);
-      if (deckName) { card.subdeck = deckName; usedDecks.add(deckName); }
+      if (deckName) {
+        card.subdeck = deckName;
+        usedDecks.add(deckName);
+      }
       cards.push(card);
     }
     db.close();
@@ -124,7 +158,10 @@ export function readApkg(buf: Uint8Array): ApkgResult {
     if (files.media) {
       const raw = files.media;
       let names: Record<string, string> = {};
-      if (isZstd(raw)) mediaNamesFromProto(decompress(raw)).forEach((n, i) => { names[String(i)] = n; });
+      if (isZstd(raw))
+        mediaNamesFromProto(decompress(raw)).forEach((n, i) => {
+          names[String(i)] = n;
+        });
       else names = JSON.parse(strFromU8(raw));
       for (const [k, name] of Object.entries(names)) if (files[k]) media[name] = unz(files[k]);
     }

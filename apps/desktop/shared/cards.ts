@@ -10,35 +10,81 @@ const SHORT = (s: string) => s.length > 0 && s.length <= 40 && s.split(/\s+/).le
  * Other subjects: if the back is short, ask front → type back (Q→A); else if the front is short,
  * ask back → type front (definition → term, Quizlet style); if both are long, it's a self-graded flip.
  */
-export function qa(item: Item): { prompt: string; answer: string; accepted: string[]; requireArticle: boolean; typeable: boolean } {
-  const alts = (item.extra?.alt ?? '').split('|').map((x) => x.trim()).filter(Boolean);
+export function qa(item: Item): {
+  prompt: string;
+  answer: string;
+  accepted: string[];
+  requireArticle: boolean;
+  typeable: boolean;
+} {
+  const alts = (item.extra?.alt ?? '')
+    .split('|')
+    .map((x) => x.trim())
+    .filter(Boolean);
   const withAlts = (a: string[]) => [...new Set([...a, ...alts])];
   if (item.kind === 'mcq' || item.kind === 'order') {
-    return { prompt: item.target, answer: item.meaning, accepted: [stripHtml(item.meaning)], requireArticle: false, typeable: false };
+    return {
+      prompt: item.target,
+      answer: item.meaning,
+      accepted: [stripHtml(item.meaning)],
+      requireArticle: false,
+      typeable: false,
+    };
   }
   if (item.lang) {
-    return { prompt: item.meaning, answer: item.target, accepted: withAlts(acceptedAnswers(item.target)), requireArticle: item.kind === 'noun', typeable: SHORT(stripHtml(item.target)) || item.kind === 'phrase' };
+    return {
+      prompt: item.meaning,
+      answer: item.target,
+      accepted: withAlts(acceptedAnswers(item.target)),
+      requireArticle: item.kind === 'noun',
+      typeable: SHORT(stripHtml(item.target)) || item.kind === 'phrase',
+    };
   }
   const front = stripHtml(item.target);
   const back = stripHtml(item.meaning);
-  if (SHORT(back)) return { prompt: item.target, answer: back, accepted: withAlts(acceptedAnswers(back)), requireArticle: false, typeable: true };
-  if (SHORT(front)) return { prompt: item.meaning, answer: front, accepted: withAlts(acceptedAnswers(front)), requireArticle: false, typeable: true };
+  if (SHORT(back))
+    return {
+      prompt: item.target,
+      answer: back,
+      accepted: withAlts(acceptedAnswers(back)),
+      requireArticle: false,
+      typeable: true,
+    };
+  if (SHORT(front))
+    return {
+      prompt: item.meaning,
+      answer: front,
+      accepted: withAlts(acceptedAnswers(front)),
+      requireArticle: false,
+      typeable: true,
+    };
   return { prompt: item.target, answer: item.meaning, accepted: [back], requireArticle: false, typeable: false };
 }
 
 /** Choices for a multiple-choice / multi-select question card ("A|B|C|D", correct "2|4" or by text). */
 export function mcqOf(item: Item): { choices: string[]; correct: number[] } | null {
-  const choices = (item.extra?.choices ?? '').split('|').map((c) => c.trim()).filter(Boolean);
+  const choices = (item.extra?.choices ?? '')
+    .split('|')
+    .map((c) => c.trim())
+    .filter(Boolean);
   if (choices.length < 2) return null;
-  const raw = (item.extra?.correct ?? stripHtml(item.meaning)).split('|').map((c) => c.trim()).filter(Boolean);
-  const correct = raw.map((r) => (/^\d+$/.test(r) ? Number(r) - 1 : choices.findIndex((c) => c.toLowerCase() === r.toLowerCase()))).filter((i) => i >= 0 && i < choices.length);
+  const raw = (item.extra?.correct ?? stripHtml(item.meaning))
+    .split('|')
+    .map((c) => c.trim())
+    .filter(Boolean);
+  const correct = raw
+    .map((r) => (/^\d+$/.test(r) ? Number(r) - 1 : choices.findIndex((c) => c.toLowerCase() === r.toLowerCase())))
+    .filter((i) => i >= 0 && i < choices.length);
   return correct.length ? { choices, correct: [...new Set(correct)] } : null;
 }
 
 /** Steps of an ordering card ("first|second|third"), from extra.steps or the back. */
 export function stepsOf(item: Item): string[] {
   const raw = item.extra?.steps ?? stripHtml(item.meaning);
-  return raw.split(/\s*\|\s*|\n/).map((x) => x.trim()).filter(Boolean);
+  return raw
+    .split(/\s*\|\s*|\n/)
+    .map((x) => x.trim())
+    .filter(Boolean);
 }
 
 /** Anki/LernLab cloze syntax: {{c1::answer}} or {{c1::answer::hint}}. Returns the first cloze as a gap. */
@@ -58,7 +104,27 @@ export function parseCloze(text: string): { before: string; answer: string; hint
 /** Plain-text version of a cloze card (all gaps filled), for lists and match games. */
 export const clozeText = (text: string) => text.replace(/\{\{c\d+::(.*?)(?:::.*?)?\}\}/g, '$1');
 
-const ALLOWED = new Set(['b', 'strong', 'i', 'em', 'u', 'br', 'sup', 'sub', 'code', 'pre', 'ul', 'ol', 'li', 'p', 'small', 'span', 'div', 'mark', 's']);
+const ALLOWED = new Set([
+  'b',
+  'strong',
+  'i',
+  'em',
+  'u',
+  'br',
+  'sup',
+  'sub',
+  'code',
+  'pre',
+  'ul',
+  'ol',
+  'li',
+  'p',
+  'small',
+  'span',
+  'div',
+  'mark',
+  's',
+]);
 
 /** Shared decks are untrusted: keep a few formatting tags, drop every attribute and everything else. */
 export function sanitizeHtml(html: string): string {

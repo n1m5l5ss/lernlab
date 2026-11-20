@@ -15,9 +15,16 @@ export function startMockAnki(port = 8799): Promise<Server> {
       const { action, params } = JSON.parse(body || '{}');
       let result: any = null;
       if (action === 'version') result = 6;
-      else if (action === 'findNotes') result = notes.filter((n: any) => n.deck.startsWith(params.query.match(/deck:"([^"]+)"/)[1])).map((n: any) => n.noteId);
-      else if (action === 'notesInfo') result = notes.filter((n: any) => params.notes.includes(n.noteId)).map(({ deck, ...n }: any) => n);
-      else if (action === 'cardsInfo') result = notes.filter((n: any) => params.cards.includes(n.cards[0])).map((n: any) => ({ cardId: n.cards[0], note: n.noteId, deckName: n.deck }));
+      else if (action === 'findNotes')
+        result = notes
+          .filter((n: any) => n.deck.startsWith(params.query.match(/deck:"([^"]+)"/)[1]))
+          .map((n: any) => n.noteId);
+      else if (action === 'notesInfo')
+        result = notes.filter((n: any) => params.notes.includes(n.noteId)).map(({ deck, ...n }: any) => n);
+      else if (action === 'cardsInfo')
+        result = notes
+          .filter((n: any) => params.cards.includes(n.cards[0]))
+          .map((n: any) => ({ cardId: n.cards[0], note: n.noteId, deckName: n.deck }));
       else if (action === 'retrieveMediaFile') result = FAKE_MP3;
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ result, error: null }));

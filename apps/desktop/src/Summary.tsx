@@ -17,39 +17,86 @@ const HOMEWORK = [
   ['Skim your weak cards in Stats before bed.', ''],
 ];
 
-export function Summary({ result, server, lang, onAgain, onHome }: { result: SessionResult; server: any; lang: string | null; onAgain: () => void; onHome: () => void }) {
+export function Summary({
+  result,
+  server,
+  lang,
+  onAgain,
+  onHome,
+}: {
+  result: SessionResult;
+  server: any;
+  lang: string | null;
+  onAgain: () => void;
+  onHome: () => void;
+}) {
   const acc = result.answers ? Math.round((result.correct / result.answers) * 100) : 0;
   const [done, doneEn] = teacherFor(lang).done();
   const list = lang === 'de' ? HOMEWORK_DE : HOMEWORK;
   const hw = list[new Date().getDate() % list.length];
   useEffect(() => {
     sfx.win();
-    if (server?.goalMetNow || server?.unlocked?.length) confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
+    if (server?.goalMetNow || server?.unlocked?.length)
+      confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 } });
   }, []);
-  useKeys((e) => { if (e.key === 'Enter') onHome(); if (e.key === ' ') { e.preventDefault(); onAgain(); } });
+  useKeys((e) => {
+    if (e.key === 'Enter') onHome();
+    if (e.key === ' ') {
+      e.preventDefault();
+      onAgain();
+    }
+  });
   return (
     <div className="wrap summary col" style={{ gap: 16 }}>
       <div className="teacher" style={{ justifyContent: 'center' }}>
         <div className="avatar">L</div>
-        <div className="bubble" style={{ textAlign: 'left' }}><div>{done}</div>{doneEn && <div className="en">{doneEn}</div>}</div>
+        <div className="bubble" style={{ textAlign: 'left' }}>
+          <div>{done}</div>
+          {doneEn && <div className="en">{doneEn}</div>}
+        </div>
       </div>
       <div className="big">+{result.xp + (server?.bonus ?? 0)} XP</div>
       <div className="statgrid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
-        <div className="stat"><b>{acc}%</b><span>accuracy</span></div>
-        <div className="stat"><b>{result.answers}</b><span>answers</span></div>
-        <div className="stat"><b>{Math.max(1, Math.round(result.seconds / 60))}</b><span>minutes</span></div>
-        <div className="stat"><b className="flame">🔥{server?.streak?.current ?? '–'}</b><span>day streak</span></div>
+        <div className="stat">
+          <b>{acc}%</b>
+          <span>accuracy</span>
+        </div>
+        <div className="stat">
+          <b>{result.answers}</b>
+          <span>answers</span>
+        </div>
+        <div className="stat">
+          <b>{Math.max(1, Math.round(result.seconds / 60))}</b>
+          <span>minutes</span>
+        </div>
+        <div className="stat">
+          <b className="flame">🔥{server?.streak?.current ?? '–'}</b>
+          <span>day streak</span>
+        </div>
       </div>
-      {server?.goalMetNow && <div className="card" style={{ borderColor: 'var(--good)' }}>✅ Daily goal reached (+25 XP)</div>}
-      {server?.unlocked?.map((u: any) => <div key={u.key} className="card" style={{ borderColor: 'var(--accent)' }}>🏅 New badge: <b>{u.title}</b> – {u.desc}</div>)}
+      {server?.goalMetNow && (
+        <div className="card" style={{ borderColor: 'var(--good)' }}>
+          ✅ Daily goal reached (+25 XP)
+        </div>
+      )}
+      {server?.unlocked?.map((u: any) => (
+        <div key={u.key} className="card" style={{ borderColor: 'var(--accent)' }}>
+          🏅 New badge: <b>{u.title}</b> – {u.desc}
+        </div>
+      ))}
       {result.bossWon === true && <div className="card">👾 Boss defeated (+30 XP)</div>}
       <div className="card" style={{ textAlign: 'left' }}>
         <b>{lang === 'de' ? 'Hausaufgabe' : 'Homework'}</b>
-        <div style={{ marginTop: 6 }}>{hw[0]}</div>{hw[1] && <div className="small muted">{hw[1]}</div>}
+        <div style={{ marginTop: 6 }}>{hw[0]}</div>
+        {hw[1] && <div className="small muted">{hw[1]}</div>}
       </div>
       <div className="row" style={{ justifyContent: 'center' }}>
-        <button className="btn primary" onClick={onAgain}>One more mini round <span className="kbd">Space</span></button>
-        <button className="btn" onClick={onHome}>Done <span className="kbd">Enter</span></button>
+        <button className="btn primary" onClick={onAgain}>
+          One more mini round <span className="kbd">Space</span>
+        </button>
+        <button className="btn" onClick={onHome}>
+          Done <span className="kbd">Enter</span>
+        </button>
       </div>
     </div>
   );

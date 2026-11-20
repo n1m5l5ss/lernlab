@@ -7,11 +7,19 @@ import { createApp } from './app';
 import { getDb } from './db';
 
 const MIME: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml',
-  '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json', '.woff2': 'font/woff2',
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'text/javascript',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+  '.json': 'application/json',
+  '.woff2': 'font/woff2',
 };
 
-export async function startServer(opts: { port?: number; distDir?: string; dev?: boolean; root?: string } = {}): Promise<{ server: Server; port: number }> {
+export async function startServer(
+  opts: { port?: number; distDir?: string; dev?: boolean; root?: string } = {},
+): Promise<{ server: Server; port: number }> {
   getDb();
   const api = getRequestListener(createApp().fetch);
   const dist = resolve(opts.distDir ?? 'dist');

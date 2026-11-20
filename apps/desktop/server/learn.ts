@@ -58,7 +58,13 @@ export function rowToItem(r: any): Item {
     image: r.image ?? null,
     video: r.video ?? null,
     category: r.category ?? null,
-    extra: (() => { try { return JSON.parse(r.extra ?? '{}'); } catch { return {}; } })(),
+    extra: (() => {
+      try {
+        return JSON.parse(r.extra ?? '{}');
+      } catch {
+        return {};
+      }
+    })(),
     deck: r.deck,
     kind: r.kind,
     target: r.target,
@@ -79,9 +85,12 @@ export function rowToItem(r: any): Item {
 
 export function introduce(itemId: number, d: DB = getDb(), now = new Date()) {
   const card = createEmptyCard(now);
-  d.prepare(
-    `INSERT OR IGNORE INTO srs(item_id, card, due, introduced_day) VALUES (?, ?, ?, ?)`,
-  ).run(itemId, JSON.stringify(card), card.due.toISOString(), dayKey(now));
+  d.prepare(`INSERT OR IGNORE INTO srs(item_id, card, due, introduced_day) VALUES (?, ?, ?, ?)`).run(
+    itemId,
+    JSON.stringify(card),
+    card.due.toISOString(),
+    dayKey(now),
+  );
   d.prepare(`INSERT OR IGNORE INTO item_state(item_id) VALUES (?)`).run(itemId);
 }
 
@@ -93,13 +102,15 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     d.prepare(`INSERT OR IGNORE INTO item_state(item_id) VALUES (?)`).run(a.itemId);
 
     // Intro introduces a card; so does a first attempt on a question card (a pretest – guessing first helps).
-    if (a.format === 'intro' || (['mcq', 'order', 'flip'].includes(a.format) && !a.genderOnly)) introduce(a.itemId, d, now);
+    if (a.format === 'intro' || (['mcq', 'order', 'flip'].includes(a.format) && !a.genderOnly))
+      introduce(a.itemId, d, now);
 
     // Mastery ladder and counters
     const st = d.prepare('SELECT * FROM item_state WHERE item_id = ?').get(a.itemId);
     if (a.genderOnly) {
-      d.prepare('UPDATE item_state SET gender_seen = gender_seen + 1, gender_right = gender_right + ? WHERE item_id = ?')
-        .run(a.correct ? 1 : 0, a.itemId);
+      d.prepare(
+        'UPDATE item_state SET gender_seen = gender_seen + 1, gender_right = gender_right + ? WHERE item_id = ?',
+      ).run(a.correct ? 1 : 0, a.itemId);
     } else if (a.format !== 'intro') {
       const lvl = FORMAT_LEVEL[a.format] ?? 0;
       const mastery = a.correct && !a.articleError ? Math.max(Number(st.mastery), lvl) : Number(st.mastery);
@@ -112,7 +123,9 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
       if (a.articleError) {
         d.prepare('UPDATE item_state SET gender_seen = gender_seen + 1 WHERE item_id = ?').run(a.itemId);
       } else if (item.kind === 'noun' && (a.format === 'typed' || a.format === 'boss') && a.correct) {
-        d.prepare('UPDATE item_state SET gender_seen = gender_seen + 1, gender_right = gender_right + 1 WHERE item_id = ?').run(a.itemId);
+        d.prepare(
+          'UPDATE item_state SET gender_seen = gender_seen + 1, gender_right = gender_right + 1 WHERE item_id = ?',
+        ).run(a.itemId);
       }
     }
 
@@ -123,7 +136,12 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     const recall = RECALL_FORMATS.includes(a.format) || (a.format === 'unscramble' && item.kind === 'grammar');
     if (srs && recall && !a.genderOnly && srs.last_graded_day !== day) {
       const answerLength = qa(rowToItem(item)).answer.length;
-      grade = gradeFor({ ...a, format: a.format === 'unscramble' ? 'cloze' : a.format, answerLength, reps: Number(srs.reps) });
+      grade = gradeFor({
+        ...a,
+        format: a.format === 'unscramble' ? 'cloze' : a.format,
+        answerLength,
+        reps: Number(srs.reps),
+      });
       if (grade) {
         const settings = getSettings(d);
         const card: Card = reviveCard(JSON.parse(srs.card));
@@ -137,10 +155,25 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     d.prepare(
       `INSERT INTO attempts(ts, day, session_id, item_id, format, correct, near_miss, article_error, used_hint,
          response_ms, given, xp, grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(now.toISOString(), day, a.sessionId, a.itemId, a.genderOnly ? 'gender' : a.format, a.correct ? 1 : 0,
-      a.nearMiss ? 1 : 0, a.articleError ? 1 : 0, a.usedHint ? 1 : 0, Math.round(a.responseMs), a.given ?? null,
-      a.xp, grade);
-    d.prepare(`INSERT INTO days(day, xp) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET xp = xp + excluded.xp`).run(day, a.xp);
+    ).run(
+      now.toISOString(),
+      day,
+      a.sessionId,
+      a.itemId,
+      a.genderOnly ? 'gender' : a.format,
+      a.correct ? 1 : 0,
+      a.nearMiss ? 1 : 0,
+      a.articleError ? 1 : 0,
+      a.usedHint ? 1 : 0,
+      Math.round(a.responseMs),
+      a.given ?? null,
+      a.xp,
+      grade,
+    );
+    d.prepare(`INSERT INTO days(day, xp) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET xp = xp + excluded.xp`).run(
+      day,
+      a.xp,
+    );
     return { grade };
   });
 }
@@ -153,13 +186,22 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
   const day = dayKey(now);
   return tx(d, () => {
     const srs = d.prepare('SELECT * FROM srs WHERE item_id = ?').get(itemId);
-    const last = d.prepare('SELECT * FROM attempts WHERE item_id = ? AND day = ? AND grade IS NOT NULL ORDER BY id DESC LIMIT 1').get(itemId, day);
+    const last = d
+      .prepare('SELECT * FROM attempts WHERE item_id = ? AND day = ? AND grade IS NOT NULL ORDER BY id DESC LIMIT 1')
+      .get(itemId, day);
     if (!srs || !last || srs.last_graded_day !== day || !srs.prev_card || Number(last.grade) >= 3) return { ok: false };
     const prev = reviveCard(JSON.parse(srs.prev_card));
     const next = scheduler(getSettings(d).retention).next(prev, now, 3 as FsrsGrade).card;
-    d.prepare('UPDATE srs SET card = ?, due = ?, lapses = MAX(0, lapses - ?) WHERE item_id = ?').run(JSON.stringify(next), next.due.toISOString(), Number(last.grade) === 1 ? 1 : 0, itemId);
+    d.prepare('UPDATE srs SET card = ?, due = ?, lapses = MAX(0, lapses - ?) WHERE item_id = ?').run(
+      JSON.stringify(next),
+      next.due.toISOString(),
+      Number(last.grade) === 1 ? 1 : 0,
+      itemId,
+    );
     d.prepare('UPDATE attempts SET correct = 1, grade = 3 WHERE id = ?').run(last.id);
-    d.prepare('UPDATE item_state SET right = right + 1, wrong = MAX(0, wrong - 1), mastery = MAX(mastery, 3) WHERE item_id = ?').run(itemId);
+    d.prepare(
+      'UPDATE item_state SET right = right + 1, wrong = MAX(0, wrong - 1), mastery = MAX(mastery, 3) WHERE item_id = ?',
+    ).run(itemId);
     return { ok: true, due: next.due.toISOString() };
   });
 }
@@ -169,7 +211,10 @@ function reviveCard(c: any): Card {
 }
 
 export function allItems(d: DB = getDb(), deckId?: number | null): Item[] {
-  return d.prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(deckId)} ORDER BY i.ord`).all().map(rowToItem);
+  return d
+    .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(deckId)} ORDER BY i.ord`)
+    .all()
+    .map(rowToItem);
 }
 
 /** End of the current learning day (4 a.m. next morning), used as the "due" cutoff. */
@@ -193,13 +238,21 @@ export function dueItemIds(d: DB = getDb(), now = new Date(), limit = 500, deckI
 /** Introduced today but not yet graded: these must be recalled before the session ends. */
 export function learningTodayIds(d: DB = getDb(), now = new Date(), deckId?: number | null): number[] {
   return d
-    .prepare(`SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id WHERE s.reps = 0 AND s.introduced_day = ?${dk(deckId)}`)
+    .prepare(
+      `SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id WHERE s.reps = 0 AND s.introduced_day = ?${dk(deckId)}`,
+    )
     .all(dayKey(now))
     .map((r: any) => Number(r.item_id));
 }
 
 export function introducedTodayCount(d: DB = getDb(), now = new Date(), deckId?: number | null): number {
-  return Number(d.prepare(`SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE s.introduced_day = ?${dk(deckId)}`).get(dayKey(now)).n);
+  return Number(
+    d
+      .prepare(
+        `SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE s.introduced_day = ?${dk(deckId)}`,
+      )
+      .get(dayKey(now)).n,
+  );
 }
 
 export function newItemIds(d: DB = getDb(), limit: number, kinds?: string[], deckId?: number | null): number[] {
@@ -253,7 +306,9 @@ export function nextGrammarGroup(d: DB = getDb(), now = new Date(), deckId?: num
 
 export function grammarItemIds(group: string, d: DB = getDb(), deckId?: number | null): number[] {
   return d
-    .prepare(`SELECT i.id FROM items i WHERE i.grp = ? AND i.kind = 'grammar' AND i.suspended = 0${dk(deckId)} ORDER BY i.ord`)
+    .prepare(
+      `SELECT i.id FROM items i WHERE i.grp = ? AND i.kind = 'grammar' AND i.suspended = 0${dk(deckId)} ORDER BY i.ord`,
+    )
     .all(group)
     .map((r: any) => Number(r.id));
 }
