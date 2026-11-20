@@ -146,7 +146,7 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
           <button
             key={c}
             className={`opt ${flash && c === flash.cat ? 'right' : ''}`}
-            disabled={!!flash}
+            aria-disabled={!!flash || undefined /* not disabled: that would drop keyboard focus */}
             onClick={() => pick(c)}
           >
             <span className="k">{i + 1}</span> {c}
@@ -167,6 +167,7 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
   const [gone, setGone] = useState<Set<number>>(new Set());
   const [bad, setBad] = useState<string | null>(null);
   const missedOnce = useRef(new Set<number>());
+  const board = useRef<HTMLDivElement>(null);
   const start = useRef(now());
   const [elapsed, setElapsed] = useState(0);
   const timed = (ctx.settings.blitzSeconds ?? 8) > 0; // the stopwatch is hidden when timers are off
@@ -183,6 +184,8 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
       const g = new Set(gone).add(it.id);
       setGone(g);
       setSel(null);
+      // The matched pair disappears; keyboard focus moves on to the next word instead of getting lost.
+      requestAnimationFrame(() => board.current?.querySelector<HTMLButtonElement>('.col .opt:not(:disabled)')?.focus());
       if (g.size === items.length) {
         const correct = items.length - missedOnce.current.size;
         setTimeout(() => onDone({ correct, total: items.length }), 500);
@@ -202,7 +205,7 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
         <span className="pill">{t('games.pairsLeft', { count: items.length - gone.size })}</span>
         {timed && <span className="pill">{t('games.elapsed', { count: elapsed })}</span>}
       </div>
-      <div className="match">
+      <div className="match" ref={board}>
         <div className="col">
           {left.map((it) => (
             <button

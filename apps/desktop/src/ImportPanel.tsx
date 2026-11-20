@@ -7,6 +7,7 @@ import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { AnkiImport } from './AnkiImport';
 import { formatNumber } from './i18n';
+import { rovingIndex } from './keys-logic';
 import type { ImportReport as Report } from '@lernlab/core/importer';
 import { MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './import-logic';
 
@@ -17,6 +18,7 @@ const CSV_OPTIONAL =
 
 type AppState = OutputOf<'state.get'>;
 type Source = { file: File } | { text: string };
+const TABS = ['file', 'paste', 'anki'] as const;
 
 export function ImportPanel({
   state,
@@ -31,7 +33,7 @@ export function ImportPanel({
   initialFile?: File;
 }) {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<'file' | 'paste' | 'anki'>('file');
+  const [tab, setTab] = useState<(typeof TABS)[number]>('file');
   const [over, setOver] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -128,12 +130,25 @@ export function ImportPanel({
         <ImportReport result={report} onAgain={reset} onDone={onDone} />
       ) : (
         <>
-          <div className="lengths import-tabs" role="tablist">
-            {(['file', 'paste', 'anki'] as const).map((k) => (
+          <div
+            className="lengths import-tabs"
+            role="tablist"
+            aria-labelledby="import-title"
+            onKeyDown={(e) => {
+              const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
+              const i = rovingIndex(TABS.indexOf(tab), TABS.length, e.key, rtl);
+              if (i === null) return;
+              e.preventDefault();
+              setTab(TABS[i]);
+              (e.currentTarget.children[i] as HTMLElement | undefined)?.focus();
+            }}
+          >
+            {TABS.map((k) => (
               <button
                 key={k}
                 role="tab"
                 aria-selected={tab === k}
+                tabIndex={tab === k ? 0 : -1}
                 className={tab === k ? 'on' : ''}
                 onClick={() => setTab(k)}
               >

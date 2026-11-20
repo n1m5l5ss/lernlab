@@ -2633,3 +2633,14 @@ div.deck-drop {
 [dir='rtl'] .icon-dir {
   transform: scaleX(-1);
 }
+
+/* ---- Accessibility pass (#35): headings that take focus when a screen or block opens, so screen readers announce them. ---- */
+h1.session-title {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
+}
+h1.session-title:focus,
+.summary h1:focus {
+  outline: none;
+}

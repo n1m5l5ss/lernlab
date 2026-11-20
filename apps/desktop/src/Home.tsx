@@ -6,6 +6,7 @@ import { estimateMinutes } from '@lernlab/core/game';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { useKeys } from './ctx';
+import { rovingIndex } from './keys-logic';
 import { formatDate, formatNumber } from './i18n';
 import { LENGTHS } from './lengths';
 import { dayDate, MotivationIcon } from './Motivation';
@@ -124,9 +125,32 @@ export function Home({
           </div>
           <div className="home-field">
             <span id="home-length">{t('home.sessionLength')}</span>
-            <div className="segmented" role="radiogroup" aria-labelledby="home-length">
+            <div
+              className="segmented"
+              role="radiogroup"
+              aria-labelledby="home-length"
+              onKeyDown={(e) => {
+                const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
+                const i = rovingIndex(
+                  LENGTHS.findIndex((l) => l.key === length),
+                  LENGTHS.length,
+                  e.key,
+                  rtl,
+                );
+                if (i === null) return;
+                e.preventDefault();
+                setLength(LENGTHS[i].key);
+                (e.currentTarget.children[i] as HTMLElement | undefined)?.focus();
+              }}
+            >
               {LENGTHS.map((l) => (
-                <button key={l.key} role="radio" aria-checked={length === l.key} onClick={() => setLength(l.key)}>
+                <button
+                  key={l.key}
+                  role="radio"
+                  aria-checked={length === l.key}
+                  tabIndex={length === l.key ? 0 : -1}
+                  onClick={() => setLength(l.key)}
+                >
                   {t('home.lengthMinutes', { count: l.minutes })}
                 </button>
               ))}
