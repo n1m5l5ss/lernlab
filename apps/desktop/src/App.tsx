@@ -144,7 +144,13 @@ export function App() {
     >
       {route === 'home' && <Home state={state} onStart={start} refresh={refresh} goDecks={() => go('decks')} />}
       {route === 'decks' && (
-        <Decks state={state} refresh={refresh} onStudy={() => go('home')} onBrowse={() => go('cards')} />
+        <Decks
+          state={state}
+          refresh={refresh}
+          onStudy={() => go('home')}
+          onPractice={() => start(state.settings.sessionLength, true)}
+          onBrowse={() => go('cards')}
+        />
       )}
       {route === 'cards' && <Browse state={state} refresh={refresh} />}
       {route === 'progress' && (

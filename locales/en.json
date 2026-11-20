@@ -116,19 +116,12 @@
     "startPractice": "Start practice"
   },
   "decks": {
-    "title": "Your decks",
-    "newDeck": "+ New deck",
-    "import": "⬆ Import",
+    "newDeck": "New deck",
+    "import": "Import",
     "languageDeck": "Language · {{language}}",
-    "anySubject": "Any subject",
-    "goalSuffix": " · goal: {{goal}}",
-    "cards_one": "<b>{{count}}</b> card",
-    "cards_other": "<b>{{count}}</b> cards",
     "due": "<b>{{count}}</b> due",
-    "learned": "<b>{{count}}</b> learned",
     "study": "Study",
     "browse": "Cards",
-    "settingsButton": "Deck settings",
     "empty": "No decks yet. Import one or create a new deck.",
     "editor": {
       "settingsTitle": "Deck settings",
@@ -145,7 +138,8 @@
       "goalSizePlaceholder": "cards",
       "exportLernpack": "Export .lernpack",
       "exportCsv": "Export CSV",
-      "confirmDelete": "Delete the deck \"{{name}}\" with all its cards and progress? This cannot be undone."
+      "subdeckHint": "Use :: for a sub-deck, for example Medicine::Cardio.",
+      "examDate": "Exam date (optional)"
     },
     "importPanel": {
       "title": "Import cards",
@@ -188,7 +182,22 @@
       "reportMedia_other": "{{count}} media files added.",
       "reportMissing_one": "{{count}} missing media file skipped.",
       "reportMissing_other": "{{count}} missing media files skipped."
-    }
+    },
+    "subjectDeck_one": "Subject · {{count}} card",
+    "subjectDeck_other": "Subject · {{count}} cards",
+    "examOn": "exam {{date}}",
+    "new": "<b>{{count}}</b> new",
+    "known": "<b>{{count}}</b> known of {{total}}",
+    "childCounts": "{{due}} due, {{fresh}} new",
+    "practice": "Practice",
+    "studyNamed": "Study {{name}}",
+    "options": "Options for {{name}}",
+    "dropFormats": "CSV, Anki .apkg, or a LernLab deck file",
+    "deleteTitle": "Delete “{{name}}”?",
+    "deleteBody_one": "Its {{count}} card and its progress are removed. A backup of all your data is saved first.",
+    "deleteBody_other": "Its {{count}} cards and their progress are removed. A backup of all your data is saved first.",
+    "keep": "Keep deck",
+    "deleted": "Deleted “{{name}}”. A backup was saved as {{file}}."
   },
   "browse": {
     "level": {

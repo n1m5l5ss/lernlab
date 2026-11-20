@@ -112,3 +112,23 @@ test('a practice session is planned as practice, and its answers are accepted as
   const bad = await handle('session.plan', { length: 'mini', practice: 'yes' });
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
 });
+
+test('deck settings are checked, and deleting a deck takes a backup first', async () => {
+  const deck = await ok('decks.create', {
+    name: 'Medicine::Cardio',
+    language: null,
+    settings: { newPerDay: 7, examDate: '2027-03-15', ankiSource: 'x' },
+  });
+  assert.deepEqual(deck.settings, { newPerDay: 7, examDate: '2027-03-15' });
+  const upd = await ok('decks.update', {
+    id: deck.id,
+    patch: { settings: { goal: { label: 'Board exam', words: 300 }, examDate: '' } },
+  });
+  assert.deepEqual(upd.settings, { newPerDay: 7, goal: { label: 'Board exam', words: 300 } });
+  const blank = await handle('decks.update', { id: deck.id, patch: { name: '  ' } });
+  assert.equal(!blank.ok && blank.error.code, 'name_required');
+  const del = await ok('decks.delete', { id: deck.id });
+  assert.ok(existsSync(join(dir, 'backups', del.backup)), 'backup file exists');
+  const again = await handle('decks.delete', { id: deck.id });
+  assert.equal(!again.ok && again.error.code, 'deck_not_found');
+});
