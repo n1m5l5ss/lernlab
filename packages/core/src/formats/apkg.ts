@@ -5,6 +5,7 @@ import { decompress } from 'fzstd';
 import { host } from '../host';
 import { stripHtml } from '../text';
 import type { NormalizedCard } from '../library';
+import { UserError } from '../errors';
 
 const ZSTD = [0x28, 0xb5, 0x2f, 0xfd];
 const isZstd = (b: Uint8Array) => ZSTD.every((x, i) => b[i] === x);
@@ -70,7 +71,7 @@ export type ApkgResult = { cards: NormalizedCard[]; media: Record<string, Uint8A
 export function readApkg(buf: Uint8Array): ApkgResult {
   const files = unzipSync(buf);
   const colName = ['collection.anki21b', 'collection.anki21', 'collection.anki2'].find((n) => files[n]);
-  if (!colName) throw new Error('Not an Anki package (no collection inside)');
+  if (!colName) throw new UserError('not_anki', 'Not an Anki package (no collection inside)');
   const db = host().openSqliteBytes(unz(files[colName]));
   try {
     // Note types → ordered field names. Newer collections keep them in tables, older ones in col.models JSON.

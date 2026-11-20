@@ -124,3 +124,21 @@ test('pseudo-locale accents text but keeps placeholders and tags', () => {
   assert.ok(!/Mini/.test(p));
   assert.deepEqual(flatKeys(pseudoize(en)), flatKeys(en));
 });
+
+test('every error code the app can send has a message in locales/en.json', () => {
+  const roots = [join(SRC, '../../../packages/core/src'), join(SRC, '../backend')];
+  const files = roots.flatMap((r) =>
+    readdirSync(r, { recursive: true, encoding: 'utf8' })
+      .filter((f) => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+      .map((f) => join(r, f)),
+  );
+  const codes = new Set<string>(['failed', 'unknown_channel']);
+  for (const f of files) {
+    const src = readFileSync(f, 'utf8');
+    for (const m of src.matchAll(/(?:UserError|AppError)\(\s*'([a-z_]+)'|readonly code = '([a-z_]+)'/g))
+      codes.add(m[1] ?? m[2]);
+  }
+  for (const c of ['deck_not_found', 'not_anki', 'migration_failed', 'invalid_input']) assert.ok(codes.has(c), c);
+  const messages = (en as { errors: Record<string, string> }).errors;
+  for (const c of codes) assert.equal(typeof messages[c], 'string', `errors.${c} missing in en.json`);
+});

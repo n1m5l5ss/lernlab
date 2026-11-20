@@ -4,6 +4,7 @@ import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { basename } from '../paths';
 import type { DeckSettings, NormalizedCard } from '../library';
 import { csvToCards } from './csv';
+import { UserError } from '../errors';
 
 export const LERNPACK_VERSION = 1;
 
@@ -25,11 +26,13 @@ export function readLernpack(buf: Uint8Array): Pack {
       .find((f) => f.endsWith('manifest.json'))
       ?.replace(/manifest\.json$/, '') ?? '';
   const mf = files[`${root}manifest.json`];
-  if (!mf) throw new Error('Not a .lernpack file (manifest.json missing)');
+  if (!mf) throw new UserError('not_lernpack', 'Not a .lernpack file (manifest.json missing)');
   const manifest = JSON.parse(strFromU8(mf)) as Manifest;
-  if (manifest.format !== 'lernpack') throw new Error('manifest.json is not a lernpack manifest');
+  if (manifest.format !== 'lernpack') throw new UserError('not_lernpack', 'manifest.json is not a lernpack manifest');
   if (manifest.version > LERNPACK_VERSION)
-    throw new Error(`This deck needs a newer LernLab (format v${manifest.version})`);
+    throw new UserError('lernpack_too_new', `This deck needs a newer LernLab (format v${manifest.version})`, {
+      version: manifest.version,
+    });
   const jsonl = files[`${root}cards.jsonl`];
   const json = files[`${root}cards.json`];
   const csv = files[`${root}cards.csv`] ?? files[`${root}cards.tsv`];
@@ -43,7 +46,8 @@ export function readLernpack(buf: Uint8Array): Pack {
       : csv
         ? csvToCards(strFromU8(csv).replace(/^\uFEFF/, '')).cards
         : [];
-  if (!jsonl && !json && !csv) throw new Error('Deck package has no cards file (expected cards.csv or cards.jsonl)');
+  if (!jsonl && !json && !csv)
+    throw new UserError('lernpack_no_cards', 'Deck package has no cards file (expected cards.csv or cards.jsonl)');
   const media: Record<string, Uint8Array> = {};
   for (const [name, data] of Object.entries(files)) {
     if (name.startsWith(`${root}media/`) && !name.endsWith('/') && !/\.(txt|md)$/i.test(name))

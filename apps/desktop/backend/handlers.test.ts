@@ -31,7 +31,7 @@ test('unknown channels and bad input come back as errors, never as throws', asyn
   const empty = await handle('decks.create', { name: '   ' });
   assert.equal(!empty.ok && empty.error.code, 'name_required');
   const notFound = await handle('decks.activate', { id: 999 });
-  assert.equal(!notFound.ok && notFound.error.code, 'not_found');
+  assert.equal(!notFound.ok && notFound.error.code, 'deck_not_found');
 });
 
 test('create a deck, add and edit a card, import a file, plan a session', async () => {

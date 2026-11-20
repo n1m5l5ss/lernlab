@@ -8,6 +8,7 @@ import { sha1Hex } from './sha1';
 import { stripHtml, splitArticle } from './text';
 import { markdownLite, sanitizeHtml } from './cards';
 import type { ItemKind } from './types';
+import { UserError } from './errors';
 
 export type DeckSettings = {
   newPerDay?: number;
@@ -117,7 +118,7 @@ export function updateDeck(
   d: DB = getDb(),
 ): Deck {
   const cur = getDeck(id, d);
-  if (!cur) throw new Error('Deck not found');
+  if (!cur) throw new UserError('deck_not_found', 'Deck not found');
   const next = { ...cur, ...patch, settings: { ...cur.settings, ...(patch.settings ?? {}) } };
   d.prepare('UPDATE decks SET name = ?, language = ?, description = ?, settings = ? WHERE id = ?').run(
     next.name,

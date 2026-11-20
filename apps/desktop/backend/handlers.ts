@@ -29,21 +29,15 @@ import {
 } from '@lernlab/core/library';
 import { ACHIEVEMENTS, appState, dailySummary, finishSession, progressReport, stats } from '@lernlab/core/progress';
 import { MigrationError } from '@lernlab/core/migrate';
+import { UserError as AppError } from '@lernlab/core/errors';
 import { planSession } from '@lernlab/core/session';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import { anki, ankiAvailable, ankiConnect } from './anki';
 import { getDb } from './storage';
 import { InvalidInput, v, type Check } from './validate';
 
-/** A failure the window can show. `code` is stable; `message` is for people. */
-export class AppError extends Error {
-  constructor(
-    readonly code: string,
-    message: string,
-  ) {
-    super(message);
-  }
-}
+/** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
+export { UserError as AppError } from '@lernlab/core/errors';
 
 const MB = 1024 * 1024;
 const text = v.optional(v.nullable(v.string()));
@@ -142,7 +136,7 @@ export const handlers = {
     return { ok: true };
   }),
   'decks.activate': h(v.object({ id: v.id }), ({ id }) => {
-    if (!getDeck(id)) throw new AppError('not_found', 'Deck not found');
+    if (!getDeck(id)) throw new AppError('deck_not_found', 'Deck not found');
     setMeta(getDb(), 'activeDeck', id);
     return { ok: true };
   }),
@@ -191,7 +185,7 @@ export const handlers = {
   ),
   'cards.add': h(v.object({ deckId: v.id, card: cardInput }), ({ deckId, card: b }) => {
     const deck = getDeck(deckId);
-    if (!deck) throw new AppError('not_found', 'Deck not found');
+    if (!deck) throw new AppError('deck_not_found', 'Deck not found');
     if (!b.front?.trim()) throw new AppError('front_required', 'Front required');
     const sourceId = stableId(`${deck.name}\u0000manual\u0000${Date.now()}\u0000${Math.random()}`);
     upsertCards(deck, [
@@ -210,7 +204,7 @@ export const handlers = {
   'cards.update': h(v.object({ id: v.id, card: cardInput }), ({ id, card: b }) => {
     const d = getDb();
     const r = d.prepare('SELECT * FROM items WHERE id = ?').get(id);
-    if (!r) throw new AppError('not_found', 'Card not found');
+    if (!r) throw new AppError('card_not_found', 'Card not found');
     if (typeof b.suspended === 'boolean')
       d.prepare('UPDATE items SET suspended = ? WHERE id = ?').run(b.suspended ? 1 : 0, id);
     if (typeof b.starred === 'boolean')
@@ -371,7 +365,9 @@ export type InputOf<C extends Channel> = ReturnType<Handlers[C]['input']>;
 export type OutputOf<C extends Channel> = Awaited<ReturnType<Handlers[C]['run']>>;
 
 /** What crosses the bridge: never a thrown error. */
-export type Result<T> = { ok: true; value: T } | { ok: false; error: { code: string; message: string } };
+export type Result<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: { code: string; message: string; params?: Record<string, string | number> } };
 
 export const isChannel = (c: unknown): c is Channel => typeof c === 'string' && Object.hasOwn(handlers, c);
 
@@ -383,6 +379,7 @@ export async function handle(channel: unknown, input: unknown): Promise<Result<u
     return { ok: true, value: await handler.run(handler.input(input)) };
   } catch (e) {
     const code = e instanceof AppError || e instanceof InvalidInput || e instanceof MigrationError ? e.code : 'failed';
-    return { ok: false, error: { code, message: (e as Error)?.message ?? String(e) } };
+    const params = e instanceof AppError ? e.params : undefined;
+    return { ok: false, error: { code, message: (e as Error)?.message ?? String(e), ...(params && { params }) } };
   }
 }

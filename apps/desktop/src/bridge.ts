@@ -2,6 +2,7 @@
 // In web dev mode (`npm start`) it is a small HTTP call to the local dev server.
 import type { Channel, InputOf, OutputOf, Result } from '../backend/handlers';
 import { fromWire, toWire } from '../backend/wire';
+import i18next from './i18n';
 
 type Bridge = { invoke(channel: string, input?: unknown): Promise<Result<unknown>> };
 
@@ -20,13 +21,26 @@ const http: Bridge = {
   },
 };
 
-/** Call the app. Rejects with the app's message if the request fails. */
+/** An error from the app, with its message in the interface language (locales: errors.<code>). */
+export class AppError extends Error {
+  constructor(
+    readonly code: string,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
+/** Call the app. Rejects with an AppError, translated from its code, if the request fails. */
 export async function call<C extends Channel>(
   channel: C,
   ...input: InputOf<C> extends void ? [] : [InputOf<C>]
 ): Promise<OutputOf<C>> {
   const res = await (window.lernlab ?? http).invoke(channel, input[0]);
-  if (!res.ok) throw new Error(res.error.message);
+  if (!res.ok) {
+    const { code, message, params } = res.error;
+    throw new AppError(code, i18next.t(`errors.${code}`, { ...params, defaultValue: message }));
+  }
   return res.value as OutputOf<C>;
 }
 
