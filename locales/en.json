@@ -6,11 +6,18 @@
   },
   "nav": {
     "label": "Main",
-    "home": "Study",
+    "skip": "Skip to content",
+    "home": "Home",
     "decks": "Decks",
-    "browse": "Cards",
+    "cards": "Cards",
     "progress": "Progress",
-    "stats": "Stats",
+    "settings": "Settings"
+  },
+  "pages": {
+    "home": "Today",
+    "decks": "Decks",
+    "cards": "Cards",
+    "progress": "Progress",
     "settings": "Settings"
   },
   "common": {

@@ -109,6 +109,7 @@ docs/adr/        architecture decision records
 - TanStack Query holds data from IPC (caching and invalidation).
 - Zustand holds tiny UI state. The session state comes from core's reducer.
 - Styles come from design tokens only (`packages/ui/tokens`). CSS Modules scope every component. A lint rule bans raw hex colours outside the tokens.
+- **Today (#11):** `packages/ui/tokens.css` is generated from `docs/design/tokens.json` (`npm run tokens -w @lernlab/ui`; a test fails when it is stale). The theme is a setting (system, light, dark); the renderer sets `data-theme` on `<html>` and main mirrors it in `nativeTheme` and `config.json`, so the window opens in the right colours. `src/Shell.tsx` is the sidebar frame; screens are hash routes (`#/decks`, `src/routes.ts`) and focus moves to each screen's heading. Main saves the window's size and position in `config.json` and never reopens it off-screen (`electron/window-state.ts`). Session and summary fill the window, without the sidebar.
 - All visible text comes from `t('key')` via i18next.
 - Every card field gets its `lang` attribute.
 - Accessibility is built in from the start: an `aria-live` region announces feedback, focus is managed per screen, and everything works from the keyboard.

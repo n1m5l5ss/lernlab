@@ -10,6 +10,7 @@ import {
   nativeTheme,
   net,
   protocol,
+  screen,
   session,
   shell,
   utilityProcess,
@@ -23,9 +24,10 @@ import { pathToFileURL } from 'node:url';
 import { windowBackground, type Theme } from '@lernlab/ui/tokens';
 import { setupUpdates } from './updates';
 import { themeOf } from './theme';
+import { MIN_SIZE, restoreWindow, type WindowState } from './window-state';
 
 const configFile = () => join(app.getPath('userData'), 'config.json');
-type Config = { dataDir?: string; lastUpdateCheck?: number; theme?: Theme };
+type Config = { dataDir?: string; lastUpdateCheck?: number; theme?: Theme; window?: WindowState };
 const readConfig = (): Config => {
   try {
     return JSON.parse(readFileSync(configFile(), 'utf8'));
@@ -250,11 +252,17 @@ async function main() {
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'media'));
 
   buildMenu();
+  const place = restoreWindow(
+    readConfig().window,
+    screen.getAllDisplays().map((d) => d.workArea),
+  );
   win = new BrowserWindow({
-    width: 1200,
-    height: 860,
-    minWidth: 720,
-    minHeight: 560,
+    x: place.x,
+    y: place.y,
+    width: place.width,
+    height: place.height,
+    minWidth: MIN_SIZE.width,
+    minHeight: MIN_SIZE.height,
     backgroundColor: windowBackground(nativeTheme.shouldUseDarkColors),
     title: 'LernLab',
     show: false,
@@ -265,7 +273,15 @@ async function main() {
       preload: join(__dirname, 'preload.cjs'),
     },
   });
-  win.once('ready-to-show', () => win!.show());
+  win.once('ready-to-show', () => {
+    if (place.maximized) win!.maximize();
+    win!.show();
+  });
+  // Remember size and position for the next start (normal bounds, so un-maximizing restores them too).
+  win.on('close', () => {
+    if (win && !win.isFullScreen())
+      writeConfig({ window: { bounds: win.getNormalBounds(), maximized: win.isMaximized() } });
+  });
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };

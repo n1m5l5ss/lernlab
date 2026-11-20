@@ -29,7 +29,8 @@ export function Home({
   const deck = state.decks.find((d: any) => d.id === state.activeDeck);
   useKeys(
     (e) => {
-      if (e.key === 'Enter' && deck && !(e.target as HTMLElement).closest('select')) onStart(length);
+      if (e.key === 'Enter' && deck && !(e.target as HTMLElement).closest('select, a, button, input, textarea'))
+        onStart(length);
     },
     [length, state],
   );
