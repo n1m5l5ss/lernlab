@@ -2,13 +2,29 @@ name: pr-title
 on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
+  # Workflow-opened pull requests don't trigger pull_request runs; release-please.yml starts this by hand.
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: Pull request number
+        required: true
+        type: number
 permissions:
   pull-requests: read
 jobs:
   conventional-title:
     runs-on: ubuntu-latest
     steps:
-      - uses: amannn/action-semantic-pull-request@v5
+      - if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ inputs.pr }}
+        run: |
+          title=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json title --jq .title)
+          echo "Title: $title"
+          echo "$title" | grep -Eq '^(feat|fix|perf|security|refactor|docs|test|chore|ci|revert|release)(\([^)]+\))?!?: .+'
+      - if: github.event_name == 'pull_request'
+        uses: amannn/action-semantic-pull-request@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:

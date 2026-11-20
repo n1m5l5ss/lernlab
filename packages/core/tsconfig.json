@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    // The core is pure TypeScript: no DOM and no Node types, so it can run anywhere.
+    "lib": ["ES2023"],
+    "types": []
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

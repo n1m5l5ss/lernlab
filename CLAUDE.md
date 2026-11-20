@@ -21,20 +21,26 @@ LernLab is a free, open-source desktop flashcard app for any subject. It makes s
 7. **One obvious action.** The home screen leads with a single Start button.
 
 ## Current state
-The repo holds the **v0.2 prototype**, which is a working reference. Its layout:
-- `shared/`: answer checking, grading, XP and streaks, card logic. Pure TypeScript.
-- `server/`: SQLite (`node:sqlite`), FSRS, session planner, importers and exporters, Hono HTTP API.
-- `src/`: React screens.
-- `electron/`: desktop shell.
+The repo is an npm workspace. It holds the **v0.2 prototype**, which is a working reference. Its layout:
+- `packages/core/`: the engine. Answer checking, grading, XP and streaks, card logic, FSRS, session planner, importers and exporters, and the SQLite schema. Pure TypeScript: no Node, DOM, Electron, React or HTTP imports (ESLint enforces it). Platform services (database connection, media files, ids) come in through the `Host` port in `src/host.ts`. Import modules by path, e.g. `@lernlab/core/text`.
+- `packages/storage-sqlite/`: the Node/Electron host: `node:sqlite` plus media and progress files in the data folder. Call `installNodeHost()` once at startup.
+- `apps/desktop/`: the v0.2 prototype app.
+  - `backend/`: the request table (`handlers.ts`: one validated handler per channel), the data process entry (`process.ts`, an Electron utilityProcess and the only place that opens the database), the AnkiConnect client.
+  - `electron/`: main process (windows, menu, routes IPC to the data process, serves media on `lernlab-media://`) and `preload.ts` (exposes only `window.lernlab.invoke`).
+  - `src/`: React screens. They reach the app only through `src/api.ts` → `src/bridge.ts`.
+  - `server/`: web dev mode only (`npm start`): the same handlers over HTTP on localhost. The desktop app never starts it.
+- `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`: one shared config for every package.
 
-Tickets in the Foundation epic (#5–#11) restructure it into `packages/core` and `apps/desktop`, and replace the HTTP API with typed IPC. **Don't redesign screens until the mockups in `docs/design/` are approved (issue #1).**
+The rest of the Foundation epic (#8–#11) adds migrations and backups, CI, the translation system and the app shell. **Don't redesign screens until the mockups in `docs/design/` are approved (issue #1).**
 
 ## Commands
 ```bash
 npm install
-npm test              # unit + integration tests (node:test via tsx)
-npm run typecheck
-npm start             # web version at http://localhost:5179
+npm test              # unit + integration tests in every workspace (node:test via tsx)
+npm run typecheck     # strict TypeScript in every workspace
+npm run lint          # ESLint (one shared config)
+npm run format        # Prettier (CI runs format:check)
+npm start             # web dev version at http://localhost:5179 (same handlers over HTTP)
 npm run desktop       # Electron app
 npm run dist:linux    # installers → release/ (dist:mac on a Mac, dist:win on Windows)
 ```
@@ -44,7 +50,7 @@ Node 22.13+ is required (`node:sqlite`).
 1. Read the issue and its acceptance criteria. If something is unclear or conflicts with `docs/PLAN.md`, ask in the issue before coding.
 2. Branch from `dev`: `feature/<issue>-short-name` or `fix/<issue>-short-name`. One ticket per branch and per pull request. Never commit to `main` or `dev` directly.
 3. Test first: write the failing test, make it pass, then refactor. Every feature and bug fix has a test.
-4. Run `npm test && npm run typecheck` before pushing.
+4. Run `npm run format`, then `npm test && npm run typecheck && npm run lint` from the repo root before pushing.
 5. Open a pull request into `dev`. Its title is a Conventional Commit in plain user language (`feat: add session length picker`, `fix: keep streak when the clock changes`), because it becomes the changelog line. The body says `Closes #<issue>` and lists:
    - what changed;
    - how it was tested;
@@ -53,11 +59,11 @@ Node 22.13+ is required (`node:sqlite`).
 
 ## Rules
 - Ask in the issue before adding a new dependency. Prefer the platform: `node:sqlite`, `Intl`, Web Speech.
-- No user-visible text outside the language files (enforced once #10 lands).
+- No user-visible text outside the language files. Put strings in `locales/en.json` and show them with `t('key')` (react-i18next); format numbers and dates with the helpers in `apps/desktop/src/i18n.ts`. `apps/desktop/src/i18n.test.ts` fails on hard-coded text in screens; screens still being converted are listed in it, and the list only shrinks.
 - Never mark a card as known from a game or recognition exercise.
 - No timers on new cards.
 - Treat deck files as untrusted. Sanitise HTML, never run scripts, and check paths inside zip files.
-- Changing the data model needs a numbered migration and a backup before it runs.
+- Changing the data model needs a numbered migration and a backup before it runs: add `packages/core/src/migrations/NNN-name.ts` and list it in `MIGRATIONS` (`packages/core/src/migrate.ts`). Never edit a migration that has shipped. The storage host backs up and restores automatically.
 - Don't change `docs/PLAN.md` decisions on your own. Propose the change in the pull request.
 - Keep within the performance budgets in `docs/TESTING.md`. Never run SQL or heavy work in the Electron main process.
 - Use design tokens only; no raw colours in components.

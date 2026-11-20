@@ -4,8 +4,15 @@ on:
     branches: [dev, main]
   push:
     branches: [dev, main]
+  # Pull requests opened by workflows (release-please, the main -> dev sync) don't trigger
+  # pull_request runs, so those workflows start this one by hand on the PR's branch.
+  workflow_dispatch:
 permissions:
   contents: read
+# A newer push to the same PR or branch cancels the run that is still going.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     name: test (${{ matrix.os }})
@@ -19,8 +26,10 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck
+      - run: npm run format:check
       - run: npm test
       - run: npm run build:electron
-      # Added by later tickets: lint (#5), coverage gate (#6), visual + axe (#2/#11),
+      # Added by later tickets: coverage gate (#6), visual + axe (#2/#11),
       # packaged e2e (#40), performance comparison (#54).

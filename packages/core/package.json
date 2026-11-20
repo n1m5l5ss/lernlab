@@ -1,0 +1,23 @@
+{
+  "name": "@lernlab/core",
+  "version": "0.0.0",
+  "private": true,
+  "description": "LernLab's domain engine: pure TypeScript with no Node, DOM or Electron imports.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
+  "scripts": {
+    "test": "tsx --no-warnings --test \"src/*.test.ts\" \"test/*.test.ts\"",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "fzstd": "^0.1.1",
+    "ts-fsrs": "5.4.2"
+  },
+  "devDependencies": {
+    "@lernlab/storage-sqlite": "*"
+  }
+}

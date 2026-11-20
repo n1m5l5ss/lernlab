@@ -20,7 +20,7 @@ npm run desktop
 ## Pull requests
 1. Branch from `dev`, one branch per issue: `feature/12-home-screen` or `fix/80-streak-reset`.
 2. Add tests for what you change.
-3. Run `npm test && npm run typecheck` before you push.
+3. Run `npm run format`, then `npm test && npm run typecheck && npm run lint` from the repo root before you push.
 4. Open the pull request into `dev`. Its title follows Conventional Commits (`feat: …`, `fix: …`) because it becomes the changelog line. In the description:
    - Write `Closes #<issue>`.
    - Say what changed and how you tested it.

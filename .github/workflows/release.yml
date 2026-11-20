@@ -1,18 +1,38 @@
 name: Build installers
 
+# Runs three ways:
+# - called by release-please.yml right after it creates a release (its tag is made with GITHUB_TOKEN,
+#   and such tags never trigger `on: push: tags`, so release-please calls this workflow directly);
+# - on a tag pushed by a person (draft release);
+# - by hand (Actions → Build installers → Run workflow): builds artifacts only.
 on:
+  workflow_call:
+    inputs:
+      tag:
+        description: Release tag to build and attach installers to, e.g. v0.2.1
+        type: string
+        required: true
   push:
     tags: ['v*']
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # The tag to build: the input when called, otherwise the pushed ref.
+  REF: ${{ inputs.tag || github.ref }}
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { ref: '${{ env.REF }}' }
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck
       - run: npm test
 
@@ -31,9 +51,16 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with: { ref: '${{ env.REF }}' }
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
+      # Installer names and the in-app version come from package.json; match the tag being built.
+      - if: inputs.tag != ''
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag }}
+        run: npm pkg set "version=${TAG#v}" --workspace apps/desktop
       - run: npm run ${{ matrix.script }}
         env:
           # Unsigned builds. Add CSC_LINK / CSC_KEY_PASSWORD (and APPLE_ID… for notarization) as secrets to sign.
@@ -46,17 +73,27 @@ jobs:
             release/*.exe
             release/*.AppImage
             release/*.deb
+            release/*.blockmap
+            release/latest*.yml
           if-no-files-found: ignore
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions: { contents: write }
     steps:
       - uses: actions/download-artifact@v4
         with: { path: artifacts, merge-multiple: true }
-      - uses: softprops/action-gh-release@v2
+      # Called by release-please: the GitHub Release already exists, so attach the installers to it.
+      - if: inputs.tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag }}
+        run: gh release upload "$TAG" artifacts/* --clobber --repo "$GITHUB_REPOSITORY"
+      # A tag pushed by a person: make a draft release to review before publishing.
+      - if: inputs.tag == ''
+        uses: softprops/action-gh-release@v2
         with:
           files: artifacts/*
           draft: true

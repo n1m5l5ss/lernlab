@@ -1,0 +1,592 @@
+{
+  "app": {
+    "name": "LernLab",
+    "loading": "Loading…",
+    "retry": "Retry"
+  },
+  "nav": {
+    "label": "Main",
+    "home": "Study",
+    "decks": "Decks",
+    "browse": "Cards",
+    "progress": "Progress",
+    "stats": "Stats",
+    "settings": "Settings"
+  },
+  "common": {
+    "save": "Save",
+    "saved": "Saved ✓",
+    "cancel": "Cancel",
+    "close": "Close",
+    "delete": "Delete",
+    "importing": "Importing…",
+    "noDate": "—",
+    "continue": "Continue",
+    "check": "Check",
+    "correctAnswer": "Correct answer:",
+    "correctIs": "Correct: {{answer}}",
+    "correctOrder": "Correct order:",
+    "correctLabel": "Correct:"
+  },
+  "settings": {
+    "dailyGoal": "Daily goal (sessions)",
+    "sessionLength": "Default session length",
+    "length": {
+      "mini": "Mini (~{{minutes}} min)",
+      "standard": "Standard (~{{minutes}} min)",
+      "long": "Long (~{{minutes}} min)"
+    },
+    "timers": "Timers",
+    "timersHint": "Timed rounds only use cards you already know. \"Challenge\" also times review questions.",
+    "timer": {
+      "off": "Off",
+      "relaxed": "Relaxed",
+      "normal": "Normal",
+      "challenge": "Challenge"
+    },
+    "sound": "Sound effects",
+    "teacherVoice": "Teacher speaks aloud (language decks)",
+    "retention": "Target memory retention",
+    "retentionHint": "Higher = more reviews. 90% is the recommended balance.",
+    "retentionLevel": {
+      "relaxed": "Relaxed ({{percent}})",
+      "balanced": "Balanced ({{percent}})",
+      "intense": "Intense ({{percent}})"
+    },
+    "language": "Language",
+    "languageHint": "More languages will come from volunteer translators.",
+    "pseudo": "Pseudo-locale (shows untranslated text)",
+    "summaryLink": "Today's summary (JSON for tutors/scripts)",
+    "perDeckNote": "New cards per day, language and goals are set per deck (Decks → ⚙).",
+    "autoUpdate": "Update automatically",
+    "autoUpdateHint": "Looks for a new version once a day and installs it when you restart. Your data is backed up first.",
+    "betaUpdates": "Get beta updates",
+    "betaUpdatesHint": "Try new features early. Betas can have bugs."
+  },
+  "home": {
+    "welcomeTitle": "Welcome to LernLab",
+    "welcomeBody": "Learn anything – languages, cloud certifications, medicine, physics – with short game rounds and smart spaced repetition. Everything stays on your computer.",
+    "welcomeAction": "Import or create your first deck",
+    "deckPicker": "Deck",
+    "deckOption": "{{name}} · {{count}} due",
+    "start": "START",
+    "startKey": "Enter",
+    "length": {
+      "mini": "Mini",
+      "standard": "Standard",
+      "long": "Long"
+    },
+    "minutes": "~{{count}} min",
+    "deckLine": "{{deck}}: {{due}} due · {{newCount}} new today",
+    "goalDone": "✅ goal done",
+    "goal_one": "goal: {{count}} session",
+    "goal_other": "goal: {{count}} sessions",
+    "studyDays": "study days this month",
+    "streak": "🔥 {{count}}",
+    "freezes_one": "streak · ❄️ {{count}} freeze",
+    "freezes_other": "streak · ❄️ {{count}} freezes",
+    "knownFromMemory": "cards you know from memory",
+    "level": "Lv {{level}}",
+    "xp": "{{xp, number}} XP",
+    "repairTitle": "Streak repair quest:",
+    "repairBody": "do 2 sessions by {{deadline}} to restore your {{days}}-day streak ({{done}}/2).",
+    "roadTo": "Road to {{goal}}",
+    "deckProgress": "{{deck}} progress",
+    "deckFallback": "Deck",
+    "knownCount": "{{known}} / {{total}} known",
+    "met": "Met {{introduced}} of {{total}} cards",
+    "today": "Today: {{xp, number}} XP · {{minutes}} min",
+    "badges": "Badges",
+    "teacherInitial": "L"
+  },
+  "decks": {
+    "title": "Your decks",
+    "newDeck": "+ New deck",
+    "import": "⬆ Import",
+    "languageDeck": "Language · {{language}}",
+    "anySubject": "Any subject",
+    "goalSuffix": " · goal: {{goal}}",
+    "cards_one": "<b>{{count}}</b> card",
+    "cards_other": "<b>{{count}}</b> cards",
+    "due": "<b>{{count}}</b> due",
+    "learned": "<b>{{count}}</b> learned",
+    "study": "Study",
+    "browse": "Cards",
+    "settingsButton": "Deck settings",
+    "empty": "No decks yet. Import one or create a new deck.",
+    "editor": {
+      "settingsTitle": "Deck settings",
+      "newTitle": "New deck",
+      "name": "Name",
+      "namePlaceholder": "e.g. AWS Solutions Architect, Anatomy, German",
+      "frontLanguage": "Language of the cards' front side",
+      "notLanguage": "Not a language deck (any subject)",
+      "languageHint": "Language decks get speaking, pronunciation and sentence-building rounds.",
+      "newPerDay": "New cards per day",
+      "goal": "Goal (optional)",
+      "goalPlaceholder": "e.g. Goethe B1, AWS SAA exam",
+      "goalSize": "Goal size",
+      "goalSizePlaceholder": "cards",
+      "exportLernpack": "Export .lernpack",
+      "exportCsv": "Export CSV",
+      "confirmDelete": "Delete the deck \"{{name}}\" with all its cards and progress? This cannot be undone."
+    },
+    "importPanel": {
+      "title": "Import cards",
+      "tab": {
+        "file": "File",
+        "paste": "Paste text",
+        "anki": "From Anki"
+      },
+      "deckName": "Deck name (optional)",
+      "deckNamePlaceholder": "Taken from the file if empty",
+      "language": "Language (optional)",
+      "languageKeep": "Not a language / keep from file",
+      "drop": "Drop a deck file here",
+      "formats": ".lernpack · Anki .apkg / .colpkg · CSV / TSV / TXT · JSON · .zip (CSV + images/audio)",
+      "choose": "Choose file",
+      "csvColumns": "CSV columns: <code>{{required}}</code> + optional <code>{{optional}}</code>",
+      "pastePlaceholder": "term<TAB>definition\nAmazon S3\tObject storage\nMitochondrion\tPowerhouse of the cell",
+      "pastedDeckName": "Pasted cards",
+      "fieldSep": "Between term and definition:",
+      "cardSep": "Between cards:",
+      "sep": {
+        "tab": "Tab",
+        "comma": "Comma",
+        "dash": "Dash ( - )",
+        "colon": "Colon",
+        "semicolon": "Semicolon",
+        "newline": "New line",
+        "pipe": "Pipe |"
+      },
+      "cardCount_one": "{{count}} card",
+      "cardCount_other": "{{count}} cards",
+      "importPasted": "Import pasted cards",
+      "checkingAnki": "Checking Anki…",
+      "ankiUnreachable": "Anki isn't reachable. Open Anki with the <b>AnkiConnect</b> add-on (code 2055492159), or export a deck from Anki as <code>.apkg</code> and drop it in the File tab.",
+      "importDeck": "Import deck",
+      "ankiDone_one": "Imported {{count}} card from Anki.",
+      "ankiDone_other": "Imported {{count}} cards from Anki.",
+      "report": "“{{deck}}”: {{added}} new, {{updated}} updated ({{total}} cards).",
+      "reportMedia_one": "{{count}} media file added.",
+      "reportMedia_other": "{{count}} media files added.",
+      "reportMissing_one": "{{count}} missing media file skipped.",
+      "reportMissing_other": "{{count}} missing media files skipped."
+    }
+  },
+  "browse": {
+    "level": {
+      "new": "new",
+      "seen": "seen",
+      "recognised": "recognised",
+      "matched": "matched",
+      "recalled": "recalled",
+      "inContext": "in context",
+      "spoken": "spoken"
+    },
+    "noDeck": "Pick or import a deck first.",
+    "count_one": "· {{count}} card",
+    "count_other": "· {{count}} cards",
+    "search": "Search cards…",
+    "addCard": "+ Add card",
+    "colFront": "Front",
+    "colBack": "Back",
+    "colLevel": "Level",
+    "colMedia": "Media",
+    "hasImage": "Has image",
+    "hasAudio": "Has audio",
+    "hasVideo": "Has video",
+    "showingFirst": "Showing first {{count}}. Search to narrow down.",
+    "selectHint": "Select a card to edit it, or add a new one. Cards can hold text, images, audio and video/GIFs.",
+    "editor": {
+      "editTitle": "Edit card",
+      "newTitle": "New card",
+      "closeLabel": "Close editor",
+      "type": "Card type",
+      "types": {
+        "basic": "Basic (front / back)",
+        "cloze": "Cloze ({{open}}gap{{close}} in the front)",
+        "mcq": "Multiple choice / multi-select question",
+        "order": "Put steps in order"
+      },
+      "question": "Question",
+      "prompt": "Prompt",
+      "front": "Front",
+      "clozePlaceholder": "The {{open}}mitochondria{{close}} is the powerhouse of the cell",
+      "frontPlaceholder": "Term or question",
+      "choices": "Choices (separate with |)",
+      "choicesPlaceholder": "Amazon EC2|AWS Lambda|AWS Fargate|Amazon RDS",
+      "correct": "Correct (numbers or texts, | separated)",
+      "steps": "Steps in the right order (separate with |)",
+      "stepsPlaceholder": "SYN|SYN-ACK|ACK",
+      "extra": "Extra (shown after)",
+      "back": "Back",
+      "backPlaceholder": "Definition or answer",
+      "alt": "Also accept (separate with |)",
+      "altPlaceholder": "colour|color",
+      "explanation": "Explanation",
+      "explanationPlaceholder": "Why it is right – shown after answering",
+      "example": "Example sentence (mark the word with <b>…</b> for fill-the-gap)",
+      "examplePlaceholder": "Ich bin <b>müde</b>.",
+      "exampleTranslation": "Example translation",
+      "category": "Category (for sorting games)",
+      "categoryPlaceholder": "e.g. der / Storage / Cardio",
+      "tags": "Tags",
+      "tagsPlaceholder": "space separated",
+      "media": "Media",
+      "mediaSet": {
+        "image": "✓ image",
+        "audio": "✓ audio",
+        "video": "✓ video/GIF"
+      },
+      "mediaAdd": {
+        "image": "+ image",
+        "audio": "+ audio",
+        "video": "+ video/GIF"
+      },
+      "removeMedia": "Remove media",
+      "preview": "Preview:",
+      "add": "Add card",
+      "starred": "★ Starred",
+      "star": "☆ Star",
+      "suspend": "Suspend",
+      "unsuspend": "Unsuspend",
+      "confirmDelete": "Delete this card and its progress?"
+    }
+  },
+  "progress": {
+    "learned": "learned (recalled from memory)",
+    "met": "cards met",
+    "left": "left in your deck",
+    "hours": "{{hours, number}} h",
+    "studied_one": "studied · {{count}} day",
+    "studied_other": "studied · {{count}} days",
+    "chartTitle": "{{deck}} learned, last 60 days",
+    "cardsFallback": "Cards",
+    "pace": "{{cards, number}} cards/day · {{minutes, number}} min/day (7-day average)",
+    "chartLabel": "Cards learned over time",
+    "today": "today",
+    "leftTitle": "How much is left",
+    "thisDeck": "This deck",
+    "lessons": "Lessons started",
+    "goalCards": "{{goal}} (≈ {{count}} cards)",
+    "goalHours": "{{goal}} study hours (estimate {{low}}–{{high}} h)",
+    "ofHours": "{{done}} / {{total}} h",
+    "of": "{{done}} / {{total}}",
+    "forecast": "Forecast",
+    "deckCurrentPace": "Finish your deck at your current pace",
+    "deckAtSetting": "Finish your deck at {{count}} new words/day",
+    "goalCurrentPace": "{{goal}} at your current pace",
+    "goalAt30": "{{goal}} at {{count}} cards/day",
+    "paceNote": "Pace counts missed days, so the dates move with what you actually do.",
+    "examNote": "Knowing the cards is only part of an exam – practise its real format too."
+  },
+  "stats": {
+    "format": {
+      "typed": "Typing",
+      "cloze": "Fill the gap",
+      "mc": "Multiple choice",
+      "match": "Match pairs",
+      "gender": "Der/die/das",
+      "listen": "Listening",
+      "dictation": "Dictation",
+      "speak": "Speaking",
+      "unscramble": "Sentence building",
+      "rain": "Word rain",
+      "boss": "Boss",
+      "intro": "New words"
+    },
+    "heatmap": "Last 18 weeks",
+    "forecast": "Next 7 days: reviews due",
+    "accuracy": "Accuracy by exercise (30 days)",
+    "seconds": "{{seconds, number(maximumFractionDigits: 1; minimumFractionDigits: 1)}} s",
+    "weak": "Weak words (14 days)",
+    "misses": "{{count}}×",
+    "weakEmpty": "Nothing yet. Play a session!",
+    "ladder": "Mastery ladder",
+    "ladderLegend": "0 seen · 1 recognised · 2 matched · 3 recalled · 4 in context · 5 spoken",
+    "ladderLevel": "L{{level}}: {{count}}"
+  },
+  "summary": {
+    "xp": "+{{xp, number}} XP",
+    "accuracy": "accuracy",
+    "answers": "answers",
+    "minutes": "minutes",
+    "streak": "🔥{{count}}",
+    "dayStreak": "day streak",
+    "noStreak": "–",
+    "goalReached": "✅ Daily goal reached (+{{xp}} XP)",
+    "newBadge": "🏅 New badge: <b>{{title}}</b> – {{desc}}",
+    "bossDefeated": "👾 Boss defeated (+{{xp}} XP)",
+    "homework": "Homework",
+    "again": "One more mini round",
+    "againKey": "Space",
+    "done": "Done",
+    "doneKey": "Enter"
+  },
+  "badges": {
+    "first": {
+      "title": "First steps",
+      "desc": "Finish your first session"
+    },
+    "streak3": {
+      "title": "Three in a row",
+      "desc": "3-day streak"
+    },
+    "streak7": {
+      "title": "One week!",
+      "desc": "7-day streak"
+    },
+    "streak30": {
+      "title": "Habit formed",
+      "desc": "30-day streak"
+    },
+    "words50": {
+      "title": "50 cards",
+      "desc": "Know 50 cards from memory"
+    },
+    "words100": {
+      "title": "100 cards",
+      "desc": "Know 100 cards from memory"
+    },
+    "words250": {
+      "title": "250 cards",
+      "desc": "Know 250 cards from memory"
+    },
+    "words500": {
+      "title": "500 cards",
+      "desc": "Know 500 cards from memory"
+    },
+    "boss": {
+      "title": "Boss slayer",
+      "desc": "Win a boss battle"
+    },
+    "gender15": {
+      "title": "Sorting pro",
+      "desc": "15 right in a row in a category sprint"
+    },
+    "perfect": {
+      "title": "Flawless",
+      "desc": "A session of 20+ answers with no mistakes"
+    },
+    "speaker": {
+      "title": "Speaking machine",
+      "desc": "Say 25 answers correctly out loud"
+    },
+    "early": {
+      "title": "Early bird",
+      "desc": "Study before 9 a.m."
+    }
+  },
+  "teacher": {
+    "start": ["Let's go!", "Here we go – three quick ones.", "Hi! Quick warm-up."],
+    "right": ["Correct!", "Exactly!", "Yes!", "Very good!", "Perfect!"],
+    "rightStreak": ["Great streak!", "Keep going!", "Strong!"],
+    "rightHot": ["Unstoppable!", "Amazing!", "What a run!"],
+    "rightArticle": ["Correct – article too!", "Exactly, with the article. Perfect!"],
+    "near": ["Almost perfect!", "Good – small fix:", "Okay, but exactly like this:"],
+    "retry": ["Close! Try once more.", "Not quite – one more try.", "Hmm. Try again."],
+    "reveal": ["Look closely – then type it out.", "Here it is. Now you:", "Remember this – type it once more."],
+    "kick": ["Quick action round!", "Speed it up!", "Stay awake – sprint!"],
+    "idle": ["Still there? Let's keep going!", "Hello? Just a few more!"],
+    "bossWin": ["Boss defeated!", "You beat the boss – strong!"],
+    "bossLose": ["The boss won this time – tomorrow!", "So close! Next time you'll get it."],
+    "done": ["Done for today. Well done!", "Session complete!"],
+    "missedDay": ["You took yesterday off. No problem – let's continue today."],
+    "timeUp": ["Time's up!", "Too slow – next!"],
+    "goalMet": ["Daily goal done! One more round?"],
+    "homework": [
+      "Explain one card from today to someone – or out loud to yourself.",
+      "Write 3 new cards about something you read today.",
+      "Skim your weak cards in Stats before bed."
+    ],
+    "homeworkLanguage": [
+      "Watch one episode of Nicos Weg (A1) on DW.",
+      "Watch one Easy German video with subtitles.",
+      "3 minutes of shadowing: repeat one sentence 5 times.",
+      "Say 5 sentences about your day – out loud!"
+    ],
+    "block": {
+      "warm": "Three quick ones. Go!",
+      "newCards_one": "{{count}} new card. Take a good look.",
+      "newCards_other": "{{count}} new cards. Take a good look.",
+      "review": "Answer from memory.",
+      "recall": "Now without help!",
+      "boss": "Your hardest cards. Three lives. Fight!",
+      "sortGender": "Der, die or das? As fast as you can!",
+      "sort": "Sort each card into its group. Fast!",
+      "match": "Match the pairs – against the clock!",
+      "trueFalse": "Quick: does this match?",
+      "lesson": "One idea, then practise it right away.",
+      "blitz": "Blitz round: answer before the timer runs out!",
+      "listen": "Listen. What does it mean?",
+      "picture": "What is this?",
+      "cloze": "What is missing?",
+      "speak": "Say it out loud!",
+      "rain": "Type the answers before they land!",
+      "rescue": "Quick look back at the hard ones."
+    },
+    "agenda": {
+      "today": "Today: {{parts}}.",
+      "todayDeck": "{{deck}} · Today: {{parts}}.",
+      "reviews_one": "{{count}} review",
+      "reviews_other": "{{count}} reviews",
+      "newCards_one": "{{count}} new card",
+      "newCards_other": "{{count}} new cards",
+      "lesson": "one lesson",
+      "games": "review games"
+    }
+  },
+  "session": {
+    "blitz": "⚡ Blitz · {{n}}/{{total}}",
+    "perQuestion": "{{count}}s each",
+    "stop": "Stop (Esc)",
+    "combo": "🔥 {{count}}",
+    "xp": "⭐ {{xp, number}}",
+    "xpLabel": "XP this session",
+    "xpFloat": "+{{xp}}"
+  },
+  "keys": {
+    "enter": "Enter",
+    "space": "Space",
+    "tab": "Tab"
+  },
+  "ex": {
+    "intro": {
+      "guessTitle": "New word · guess the article",
+      "guessHint": "{{meaning}} · just guess – you learn either way",
+      "title": "New card",
+      "sayWord": "🔊 Word",
+      "playAudio": "🔊 Audio",
+      "gotIt": "Got it"
+    },
+    "choice": {
+      "listen": "Listen",
+      "listenHint": "What does it mean? <kbd>{{key}}</kbd> replays",
+      "picture": "What is this?",
+      "meaning": "What does it mean?",
+      "pick": "Pick the answer",
+      "sayIt": "How do you say…",
+      "matches": "Which one matches?",
+      "replay": "Play again"
+    },
+    "tf": {
+      "title": "True or false?",
+      "false": "✗ False",
+      "true": "✓ True"
+    },
+    "flip": {
+      "title": "Recall · think of the answer",
+      "show": "Show answer",
+      "hint": "Say or think your answer first – that's what makes it stick.",
+      "no": "Didn't know",
+      "partly": "Partly",
+      "yes": "Knew it"
+    },
+    "typed": {
+      "overridden": "Okay – counted as correct.",
+      "hint": "Hint: {{hint}}",
+      "placeholder": "Type your answer…",
+      "copyHint": "Type it exactly to continue – writing it fixes it in memory.",
+      "copy": "Copy it",
+      "showAnswer": "Show answer",
+      "hintButton": "Hint",
+      "iWasRightTitle": "The checker was too strict – count it as correct",
+      "iWasRight": "I was right",
+      "titleLanguage": "Type it in the language",
+      "title": "Type the answer"
+    },
+    "cloze": {
+      "title": "Fill the gap"
+    },
+    "unscramble": {
+      "title": "Build the sentence",
+      "help": "Click tiles or press numbers · Backspace undoes"
+    },
+    "dictation": {
+      "title": "Dictation",
+      "hint": "Type exactly what you hear.",
+      "play": "Play the sentence"
+    },
+    "speak": {
+      "title": "Say it out loud",
+      "listening": "Listening…",
+      "pressSpace": "Press Space and speak",
+      "sayThenSpace": "Say it out loud, then press Space",
+      "heard": "I heard: “{{heard}}” – {{retry}}",
+      "noMic": "No mic? Say it aloud and check yourself",
+      "didYouSay": "Did you say it like this?",
+      "no": "No",
+      "yes": "Yes",
+      "repeat": "Listen and repeat:",
+      "heardShort": "Heard: “{{heard}}”",
+      "again": "🔊 again",
+      "mic": "Start speaking",
+      "playModel": "Play the model answer"
+    },
+    "lesson": {
+      "title": "Lesson · {{group}}",
+      "gotIt": "Got it – practise!"
+    },
+    "mcq": {
+      "title": "Question",
+      "titleMulti_one": "Question · choose {{count}}",
+      "titleMulti_other": "Question · choose {{count}}"
+    },
+    "order": {
+      "title": "Put in order",
+      "help": "Click steps in order or press numbers · Backspace undoes"
+    }
+  },
+  "check": {
+    "articleWrong": "Article: {{right}}, not {{given}}",
+    "articleMissing": "Article missing: {{article}} {{word}}",
+    "capitals": "Capitals: {{answer}}",
+    "spelling": "Spelling: {{answer}}",
+    "almost": "Almost! Correct: {{answer}}"
+  },
+  "games": {
+    "sprintArticles": "Der · die · das · {{seconds}}s",
+    "sprint": "Category sprint · {{seconds}}s",
+    "hits": "✓ {{count}}",
+    "best": "Best {{count}}",
+    "match": "Match pairs",
+    "elapsed": "⏱ {{count}}s",
+    "rain": "Word rain · {{seconds}}s",
+    "rainHit": "💥 {{count}}",
+    "rainMiss": "💧 {{count}}",
+    "rainPlaceholder": "Type the answer…",
+    "articleOptional": "Article optional here.",
+    "rainSpeed": "Speed rises as you go ({{seconds}}s in).",
+    "boss": "Boss",
+    "lives": "{{count}} of {{total}} lives left",
+    "won": "Defeated! 🏆",
+    "lost": "Not yet…",
+    "wonText_one": "+{{xp}} XP bonus. {{count}} hit.",
+    "wonText_other": "+{{xp}} XP bonus. {{count}} hits.",
+    "lostText": "These cards come back tomorrow. No penalty."
+  },
+  "errors": {
+    "failed": "Something went wrong. Please try again.",
+    "unknown_channel": "The app made a request it does not know. Please restart LernLab.",
+    "invalid_input": "That input was not valid.",
+    "migration_failed": "Your data could not be upgraded. LernLab restored your backup.",
+    "name_required": "Give the deck a name.",
+    "front_required": "The card needs a front.",
+    "deck_not_found": "That deck no longer exists.",
+    "card_not_found": "That card no longer exists.",
+    "no_cards": "No cards found. Use one card per line: front, back (comma or tab separated).",
+    "unsupported_zip": "This zip is not a deck. Use a .lernpack, an Anki .apkg, or a zip with a CSV and media files.",
+    "not_lernpack": "This file is not a LernLab deck.",
+    "lernpack_too_new": "This deck needs a newer version of LernLab (format v{{version}}).",
+    "lernpack_no_cards": "This LernLab deck has no cards.",
+    "not_anki": "This file is not an Anki package.",
+    "unsupported_media": "This media file type is not supported.",
+    "anki_unreachable": "Anki is not reachable. Open Anki with the AnkiConnect add-on and try again."
+  },
+  "update": {
+    "ready": "LernLab {{version}} is ready. Restart to update; your progress is saved and backed up.",
+    "restart": "Restart now",
+    "restarting": "Restarting…"
+  }
+}

@@ -1,5 +1,7 @@
 # LernLab
 
+[![CI](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml)
+
 **Free, open-source flashcards that feel like a game, for any subject.**
 
 > **Status:** Working prototype (v0.2). We are planning version 1.0 now: see [docs/PLAN.md](docs/PLAN.md) and the [issues](https://github.com/n1m5l5ss/lernlab/issues). There are no installers to download yet.
@@ -124,8 +126,10 @@ To move it, use **File → Use a different data folder…**, for example a Dropb
 ## Contributing
 
 ```bash
-npm test && npm run typecheck
+npm test && npm run typecheck && npm run lint
 ```
+
+The repo is an npm workspace: the engine lives in `packages/core` and the app in `apps/desktop`. Run every command from the repo root.
 
 Issues and pull requests are welcome, especially new importers, card types, translations of the interface, and shared decks for `examples/`. Shared decks must be your own work or openly licensed. No copyrighted exam questions, please.
 
