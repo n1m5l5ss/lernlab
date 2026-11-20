@@ -5,17 +5,13 @@ import { api } from './api';
 import i18next, { LANGUAGES, PSEUDO, formatPercent, setLanguage } from './i18n';
 import { THEMES } from '@lernlab/ui/tokens';
 import { applyTheme } from './theme';
+import { LENGTHS } from './lengths';
 
 const TIMERS = [
   { key: 'off', blitz: 0, q: 0 },
   { key: 'relaxed', blitz: 20, q: 0 },
   { key: 'normal', blitz: 8, q: 0 },
   { key: 'challenge', blitz: 5, q: 12 },
-] as const;
-const LENGTHS = [
-  { key: 'mini', minutes: 4 },
-  { key: 'standard', minutes: 12 },
-  { key: 'long', minutes: 20 },
 ] as const;
 const RETENTION = [
   { key: 'relaxed', value: 0.85 },
@@ -99,7 +95,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
         >
           {LENGTHS.map((l) => (
             <option key={l.key} value={l.key}>
-              {t(`settings.length.${l.key}`, { minutes: l.minutes })}
+              {t('home.lengthMinutes', { count: l.minutes })}
             </option>
           ))}
         </select>

@@ -86,6 +86,19 @@ export function addDays(key: string, n: number): string {
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
 
+/** This week, Monday to Sunday, around `today` (a day key): which days had a session. Weekly consistency, not a streak. */
+export function weekDays(today: string, studied: Set<string>): { day: string; studied: boolean; today: boolean }[] {
+  const [y, m, d] = today.split('-').map(Number);
+  const fromMonday = (new Date(y, m - 1, d, 12).getDay() + 6) % 7;
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = addDays(today, i - fromMonday);
+    return { day, studied: studied.has(day), today: day === today };
+  });
+}
+
+/** Rough minutes to clear today's work: about 8 s per review and 30 s per new card (meet, recognise, recall). */
+export const estimateMinutes = (due: number, fresh: number) => Math.max(1, Math.round((due * 8 + fresh * 30) / 60));
+
 export function daysBetween(a: string, b: string): number {
   const [y1, m1, d1] = a.split('-').map(Number);
   const [y2, m2, d2] = b.split('-').map(Number);

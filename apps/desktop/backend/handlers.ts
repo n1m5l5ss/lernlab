@@ -137,8 +137,9 @@ export const handlers = {
     deleteDeck(id);
     return { ok: true };
   }),
-  'decks.activate': h(v.object({ id: v.id }), ({ id }) => {
-    if (!getDeck(id)) throw new AppError('deck_not_found', 'Deck not found');
+  /** Study one deck, or every deck when `id` is null. */
+  'decks.activate': h(v.object({ id: v.nullable(v.id) }), ({ id }) => {
+    if (id !== null && !getDeck(id)) throw new AppError('deck_not_found', 'Deck not found');
     setMeta(getDb(), 'activeDeck', id);
     return { ok: true };
   }),

@@ -1,6 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gradeFor, levelFor, xpFor, settleStreak, recordSession, NEW_STREAK, dayKey } from './game';
+import {
+  gradeFor,
+  levelFor,
+  xpFor,
+  settleStreak,
+  recordSession,
+  NEW_STREAK,
+  dayKey,
+  weekDays,
+  estimateMinutes,
+} from './game';
 
 test('recognition formats never produce an SRS grade', () => {
   assert.equal(gradeFor({ format: 'mc', correct: true, responseMs: 900, answerLength: 4, reps: 0 }), null);
@@ -60,4 +70,26 @@ test('streak: counting, freezes, break and repair', () => {
 test('day starts at 4am', () => {
   assert.equal(dayKey(new Date(2026, 10, 21, 2, 0)), '2026-11-20');
   assert.equal(dayKey(new Date(2026, 10, 21, 5, 0)), '2026-11-21');
+});
+
+test('the week runs Monday to Sunday around today and marks study days', () => {
+  // 2026-11-20 is a Friday.
+  const week = weekDays('2026-11-20', new Set(['2026-11-16', '2026-11-17', '2026-11-19', '2026-11-20', '2026-11-13']));
+  assert.deepEqual(
+    week.map((d) => d.day),
+    ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22'],
+  );
+  assert.deepEqual(
+    week.map((d) => d.studied),
+    [true, true, false, true, true, false, false],
+  );
+  assert.equal(week.find((d) => d.today)?.day, '2026-11-20');
+  assert.equal(weekDays('2026-11-16', new Set())[0].today, true); // Monday
+  assert.equal(weekDays('2026-11-22', new Set())[6].today, true); // Sunday
+});
+
+test("today's estimate counts reviews quickly and new cards slowly, and is never zero", () => {
+  assert.equal(estimateMinutes(24, 10), 8);
+  assert.equal(estimateMinutes(0, 0), 1);
+  assert.equal(estimateMinutes(120, 0), 16);
 });

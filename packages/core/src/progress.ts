@@ -2,7 +2,17 @@
 import type { Row, SqlValue } from './host';
 import { getDb, getMeta, setMeta, type DB } from './db';
 import { host } from './host';
-import { addDays, BONUS, dayKey, levelFor, NEW_STREAK, recordSession, settleStreak, type StreakState } from './game';
+import {
+  addDays,
+  BONUS,
+  dayKey,
+  levelFor,
+  NEW_STREAK,
+  recordSession,
+  settleStreak,
+  type StreakState,
+  weekDays,
+} from './game';
 import { activeDeckId, deckNewPerDay, dueItemIds, getSettings, introducedTodayCount, newItemIds } from './learn';
 import { deckCounts, getDeck, listDecks, LANGUAGES } from './library';
 
@@ -121,6 +131,15 @@ export function appState(d: DB = getDb(), now = new Date()) {
       goalMet: !!t.goal_met,
     },
     studyDaysMonth,
+    week: weekDays(
+      today,
+      new Set(
+        d
+          .prepare('SELECT day FROM days WHERE sessions > 0 AND day BETWEEN ? AND ?')
+          .all(addDays(today, -6), addDays(today, 6))
+          .map((r: Row) => r.day as string),
+      ),
+    ),
     wordsProducible: wordsProducible(d, deckId),
     goal: goalProgress(deckId, d),
     achievements: getMeta<Record<string, string>>(d, 'achievements', {}),

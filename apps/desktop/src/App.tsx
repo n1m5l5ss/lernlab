@@ -12,8 +12,9 @@ import { Settings } from './Settings';
 import { Progress } from './Progress';
 import { Decks } from './Decks';
 import { Browse } from './Browse';
+import { Badges } from './Badges';
 import { Shell } from './Shell';
-import { setLanguage } from './i18n';
+import { formatDate, setLanguage } from './i18n';
 import { applyTheme } from './theme';
 import { hashFor, isStartHash, routeFromHash, type Route } from './routes';
 
@@ -130,7 +131,10 @@ export function App() {
     );
 
   return (
-    <Shell route={route}>
+    <Shell
+      route={route}
+      kicker={route === 'home' ? formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }) : undefined}
+    >
       {route === 'home' && <Home state={state} onStart={start} refresh={refresh} goDecks={() => go('decks')} />}
       {route === 'decks' && (
         <Decks state={state} refresh={refresh} onStudy={() => go('home')} onBrowse={() => go('cards')} />
@@ -139,6 +143,7 @@ export function App() {
       {route === 'progress' && (
         <div className="col" style={{ gap: 'var(--space-5)' }}>
           <Progress />
+          <Badges got={state.achievements} />
           <Stats />
         </div>
       )}
