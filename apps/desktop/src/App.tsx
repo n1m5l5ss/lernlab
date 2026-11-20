@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SessionLength, SessionPlan } from '@lernlab/core/types';
+import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { setSound } from './audio';
 import { Home } from './Home';
@@ -11,20 +12,24 @@ import { Settings } from './Settings';
 import { Progress } from './Progress';
 import { Decks } from './Decks';
 import { Browse } from './Browse';
+import { Shell } from './Shell';
 import { setLanguage } from './i18n';
 import { applyTheme } from './theme';
+import { hashFor, isStartHash, routeFromHash, type Route } from './routes';
 
-type Tab = 'home' | 'decks' | 'browse' | 'progress' | 'stats' | 'settings';
-type View =
-  | { name: Tab }
+type AppState = OutputOf<'state.get'>;
+/** The study session and its summary fill the window; everything else sits in the shell. */
+type FullScreen =
   | { name: 'play'; plan: SessionPlan }
-  | { name: 'summary'; result: SessionResult; server: any; lang: string | null };
-const TABS: Tab[] = ['home', 'decks', 'browse', 'progress', 'stats', 'settings'];
+  | { name: 'summary'; result: SessionResult; server: OutputOf<'session.finish'> | null; lang: string | null };
+
+const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export function App() {
   const { t } = useTranslation();
-  const [state, setState] = useState<any>(null);
-  const [view, setView] = useState<View>({ name: 'home' });
+  const [state, setState] = useState<AppState | null>(null);
+  const [route, setRoute] = useState<Route>(() => routeFromHash(location.hash));
+  const [full, setFull] = useState<FullScreen | null>(null);
   const [error, setError] = useState('');
 
   const refresh = () =>
@@ -37,28 +42,41 @@ export function App() {
         applyTheme(s.settings.theme);
         return s;
       })
-      .catch((e) => setError(e.message));
+      .catch((e: unknown) => {
+        setError(message(e));
+        return null;
+      });
   const start = async (length: SessionLength) => {
     try {
-      setView({ name: 'play', plan: await api.session(length) });
-    } catch (e: any) {
-      setError(e.message);
+      setFull({ name: 'play', plan: await api.session(length) });
+    } catch (e) {
+      setError(message(e));
     }
+  };
+  const go = (r: Route) => {
+    setFull(null);
+    if (location.hash !== hashFor(r)) location.hash = hashFor(r);
+    else setRoute(r);
   };
 
   useEffect(() => {
     refresh().then((s) => {
       // #start opens straight into a session: zero clicks to begin (bookmark it, or use the desktop shortcut).
-      if (s?.decks?.length && location.hash.replace(/[#/]/g, '') === 'start') {
-        history.replaceState(null, '', '/');
+      if (s?.decks?.length && isStartHash(location.hash)) {
+        history.replaceState(null, '', hashFor('home'));
         start(s.settings.sessionLength);
       }
     });
     const onHash = () => {
-      if (location.hash.replace(/[#/]/g, '') === 'start') {
-        history.replaceState(null, '', '/');
+      if (isStartHash(location.hash)) {
+        history.replaceState(null, '', hashFor('home'));
+        setRoute('home');
         start('standard');
+        return;
       }
+      setRoute(routeFromHash(location.hash));
+      setFull(null);
+      refresh();
     };
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
@@ -66,14 +84,14 @@ export function App() {
 
   const finish = async (result: SessionResult, lang: string | null) => {
     const server = await api.finish(result).catch(() => null);
-    setView({ name: 'summary', result, server, lang });
+    setFull({ name: 'summary', result, server, lang });
     refresh();
   };
 
   if (error)
     return (
       <div className="wrap">
-        <div className="card feedback wrong">
+        <div className="card feedback wrong" role="alert">
           {error}{' '}
           <button
             className="btn"
@@ -88,64 +106,43 @@ export function App() {
       </div>
     );
   if (!state) return <div className="wrap muted">{t('app.loading')}</div>;
-  if (view.name === 'play')
+  if (full?.name === 'play')
     return (
       <Session
-        plan={view.plan}
+        plan={full.plan}
         settings={state.settings}
-        onFinish={(r) => finish(r, view.plan.lang)}
+        onFinish={(r) => finish(r, full.plan.lang)}
         onQuit={() => {
-          setView({ name: 'home' });
+          go('home');
           refresh();
         }}
       />
     );
-  if (view.name === 'summary')
+  if (full?.name === 'summary')
     return (
       <Summary
-        result={view.result}
-        server={view.server}
-        lang={view.lang}
+        result={full.result}
+        server={full.server}
+        lang={full.lang}
         onAgain={() => start('mini')}
-        onHome={() => setView({ name: 'home' })}
+        onHome={() => go('home')}
       />
     );
 
   return (
-    <div className="wrap" style={{ maxWidth: view.name === 'browse' || view.name === 'decks' ? 1180 : undefined }}>
-      <nav className="nav" aria-label={t('nav.label')}>
-        <div className="logo grow">
-          <img src="/icon.svg" alt="" />
-          {t('app.name')}
+    <Shell route={route}>
+      {route === 'home' && <Home state={state} onStart={start} refresh={refresh} goDecks={() => go('decks')} />}
+      {route === 'decks' && (
+        <Decks state={state} refresh={refresh} onStudy={() => go('home')} onBrowse={() => go('cards')} />
+      )}
+      {route === 'cards' && <Browse state={state} refresh={refresh} />}
+      {route === 'progress' && (
+        <div className="col" style={{ gap: 'var(--space-5)' }}>
+          <Progress />
+          <Stats />
         </div>
-        {TABS.map((n) => (
-          <button
-            key={n}
-            className={`tab ${view.name === n ? 'on' : ''}`}
-            onClick={() => {
-              setView({ name: n });
-              refresh();
-            }}
-          >
-            {t(`nav.${n}`)}
-          </button>
-        ))}
-      </nav>
-      {view.name === 'home' && (
-        <Home state={state} onStart={start} refresh={refresh} goDecks={() => setView({ name: 'decks' })} />
       )}
-      {view.name === 'decks' && (
-        <Decks
-          state={state}
-          refresh={refresh}
-          onStudy={() => setView({ name: 'home' })}
-          onBrowse={() => setView({ name: 'browse' })}
-        />
-      )}
-      {view.name === 'browse' && <Browse state={state} refresh={refresh} />}
-      {view.name === 'progress' && <Progress />}
-      {view.name === 'stats' && <Stats />}
-      {view.name === 'settings' && <Settings state={state} onSaved={refresh} />}
-    </div>
+      {route === 'settings' && <Settings state={state} onSaved={refresh} />}
+    </Shell>
   );
 }
