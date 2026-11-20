@@ -2,6 +2,14 @@
 
 All notable changes to LernLab are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/). New entries are added automatically by release-please from pull-request titles. See [docs/RELEASING.md](docs/RELEASING.md).
 
+## [0.2.1](https://github.com/n1m5l5ss/lernlab/compare/v0.2.0...v0.2.1) (2026-11-20)
+
+
+### Fixed
+
+* let tests clean up temp folders on Windows ([c4d9e3e](https://github.com/n1m5l5ss/lernlab/commit/c4d9e3e764e795a3b341a58ec1c58a7e5b8f9e55))
+* make the test command work on Windows ([06c9754](https://github.com/n1m5l5ss/lernlab/commit/06c9754dbf64abc7f34e19993e704c863040aa0a))
+
 ## [0.2.0] - 2026-11-20
 
 Prototype release (not yet published as installers).
