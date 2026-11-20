@@ -57,6 +57,11 @@ export function Shell({ route, kicker, children }: { route: Route; kicker?: stri
   const heading = useRef<HTMLHeadingElement>(null);
   const first = useRef(true);
 
+  // The window title names the screen too (WCAG 2.4.2).
+  useEffect(() => {
+    document.title = t('app.windowTitle', { page: t(`pages.${route}`) });
+  }, [route, t]);
+
   // Moving to another screen puts focus on its heading, so screen readers announce it and Tab starts there.
   useEffect(() => {
     if (first.current) {

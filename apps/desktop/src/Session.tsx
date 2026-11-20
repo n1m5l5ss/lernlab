@@ -465,6 +465,12 @@ export function Session({
       askLeave();
     }
   });
+  // Each new block names itself to screen readers, unless an exercise already put focus in its answer field.
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const blockId = blocks[bi]?.id;
+  useEffect(() => {
+    if (!document.activeElement || document.activeElement === document.body) titleRef.current?.focus();
+  }, [blockId]);
 
   const b = blocks[bi];
   if (!b) return null;
@@ -497,7 +503,9 @@ export function Session({
           </svg>
           {tr('session.end')} <kbd>{tr('keys.esc')}</kbd>
         </button>
-        <div className="session-title">{title}</div>
+        <h1 ref={titleRef} tabIndex={-1} className="session-title">
+          {title}
+        </h1>
         <div className="session-meta">
           {step && <span>{tr('session.step', { n: Math.min(step.done + 1, step.total), total: step.total })}</span>}
           {combo >= 2 && <span className="session-combo">{tr('session.combo', { count: combo })}</span>}

@@ -1,5 +1,5 @@
 // The end of a session: what you recalled, what you earned, and the cards that come back tomorrow.
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import confetti from 'canvas-confetti';
 import { motionReduced } from './display';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
 import { sfx } from './audio';
 import { useKeys } from './ctx';
+import { controlOwnsKey } from './keys-logic';
 import { formatNumber } from './i18n';
 import { Rich } from './rich';
 import type { SessionResult } from './Session';
@@ -31,13 +32,16 @@ export function Summary({
   const { t } = useTranslation();
   const f = useMemo(() => summaryFacts(result, server, items), [result, server, items]);
   const moments = useMemo(() => summaryMoments(f, server), [f, server]);
+  const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
+    heading.current?.focus(); // screen readers announce the result first
     sfx.win();
     // A celebration only at the end, and only for a real milestone.
     if ((server?.goalMetNow || server?.unlocked?.length || f.levelUp) && !motionReduced())
       confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 }, disableForReducedMotion: true });
   }, []);
   useKeys((e) => {
+    if (controlOwnsKey(e.key, e.target as Element | null)) return; // Space on "Done" means Done
     if (e.key === 'Enter') {
       e.preventDefault();
       onHome();
@@ -86,7 +90,7 @@ export function Summary({
       <p className="summary-kicker">
         {t(result.practice ? 'summary.kickerPractice' : 'summary.kicker', { count: f.minutes })}
       </p>
-      <h1 tabIndex={-1}>
+      <h1 ref={heading} tabIndex={-1}>
         {f.total ? t('summary.recalled', { count: f.recalled, total: f.total }) : t('summary.noAnswers')}
       </h1>
       {result.practice && <p className="summary-note">{t('summary.practice')}</p>}

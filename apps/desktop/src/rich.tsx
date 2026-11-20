@@ -15,7 +15,8 @@ export function Media({ item, size = 'md' }: { item: Item; size?: 'sm' | 'md' | 
   return (
     <div className="media" style={{ maxHeight: max }}>
       {item.video ? (
-        <video src={src(item.video)} autoPlay muted loop playsInline style={{ maxHeight: max }} />
+        // Controls let people pause the looping video (WCAG 2.2.2).
+        <video src={src(item.video)} autoPlay muted loop playsInline controls style={{ maxHeight: max }} />
       ) : (
         <img src={src(item.image!)} alt="" style={{ maxHeight: max }} />
       )}

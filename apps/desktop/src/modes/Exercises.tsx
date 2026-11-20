@@ -2,7 +2,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Exercise, Item } from '@lernlab/core/types';
-import { checkAnswer, similarity, normalize, type CheckResult } from '@lernlab/core/text';
+import { checkAnswer, similarity, normalize, stripHtml, type CheckResult } from '@lernlab/core/text';
 import { hear, playMedia, say, recognizer, sfx } from '../audio';
 import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
@@ -286,6 +286,14 @@ export function Choice({
       {timedOut && (
         <div role="status" className="feedback wrong">
           {ctx.t.timeUp()}
+        </div>
+      )}
+      {picked !== null && !timedOut && (
+        // Said in words with an icon, not only by the options' colours (WCAG 1.4.1), and announced.
+        <div role="status" className={`feedback ${picked === ex.answerIndex ? 'right' : 'wrong'}`}>
+          {picked === ex.answerIndex
+            ? t('ex.choice.right')
+            : t('ex.choice.wrong', { answer: stripHtml(ex.options[ex.answerIndex]) })}
         </div>
       )}
       {picked !== null && picked !== ex.answerIndex && !seconds && (
