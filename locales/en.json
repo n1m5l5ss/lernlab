@@ -3,7 +3,9 @@
     "name": "LernLab",
     "windowTitle": "{{page}} – LernLab",
     "loading": "Loading…",
-    "retry": "Retry"
+    "retry": "Retry",
+    "reconnecting": "Reconnecting to your data…",
+    "dataFailed": "LernLab can't reach your data right now. Close and reopen LernLab; your progress is saved."
   },
   "nav": {
     "label": "Main",
@@ -934,6 +936,8 @@
   "errors": {
     "failed": "Something went wrong. Please try again.",
     "unknown_channel": "The app made a request it does not know. Please restart LernLab.",
+    "data_process_exit": "LernLab lost touch with your data for a moment. Please try again.",
+    "data_process_down": "LernLab can't reach your data right now. Close and reopen LernLab; your progress is saved.",
     "invalid_input": "That input was not valid.",
     "migration_failed": "Your data could not be upgraded. LernLab restored your backup.",
     "name_required": "Give the deck a name.",

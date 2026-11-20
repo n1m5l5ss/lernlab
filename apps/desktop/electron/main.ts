@@ -7,6 +7,8 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
+  MessageChannelMain,
+  type MessagePortMain,
   nativeTheme,
   net,
   protocol,
@@ -29,6 +31,14 @@ import { applyPrefs, setupReminders, type ReminderStatus } from './reminders';
 import { reminderPrefsOf, startedAtLogin } from './reminder-policy';
 import { MIN_SIZE, restoreWindow, type WindowState } from './window-state';
 import { HOME_SELECTOR, isSmokeTest, SMOKE_FAIL, SMOKE_OK, waitFor } from './smoke';
+import { planRestart } from './data-restart';
+import {
+  parseDataMessage,
+  type ConnectMessage,
+  type DataRequest,
+  type DataResult,
+  type DataStatus,
+} from '../backend/data-protocol';
 
 // Installer smoke test (see smoke.ts): a fresh, throw-away profile, so it never touches real data.
 const smoke = isSmokeTest(process.argv);
@@ -69,34 +79,71 @@ const isAppUrl = (url: string) => normalizeUrl(url) === appUrl;
 
 /* ── Data process: the only place with the database ── */
 
-type Result = { ok: true; value: unknown } | { ok: false; error: { code: string; message: string } };
-let data: UtilityProcess | null = null;
+// Main talks to it over a MessageChannel port with typed, checked messages (backend/data-protocol.ts).
+// Requests made while it starts or restarts wait for it; the window is told while it reconnects.
+type Result = DataResult;
+/** The port to the running data process, once it has opened the database; null while (re)starting. */
+let data: MessagePortMain | null = null;
 let nextId = 1;
-let restarts = 0;
+let crashes = 0;
+let dataStatus: DataStatus = 'ok';
 const pending = new Map<number, (r: Result) => void>();
+/** Requests waiting for the data process to be ready. */
+const waiting: DataRequest[] = [];
+const failure = (code: string): Result => ({ ok: false, error: { code, message: 'Please try again.' } });
+
+function setDataStatus(status: DataStatus) {
+  if (status === dataStatus) return;
+  dataStatus = status;
+  if (win && !win.isDestroyed()) win.webContents.send('lernlab:data-status', status);
+}
 
 function startDataProcess() {
-  const child = utilityProcess.fork(join(__dirname, 'data.cjs'), [], {
+  const child: UtilityProcess = utilityProcess.fork(join(__dirname, 'data.cjs'), [], {
     serviceName: 'LernLab data',
     env: { ...process.env, LERNLAB_DATA: dataDir(), LERNLAB_AUTO_ANKI: '0' },
   });
-  child.on('message', (msg: { id: number; result: Result } | { fatal: string }) => {
-    if ('fatal' in msg) return fatal(msg.fatal);
+  const startedAt = Date.now();
+  const { port1: port, port2 } = new MessageChannelMain();
+  child.postMessage({ type: 'connect' } satisfies ConnectMessage, [port2]);
+  port.on('message', ({ data: raw }) => {
+    const msg = parseDataMessage(raw);
+    if (!msg) return console.error('Main: dropped a malformed message from the data process.');
+    if (msg.type === 'fatal') return fatal(msg.message);
+    if (msg.type === 'ready') {
+      data = port;
+      setDataStatus('ok');
+      waiting.splice(0).forEach((req) => port.postMessage(req));
+      return;
+    }
     pending.get(msg.id)?.(msg.result);
     pending.delete(msg.id);
   });
+  port.start();
   child.on('exit', (code) => {
     data = null;
-    for (const done of pending.values())
-      done({ ok: false, error: { code: 'data_process_exit', message: 'Please try again.' } });
-    pending.clear();
-    if (app.isReady() && !quitting && restarts < 5) {
-      console.error(`Data process exited (${code}); restarting.`);
-      setTimeout(startDataProcess, 500 * 2 ** restarts++);
+    port.close();
+    // A request that was running may or may not have finished: say so instead of sending it twice.
+    // Requests still waiting were never sent; they go to the restarted process.
+    const queued = new Set(waiting.map((req) => req.id));
+    for (const id of [...pending.keys()]) if (!queued.has(id)) settle(id, failure('data_process_exit'));
+    if (!app.isReady() || quitting) return;
+    const next = planRestart(crashes, Date.now() - startedAt);
+    if (!next) {
+      console.error(`Data process exited (${code}) again; giving up.`);
+      for (const req of waiting.splice(0)) settle(req.id, failure('data_process_down'));
+      return setDataStatus('failed');
     }
+    console.error(`Data process exited (${code}); restarting in ${next.delayMs} ms.`);
+    crashes = next.crashes;
+    setDataStatus('reconnecting');
+    setTimeout(startDataProcess, next.delayMs);
   });
-  child.once('spawn', () => (restarts = 0));
-  data = child;
+}
+
+function settle(id: number, result: Result) {
+  pending.get(id)?.(result);
+  pending.delete(id);
 }
 
 /** The data could not be opened (e.g. a failed update, already rolled back). Explain and quit. */
@@ -110,13 +157,14 @@ function fatal(message: string) {
   app.exit(1);
 }
 
-/** Send one request to the data process. Never throws. */
+/** Send one request to the data process, waiting while it (re)starts. Never throws. */
 function callData(channel: string, input: unknown): Promise<Result> {
   return new Promise((resolve) => {
-    if (!data) return resolve({ ok: false, error: { code: 'data_process_down', message: 'Please try again.' } });
-    const id = nextId++;
-    pending.set(id, resolve);
-    data.postMessage({ id, channel, input });
+    if (dataStatus === 'failed') return resolve(failure('data_process_down'));
+    const req: DataRequest = { id: nextId++, channel, input };
+    pending.set(req.id, resolve);
+    if (data) data.postMessage(req);
+    else waiting.push(req);
   });
 }
 
@@ -267,6 +315,7 @@ async function main() {
     }
     return result;
   });
+  ipcMain.handle('lernlab:data-status', (e): DataStatus | null => (trusted(e.senderFrame) ? dataStatus : null));
 
   const mediaDir = join(dir, 'media');
   protocol.handle('lernlab-media', (req) => {

@@ -67,13 +67,31 @@ function restoreDb(d: DB, file: string, backupFile: string) {
 }
 
 /**
+ * Connection settings from docs/ARCHITECTURE.md §5: WAL with NORMAL sync (safe and fast in WAL), foreign
+ * keys, wait up to 5 s for a lock, temporary tables in memory and a page cache of about 20 MB.
+ */
+const PRAGMAS = `
+  PRAGMA journal_mode = WAL;
+  PRAGMA synchronous = NORMAL;
+  PRAGMA foreign_keys = ON;
+  PRAGMA busy_timeout = 5000;
+  PRAGMA temp_store = MEMORY;
+  PRAGMA cache_size = -20000;
+`;
+
+/** Let SQLite refresh its query planner statistics where they are stale. Cheap; run hourly and on close. */
+export function optimizeDb(d: DB): void {
+  d.exec('PRAGMA optimize');
+}
+
+/**
  * Open a database file with LernLab's schema, running pending migrations with a backup first.
  * Throws MigrationError (from @lernlab/core/migrate) after restoring the backup if a migration fails.
  */
 export function openDb(file: string, migrations?: Migration[]): DB {
   mkdirSync(dirname(file), { recursive: true });
   const d = new Ctor(file) as DB;
-  d.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
+  d.exec(PRAGMAS);
   migrate(d, {
     migrations,
     backup: (fromVersion) => backupDb(d, file, fromVersion),
@@ -94,6 +112,11 @@ export function getAppDb(file = resolve(dataDir(), 'lernlab.db')): DB {
 
 /** Close the app database (to swap its file); the next getAppDb() opens it again. */
 export function closeAppDb(): void {
+  try {
+    if (db) optimizeDb(db);
+  } catch {
+    // Only statistics: never stand in the way of closing.
+  }
   db?.close();
   db = null;
 }

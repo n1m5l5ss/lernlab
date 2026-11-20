@@ -33,7 +33,7 @@ The app runs as four separate parts. Only the data process touches the database,
 | Renderer | UI only, at `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false` | Touch files, network or the database directly |
 | Data process | The only database connection, all domain work, imports and backups | Know about windows or React |
 
-**Why a separate data process?** `node:sqlite` is synchronous. In the main process, a slow query or a 10,000-card import would freeze the whole app. **Today (#7):** this is in place. `apps/desktop/backend/process.ts` is the data process; main only routes requests (`electron/main.ts`). Requests are checked by small hand-written validators in `backend/validate.ts` rather than zod (no new dependency yet), in the data process only. The web dev mode (`npm start`) runs the same handler table over HTTP on localhost; the desktop app never starts that server, and a test checks its bundles contain no server code.
+**Why a separate data process?** `node:sqlite` is synchronous. In the main process, a slow query or a 10,000-card import would freeze the whole app. **Today (#7):** this is in place. `apps/desktop/backend/process.ts` is the data process; main only routes requests (`electron/main.ts`). Requests are checked by small hand-written validators in `backend/validate.ts` rather than zod (no new dependency yet), in the data process only. **Today (#56):** main hands the data process one end of a `MessageChannelMain` at start; requests and replies go over that port as typed messages (`backend/data-protocol.ts`), checked on arrival on both sides. Requests made while the data process starts or restarts wait for its `ready` message. After a crash main restarts it with backoff (0.5 s to 8 s, five tries, `electron/data-restart.ts`) and the window shows "Reconnecting…" (`src/DataStatus.tsx`); a request that was running when it crashed returns `data_process_exit` rather than being sent twice. The web dev mode (`npm start`) runs the same handler table over HTTP on localhost; the desktop app never starts that server, and a test checks its bundles contain no server code.
 
 ## 2. Packages
 
@@ -68,6 +68,8 @@ docs/adr/        architecture decision records
 | `renderer` | `shared`, `ui` |
 | `ui` | nothing internal; design tokens only |
 
+**Today (#56):** instead of dependency-cruiser (no new dependency), `apps/desktop/electron/no-sql.test.ts` walks the import graph of every main-process file with esbuild and fails if it reaches `node:sqlite`, `packages/storage-sqlite` or core's database modules (`db`, `host`, `migrate`, `migrations/`). Pure helpers main needs live in modules without database code (for example `@lernlab/core/releasenotes`).
+
 ## 3. Domain core (`packages/core`)
 
 - **Entities:** `Deck`, `Card` (front, back, fields, media refs, tags), `CardState` (FSRS due, stability, difficulty, reps, lapses), `ReviewLog`, `Attempt`, `SessionPlan`, `Block`, `Exercise`.
@@ -93,6 +95,7 @@ docs/adr/        architecture decision records
 
 - **Pragmas:** `journal_mode=WAL`, `synchronous=NORMAL`, `foreign_keys=ON`, `busy_timeout=5000`, `temp_store=MEMORY`, `cache_size=-20000`. Run `PRAGMA optimize` on close.
 - **Indexes:** `cards(deck_id, due)` for the due queue, `cards(note_id)`, `review_logs(card_id, reviewed_at)`, `attempts(day, card_id)`.
+- **Today (#56):** `openDb` sets all the pragmas above; `PRAGMA optimize` runs hourly in the data process and when the database is closed. The prototype schema has no `cards`, `notes` or `review_logs` tables yet: cards are `items` (with `items(deck_id)`), their schedule is `srs`, and answers are `attempts`. Migration `003-study-indexes` adds `srs(due)` for the due queue and `attempts(day, item_id)` (replacing `attempts(day)`).
 - **FSRS state** is stored in columns, not JSON, so it can be sorted and filtered.
 - **Statements:** prepared statements are cached per process, and SQL is never built from strings.
 - **Imports** run in transactions of 1,000–5,000 rows, followed by `ANALYZE`.

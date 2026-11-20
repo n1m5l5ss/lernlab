@@ -1,5 +1,5 @@
 // When and how LernLab looks for updates. Pure functions, so they can be tested without Electron.
-import { notesFromReleaseHtml } from '@lernlab/core/whatsnew';
+import { notesFromReleaseHtml } from '@lernlab/core/releasenotes';
 
 export const DAY_MS = 24 * 60 * 60 * 1000;
 /** First check this long after startup, so it never slows the start (docs/ARCHITECTURE.md). */
