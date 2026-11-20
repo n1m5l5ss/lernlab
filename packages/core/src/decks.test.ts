@@ -60,3 +60,17 @@ test('deck settings from the screen are checked and clamped; empty values clear 
   assert.equal(cleanDeckSettings({ examDate: '2027-13-45' }).examDate, undefined);
   assert.equal(cleanDeckSettings({ newPerDay: 1e9 }).newPerDay, 999);
 });
+
+test('a deck keeps its reading voice and speed; speed stays between 0.5 and 1.5', async () => {
+  const { cleanDeckSettings } = await import('./library');
+  assert.deepEqual(cleanDeckSettings({ voice: ' Google Deutsch ', rate: '0.8' }), {
+    voice: 'Google Deutsch',
+    rate: 0.8,
+  });
+  assert.equal(cleanDeckSettings({ rate: 0.1 }).rate, 0.5);
+  assert.equal(cleanDeckSettings({ rate: 9 }).rate, 1.5);
+  assert.equal(cleanDeckSettings({ rate: 0.8333 }).rate, 0.85, 'rounded to steps of 0.05');
+  assert.deepEqual(cleanDeckSettings({ voice: '', rate: null }), { voice: undefined, rate: undefined });
+  assert.equal(cleanDeckSettings({ voice: 42 }).voice, undefined);
+  assert.equal((cleanDeckSettings({ voice: 'x'.repeat(900) }).voice as string).length, 300);
+});

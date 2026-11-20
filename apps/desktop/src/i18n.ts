@@ -38,5 +38,13 @@ export const formatNumber = (n: number, opts?: Intl.NumberFormatOptions) =>
 export const formatPercent = (fraction: number) => formatNumber(fraction, { style: 'percent' });
 export const formatDate = (d: Date | number | string, opts: Intl.DateTimeFormatOptions = { dateStyle: 'medium' }) =>
   new Intl.DateTimeFormat(i18next.language, opts).format(new Date(d));
+/** A language's name, e.g. "German" for "de" (in the app's language, or `inLanguage`, e.g. "Deutsch"). */
+export function formatLanguage(code: string, inLanguage = i18next.language): string {
+  try {
+    return new Intl.DisplayNames([inLanguage], { type: 'language' }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
 
 export default i18next;

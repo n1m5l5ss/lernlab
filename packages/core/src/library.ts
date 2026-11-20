@@ -16,6 +16,10 @@ export type DeckSettings = {
   /** The day of the exam or deadline this deck works towards (YYYY-MM-DD). */
   examDate?: string;
   ankiSource?: string;
+  /** The system voice that reads this deck's cards aloud (its voiceURI); none means the best match. */
+  voice?: string;
+  /** Reading-aloud speed, 0.5–1.5 (1 is normal). */
+  rate?: number;
 };
 
 /**
@@ -40,6 +44,14 @@ export function cleanDeckSettings(input: Record<string, unknown>): Partial<Recor
     const v = input.examDate;
     const ok = typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T12:00:00`));
     out.examDate = ok ? v : undefined;
+  }
+  if ('voice' in input) {
+    const v = typeof input.voice === 'string' ? input.voice.trim().slice(0, 300) : '';
+    out.voice = v || undefined;
+  }
+  if ('rate' in input) {
+    const n = input.rate === null || input.rate === '' ? NaN : Number(input.rate);
+    out.rate = Number.isFinite(n) ? Math.round(Math.max(0.5, Math.min(1.5, n)) * 20) / 20 : undefined;
   }
   return out;
 }

@@ -4,7 +4,9 @@ import { Trans, useTranslation } from 'react-i18next';
 import { deckTree, type DeckNode } from '@lernlab/core/decktree';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
-import { formatDate, formatNumber } from './i18n';
+import { onVoicesChanged, systemVoices, tryVoice } from './audio';
+import { formatDate, formatLanguage, formatNumber } from './i18n';
+import { MAX_RATE, MIN_RATE, clampRate, voicesFor } from './voice-logic';
 
 /** CSV column names are file format, not text: they stay in English in every language. */
 const CSV_REQUIRED = 'front, back';
@@ -29,9 +31,13 @@ type Form = {
   goalLabel: string;
   goalWords: string;
   examDate: string;
+  voice: string;
+  rate: string;
 };
 
 const formFor = (d?: DeckRow): Form => ({
+  voice: d?.settings.voice ?? '',
+  rate: String(d?.settings.rate ?? 1),
   id: d?.id,
   name: d?.name ?? '',
   language: d?.language ?? '',
@@ -274,6 +280,8 @@ function DeckEditor({
       newPerDay: Number(f.newPerDay),
       goal: f.goalLabel.trim() ? { label: f.goalLabel, words: Number(f.goalWords) || 0 } : null,
       examDate: f.examDate,
+      voice: f.voice,
+      rate: Number(f.rate),
     };
     try {
       if (f.id) await api.updateDeck(f.id, { name: f.name, language: f.language || null, settings });
@@ -318,6 +326,13 @@ function DeckEditor({
         })}
         {field('examDate', t('decks.editor.examDate'), { type: 'date' })}
       </div>
+      <VoicePicker
+        language={f.language}
+        voice={f.voice}
+        rate={f.rate}
+        onChange={(k, v) => setF((cur) => ({ ...cur, [k]: v }))}
+      />
+
       {err && (
         <p role="alert" className="feedback wrong">
           {err}
@@ -346,6 +361,87 @@ function DeckEditor({
         )}
       </div>
     </section>
+  );
+}
+
+/** The installed system voices; the list fills in a moment after start and changes when voices are added. */
+function useSystemVoices() {
+  const [voices, setVoices] = useState(systemVoices);
+  useEffect(() => onVoicesChanged(() => setVoices(systemVoices())), []);
+  return voices;
+}
+
+/** Reading aloud: a voice that speaks the deck's language, a speed and a "Try it" button. */
+function VoicePicker({
+  language,
+  voice,
+  rate,
+  onChange,
+}: {
+  language: string;
+  voice: string;
+  rate: string;
+  onChange: (k: 'voice' | 'rate', v: string) => void;
+}) {
+  const { t } = useTranslation();
+  const voices = voicesFor(language, useSystemVoices());
+  const name = language ? formatLanguage(language) : '';
+  const speed = clampRate(rate);
+  return (
+    <fieldset className="deck-voice">
+      <legend>{t('decks.editor.voiceTitle')}</legend>
+      {!language ? (
+        <p className="small muted">{t('decks.editor.voiceNeedsLanguage')}</p>
+      ) : !voices.length ? (
+        <p className="small deck-voice-missing" role="status">
+          {t('decks.editor.noVoice', { language: name })}
+        </p>
+      ) : (
+        <>
+          <p className="small muted">{t('decks.editor.voiceHint')}</p>
+          <div className="deck-voice-row">
+            <label className="deck-field">
+              <span>{t('decks.editor.voice')}</span>
+              <select
+                className="input"
+                value={voices.some((v) => v.voiceURI === voice) ? voice : ''}
+                onChange={(e) => onChange('voice', e.target.value)}
+              >
+                <option value="">{t('decks.editor.voiceAuto', { language: name })}</option>
+                {voices.map((v) => (
+                  <option key={v.voiceURI} value={v.voiceURI}>
+                    {v.name} · {v.lang}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="deck-field">
+              <span>
+                {t('decks.editor.speed')}{' '}
+                <output className="muted">
+                  {t('decks.editor.speedValue', { rate: formatNumber(speed, { maximumFractionDigits: 2 }) })}
+                </output>
+              </span>
+              <input
+                type="range"
+                min={MIN_RATE}
+                max={MAX_RATE}
+                step={0.05}
+                value={speed}
+                onChange={(e) => onChange('rate', e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => tryVoice(formatLanguage(language, language), language, voice, speed)}
+            >
+              {t('decks.editor.tryVoice')}
+            </button>
+          </div>
+        </>
+      )}
+    </fieldset>
   );
 }
 

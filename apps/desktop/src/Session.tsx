@@ -4,7 +4,8 @@ import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
 import { xpFor } from '@lernlab/core/game';
 import { teacherFor, type Line } from '@lernlab/core/teacher';
 import { api, sendAttempt, sendOverride } from './api';
-import { hasVoice, say, setSound, sfx } from './audio';
+import { hasVoice, onNoVoice, say, setSound, setSpeechPrefs, sfx } from './audio';
+import { formatLanguage } from './i18n';
 import { useKeys, type AnswerInput, type BlockResult, type Ctx } from './ctx';
 import {
   Choice,
@@ -169,6 +170,25 @@ export function Session({
   onQuit: () => void;
 }) {
   const { t: tr, i18n } = useTranslation();
+  // Each deck's voice and speed, and the "no voice" note, are set up while rendering: the exercise inside
+  // reads its card aloud in an effect, and a child's effects run before ours.
+  // The language with no voice; false once the learner closed the note (it stays closed this session).
+  const [noVoice, setNoVoice] = useState<string | false | null>(null);
+  const noteNoVoice = useCallback((lang: string) => setNoVoice((v) => (v === false ? v : lang)), []);
+  const speechFor = useRef<SessionPlan | null>(null);
+  const stopListening = useRef<(() => void) | null>(null);
+  if (speechFor.current !== plan) {
+    setSpeechPrefs(plan.speech);
+    speechFor.current = plan;
+  }
+  stopListening.current ??= onNoVoice(noteNoVoice);
+  useEffect(() => {
+    stopListening.current ??= onNoVoice(noteNoVoice);
+    return () => {
+      stopListening.current?.();
+      stopListening.current = null;
+    };
+  }, []);
   // Listening and dictation the computer can't play (no recording, no voice for the language) are left out.
   const [blocks, setBlocks] = useState<Block[]>(() =>
     plan.blocks
@@ -222,7 +242,7 @@ export function Session({
   const show = useCallback(
     (b: Bubble) => {
       setBubble(b);
-      if (voice) say(b.main, 1, plan.lang ?? 'en');
+      if (voice) say(b.main, 1, plan.lang ?? 'en', plan.deckId);
     },
     [voice],
   );
@@ -232,7 +252,7 @@ export function Session({
   );
 
   useEffect(() => {
-    if (voice) say(bubble.main, 1, plan.lang ?? 'en');
+    if (voice) say(bubble.main, 1, plan.lang ?? 'en', plan.deckId);
   }, []);
 
   // Attention: nudge after 20 s idle; a long tab switch or several slow answers triggers an action round.
@@ -517,6 +537,14 @@ export function Session({
         {bubble.main}
         {bubble.gloss && bubble.gloss !== bubble.main && <span className="muted"> · {bubble.gloss}</span>}
       </p>
+      {noVoice && (
+        <p className="session-novoice" role="status">
+          <span>{tr('session.noVoice', { language: formatLanguage(noVoice) })}</span>
+          <button className="btn ghost" onClick={() => setNoVoice(false)}>
+            {tr('session.noVoiceDismiss')}
+          </button>
+        </p>
+      )}
       <main className="stage" key={b.id}>
         {b.kind === 'gender' || b.kind === 'match' || b.kind === 'rain' || b.kind === 'boss' ? (
           <div className="panel ex-card round">

@@ -125,6 +125,8 @@ export type SessionPlan = {
   counts: { due: number; fresh: number; grammar: string | null };
   /** Practice mode: any cards in the source, no new-card lessons, and nothing changes the schedule. */
   practice: boolean;
+  /** Each deck's reading-aloud choices (system voice and speed), by deck id. */
+  speech: Record<number, { voice?: string; rate?: number }>;
 };
 
 export type Attempt = {

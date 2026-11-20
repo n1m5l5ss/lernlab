@@ -61,7 +61,7 @@ export function Article({ item }: { item: Item }) {
 
 /** Speak a card's front in its language (for language decks). */
 const sayFront = (ctx: Ctx, item: Item) => {
-  if (ctx.lang) say(item.word && item.article ? item.target : item.target, 0.95, ctx.lang);
+  if (ctx.lang) say(item.target, 0.95, ctx.lang, item.deckId);
 };
 
 /* ───────────── Meet a new card (German nouns: guess the article first) ───────────── */
@@ -544,7 +544,7 @@ export function TypedEngine({
   const finish = (correct: boolean, delay: number) => {
     finalCorrect.current = correct;
     setPhase('done');
-    if (ctx.lang) say(accepted[0], 0.95, ctx.lang);
+    if (ctx.lang) say(accepted[0], 0.95, ctx.lang, item.deckId);
     if (delay > 0) setTimeout(() => onNext({ correct }), delay);
   };
 
@@ -607,7 +607,7 @@ export function TypedEngine({
       setMsg(coach.reveal());
       setValue('');
       if (revealAudio) playMedia(item.audio);
-      else if (ctx.lang) say(accepted[0], 0.95, ctx.lang);
+      else if (ctx.lang) say(accepted[0], 0.95, ctx.lang, item.deckId);
     }
   };
 

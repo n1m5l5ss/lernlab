@@ -177,7 +177,16 @@
       "exportLernpack": "Export .lernpack",
       "exportCsv": "Export CSV",
       "subdeckHint": "Use :: for a sub-deck, for example Medicine::Cardio.",
-      "examDate": "Exam date (optional)"
+      "examDate": "Exam date (optional)",
+      "voiceTitle": "Reading aloud",
+      "voiceHint": "Cards without a recording are read by a voice on your computer.",
+      "voice": "Voice",
+      "voiceAuto": "Best match for {{language}}",
+      "speed": "Speed",
+      "speedValue": "{{rate}}×",
+      "tryVoice": "Try it",
+      "noVoice": "Your computer has no {{language}} voice yet, so cards without a recording stay silent. You can add one in your system’s language or speech settings, and it will show up here.",
+      "voiceNeedsLanguage": "Choose the language of the cards to pick a voice."
     },
     "importPanel": {
       "title": "Import cards",
@@ -573,6 +582,8 @@
     "step": "{{n}} of {{total}}",
     "blockProgress": "Progress in this block",
     "sound": "Sound",
+    "noVoice": "There’s no {{language}} voice on this computer, so cards without a recording stay silent. You can keep studying; add a voice in your system settings any time.",
+    "noVoiceDismiss": "OK",
     "leaveTitle": "Leave this session?",
     "leaveBody": "Every answer so far is saved, and the session still counts for today.",
     "leave": "Leave",

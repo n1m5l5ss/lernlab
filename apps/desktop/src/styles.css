@@ -2110,3 +2110,49 @@ kbd {
 .editor-more summary::-webkit-details-marker {
   display: none;
 }
+
+/* Reading aloud (#23): the deck's voice and speed, and a kind note when no voice speaks the language. */
+.deck-voice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.deck-voice legend {
+  padding: 0 var(--space-1);
+  font-weight: 700;
+}
+.deck-voice-row {
+  display: grid;
+  grid-template-columns: minmax(200px, 2fr) minmax(160px, 1fr) auto;
+  align-items: end;
+  gap: var(--space-3);
+}
+.deck-voice-row input[type='range'] {
+  accent-color: var(--color-accent);
+  min-height: 32px;
+}
+.deck-voice-missing,
+.session-novoice {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--color-accent-tint);
+  color: var(--color-text);
+}
+.session-novoice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  max-width: var(--size-card-max-width);
+  margin: 0 auto var(--space-4);
+  font-size: var(--text-caption);
+}
+@media (max-width: 640px) {
+  .deck-voice-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -79,7 +79,8 @@ export function planSession(
   const pool = allItems(d, scope);
   const deckIds = [...new Set(pool.map((i) => i.deckId))];
   // Several decks in one language still get that language's voice and teacher; mixed languages get neither.
-  const langs = new Set(deckIds.map((id) => getDeck(id, d)?.language ?? null));
+  const poolDecks = deckIds.map((id) => getDeck(id, d));
+  const langs = new Set(poolDecks.map((x) => x?.language ?? null));
   const lang = deck ? (deck.language ?? null) : langs.size === 1 ? [...langs][0] : null;
   const byId = new Map(pool.map((i) => [i.id, i]));
   const get = (id: number) => byId.get(id)!;
@@ -386,5 +387,12 @@ export function planSession(
     items,
     extras,
     counts: { due: due.length, fresh: fresh.length, grammar: group },
+    speech: Object.fromEntries(
+      poolDecks.flatMap((x) => {
+        if (!x) return [];
+        const { voice, rate } = x.settings;
+        return [[x.id, { ...(voice ? { voice } : {}), ...(rate ? { rate } : {}) }]];
+      }),
+    ),
   };
 }
