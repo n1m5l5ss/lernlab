@@ -293,11 +293,6 @@
         "newline": "New line",
         "pipe": "Pipe |"
       },
-      "checkingAnki": "Checking Anki…",
-      "ankiUnreachable": "Anki isn't reachable. Open Anki with the <b>AnkiConnect</b> add-on (code 2055492159), or export a deck from Anki as <code>.apkg</code> and drop it in the File tab.",
-      "importDeck": "Import deck",
-      "ankiDone_one": "Imported {{count}} card from Anki.",
-      "ankiDone_other": "Imported {{count}} cards from Anki.",
       "reportMedia_one": "{{count}} media file added.",
       "reportMedia_other": "{{count}} media files added.",
       "chooseOther": "Choose another file",
@@ -339,6 +334,29 @@
       "newDeck": "A new deck",
       "importCount_one": "Import {{count}} card",
       "importCount_other": "Import {{count}} cards"
+    },
+    "ankiImport": {
+      "checking": "Looking for Anki on this computer…",
+      "connected": "Connected to Anki. Tick the decks to bring over; subdecks come along with their parent.",
+      "notRunning": "LernLab can't reach Anki on this computer.",
+      "otherApp": "Another program is using AnkiConnect's address, so LernLab can't reach Anki.",
+      "step1": "Open Anki on this computer and leave it open.",
+      "step2": "Install the <b>AnkiConnect</b> add-on once: in Anki, choose Tools → Add-ons → Get Add-ons, enter the code <code>2055492159</code>, then restart Anki.",
+      "step3": "Come back here and choose Check again.",
+      "apkgHint": "No add-on? Export a deck from Anki as <code>.apkg</code> and drop it in the File tab instead.",
+      "checkAgain": "Check again",
+      "noDecks": "Anki has no decks with cards yet.",
+      "listLabel": "Anki decks",
+      "cards_one": "{{n}} card",
+      "cards_other": "{{n}} cards",
+      "import_one": "Import {{count}} deck",
+      "import_other": "Import {{count}} decks",
+      "progressNotes": "Reading “{{deck}}” ({{n}} of {{count}})…",
+      "progressMedia": "Copying media for “{{deck}}”: {{done}} of {{total}}…",
+      "done": "“{{deck}}”: {{added}} new, {{updated}} updated ({{total}} cards).",
+      "missing_one": "{{count}} picture or sound file was not in Anki.",
+      "missing_other": "{{count}} picture or sound files were not in Anki.",
+      "failed": "“{{deck}}” was not imported: {{reason}}"
     },
     "subjectDeck_one": "Subject · {{count}} card",
     "subjectDeck_other": "Subject · {{count}} cards",
@@ -944,7 +962,8 @@
     "backup_not_found": "That backup no longer exists.",
     "not_data_export": "This file is not a LernLab data export. Use a zip made with Export everything.",
     "data_export_too_new": "This export was made by a newer version of LernLab. Update LernLab first.",
-    "mapping_needs_front": "Choose which column holds the front of the cards."
+    "mapping_needs_front": "Choose which column holds the front of the cards.",
+    "anki_deck_empty": "“{{deck}}” in Anki has no cards."
   },
   "update": {
     "ready": "LernLab {{version}} is ready. Restart to update; your progress is saved and backed up.",

@@ -181,6 +181,13 @@ To include media with a CSV, zip the CSV together with the files it references a
 - Anki's own scheduling history is not imported yet (planned), so cards start fresh.
 - Packages exported by current Anki (`collection.anki21b`, zstd-compressed) and older ones both work.
 
+## Live import from Anki (AnkiConnect)
+
+- Needs Anki open with the AnkiConnect add-on (code `2055492159`). LernLab talks to it only on this computer (`http://127.0.0.1:8765`); `ANKICONNECT_URL` may change the port but never the host.
+- **Decks → Import → From Anki** lists every Anki deck with its card count. Tick one or more; a ticked parent deck brings its subdecks along. Each ticked deck becomes one LernLab deck, with its audio and images copied.
+- When Anki can't be reached, the panel explains how to open Anki and install the add-on, and offers to check again. It tells apart "Anki is closed" from "another program answers on that port".
+- Each deck gets its own import report (`import.status` → `results`), or an error code such as `anki_unreachable` or `anki_deck_empty`.
+
 ## Limits
 
 Deck files are treated as untrusted. The importer checks them before it unpacks anything (`IMPORT_LIMITS` in `packages/core/src/formats/zip.ts`):

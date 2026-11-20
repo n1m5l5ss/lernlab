@@ -2,7 +2,14 @@
 // app (over IPC); the web dev server runs the same table over HTTP (server/app.ts).
 import { setMeta } from '@lernlab/core/db';
 import { exportDeck } from '@lernlab/core/exporter';
-import { IMPORT_LIMITS, importFile, importFromAnki, importPasted, type ImportReport } from '@lernlab/core/importer';
+import {
+  IMPORT_LIMITS,
+  importFile,
+  importFromAnki,
+  importPasted,
+  type AnkiProgress,
+  type ImportReport,
+} from '@lernlab/core/importer';
 import {
   MAPPABLE_FIELDS,
   mapFile,
@@ -51,7 +58,15 @@ import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkA
 import { planSession } from '@lernlab/core/session';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
-import { anki, ankiAvailable, ankiConnect } from './anki';
+import {
+  ankiAvailable,
+  ankiConnect,
+  ankiDecks,
+  ankiProbe,
+  AnkiUnavailable,
+  topLevelDecks,
+  type AnkiDeck,
+} from './anki';
 import { getDb } from './storage';
 import { backupAppDb, dataDir } from '@lernlab/storage-sqlite';
 import {
@@ -146,26 +161,51 @@ const bulkAction: Check<BulkAction> = (value, path = 'action') => {
   return { kind };
 };
 
+/** One Anki deck's import: its report, or the error code it failed with. */
+export type AnkiOutcome =
+  | { source: string; report: ImportReport }
+  | { source: string; error: { code: string; params?: Record<string, string | number> } };
+
 export const importStatus = {
   running: false,
-  log: [] as string[],
+  /** The deck being imported now (index from 0 of count) and how far it is. */
+  current: null as { source: string; index: number; count: number; progress: AnkiProgress } | null,
+  /** One entry per imported deck, in order. */
+  results: [] as AnkiOutcome[],
+  /** The last error code and the last report, for older callers. */
   error: null as string | null,
   result: null as ImportReport | null,
 };
 
-export async function runAnkiImport(source?: string, deckName?: string) {
+/** Import Anki decks one after another. A selected parent deck already includes its subdecks. */
+export async function runAnkiImport(sources?: string[], deckName?: string) {
   if (importStatus.running) return;
-  Object.assign(importStatus, { running: true, error: null, log: [], result: null });
-  try {
-    importStatus.result = await importFromAnki(ankiConnect, source ?? getSettings().deck, { deckName }, (m) => {
-      importStatus.log.push(m);
-      console.log(`[import] ${m}`);
-    });
-  } catch (e) {
-    importStatus.error = (e as Error).message;
-  } finally {
-    importStatus.running = false;
+  const list = topLevelDecks(sources?.length ? sources : [getSettings().deck]);
+  Object.assign(importStatus, { running: true, current: null, results: [], error: null, result: null });
+  for (const [index, source] of list.entries()) {
+    const current = { source, index, count: list.length, progress: { step: 'notes' } as AnkiProgress };
+    importStatus.current = current;
+    try {
+      const report = await importFromAnki(
+        ankiConnect,
+        source,
+        { deckName: list.length === 1 ? deckName : undefined },
+        (progress) => (importStatus.current = { ...current, progress }),
+      );
+      importStatus.results.push({ source, report });
+      importStatus.result = report;
+    } catch (e) {
+      const error =
+        e instanceof AppError
+          ? { code: e.code, ...(e.params && { params: e.params }) }
+          : { code: e instanceof AnkiUnavailable ? 'anki_unreachable' : 'failed' };
+      console.error(`[import] ${source}: ${(e as Error).message}`);
+      importStatus.results.push({ source, error });
+      importStatus.error = error.code;
+    }
   }
+  importStatus.running = false;
+  importStatus.current = null;
 }
 
 /** A handler: a validator for its input and the function that does the work. */
@@ -390,20 +430,28 @@ export const handlers = {
       return res;
     },
   ),
+  /** Is AnkiConnect answering on this computer, and which decks does Anki have (with card counts)? */
   'import.ankiInfo': h(v.none, async () => {
-    const ok = await ankiAvailable();
-    const decks = ok ? await anki<string[]>('deckNames').catch(() => [] as string[]) : [];
-    return { ...importStatus, anki: ok, ankiDecks: decks };
+    const ankiState = await ankiProbe();
+    const decks = ankiState === 'ready' ? await ankiDecks().catch(() => [] as AnkiDeck[]) : [];
+    return { ...importStatus, anki: ankiState === 'ready', ankiState, ankiDecks: decks };
   }),
   'import.anki': h(
-    v.optional(v.object({ source: v.optional(v.string(500)), deckName: v.optional(v.string(200)) })),
+    v.optional(
+      v.object({
+        sources: v.optional(v.array(v.string(500), 500)),
+        source: v.optional(v.string(500)),
+        deckName: v.optional(v.string(200)),
+      }),
+    ),
     async (b) => {
+      if (importStatus.running) return { started: false };
       if (!(await ankiAvailable()))
         throw new AppError(
           'anki_unreachable',
           'Anki is not reachable. Open Anki (with the AnkiConnect add-on) and try again.',
         );
-      void runAnkiImport(b?.source, b?.deckName);
+      void runAnkiImport(b?.sources ?? (b?.source ? [b.source] : undefined), b?.deckName || undefined);
       return { started: true };
     },
   ),

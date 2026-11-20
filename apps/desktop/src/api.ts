@@ -67,7 +67,7 @@ export const api = {
     }),
   importText: (b: Parameters<typeof call<'import.text'>>[1]) => call('import.text', b),
   ankiInfo: () => call('import.ankiInfo'),
-  ankiImport: (b: { source?: string; deckName?: string }) => call('import.anki', b),
+  ankiImport: (b: { sources?: string[]; deckName?: string }) => call('import.anki', b),
   uploadMedia: async (file: File) =>
     call('media.upload', { name: file.name, data: new Uint8Array(await file.arrayBuffer()) }),
   downloadSummary: async () => {
