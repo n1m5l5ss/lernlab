@@ -6,6 +6,7 @@ import { checkAnswer, similarity, normalize, type CheckResult } from '@lernlab/c
 import { playMedia, say, recognizer, sfx } from '../audio';
 import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
+import { markDiff } from '../diff';
 
 type P<E> = { ex: E; ctx: Ctx; onNext: (r: { correct: boolean }) => void };
 const now = () => performance.now();
@@ -253,10 +254,14 @@ export function Choice({
           </button>
         ))}
       </div>
-      {timedOut && <div className="feedback wrong">{ctx.t.timeUp()}</div>}
+      {timedOut && (
+        <div role="status" className="feedback wrong">
+          {ctx.t.timeUp()}
+        </div>
+      )}
       {picked !== null && picked !== ex.answerIndex && !seconds && (
         <div className="actions">
-          <button className="btn" onClick={() => onNext({ correct: false })}>
+          <button className="btn primary" onClick={() => onNext({ correct: false })}>
             {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         </div>
@@ -315,7 +320,7 @@ export function TrueFalse({
         </button>
       </div>
       {ans !== null && !ok && (
-        <div className="feedback wrong">
+        <div role="status" className="feedback wrong">
           {t('common.correctAnswer')}{' '}
           <div className="ans">
             <Rich html={item.meaning} />
@@ -367,7 +372,7 @@ export function Flip({
           <Rich html={ex.prompt} />
         </div>
         {shownAns && (
-          <div className="feedback right" style={{ textAlign: 'left' }}>
+          <div role="status" className="feedback right" style={{ textAlign: 'left' }}>
             <div className="ans">
               <Rich html={ex.answer} />
             </div>
@@ -395,13 +400,13 @@ export function Flip({
         </div>
       ) : (
         <div className="grade3">
-          <button className="btn" style={{ background: 'var(--bad)', color: '#fff' }} onClick={() => rate(0)}>
+          <button className="btn rate-no" onClick={() => rate(0)}>
             {t('ex.flip.no')} <span className="kbd">1</span>
           </button>
-          <button className="btn" style={{ background: 'var(--near)', color: '#2a1600' }} onClick={() => rate(1)}>
+          <button className="btn rate-partly" onClick={() => rate(1)}>
             {t('ex.flip.partly')} <span className="kbd">2</span>
           </button>
-          <button className="btn good" onClick={() => rate(2)}>
+          <button className="btn rate-yes" onClick={() => rate(2)}>
             {t('ex.flip.yes')} <span className="kbd">3</span>
           </button>
         </div>
@@ -453,6 +458,33 @@ function Umlauts({ lang, onAdd }: { lang: string | null; onAdd: (c: string) => v
   );
 }
 
+/** "You typed / Answer" side by side, with only the differing letters marked (mockup: Feedback-light.png). */
+function Compare({ given, answer }: { given: string; answer: string }) {
+  const { t } = useTranslation();
+  const show = (a: string, b: string, cls: string) =>
+    markDiff(a, b).map((p, i) =>
+      p.same ? (
+        <span key={i}>{p.text}</span>
+      ) : (
+        <mark key={i} className={cls}>
+          {p.text}
+        </mark>
+      ),
+    );
+  return (
+    <div className="compare">
+      <div>
+        <span className="compare-label">{t('ex.typed.youTyped')}</span>
+        <span className="compare-given">{show(given, answer, 'miss')}</span>
+      </div>
+      <div>
+        <span className="compare-label">{t('ex.typed.answer')}</span>
+        <b className="compare-answer">{show(answer, given, 'fix')}</b>
+      </div>
+    </div>
+  );
+}
+
 export function TypedEngine({
   ctx,
   itemId,
@@ -471,6 +503,7 @@ export function TypedEngine({
   const [res, setRes] = useState<CheckResult | null>(null);
   const [hintLevel, setHintLevel] = useState(0);
   const [msg, setMsg] = useState('');
+  const [given, setGiven] = useState('');
   const shown = useRef(now());
   const input = useRef<HTMLInputElement>(null);
   const finalCorrect = useRef(false);
@@ -501,6 +534,7 @@ export function TypedEngine({
       return;
     }
     setRes(r);
+    setGiven(value);
     const first = phase === 'answer';
     const usedHint = hintLevel > 0;
     if (r.correct) {
@@ -626,11 +660,18 @@ export function TypedEngine({
       />
       {msg && (
         <div
+          role="status"
           className={`feedback ${phase === 'done' ? (res?.nearMiss ? 'near' : finalCorrect.current ? 'right' : 'wrong') : phase === 'answer' ? 'near' : 'wrong'}`}
         >
           {msg}
           {(phase === 'copy' || (phase === 'done' && !finalCorrect.current) || res?.nearMiss) && (
-            <div className="ans">{requireArticle && item.article ? <Article item={item} /> : accepted[0]}</div>
+            <>
+              {given && !overridden ? (
+                <Compare given={given} answer={accepted[0]} />
+              ) : (
+                <div className="ans">{requireArticle && item.article ? <Article item={item} /> : accepted[0]}</div>
+              )}
+            </>
           )}
           {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
         </div>
@@ -648,7 +689,7 @@ export function TypedEngine({
           </button>
         )}
         {phase === 'done' && (
-          <button className="btn" onClick={() => onNext({ correct: finalCorrect.current })}>
+          <button className="btn primary" onClick={() => onNext({ correct: finalCorrect.current })}>
             {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
@@ -788,7 +829,7 @@ export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'uns
         })()}
       </div>
       {result !== null && (
-        <div className={`feedback ${result ? 'right' : 'wrong'}`}>
+        <div role="status" className={`feedback ${result ? 'right' : 'wrong'}`}>
           {result ? ctx.t.right(ctx.combo) : t('common.correctOrder')}
           {!result && <div className="ans">{ex.answer.join(' ')}</div>}
         </div>
@@ -796,7 +837,7 @@ export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'uns
       <div className="actions">
         {result === null && <span className="small muted">{t('ex.unscramble.help')}</span>}
         {result === false && (
-          <button className="btn" onClick={() => onNext({ correct: false })}>
+          <button className="btn primary" onClick={() => onNext({ correct: false })}>
             {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
@@ -862,7 +903,7 @@ export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dict
       />
       <Umlauts lang={ctx.lang} onAdd={(c) => setValue((v) => v + c)} />
       {res && (
-        <div className={`feedback ${res}`}>
+        <div role="status" className={`feedback ${res}`}>
           {res === 'right' ? ctx.t.right(ctx.combo) : res === 'near' ? ctx.t.near() : t('common.correctLabel')}
           <div className="ans">{ex.sentence}</div>
           <div className="small">{ex.translation}</div>
@@ -967,7 +1008,9 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
                 : t('ex.speak.sayThenSpace')}
           </div>
           {phase === 'heard' && (
-            <div className="feedback near">{t('ex.speak.heard', { heard: heard || '…', retry: ctx.t.retry() })}</div>
+            <div role="status" className="feedback near">
+              {t('ex.speak.heard', { heard: heard || '…', retry: ctx.t.retry() })}
+            </div>
           )}
           {rec && phase !== 'listening' && (
             <button
@@ -981,7 +1024,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
         </div>
       )}
       {phase === 'reveal' && (
-        <div className="feedback near">
+        <div role="status" className="feedback near">
           {t('ex.speak.didYouSay')}
           <div className="ans">{ex.expected}</div>
           <div className="actions">
@@ -998,7 +1041,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
         </div>
       )}
       {phase === 'done' && (
-        <div className={`feedback ${ok ? 'right' : 'wrong'}`}>
+        <div role="status" className={`feedback ${ok ? 'right' : 'wrong'}`}>
           {ok ? ctx.t.right(ctx.combo) : t('ex.speak.repeat')}
           <div className="ans">{ex.expected}</div>
           {heard && <div className="small">{t('ex.speak.heardShort', { heard })}</div>}
@@ -1006,7 +1049,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
             <button className="audio" onClick={playModel}>
               {t('ex.speak.again')}
             </button>
-            <button className="btn" onClick={() => onNext({ correct: !!ok })}>
+            <button className="btn primary" onClick={() => onNext({ correct: !!ok })}>
               {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
             </button>
           </div>
@@ -1114,16 +1157,12 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
       <div className="col">
         {ex.choices.map((c, i) => {
           const isCorrect = ex.correct.includes(i);
-          const cls =
-            done === null ? (sel.includes(i) ? 'right' : '') : isCorrect ? 'right' : sel.includes(i) ? 'wrong' : '';
+          const cls = done === null ? '' : isCorrect ? 'right' : sel.includes(i) ? 'wrong' : '';
           return (
             <button
               key={i}
               className={`opt ${cls}`}
-              style={{
-                borderColor: done === null && sel.includes(i) ? 'var(--accent)' : undefined,
-                background: done === null && sel.includes(i) ? '#ffb5471a' : undefined,
-              }}
+              aria-pressed={multi ? sel.includes(i) : undefined}
               onClick={() => toggle(i)}
             >
               <span className="k">{multi ? (sel.includes(i) ? '☑' : '☐') : i + 1}</span>
@@ -1133,7 +1172,7 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
         })}
       </div>
       {done !== null && (
-        <div className={`feedback ${done ? 'right' : 'wrong'}`}>
+        <div role="status" className={`feedback ${done ? 'right' : 'wrong'}`}>
           {done
             ? ctx.t.right(ctx.combo)
             : t('common.correctIs', { answer: ex.correct.map((i) => ex.choices[i]).join(' + ') })}
@@ -1151,7 +1190,7 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
           </button>
         )}
         {done !== null && (!done || ex.explanation) && (
-          <button className="btn" onClick={() => onNext({ correct: !!done })}>
+          <button className="btn primary" onClick={() => onNext({ correct: !!done })}>
             {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}
@@ -1202,11 +1241,8 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
         {placed.map((s, k) => (
           <li key={k}>
             <button
-              className="opt"
-              style={{
-                width: '100%',
-                borderColor: result === null ? undefined : s === k ? 'var(--good)' : 'var(--bad)',
-              }}
+              className={`opt ${result === null ? '' : s === k ? 'right' : 'wrong'}`}
+              style={{ width: '100%' }}
               onClick={() => result === null && setPlaced(placed.filter((x) => x !== s))}
             >
               <Rich html={ex.steps[s]} />
@@ -1225,7 +1261,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
           ))}
       </div>
       {result === false && (
-        <div className="feedback wrong">
+        <div role="status" className="feedback wrong">
           {t('common.correctOrder')}
           <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
             {ex.steps.map((s, i) => (
@@ -1236,11 +1272,15 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
           </ol>
         </div>
       )}
-      {result === true && <div className="feedback right">{ctx.t.right(ctx.combo)}</div>}
+      {result === true && (
+        <div role="status" className="feedback right">
+          {ctx.t.right(ctx.combo)}
+        </div>
+      )}
       <div className="actions">
         {result === null && <span className="small muted">{t('ex.order.help')}</span>}
         {result === false && (
-          <button className="btn" onClick={() => onNext({ correct: false })}>
+          <button className="btn primary" onClick={() => onNext({ correct: false })}>
             {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}

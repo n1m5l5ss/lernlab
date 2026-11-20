@@ -495,9 +495,13 @@ export function Session({
         ) : b.kind === 'boss' ? (
           <Boss block={b} ctx={ctx} onDone={blockDone} />
         ) : b.kind === 'blitz' ? (
-          <BlitzBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
+          <div className="panel ex-card" aria-live="polite">
+            <BlitzBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
+          </div>
         ) : (
-          <ExerciseBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
+          <div className="panel ex-card" aria-live="polite">
+            <ExerciseBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
+          </div>
         )}
       </main>
       <dialog
