@@ -1,29 +1,27 @@
 :root {
-  --bg: #12142a;
-  --bg2: #1a1d3a;
-  --card: #22264a;
-  --card2: #2b3060;
-  --line: #3a4078;
-  --text: #f3f4ff;
-  --muted: #a3a8d6;
-  --accent: #ffb547;
-  --accent2: #ff8a3d;
-  --good: #2ec27e;
-  --bad: #ff5c7a;
-  --near: #ffcf5c;
-  --der: #4c8dff;
-  --die: #ff5c7a;
-  --das: #2ec27e;
-  --radius: 18px;
-  font-family:
-    ui-rounded,
-    'SF Pro Rounded',
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    sans-serif;
-  color: var(--text);
-  background: var(--bg);
+  /* Prototype names mapped onto the approved tokens (@lernlab/ui/tokens.css). Screens move to the
+     --color-* names directly as they are restyled (#12 onward). */
+  --bg: var(--color-bg);
+  --bg2: var(--color-subtle);
+  --card: var(--color-surface);
+  --card2: var(--color-subtle);
+  --line: var(--color-border);
+  --text: var(--color-text);
+  --muted: var(--color-text-muted);
+  --accent: var(--color-accent);
+  --accent2: var(--color-accent);
+  --good: var(--color-correct-fill);
+  --bad: var(--color-incorrect-fill);
+  --near: var(--color-incorrect);
+  --der: var(--color-accent);
+  --die: var(--color-incorrect-fill);
+  --das: var(--color-correct-fill);
+  --radius: var(--radius-card);
+  font-family: var(--font-ui);
+  font-size: var(--text-body);
+  line-height: var(--line-body);
+  color: var(--color-text);
+  background: var(--color-bg);
 }
 * {
   box-sizing: border-box;
@@ -35,9 +33,7 @@ body,
   min-height: 100%;
 }
 body {
-  background:
-    radial-gradient(1200px 600px at 80% -10%, #2a2f6b 0%, transparent 60%),
-    radial-gradient(900px 500px at -10% 110%, #3a2350 0%, transparent 55%), var(--bg);
+  background: var(--color-bg);
   min-height: 100vh;
 }
 button {
@@ -126,37 +122,33 @@ input {
   padding: 20px;
 }
 .btn {
-  border: none;
-  border-radius: 14px;
-  padding: 12px 20px;
+  min-height: var(--size-min-target);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-5);
   font-weight: 700;
-  background: var(--card2);
-  border-bottom: 4px solid #1b1f44;
-  transition:
-    transform 0.06s,
-    filter 0.15s;
+  background: var(--color-surface);
+  color: var(--color-text);
+  transition: transform var(--motion-press) var(--motion-ease-enter);
 }
 .btn:hover {
-  filter: brightness(1.12);
+  background: var(--color-subtle);
 }
 .btn:active {
-  transform: translateY(2px);
-  border-bottom-width: 2px;
+  transform: translateY(1px);
 }
 .btn.primary {
-  background: linear-gradient(180deg, var(--accent), var(--accent2));
-  color: #2a1600;
-  border-bottom-color: #b55a14;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-on-accent);
 }
 .btn.good {
-  background: var(--good);
-  color: #062614;
-  border-bottom-color: #198a55;
+  background: var(--color-correct);
+  border-color: var(--color-correct);
+  color: var(--color-surface);
 }
 .btn.ghost {
   background: transparent;
-  border: 1px solid var(--line);
-  border-bottom-width: 3px;
 }
 .btn:disabled {
   opacity: 0.45;
@@ -177,24 +169,15 @@ input {
 .start {
   width: 100%;
   padding: 28px 20px;
-  font-size: 30px;
-  font-weight: 900;
-  border-radius: 24px;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  border-radius: var(--radius-control);
   border: none;
-  background: linear-gradient(180deg, #ffc663, #ff8a3d);
-  color: #2a1600;
-  border-bottom: 8px solid #b55a14;
-  box-shadow: 0 20px 60px -20px #ff8a3d88;
-  animation: breathe 2.8s ease-in-out infinite;
+  background: var(--color-accent);
+  color: var(--color-on-accent);
 }
 .start:active {
-  transform: translateY(4px);
-  border-bottom-width: 4px;
-}
-@keyframes breathe {
-  50% {
-    box-shadow: 0 24px 80px -16px #ffb547aa;
-  }
+  transform: translateY(1px);
 }
 .lengths {
   display: flex;
@@ -213,7 +196,7 @@ input {
 .lengths button.on {
   color: var(--text);
   border-color: var(--accent);
-  background: #ffb5471a;
+  background: var(--color-accent-tint);
 }
 .statgrid {
   display: grid;
@@ -340,7 +323,7 @@ input {
 }
 .combo.hot {
   animation: pulse 0.5s;
-  color: #ff8a3d;
+  color: var(--color-accent);
 }
 @keyframes pulse {
   50% {
@@ -396,7 +379,7 @@ input {
   transition: transform 0.05s;
 }
 .opt:hover {
-  border-color: #5a62a8;
+  border-color: var(--color-accent);
 }
 .opt .k {
   font-size: 12px;
@@ -407,11 +390,11 @@ input {
 }
 .opt.right {
   border-color: var(--good);
-  background: #2ec27e22;
+  background: color-mix(in srgb, var(--color-correct-fill) 14%, transparent);
 }
 .opt.wrong {
   border-color: var(--bad);
-  background: #ff5c7a22;
+  background: color-mix(in srgb, var(--color-incorrect-fill) 14%, transparent);
   animation: shake 0.3s;
 }
 .typed {
@@ -457,16 +440,16 @@ input {
   animation: rise 0.18s ease-out;
 }
 .feedback.right {
-  background: #2ec27e22;
-  color: #7ff0b5;
+  background: color-mix(in srgb, var(--color-correct-fill) 14%, transparent);
+  color: var(--color-correct);
 }
 .feedback.wrong {
-  background: #ff5c7a22;
-  color: #ffb0c0;
+  background: color-mix(in srgb, var(--color-incorrect-fill) 14%, transparent);
+  color: var(--color-incorrect);
 }
 .feedback.near {
-  background: #ffcf5c22;
-  color: #ffe39a;
+  background: color-mix(in srgb, var(--color-incorrect-fill) 8%, transparent);
+  color: var(--color-incorrect);
 }
 .feedback .ans {
   font-size: 22px;
@@ -614,7 +597,7 @@ input {
 }
 .match button.sel {
   border-color: var(--accent);
-  background: #ffb54722;
+  background: var(--color-accent-tint);
 }
 .match button.gone {
   visibility: hidden;
@@ -687,8 +670,8 @@ input {
 }
 .btn.primary .kbd,
 .start .kbd {
-  color: #5a3200;
-  border-color: #b55a14;
+  color: var(--color-on-accent);
+  border-color: var(--color-on-accent);
 }
 .xpfloat {
   position: fixed;
@@ -743,13 +726,13 @@ input {
   background: var(--bg2);
 }
 .heat i.l1 {
-  background: #2ec27e55;
+  background: color-mix(in srgb, var(--color-correct-fill) 33%, transparent);
 }
 .heat i.l2 {
-  background: #2ec27e99;
+  background: color-mix(in srgb, var(--color-correct-fill) 60%, transparent);
 }
 .heat i.l3 {
-  background: #2ec27e;
+  background: var(--color-correct-fill);
 }
 table.t {
   width: 100%;
@@ -801,7 +784,7 @@ table.t th {
   border-radius: 14px;
   border: 1px solid var(--line);
   object-fit: contain;
-  background: #0003;
+  background: var(--color-subtle);
 }
 .tf {
   display: grid;
@@ -867,7 +850,7 @@ table.t th {
   border-radius: 14px;
 }
 table.t tr.sel td {
-  background: #ffb5471a;
+  background: var(--color-accent-tint);
 }
 table.t tr {
   cursor: pointer;
@@ -918,7 +901,7 @@ label.lbl {
 }
 .drop-zone.over {
   border-color: var(--accent);
-  background: #ffb5470f;
+  background: var(--color-accent-tint);
 }
 .deckgrid {
   display: grid;
@@ -954,7 +937,7 @@ select {
   font: inherit;
 }
 code {
-  background: #0004;
+  background: var(--color-subtle);
   padding: 1px 5px;
   border-radius: 5px;
   font-size: 0.92em;

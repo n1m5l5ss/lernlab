@@ -7,6 +7,7 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
+  nativeTheme,
   net,
   protocol,
   session,
@@ -19,16 +20,21 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { windowBackground, type Theme } from '@lernlab/ui/tokens';
 import { setupUpdates } from './updates';
+import { themeOf } from './theme';
 
 const configFile = () => join(app.getPath('userData'), 'config.json');
-const readConfig = (): { dataDir?: string; lastUpdateCheck?: number } => {
+type Config = { dataDir?: string; lastUpdateCheck?: number; theme?: Theme };
+const readConfig = (): Config => {
   try {
     return JSON.parse(readFileSync(configFile(), 'utf8'));
   } catch {
     return {};
   }
 };
+const writeConfig = (patch: Partial<Config>) =>
+  writeFileSync(configFile(), JSON.stringify({ ...readConfig(), ...patch }, null, 2));
 const dataDir = () => readConfig().dataDir || join(app.getPath('userData'), 'data');
 
 let win: BrowserWindow | null = null;
@@ -178,7 +184,7 @@ function buildMenu() {
                 message: 'Choose where LernLab keeps your decks and progress (e.g. a synced folder).',
               });
               if (r.canceled || !r.filePaths[0]) return;
-              writeFileSync(configFile(), JSON.stringify({ ...readConfig(), dataDir: r.filePaths[0] }, null, 2));
+              writeConfig({ dataDir: r.filePaths[0] });
               app.relaunch();
               app.exit(0);
             },
@@ -210,16 +216,27 @@ function buildMenu() {
   );
 }
 
+/** Follow the theme setting; remembered in config.json so the next start opens in the right colours. */
+function applyTheme(theme: Theme | null) {
+  if (!theme || theme === nativeTheme.themeSource) return;
+  nativeTheme.themeSource = theme;
+  win?.setBackgroundColor(windowBackground(nativeTheme.shouldUseDarkColors));
+  writeConfig({ theme });
+}
+
 async function main() {
   await app.whenReady();
+  nativeTheme.themeSource = readConfig().theme ?? 'system';
   const dir = dataDir();
   mkdirSync(dir, { recursive: true });
   startDataProcess();
 
-  ipcMain.handle('lernlab:invoke', (e, channel: unknown, input: unknown): Promise<Result> | Result => {
+  ipcMain.handle('lernlab:invoke', async (e, channel: unknown, input: unknown): Promise<Result> => {
     if (!trusted(e.senderFrame) || typeof channel !== 'string')
       return { ok: false, error: { code: 'forbidden', message: 'Not allowed' } };
-    return callData(channel, input);
+    const result = await callData(channel, input);
+    if (result.ok) applyTheme(themeOf(channel, result.value));
+    return result;
   });
 
   const mediaDir = join(dir, 'media');
@@ -238,7 +255,7 @@ async function main() {
     height: 860,
     minWidth: 720,
     minHeight: 560,
-    backgroundColor: '#12142a',
+    backgroundColor: windowBackground(nativeTheme.shouldUseDarkColors),
     title: 'LernLab',
     show: false,
     webPreferences: {
@@ -277,8 +294,7 @@ async function main() {
     },
     backup: () => callData('backup.create', undefined),
     lastCheck: () => readConfig().lastUpdateCheck,
-    setLastCheck: (time) =>
-      writeFileSync(configFile(), JSON.stringify({ ...readConfig(), lastUpdateCheck: time }, null, 2)),
+    setLastCheck: (time) => writeConfig({ lastUpdateCheck: time }),
   });
 }
 

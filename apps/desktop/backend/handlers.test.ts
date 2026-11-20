@@ -62,3 +62,10 @@ test('update settings default to on and stable, and a backup can be taken before
   assert.match(file, /^lernlab-\d{8}.*\.db$/);
   assert.ok(existsSync(join(dir, 'backups', file)));
 });
+
+test('the theme follows the system unless light or dark is chosen', async () => {
+  assert.equal((await ok('state.get')).settings.theme, 'system');
+  assert.equal((await ok('settings.save', { theme: 'dark' })).theme, 'dark');
+  assert.equal((await ok('settings.save', { theme: 'purple' })).theme, 'system');
+  assert.equal((await ok('settings.save', { theme: 'light' })).theme, 'light');
+});

@@ -25,6 +25,7 @@
     "@hono/node-server": "2.1.9",
     "@lernlab/core": "*",
     "@lernlab/storage-sqlite": "*",
+    "@lernlab/ui": "*",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

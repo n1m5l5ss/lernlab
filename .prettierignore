@@ -13,3 +13,4 @@ CHANGELOG.md
 docs/design/
 apps/desktop/test/fixture-notes.json
 scripts/backlog.json
+packages/ui/tokens.css

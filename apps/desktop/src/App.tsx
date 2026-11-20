@@ -12,6 +12,7 @@ import { Progress } from './Progress';
 import { Decks } from './Decks';
 import { Browse } from './Browse';
 import { setLanguage } from './i18n';
+import { applyTheme } from './theme';
 
 type Tab = 'home' | 'decks' | 'browse' | 'progress' | 'stats' | 'settings';
 type View =
@@ -33,6 +34,7 @@ export function App() {
         setState(s);
         setSound(s.settings.sound);
         void setLanguage(s.settings.uiLanguage);
+        applyTheme(s.settings.theme);
         return s;
       })
       .catch((e) => setError(e.message));
