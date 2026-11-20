@@ -55,6 +55,12 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 24, cache: npm }
       - run: npm ci
+      # Installer names and the in-app version come from package.json; match the tag being built.
+      - if: inputs.tag != ''
+        shell: bash
+        env:
+          TAG: ${{ inputs.tag }}
+        run: npm pkg set "version=${TAG#v}" --workspace apps/desktop
       - run: npm run ${{ matrix.script }}
         env:
           # Unsigned builds. Add CSC_LINK / CSC_KEY_PASSWORD (and APPLE_ID… for notarization) as secrets to sign.

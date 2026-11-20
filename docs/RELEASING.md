@@ -31,7 +31,7 @@ There is no separate staging branch. A **beta release** cut from `dev` plays tha
 
 ## Making a release
 
-1. **Beta (optional).** Run the "Beta release" workflow on `dev`. It tags `vX.Y.Z-beta.N` and publishes a GitHub pre-release with installers for all three systems. Testers on the beta channel get it.
+1. **Beta (optional).** Run the "Beta release" workflow on `dev`. It tags `vX.Y.Z-beta.N` and publishes a GitHub pre-release with installers for all three systems. `X.Y.Z` defaults to the next patch after the last release; type another version when running it if the next release is a minor or major one. Testers on the beta channel get it.
 2. **Stable.** Open a pull request `dev → main` titled `release: X.Y.Z` and merge it with a merge commit (not squash).
 3. **release-please** sees the new commits on `main`, opens a release PR that bumps the version in `package.json` and adds the section to `CHANGELOG.md`, and updates that PR as more commits arrive.
 4. Merging the release PR creates the tag `vX.Y.Z` and the GitHub Release. The release-please workflow then calls the "Build installers" workflow directly (a tag made with `GITHUB_TOKEN` can't trigger other workflows), which builds, signs and publishes the installers, and `latest*.yml` lets installed apps auto-update.
