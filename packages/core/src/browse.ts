@@ -3,6 +3,7 @@ import type { Row } from './host';
 import { getDb, tx, type DB } from './db';
 import { getDeck } from './library';
 import { stripHtml } from './text';
+import { clozeText, markdownLite } from './cards';
 import { UserError } from './errors';
 
 /** Mastery from which a card counts as known (the same line progress uses). */
@@ -96,6 +97,29 @@ function toRow(r: Row): CardRow {
     audio: !!r.audio,
     video: !!r.video,
   };
+}
+
+/** A front as plain text for comparing: no formatting or cloze marks, one case, single spaces. */
+export const frontKey = (front: string) =>
+  stripHtml(clozeText(markdownLite(front)))
+    .normalize('NFC')
+    .toLocaleLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim();
+
+export type Duplicate = { id: number; front: string; back: string };
+
+/** Cards in a deck whose front is the same text as `front` (at most 5), leaving out the card being edited. */
+export function findDuplicates(deckId: number, front: string, excludeId?: number, d: DB = getDb()): Duplicate[] {
+  const key = frontKey(front);
+  if (!key) return [];
+  const out: Duplicate[] = [];
+  for (const r of d.prepare('SELECT id, target, meaning FROM items WHERE deck_id = ? ORDER BY ord').all(deckId)) {
+    if (Number(r.id) === excludeId || frontKey(String(r.target)) !== key) continue;
+    out.push({ id: Number(r.id), front: clozeText(stripHtml(String(r.target))), back: stripHtml(String(r.meaning)) });
+    if (out.length === 5) break;
+  }
+  return out;
 }
 
 /** Apply one change to many cards in one transaction. Returns how many cards it touched. */

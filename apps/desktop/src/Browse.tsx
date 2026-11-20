@@ -6,59 +6,14 @@ import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { selectClick, visibleRange } from './browse-logic';
 import { formatNumber } from './i18n';
-import { Media, Rich } from './rich';
+import { EMPTY, formFor, type Form } from './card-editor-logic';
+import { CardEditor } from './CardEditor';
 
 type AppState = OutputOf<'state.get'>;
 type Found = OutputOf<'cards.find'>;
-type FullCard = OutputOf<'cards.get'>;
 type Filter = { deckId: number | null; q: string; tag: string; state: CardState | '' };
 /** Row height in px; the list draws only the rows in view, so 10,000 cards scroll smoothly. */
 const ROW = 44;
-
-/** Cloze gap markers are card syntax, not text. */
-const CLOZE = { open: '{{c1::', close: '}}' };
-const EMPTY = {
-  front: '',
-  back: '',
-  example: '',
-  exampleTranslation: '',
-  explanation: '',
-  notes: '',
-  category: '',
-  tags: '',
-  image: '',
-  audio: '',
-  video: '',
-  alt: '',
-  type: 'basic',
-  choices: '',
-  correct: '',
-  steps: '',
-};
-type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
-
-const formFor = (c: FullCard): Form => ({
-  id: c.id,
-  front: c.target,
-  back: c.meaning,
-  example: c.sentenceHtml,
-  exampleTranslation: c.sentenceMeaning,
-  explanation: c.grammar,
-  notes: c.notes,
-  category: c.category ?? '',
-  tags: c.tags.join(' '),
-  image: c.image ?? '',
-  audio: c.audio ?? '',
-  video: c.video ?? '',
-  alt: c.extra.alt ?? '',
-  type: c.kind === 'mcq' || c.kind === 'order' || c.kind === 'cloze' ? c.kind : 'basic',
-  choices: c.extra.choices ?? '',
-  correct: c.extra.correct ?? '',
-  steps: c.extra.steps ?? '',
-  suspended: c.suspended,
-  starred: c.starred,
-  item: c,
-});
 
 export function Browse({ state, refresh }: { state: AppState; refresh: () => Promise<unknown> }) {
   const { t } = useTranslation();
@@ -191,6 +146,7 @@ export function Browse({ state, refresh }: { state: AppState; refresh: () => Pro
             key={editing.id ?? 'new'}
             card={editing}
             deckId={filter.deckId ?? state.activeDeck ?? state.decks[0].id}
+            decks={state.decks}
             onClose={() => setEditing(null)}
             onSaved={() => afterChange()}
             onDelete={(id) => apply([id], { kind: 'delete' })}
@@ -424,183 +380,6 @@ function BulkBar({
           </button>
           <button className="btn primary" autoFocus onClick={() => confirm.current?.close()}>
             {t('browse.bulk.keep', { count })}
-          </button>
-        </div>
-      </dialog>
-    </div>
-  );
-}
-
-function CardEditor({
-  card,
-  deckId,
-  onClose,
-  onSaved,
-  onDelete,
-}: {
-  card: Form;
-  deckId: number;
-  onClose: () => void;
-  onSaved: () => void;
-  onDelete: (id: number) => void;
-}) {
-  const { t } = useTranslation();
-  const [c, setC] = useState(card);
-  const [msg, setMsg] = useState('');
-  const confirm = useRef<HTMLDialogElement>(null);
-  const set = <K extends keyof Form>(k: K, value: Form[K]) => setC((prev) => ({ ...prev, [k]: value }));
-  const fail = (e: unknown) => setMsg(e instanceof Error ? e.message : String(e));
-  const upload = async (k: 'image' | 'audio' | 'video', f?: File) => {
-    if (!f) return;
-    try {
-      const r = await api.uploadMedia(f);
-      set(k, r.file);
-    } catch (e) {
-      fail(e);
-    }
-  };
-  const save = async () => {
-    try {
-      if (c.id) await api.saveCard(c.id, c);
-      else await api.addCard(deckId, c);
-      setMsg(t('common.saved'));
-      onSaved();
-      if (!c.id) setC({ ...EMPTY, type: c.type });
-    } catch (e) {
-      fail(e);
-    }
-  };
-  const toggle = async (k: 'suspended' | 'starred') => {
-    if (!c.id) return;
-    await api.saveCard(c.id, { [k]: !c[k] });
-    set(k, !c[k]);
-    onSaved();
-  };
-  type TextKey = { [K in keyof typeof EMPTY]: K }[keyof typeof EMPTY];
-  const f = (k: TextKey, label: string, ph = '', area = false) => (
-    <>
-      <label className="lbl">{label}</label>
-      {area ? (
-        <textarea className="input" value={c[k] ?? ''} onChange={(e) => set(k, e.target.value)} placeholder={ph} />
-      ) : (
-        <input className="input" value={c[k] ?? ''} onChange={(e) => set(k, e.target.value)} placeholder={ph} />
-      )}
-    </>
-  );
-  const preview = { ...(card.item ?? {}), image: c.image || null, video: c.video || null };
-  return (
-    <div className="card" style={{ position: 'sticky', top: 12 }}>
-      <div className="row">
-        <b className="grow">{c.id ? t('browse.editor.editTitle') : t('browse.editor.newTitle')}</b>
-        <button className="btn ghost" onClick={onClose} aria-label={t('browse.editor.closeLabel')}>
-          ✕
-        </button>
-      </div>
-      <label className="lbl">{t('browse.editor.type')}</label>
-      <select className="input" value={c.type} onChange={(e) => set('type', e.target.value)}>
-        <option value="basic">{t('browse.editor.types.basic')}</option>
-        <option value="cloze">{t('browse.editor.types.cloze', CLOZE)}</option>
-        <option value="mcq">{t('browse.editor.types.mcq')}</option>
-        <option value="order">{t('browse.editor.types.order')}</option>
-      </select>
-      {f(
-        'front',
-        c.type === 'mcq'
-          ? t('browse.editor.question')
-          : c.type === 'order'
-            ? t('browse.editor.prompt')
-            : t('browse.editor.front'),
-        c.type === 'cloze' ? t('browse.editor.clozePlaceholder', CLOZE) : t('browse.editor.frontPlaceholder'),
-        true,
-      )}
-      {c.type === 'mcq' ? (
-        <>
-          {f('choices', t('browse.editor.choices'), t('browse.editor.choicesPlaceholder'))}
-          {f('correct', t('browse.editor.correct'), '2|3')}
-        </>
-      ) : c.type === 'order' ? (
-        f('steps', t('browse.editor.steps'), t('browse.editor.stepsPlaceholder'))
-      ) : (
-        f(
-          'back',
-          c.type === 'cloze' ? t('browse.editor.extra') : t('browse.editor.back'),
-          t('browse.editor.backPlaceholder'),
-          true,
-        )
-      )}
-      {c.type === 'basic' && f('alt', t('browse.editor.alt'), t('browse.editor.altPlaceholder'))}
-      {f('explanation', t('browse.editor.explanation'), t('browse.editor.explanationPlaceholder'), true)}
-      {c.type === 'basic' && f('example', t('browse.editor.example'), t('browse.editor.examplePlaceholder'))}
-      {c.type === 'basic' && f('exampleTranslation', t('browse.editor.exampleTranslation'))}
-      <div className="row" style={{ gap: 10 }}>
-        <div className="grow">{f('category', t('browse.editor.category'), t('browse.editor.categoryPlaceholder'))}</div>
-        <div className="grow">{f('tags', t('browse.editor.tags'), t('browse.editor.tagsPlaceholder'))}</div>
-      </div>
-      <label className="lbl">{t('browse.editor.media')}</label>
-      <Media item={preview as Parameters<typeof Media>[0]['item']} size="sm" />
-      <div className="row small" style={{ flexWrap: 'wrap', gap: 8 }}>
-        {(['image', 'audio', 'video'] as const).map((k) => (
-          <label key={k} className="btn ghost" style={{ padding: '6px 10px' }}>
-            {c[k] ? t(`browse.editor.mediaSet.${k}`) : t(`browse.editor.mediaAdd.${k}`)}
-            <input
-              type="file"
-              hidden
-              accept={k === 'image' ? 'image/*' : k === 'audio' ? 'audio/*' : 'video/*,image/gif'}
-              onChange={(e) => upload(k, e.target.files?.[0])}
-            />
-          </label>
-        ))}
-        {(c.image || c.audio || c.video) && (
-          <button
-            className="btn ghost"
-            style={{ padding: '6px 10px' }}
-            onClick={() => setC({ ...c, image: '', audio: '', video: '' })}
-          >
-            {t('browse.editor.removeMedia')}
-          </button>
-        )}
-      </div>
-      {c.front && c.type === 'basic' && (
-        <div className="small muted" style={{ marginTop: 10 }}>
-          {t('browse.editor.preview')} <Rich html={c.front} /> → <Rich html={c.back} />
-        </div>
-      )}
-      <div className="actions" style={{ flexWrap: 'wrap' }}>
-        <button className="btn primary" onClick={save} disabled={!c.front?.trim()}>
-          {c.id ? t('common.save') : t('browse.editor.add')}
-        </button>
-        {c.id && (
-          <button className="btn ghost" onClick={() => toggle('starred')}>
-            {c.starred ? t('browse.editor.starred') : t('browse.editor.star')}
-          </button>
-        )}
-        {c.id && (
-          <button className="btn ghost" onClick={() => toggle('suspended')}>
-            {c.suspended ? t('browse.editor.unsuspend') : t('browse.editor.suspend')}
-          </button>
-        )}
-        {c.id && (
-          <button className="btn danger" onClick={() => confirm.current?.showModal?.()}>
-            {t('common.delete')}
-          </button>
-        )}
-        {msg && <span className="small">{msg}</span>}
-      </div>
-      <dialog ref={confirm} className="panel session-dialog" aria-labelledby="card-delete-title">
-        <h2 id="card-delete-title">{t('browse.bulk.deleteTitle', { count: 1 })}</h2>
-        <p>{t('browse.bulk.deleteBody', { count: 1 })}</p>
-        <div className="session-dialog-actions">
-          <button
-            className="btn danger"
-            onClick={() => {
-              confirm.current?.close();
-              if (c.id) onDelete(c.id);
-            }}
-          >
-            {t('common.delete')}
-          </button>
-          <button className="btn primary" autoFocus onClick={() => confirm.current?.close()}>
-            {t('browse.bulk.keep', { count: 1 })}
           </button>
         </div>
       </dialog>

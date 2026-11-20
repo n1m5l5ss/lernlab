@@ -31,6 +31,8 @@ export const api = {
   },
   findCards: (filter: InputOf<'cards.find'>) => call('cards.find', filter),
   getCard: (id: number) => call('cards.get', { id }),
+  findDuplicates: (deckId: number, front: string, excludeId?: number) =>
+    call('cards.duplicates', { deckId, front, excludeId }),
   bulkCards: (ids: number[], action: BulkAction) => call('cards.bulk', { ids, action }),
   addCard: (deckId: number, card: CardInput) => call('cards.add', { deckId, card }),
   saveCard: (id: number, card: CardInput) => call('cards.update', { id, card }),

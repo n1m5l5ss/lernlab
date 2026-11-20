@@ -1968,3 +1968,145 @@ kbd {
   gap: var(--space-1) var(--space-3);
   min-width: 0;
 }
+
+/* Card editor (#22): live preview drawn like the exercise, media drop zone, duplicate warning. */
+.card-editor {
+  position: sticky;
+  top: var(--space-3);
+  max-height: calc(100vh - var(--space-6));
+  overflow-y: auto;
+}
+.card-editor span.lbl {
+  display: block;
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.card-editor .editor-format {
+  margin: var(--space-2) 0 0;
+}
+.editor-dup {
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  border-inline-start: 3px solid var(--color-incorrect);
+  background: var(--color-subtle);
+  color: var(--color-text);
+}
+.editor-drop {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-control);
+  padding: var(--space-3);
+}
+.editor-drop.over {
+  border-color: var(--color-accent);
+  background: var(--color-accent-tint);
+}
+.editor-drop p {
+  margin: 0 0 var(--space-2);
+}
+.editor-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.editor-slot {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-3);
+  min-height: var(--size-min-target);
+  border-radius: var(--radius-control);
+  background: var(--color-subtle);
+  font-size: var(--text-caption);
+}
+.editor-slot .btn {
+  padding: 0 var(--space-2);
+}
+.editor-preview {
+  display: grid;
+  gap: var(--space-2);
+}
+.editor-preview-side {
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+.editor-preview .prompt,
+.editor-preview .cloze {
+  font-size: var(--text-title);
+  margin-bottom: var(--space-3);
+}
+.editor-preview .opt {
+  min-height: var(--size-min-target);
+  padding: var(--space-2) var(--space-3);
+  cursor: default;
+}
+.editor-preview .opt:hover {
+  border-color: var(--color-border);
+}
+.editor-preview .opt.right:hover {
+  border-color: var(--color-correct);
+}
+.editor-preview .feedback {
+  margin-top: 0;
+  animation: none;
+}
+.editor-preview .feedback .ans {
+  margin-top: 0;
+  display: inline;
+}
+.editor-fake-input {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  font-size: var(--text-body);
+  color: var(--color-text-muted);
+}
+.editor-gap {
+  display: inline-block;
+  min-width: 4em;
+  border-bottom: 3px solid var(--color-accent);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+.editor-steps {
+  margin: var(--space-2) 0 0;
+  padding-inline-start: var(--space-5);
+  color: var(--color-text);
+  font-weight: 400;
+}
+.editor-explain {
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+}
+.editor-preview audio {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3);
+}
+.editor-more {
+  margin-top: var(--space-3);
+}
+.editor-more summary {
+  cursor: pointer;
+  min-height: var(--size-min-target);
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+.editor-more summary::before {
+  content: '▸';
+  margin-inline-end: var(--space-2);
+}
+.editor-more[open] summary::before {
+  content: '▾';
+}
+.editor-more summary::-webkit-details-marker {
+  display: none;
+}

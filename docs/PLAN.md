@@ -74,7 +74,7 @@ The first public release, 1.0, has 29 features. The prototype already has 12 of 
 | Cards | Decks: create, edit, delete, sub-decks, deck goal and exam date | 1.0 | Partial: no sub-decks |
 | Cards | Card editor: basic, cloze, multiple choice, ordering; rich text; image, GIF, audio, video | 1.0 | Done |
 | Cards | Card browser: search, filter, bulk tag, move, suspend, delete | 1.0 | Done |
-| Cards | Duplicate warning while adding or importing | 1.0 | Partial: import only |
+| Cards | Duplicate warning while adding or importing | 1.0 | Done |
 | Cards | Read cards aloud with the computer's built-in voices when there is no audio file | 1.0 | Partial |
 | Cards | Record your own audio on a card | 1.x | New |
 | Import | CSV/TSV, pasted lists (Quizlet export), JSON, deck file with media, Anki .apkg | 1.0 | Done |
