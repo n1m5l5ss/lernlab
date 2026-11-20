@@ -227,6 +227,9 @@ export function ImportPanel({
                   components={{ code: <code /> }}
                 />
               </div>
+              <button className="deck-drop-template" onClick={api.downloadTemplate}>
+                {t('decks.csvTemplate')}
+              </button>
             </div>
           )}
           {tab === 'paste' && (

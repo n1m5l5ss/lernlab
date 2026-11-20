@@ -2495,3 +2495,34 @@ kbd {
   padding-inline-start: var(--space-5);
   line-height: var(--line-body);
 }
+
+/* ── Deck export and the CSV template link (issue #27, mockup: docs/design/images/Decks-light.png) ── */
+div.deck-drop {
+  cursor: default;
+}
+.deck-drop:focus-within {
+  border-color: var(--color-accent);
+}
+.deck-drop-open {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.deck-drop-template {
+  min-height: var(--size-min-target);
+  padding: 0 var(--space-2);
+  background: transparent;
+  border: 0;
+  color: var(--color-accent);
+  font: inherit;
+  font-size: var(--text-caption);
+  text-decoration: underline;
+  cursor: pointer;
+}
