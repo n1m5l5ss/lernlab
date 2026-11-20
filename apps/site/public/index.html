@@ -1,0 +1,389 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Nothing on this page comes from another site: no fonts, scripts, trackers or embeds. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; media-src 'self'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="color-scheme" content="light dark" />
+    <title>LernLab: flashcards that feel like a game</title>
+    <meta
+      name="description"
+      content="LernLab is a free, open-source flashcard app for Windows, macOS and Linux. Short, varied rounds with spaced repetition underneath. No account, no tracking."
+    />
+    <link rel="icon" href="media/icon-64.png" type="image/png" />
+    <link rel="apple-touch-icon" href="media/icon-192.png" />
+    <link rel="stylesheet" href="tokens.css" />
+    <link rel="stylesheet" href="site.css" />
+    <script type="module" src="js/main.js"></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <div class="wrap header-inner">
+        <a class="brand" href="#top" aria-label="LernLab, back to top">
+          <img src="media/icon-64.png" alt="" width="32" height="32" />
+          <span>LernLab</span>
+        </a>
+        <nav aria-label="Sections">
+          <ul class="nav-list">
+            <li><a href="#features">Features</a></li>
+            <li><a href="#privacy">Privacy</a></li>
+            <li><a href="#download">Download</a></li>
+            <li><a href="https://github.com/n1m5l5ss/lernlab">Source code</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+
+    <main id="main" tabindex="-1">
+      <section class="hero wrap" id="top" aria-labelledby="hero-title">
+        <div class="hero-text">
+          <h1 id="hero-title">Flashcards that feel like a game.</h1>
+          <p class="lead">
+            LernLab is a free study app for any subject: languages, medicine, law, cloud certificates, history. It turns
+            your cards into short, varied rounds, with spaced repetition underneath, on your own computer.
+          </p>
+          <div class="actions">
+            <a
+              id="primary-download"
+              class="btn primary large"
+              href="#download"
+              data-label-windows="Download for Windows"
+              data-label-mac-arm64="Download for Mac (Apple silicon)"
+              data-label-mac-x64="Download for Mac (Intel)"
+              data-label-linux-appimage="Download for Linux"
+            >
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="20" height="20">
+                <path d="M12 3v12m0 0-5-5m5 5 5-5M5 20h14" />
+              </svg>
+              <span class="label">Download LernLab</span>
+            </a>
+            <a class="btn" href="#download">All downloads</a>
+          </div>
+          <p class="meta">Free and open source · Version <span data-version>latest</span> · Windows, macOS and Linux</p>
+          <p class="note" data-note="mobile" hidden>
+            LernLab runs on computers. Open this page on your Windows, Mac or Linux computer to download it.
+          </p>
+          <p class="note" data-note="other" hidden>We couldn't tell which system you use. Pick your download below.</p>
+        </div>
+        <figure class="hero-media">
+          <video
+            controls
+            muted
+            loop
+            playsinline
+            preload="metadata"
+            poster="media/session-poster.webp"
+            width="1280"
+            height="800"
+            data-autoplay
+            aria-describedby="demo-caption"
+          >
+            <source src="media/session.mp4" type="video/mp4" />
+            <img
+              src="media/session.gif"
+              width="800"
+              height="500"
+              alt="A short study session in LernLab: German words, multiple-choice answers and feedback after each one."
+            />
+          </video>
+          <figcaption id="demo-caption">
+            A 5-minute session with the sample German deck: pick or type the answer, see at once whether it was right,
+            then on to the next card. No sound.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="band" id="features" aria-labelledby="features-title">
+        <div class="wrap">
+          <h2 id="features-title">Made to help you remember</h2>
+          <ul class="features">
+            <li class="feature">
+              <h3>Short, varied rounds</h3>
+              <p>
+                A session is a run of 60–90-second blocks, and the format changes each time: multiple choice, typing,
+                cloze, match pairs, word rain, listening, speaking and more. Pick 5, 10 or 20 minutes.
+              </p>
+            </li>
+            <li class="feature">
+              <h3>Honest grading</h3>
+              <p>
+                You type or say the answer, and LernLab grades it. It forgives capitals and small typos, and an “I was
+                right” button is there when it's too strict.
+              </p>
+            </li>
+            <li class="feature">
+              <h3>Spaced repetition underneath</h3>
+              <p>
+                FSRS, the scheduler modern Anki uses, decides when each card comes back. Only real recall moves it:
+                games never mark a card as known.
+              </p>
+            </li>
+            <li class="feature">
+              <h3>Forgiving, never nagging</h3>
+              <p>
+                Streak freezes, no guilt messages and no leaderboards. New cards are never timed, and a missed day is a
+                gap, not a reset.
+              </p>
+            </li>
+            <li class="feature">
+              <h3>Brings your decks along</h3>
+              <p>
+                Import Anki <code>.apkg</code> packages, Quizlet-style CSV, pasted lists or live Anki. Export to CSV and
+                <code>.lernpack</code> at any time.
+              </p>
+            </li>
+            <li class="feature">
+              <h3>Easy to read and use</h3>
+              <p>
+                Large, clear type, light and dark themes, larger text when you want it, full keyboard use and screen
+                reader support.
+              </p>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="wrap" id="screens" aria-labelledby="screens-title">
+        <h2 id="screens-title">A look inside</h2>
+        <p class="section-lead">The pictures follow your light or dark setting, like the app does.</p>
+        <ul class="gallery">
+          <li>
+            <figure>
+              <picture>
+                <source srcset="media/home-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="media/home-light.webp"
+                  width="1280"
+                  height="800"
+                  loading="lazy"
+                  alt="The Home screen: reviews due, new cards, the deck to study, session length and one Start button."
+                />
+              </picture>
+              <figcaption>Home: one button to start.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <picture>
+                <source srcset="media/session-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="media/session-light.webp"
+                  width="1280"
+                  height="800"
+                  loading="lazy"
+                  alt="A multiple-choice question asking what “die Stadt” means, with four answers."
+                />
+              </picture>
+              <figcaption>One card at a time, nothing else on screen.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <picture>
+                <source srcset="media/feedback-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="media/feedback-light.webp"
+                  width="1280"
+                  height="800"
+                  loading="lazy"
+                  alt="A typed answer marked “Look closely, then type it out”, with the typo highlighted next to the right answer."
+                />
+              </picture>
+              <figcaption>Mistakes show what to fix, calmly.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <picture>
+                <source srcset="media/match-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="media/match-light.webp"
+                  width="1280"
+                  height="800"
+                  loading="lazy"
+                  alt="The Match pairs game: German words on the left, English meanings on the right."
+                />
+              </picture>
+              <figcaption>Quick games between recall rounds.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <picture>
+                <source srcset="media/summary-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="media/summary-light.webp"
+                  width="1280"
+                  height="800"
+                  loading="lazy"
+                  alt="The end of a session: cards recalled, XP earned, a new level and a badge."
+                />
+              </picture>
+              <figcaption>Celebrations wait until the end.</figcaption>
+            </figure>
+          </li>
+          <li>
+            <figure>
+              <picture>
+                <source srcset="media/progress-dark.webp" media="(prefers-color-scheme: dark)" />
+                <img
+                  src="media/progress-light.webp"
+                  width="1280"
+                  height="800"
+                  loading="lazy"
+                  alt="The Progress screen: a 9-day streak, streak freezes and badges."
+                />
+              </picture>
+              <figcaption>Progress, streaks and badges.</figcaption>
+            </figure>
+          </li>
+        </ul>
+      </section>
+
+      <section class="band" id="privacy" aria-labelledby="privacy-title">
+        <div class="wrap privacy">
+          <div>
+            <h2 id="privacy-title">Private by design</h2>
+            <p class="section-lead">
+              Your decks and progress stay on your computer. Nobody watches how you study, not even us.
+            </p>
+          </div>
+          <ul class="checks">
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span><strong>No account.</strong> Download it, open it, study.</span>
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span><strong>No tracking and no analytics,</strong> in the app or on this website.</span>
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span><strong>No cookies.</strong> This page loads nothing from other sites.</span>
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span>
+                <strong>Online only when it must be:</strong> to check for updates, to open the deck gallery when you
+                ask, and to use your own AI key if you add one.
+              </span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="wrap" id="download" aria-labelledby="download-title" tabindex="-1">
+        <h2 id="download-title">Download LernLab</h2>
+        <p class="section-lead">
+          Version <span data-version>latest</span>, free. Everything it needs is inside the installer (about 100 MB);
+          you don't need anything else.
+        </p>
+        <div class="systems">
+          <section class="system" data-system-card="windows" aria-labelledby="sys-windows">
+            <h3 id="sys-windows">Windows</h3>
+            <p class="requires">Windows 10 and 11</p>
+            <div class="option" data-option="windows">
+              <span class="badge" hidden>Recommended for this computer</span>
+              <a class="btn primary" data-download="windows" href="https://github.com/n1m5l5ss/lernlab/releases/latest"
+                >Download for Windows</a
+              >
+              <code class="file" data-file="windows">LernLab-Setup.exe</code>
+            </div>
+          </section>
+          <section class="system" data-system-card="mac" aria-labelledby="sys-mac">
+            <h3 id="sys-mac">macOS</h3>
+            <p class="requires">
+              Not sure which Mac you have? Apple menu → About This Mac: “Chip” means Apple silicon, “Processor” means
+              Intel.
+            </p>
+            <div class="option" data-option="mac-arm64">
+              <span class="badge" hidden>Recommended for this computer</span>
+              <a
+                class="btn primary"
+                data-download="mac-arm64"
+                href="https://github.com/n1m5l5ss/lernlab/releases/latest"
+                >Download for Apple silicon</a
+              >
+              <code class="file" data-file="mac-arm64">LernLab-arm64.dmg</code>
+            </div>
+            <div class="option" data-option="mac-x64">
+              <span class="badge" hidden>Recommended for this computer</span>
+              <a class="btn" data-download="mac-x64" href="https://github.com/n1m5l5ss/lernlab/releases/latest"
+                >Download for Intel</a
+              >
+              <code class="file" data-file="mac-x64">LernLab-x64.dmg</code>
+            </div>
+          </section>
+          <section class="system" data-system-card="linux" aria-labelledby="sys-linux">
+            <h3 id="sys-linux">Linux</h3>
+            <p class="requires">64-bit Intel or AMD (x86-64)</p>
+            <div class="option" data-option="linux-appimage">
+              <span class="badge" hidden>Recommended for this computer</span>
+              <a
+                class="btn primary"
+                data-download="linux-appimage"
+                href="https://github.com/n1m5l5ss/lernlab/releases/latest"
+                >AppImage, any distribution</a
+              >
+              <code class="file" data-file="linux-appimage">LernLab.AppImage</code>
+            </div>
+            <div class="option" data-option="linux-deb">
+              <a class="btn" data-download="linux-deb" href="https://github.com/n1m5l5ss/lernlab/releases/latest"
+                >.deb for Debian and Ubuntu</a
+              >
+              <code class="file" data-file="linux-deb">lernlab_amd64.deb</code>
+            </div>
+          </section>
+        </div>
+
+        <div class="first-open">
+          <h3>The first time you open it</h3>
+          <p>
+            The installers aren't signed yet, so your system warns you once. LernLab is open source and built in public
+            on GitHub.
+          </p>
+          <ul>
+            <li>
+              <strong>Windows:</strong> if SmartScreen says “Windows protected your PC”, choose More info → Run anyway.
+            </li>
+            <li>
+              <strong>macOS:</strong> drag LernLab into Applications and open it. If macOS can't check it, go to System
+              Settings → Privacy &amp; Security and press Open Anyway.
+            </li>
+            <li><strong>Linux:</strong> make the AppImage executable and run it, or install the .deb.</li>
+          </ul>
+          <p>
+            <a href="https://github.com/n1m5l5ss/lernlab#install">Step-by-step install guide</a> ·
+            <a href="https://github.com/n1m5l5ss/lernlab/releases">All versions and files</a>
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap footer-inner">
+        <p>LernLab is free software under the MIT license and made in the open.</p>
+        <ul class="footer-links">
+          <li><a href="https://github.com/n1m5l5ss/lernlab">Source code</a></li>
+          <li><a href="https://github.com/n1m5l5ss/lernlab/blob/main/docs/USER-GUIDE.md">User guide</a></li>
+          <li><a href="https://github.com/n1m5l5ss/lernlab/blob/main/CHANGELOG.md">What's new</a></li>
+          <li><a href="https://github.com/n1m5l5ss/lernlab/issues">Report a problem</a></li>
+        </ul>
+      </div>
+    </footer>
+  </body>
+</html>

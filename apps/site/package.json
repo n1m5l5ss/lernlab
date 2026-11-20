@@ -1,0 +1,14 @@
+{
+  "name": "@lernlab/site",
+  "version": "0.0.0",
+  "private": true,
+  "description": "LernLab's website: a static landing page with download buttons, published on GitHub Pages.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "build": "tsx --no-warnings src/build.ts",
+    "preview": "npm run build && tsx --no-warnings src/preview.ts",
+    "test": "tsx --no-warnings --test \"src/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  }
+}

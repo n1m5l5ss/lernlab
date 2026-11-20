@@ -57,6 +57,15 @@ Each release also carries `latest*.yml` and `.blockmap` files for auto-update.
 
 Pull requests opened by a workflow (the release PR and the `main → dev` sync) don't trigger `pull_request` runs, because GitHub doesn't let `GITHUB_TOKEN` start other workflows that way. The release-please workflow therefore starts `ci` and `pr-title` on them with `workflow_dispatch`, which `GITHUB_TOKEN` may do. The check runs land on the PR's head commit under the same names, so the required checks pass without a personal token or an admin bypass.
 
+## Website
+
+The landing page lives in `apps/site`: plain HTML and CSS in `public/`, and a small script (`src/main.ts`, compiled by `src/build.ts`) that guesses the visitor's system and highlights its download. It loads nothing from other sites: no web fonts, CDNs, analytics or cookies (a Content-Security-Policy enforces it).
+
+- **Download links.** `npm run build -w @lernlab/site` fills in each button. The "Website" workflow (`.github/workflows/pages.yml`) passes it the newest published release (`gh release view --json tagName,assets`), so the links use that release's real file names; without one, the names come from `artifactName` in `apps/desktop/package.json` and the version in `package.json`. `apps/site/src/downloads.test.ts` checks both against the table above.
+- **Preview:** `npm run preview -w @lernlab/site`, then open http://localhost:5180.
+- **Publishing.** The workflow runs on pushes to `main` that change the site, after each release (release-please or "Build installers"), and by hand. It deploys with the official Pages actions.
+- **One-time setup (owner):** Settings → Pages → Source: **GitHub Actions**. The default branch is `dev`, so also allow `main` under Settings → Environments → `github-pages` → Deployment branches.
+
 ## Auto-update
 
 - The app looks for a new version 30 s after it starts, and then at most once a day (`apps/desktop/electron/updates.ts`). It reads `latest*.yml` from the newest GitHub Release, downloads in the background and installs on the next restart. Home shows a quiet "Restart now" note, never a session.

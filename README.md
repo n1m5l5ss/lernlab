@@ -49,7 +49,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 
 ## Install
 
-Download the file for your system from the [Releases page](https://github.com/n1m5l5ss/lernlab/releases). The installers are not signed yet, so Windows and macOS show a warning the first time. Everything LernLab needs is inside the installer: you don't need Node.js or anything else.
+Download the file for your system from the [LernLab website](https://n1m5l5ss.github.io/lernlab/), which picks the right one for you, or from the [Releases page](https://github.com/n1m5l5ss/lernlab/releases). The installers are not signed yet, so Windows and macOS show a warning the first time. Everything LernLab needs is inside the installer: you don't need Node.js or anything else.
 
 ### Windows 10 and 11
 
