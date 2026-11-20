@@ -1,4 +1,6 @@
 // Game feel: tiny synthesized sound effects (no files), Anki audio playback and German text-to-speech.
+import { mediaUrl } from './bridge';
+
 let ctx: AudioContext | null = null;
 let enabled = true;
 export const setSound = (on: boolean) => {
@@ -44,7 +46,7 @@ let current: HTMLAudioElement | null = null;
 export function playMedia(file: string | null | undefined): Promise<void> {
   if (!file) return Promise.resolve();
   current?.pause();
-  current = new Audio(`/media/${encodeURIComponent(file)}`);
+  current = new Audio(mediaUrl(file));
   return new Promise((resolve) => {
     current!.onended = () => resolve();
     current!.onerror = () => resolve();

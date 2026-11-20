@@ -121,6 +121,10 @@ function DeckEditor({
       setErr(e.message);
     }
   };
+  const exportAs = (e: React.MouseEvent, format: 'csv' | 'lernpack') => {
+    e.preventDefault();
+    api.exportDeck(d.id, format).catch((x: Error) => setErr(x.message));
+  };
   const remove = async () => {
     if (!confirm(`Delete the deck "${d.name}" with all its cards and progress? This cannot be undone.`)) return;
     await api.deleteDeck(d.id);
@@ -186,12 +190,12 @@ function DeckEditor({
         </button>
         <span className="grow" />
         {d.id && (
-          <a className="btn ghost" href={`/api/decks/${d.id}/export?format=lernpack`} download>
+          <a className="btn ghost" href="#" onClick={(e) => exportAs(e, 'lernpack')}>
             Export .lernpack
           </a>
         )}
         {d.id && (
-          <a className="btn ghost" href={`/api/decks/${d.id}/export?format=csv`} download>
+          <a className="btn ghost" href="#" onClick={(e) => exportAs(e, 'csv')}>
             Export CSV
           </a>
         )}
