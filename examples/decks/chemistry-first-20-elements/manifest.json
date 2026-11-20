@@ -1,0 +1,10 @@
+{
+  "format": "lernpack",
+  "version": 1,
+  "deck": {
+    "name": "Chemistry: the first 20 elements",
+    "language": null,
+    "description": "Names and symbols of elements 1 to 20, sorted into metals, nonmetals and metalloids, plus the basic ideas of atoms and bonds."
+  },
+  "generator": "LernLab sample decks"
+}
