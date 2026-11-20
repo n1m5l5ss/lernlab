@@ -1,5 +1,6 @@
 import type { Attempt, SessionLength } from '@lernlab/core/types';
 import type { StudySource } from '@lernlab/core/learn';
+import type { BulkAction } from '@lernlab/core/browse';
 
 import type { InputOf } from '../backend/handlers';
 import { call, saveFile } from './bridge';
@@ -26,10 +27,11 @@ export const api = {
     const f = await call('decks.export', { id, format });
     saveFile(f.name, f.data, f.type);
   },
-  cards: (deckId: number, q = '', offset = 0) => call('cards.list', { deckId, q, offset }),
+  findCards: (filter: InputOf<'cards.find'>) => call('cards.find', filter),
+  getCard: (id: number) => call('cards.get', { id }),
+  bulkCards: (ids: number[], action: BulkAction) => call('cards.bulk', { ids, action }),
   addCard: (deckId: number, card: CardInput) => call('cards.add', { deckId, card }),
   saveCard: (id: number, card: CardInput) => call('cards.update', { id, card }),
-  deleteCard: (id: number) => call('cards.delete', { id }),
   importFile: async (file: File, opts: { deckName?: string; language?: string; deckId?: number }) =>
     call('import.file', { name: file.name, data: new Uint8Array(await file.arrayBuffer()), ...opts }),
   importText: (b: Parameters<typeof call<'import.text'>>[1]) => call('import.text', b),

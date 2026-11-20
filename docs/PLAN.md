@@ -73,7 +73,7 @@ The first public release, 1.0, has 29 features. The prototype already has 12 of 
 | Study | Hands-free audio mode (listen and answer out loud) | 2.0 | New |
 | Cards | Decks: create, edit, delete, sub-decks, deck goal and exam date | 1.0 | Partial: no sub-decks |
 | Cards | Card editor: basic, cloze, multiple choice, ordering; rich text; image, GIF, audio, video | 1.0 | Done |
-| Cards | Card browser: search, filter, bulk tag, move, suspend, delete | 1.0 | Partial: no bulk actions |
+| Cards | Card browser: search, filter, bulk tag, move, suspend, delete | 1.0 | Done |
 | Cards | Duplicate warning while adding or importing | 1.0 | Partial: import only |
 | Cards | Read cards aloud with the computer's built-in voices when there is no audio file | 1.0 | Partial |
 | Cards | Record your own audio on a card | 1.x | New |

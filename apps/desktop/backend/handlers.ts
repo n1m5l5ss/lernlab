@@ -198,44 +198,6 @@ export const handlers = {
   ),
 
   /* ── Cards ── */
-  'cards.list': h(
-    v.object({ deckId: v.id, q: v.optional(v.string(500)), offset: v.optional(v.number) }),
-    ({ deckId: id, q: query, offset = 0 }) => {
-      const q = `%${query ?? ''}%`;
-      const d = getDb();
-      const rows = d
-        .prepare(
-          `${ITEM_SELECT} WHERE i.deck_id = ? AND (i.target LIKE ? OR i.meaning LIKE ? OR i.tags LIKE ? OR i.sentence LIKE ?) ORDER BY i.ord LIMIT 100 OFFSET ?`,
-        )
-        .all(id, q, q, q, q, offset);
-      const total = Number(
-        d
-          .prepare(
-            `SELECT COUNT(*) AS n FROM items i WHERE i.deck_id = ? AND (i.target LIKE ? OR i.meaning LIKE ? OR i.tags LIKE ? OR i.sentence LIKE ?)`,
-          )
-          .get(id, q, q, q, q)!.n,
-      );
-      const state = new Map(
-        d
-          .prepare(
-            `SELECT st.item_id, st.mastery, s.due FROM item_state st LEFT JOIN srs s ON s.item_id = st.item_id WHERE st.item_id IN (SELECT id FROM items WHERE deck_id = ?)`,
-          )
-          .all(id)
-          .map((r) => [Number(r.item_id), r]),
-      );
-      return {
-        total,
-        cards: rows.map((r) => ({
-          ...rowToItem(r),
-          suspended: !!r.suspended,
-          starred: !!r.starred,
-          mastery: Number(state.get(Number(r.id))?.mastery ?? 0),
-          due: (state.get(Number(r.id))?.due as string | null | undefined) ?? null,
-          extra: JSON.parse((r.extra as string | null) ?? '{}') as Record<string, string>,
-        })),
-      };
-    },
-  ),
   /** Light rows for the browser, across every deck unless one is given. */
   'cards.find': h(
     v.object({
@@ -319,13 +281,6 @@ export const handlers = {
         },
       ]);
     }
-    return { ok: true };
-  }),
-
-  'cards.delete': h(v.object({ id: v.id }), ({ id }) => {
-    const d = getDb();
-    for (const t of ['srs', 'item_state']) d.prepare(`DELETE FROM ${t} WHERE item_id = ?`).run(id);
-    d.prepare('DELETE FROM items WHERE id = ?').run(id);
     return { ok: true };
   }),
 
