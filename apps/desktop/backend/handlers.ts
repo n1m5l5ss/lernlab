@@ -57,6 +57,7 @@ import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
+import { lastSeenVersion, markVersionSeen, whatsNewToShow, type ReleaseNotes } from '@lernlab/core/whatsnew';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import {
   ankiAvailable,
@@ -78,6 +79,8 @@ import {
 } from '@lernlab/storage-sqlite/backups';
 import { basename, join } from 'node:path';
 import pkg from '../package.json';
+// Written from CHANGELOG.md by scripts/whats-new.ts at build time, so the notes work offline.
+import bundledNotes from './whats-new.json';
 import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
 
@@ -218,6 +221,13 @@ export const handlers = {
     importing: importStatus.running,
     languages: LANGUAGES,
     welcome: needsWelcome(getDb()),
+    /** "What's new in X.Y.Z" on the first launch after an update, or null (issue #58). */
+    whatsNew: whatsNewToShow({
+      current: pkg.version,
+      lastSeen: lastSeenVersion(getDb()),
+      isNewUser: needsWelcome(getDb()),
+      notes: bundledNotes as ReleaseNotes,
+    }),
   })),
   /** First run: a sample deck for "language" or "subject" (bundled, offline), then never show the welcome again. */
   'welcome.finish': h(v.object({ choice: v.oneOf(...WELCOME_CHOICES) }), ({ choice }) => {
@@ -229,7 +239,14 @@ export const handlers = {
       chooseDeck(deckId);
     }
     finishWelcome(choice, getDb());
+    // A new user starts on this version: there is nothing new to tell them.
+    markVersionSeen(getDb(), pkg.version);
     return { deckId };
+  }),
+  /** "What's new" was closed: show it again only after the next update. */
+  'whatsNew.seen': h(v.none, () => {
+    markVersionSeen(getDb(), pkg.version);
+    return null;
   }),
 
   /* ── Decks ── */
@@ -540,6 +557,7 @@ export const handlers = {
   /** For Settings: the version, licence and where the data lives (read only). */
   'app.info': h(v.none, () => ({
     version: pkg.version,
+    lastSeenVersion: lastSeenVersion(getDb()),
     licence: pkg.license,
     dataDir: dataDir(),
     backupsDir: join(dataDir(), 'backups'),

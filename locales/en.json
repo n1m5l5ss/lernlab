@@ -968,6 +968,15 @@
   "update": {
     "ready": "LernLab {{version}} is ready. Restart to update; your progress is saved and backed up.",
     "restart": "Restart now",
-    "restarting": "Restarting…"
+    "restarting": "Restarting…",
+    "notes": "What's in this update"
+  },
+  "whatsNew": {
+    "title": "What's new in LernLab {{version}}",
+    "lead": "LernLab was updated. Your decks and progress are just as you left them.",
+    "new": "New",
+    "fixed": "Fixed",
+    "continue": "Continue",
+    "fullChangelog": "Full changelog"
   }
 }

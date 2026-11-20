@@ -1,0 +1,16 @@
+{
+  "version": "0.3.0",
+  "added": [
+    "Add a language setting and prepare the app for translations",
+    "Add the translation system and a language picker",
+    "Back up your data before every update and restore it if the update fails",
+    "Publish beta builds from dev with one click",
+    "Show error messages in the chosen language"
+  ],
+  "fixed": [
+    "Attach installers to every release",
+    "Attach installers to the release that release-please creates",
+    "Let tests clean up temp folders on Windows",
+    "Make the test command work on Windows"
+  ]
+}

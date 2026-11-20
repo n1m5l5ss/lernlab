@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('lernlab', {
     status: () => ipcRenderer.invoke('lernlab:update-status'),
     /** Back up, then restart into the new version. */
     install: () => ipcRenderer.invoke('lernlab:update-install'),
-    onReady: (cb: (u: { version: string }) => void) => {
+    onReady: (cb: (u: { version: string; notes: { added: string[]; fixed: string[] } }) => void) => {
       ipcRenderer.on('lernlab:update-ready', (_e, u) => cb(u));
     },
   },

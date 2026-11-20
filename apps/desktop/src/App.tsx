@@ -15,6 +15,7 @@ import { Badges } from './Badges';
 import { StreakPanel } from './Motivation';
 import { Shell } from './Shell';
 import { Welcome } from './Welcome';
+import { WhatsNew } from './WhatsNew';
 import { formatDate, setLanguage } from './i18n';
 import { applyTheme } from './theme';
 import { applyDisplay } from './display';
@@ -40,6 +41,8 @@ export function App() {
   const [route, setRoute] = useState<Route>(() => routeFromHash(location.hash));
   const [full, setFull] = useState<FullScreen | null>(null);
   const [error, setError] = useState('');
+  /** Closed this launch: never shown twice, even if saving that failed. */
+  const [whatsNewClosed, setWhatsNewClosed] = useState(false);
 
   const refresh = () =>
     api
@@ -136,6 +139,18 @@ export function App() {
           await refresh();
           if (next === 'session') await start('mini');
           else go(next);
+        }}
+      />
+    );
+  // After an update: "What's new" before Home. Never during a session or its summary.
+  if (state.whatsNew && !whatsNewClosed && !full)
+    return (
+      <WhatsNew
+        notes={state.whatsNew}
+        onDone={() => {
+          setWhatsNewClosed(true);
+          go('home');
+          refresh();
         }}
       />
     );
