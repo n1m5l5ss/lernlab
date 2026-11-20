@@ -1,7 +1,8 @@
 // End-to-end learning loop on a fresh database: import → plan → answer → grade → finish → next day.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync } from 'node:fs';
+import { cleanupTempDir } from '../shared/test-utils';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -18,7 +19,7 @@ const { getDb } = await import('./db');
 
 let server: any;
 before(async () => { server = await startMockAnki(8799); });
-after(() => { server.close(); rmSync(dir, { recursive: true, force: true }); });
+after(() => { server.close(); cleanupTempDir(dir); });
 
 const day1 = new Date(2026, 10, 21, 10, 17);
 
