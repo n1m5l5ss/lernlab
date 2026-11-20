@@ -41,6 +41,8 @@ export type SessionResult = {
   startedAt: string;
   missed: number[];
   practice: boolean;
+  /** New cards met in this session. */
+  introduced: number;
 };
 
 const RECALL = new Set(['typed', 'cloze', 'flip', 'mcq', 'order']);
@@ -195,7 +197,14 @@ export function Session({
   const [sound, setSoundOn] = useState(settings.sound);
   const leaveDialog = useRef<HTMLDialogElement>(null);
   const started = useRef({ at: Date.now(), iso: new Date().toISOString() });
-  const totals = useRef({ answers: 0, correct: 0, perfectBlocks: 0, bestGender: 0, bossWon: null as boolean | null });
+  const totals = useRef({
+    answers: 0,
+    introduced: 0,
+    correct: 0,
+    perfectBlocks: 0,
+    bestGender: 0,
+    bossWon: null as boolean | null,
+  });
   const missed = useRef(new Set<number>());
   const responseTimes = useRef<number[]>([]);
   const slowStreak = useRef(0);
@@ -257,6 +266,7 @@ export function Session({
     (a: AnswerInput): number => {
       const ms = performance.now() - a.shownAt;
       const counts = a.format !== 'intro';
+      if (!counts) totals.current.introduced++;
       let gained = 0;
       if (counts && !a.silent) {
         const ok = a.correct && !a.articleError;
@@ -408,6 +418,7 @@ export function Session({
       startedAt: started.current.iso,
       missed: [...missed.current],
       practice: plan.practice,
+      introduced: totals.current.introduced,
     });
   };
 
