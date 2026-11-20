@@ -1,6 +1,7 @@
 import { test, after } from 'node:test';
+import { cleanupTempDir } from '../shared/test-utils';
 import assert from 'node:assert/strict';
-import { mkdtempSync, rmSync, readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { zipSync, strToU8 } from 'fflate';
@@ -13,7 +14,7 @@ const { exportDeck } = await import('./exporter');
 const { planSession } = await import('./session');
 const { getDb, openRaw } = await import('./db');
 const { deckByName } = await import('./library');
-after(() => rmSync(dir, { recursive: true, force: true }));
+after(() => cleanupTempDir(dir));
 
 const AWS_CSV = `term,definition,category,tags,notes
 Amazon S3,Object storage service for any amount of data,Storage,aws saa,Use for static assets
