@@ -1,27 +1,29 @@
-// Client-side exercise builders (for blocks the client assembles on the fly: boss, rescue rounds).
-import { acceptedAnswers } from '../shared/text';
+// Client-side exercise builders (boss, rescue and action rounds are assembled on the fly).
+import { qa } from '../shared/cards';
+import { stripHtml } from '../shared/text';
 import type { Exercise, Item } from '../shared/types';
 
 export function typedFor(item: Item): Extract<Exercise, { type: 'typed' }> {
-  const accepted = acceptedAnswers(item.target);
-  const core = item.kind === 'noun' ? item.word : accepted[0];
+  const q = qa(item);
+  const core = q.requireArticle ? item.word : q.accepted[0];
   return {
-    type: 'typed',
-    itemId: item.id,
-    prompt: item.meaning + (item.kind === 'noun' ? ' · Nomen mit Artikel' : ''),
-    accepted,
-    requireArticle: item.kind === 'noun',
-    hint: `${core[0]}${'_'.repeat(Math.max(0, core.length - 1))} (${core.length})`,
+    type: 'typed', itemId: item.id, prompt: stripHtml(q.prompt) + (q.requireArticle ? ' · noun + article' : ''),
+    accepted: q.accepted, requireArticle: q.requireArticle, hint: `${core[0]}${core.slice(1).replace(/[^\s]/g, '_')} (${core.length})`,
   };
 }
 
+export function recallFor(item: Item): Exercise {
+  const q = qa(item);
+  return q.typeable ? typedFor(item) : { type: 'flip', itemId: item.id, prompt: q.prompt, answer: q.answer, reverse: q.prompt === item.meaning };
+}
+
 export function mcFor(item: Item, pool: Item[]): Extract<Exercise, { type: 'mc' }> {
-  const others = pool.filter((p) => p.id !== item.id && p.meaning !== item.meaning && p.kind !== 'grammar');
+  const back = (i: Item) => stripHtml(i.meaning);
   const picks: string[] = [];
-  for (const o of others.sort(() => Math.random() - 0.5)) {
-    if (!picks.includes(o.meaning)) picks.push(o.meaning);
+  for (const o of pool.filter((p) => p.id !== item.id && back(p) !== back(item) && p.kind !== 'grammar').sort(() => Math.random() - 0.5)) {
+    if (!picks.includes(back(o))) picks.push(back(o));
     if (picks.length === 3) break;
   }
-  const options = [item.meaning, ...picks].sort(() => Math.random() - 0.5);
-  return { type: 'mc', itemId: item.id, direction: 'de2en', prompt: item.target, options, answerIndex: options.indexOf(item.meaning) };
+  const options = [back(item), ...picks].sort(() => Math.random() - 0.5);
+  return { type: 'mc', itemId: item.id, direction: 'de2en', prompt: stripHtml(item.target), options, answerIndex: options.indexOf(back(item)) };
 }

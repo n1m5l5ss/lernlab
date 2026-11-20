@@ -6,8 +6,9 @@ import { dirname, resolve } from 'node:path';
 // Node 22–25 call the class DatabaseSync; newer releases may call it Database.
 const Ctor: any = (sqlite as any).DatabaseSync ?? (sqlite as any).Database;
 
-export const DATA_DIR = resolve(process.env.LERNLAB_DATA ?? 'data');
-export const MEDIA_DIR = resolve(DATA_DIR, 'media');
+// Read lazily so the desktop app can point LERNLAB_DATA at the OS app-data folder before first use.
+export const dataDir = () => resolve(process.env.LERNLAB_DATA ?? 'data');
+export const mediaDir = () => resolve(dataDir(), 'media');
 
 export type DB = {
   exec(sql: string): void;
@@ -21,14 +22,23 @@ export type DB = {
 
 let db: DB | null = null;
 
-export function getDb(file = resolve(DATA_DIR, 'lernlab.db')): DB {
+export function getDb(file = resolve(dataDir(), 'lernlab.db')): DB {
   if (db) return db;
   mkdirSync(dirname(file), { recursive: true });
-  mkdirSync(MEDIA_DIR, { recursive: true });
+  mkdirSync(mediaDir(), { recursive: true });
   db = new Ctor(file) as DB;
   db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
   migrate(db);
   return db;
+}
+
+/** A plain SQLite handle without LernLab's schema (for reading/writing other apps' files). */
+export function openRaw(file: string): DB {
+  return new Ctor(file) as DB;
+}
+
+export function openReadonly(file: string): DB {
+  return new Ctor(file, { readOnly: true }) as DB;
 }
 
 export function openDb(file: string): DB {
@@ -116,7 +126,49 @@ function migrate(d: DB) {
       summary TEXT
     );
     CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS decks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL UNIQUE,
+      language TEXT,
+      description TEXT NOT NULL DEFAULT '',
+      settings TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL
+    );
   `);
+  // v0.2: cards belong to decks and may carry images, video/GIF, a category and free-form extras.
+  const cols = new Set(d.prepare('PRAGMA table_info(items)').all().map((c: any) => c.name));
+  const add = (name: string, type: string) => { if (!cols.has(name)) d.exec(`ALTER TABLE items ADD COLUMN ${name} ${type}`); };
+  add('deck_id', 'INTEGER');
+  add('image', 'TEXT');
+  add('video', 'TEXT');
+  add('category', 'TEXT');
+  add('extra', "TEXT NOT NULL DEFAULT '{}'");
+  add('starred', 'INTEGER NOT NULL DEFAULT 0');
+  const scols = new Set(d.prepare('PRAGMA table_info(srs)').all().map((c: any) => c.name));
+  if (!scols.has('prev_card')) d.exec('ALTER TABLE srs ADD COLUMN prev_card TEXT');
+  if (!scols.has('prev_due')) d.exec('ALTER TABLE srs ADD COLUMN prev_due TEXT');
+  d.exec('CREATE INDEX IF NOT EXISTS items_deck ON items(deck_id)');
+  migrateLegacyDeck(d);
+}
+
+/** v0.1 stored one German deck without a decks table: give those cards a proper deck. */
+function migrateLegacyDeck(d: DB) {
+  const orphan = d.prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id IS NULL').get();
+  if (!Number(orphan.n)) return;
+  const settings = getMeta<any>(d, 'settings', {});
+  const source = settings.deck ?? 'Lang::German';
+  const german = /german|deutsch/i.test(source);
+  const name = german ? 'German' : source.split('::').pop();
+  d.prepare(
+    `INSERT OR IGNORE INTO decks(name, language, settings, created_at) VALUES (?, ?, ?, ?)`,
+  ).run(name, german ? 'de' : null, JSON.stringify({
+    newPerDay: settings.newPerDay ?? 10,
+    ankiSource: source,
+    goal: german ? { label: 'Goethe B1', words: 2400, hoursLow: 260, hoursHigh: 490, tag: 'exam_goethe_b1' } : undefined,
+  }), new Date().toISOString());
+  const deck = d.prepare('SELECT id FROM decks WHERE name = ?').get(name);
+  d.prepare('UPDATE items SET deck_id = ? WHERE deck_id IS NULL').run(deck.id);
+  if (!getMeta(d, 'activeDeck', null)) setMeta(d, 'activeDeck', Number(deck.id));
 }
 
 export function getMeta<T>(d: DB, key: string, fallback: T): T {

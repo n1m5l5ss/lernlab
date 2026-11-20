@@ -1,24 +1,25 @@
 // Progress: streaks, daily goal, achievements, stats, and the daily summary for the AI tutor / Notion.
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { DATA_DIR, getDb, getMeta, setMeta, type DB } from './db';
+import { dataDir, getDb, getMeta, setMeta, type DB } from './db';
 import { addDays, BONUS, dayKey, levelFor, NEW_STREAK, recordSession, settleStreak, type StreakState } from '../shared/game';
-import { dueItemIds, getSettings, introducedTodayCount, newItemIds } from './learn';
+import { activeDeckId, deckNewPerDay, dueItemIds, getSettings, introducedTodayCount, newItemIds } from './learn';
+import { deckCounts, getDeck, listDecks, LANGUAGES } from './library';
 
 export const ACHIEVEMENTS: Record<string, { title: string; desc: string }> = {
-  first: { title: 'Erste Schritte', desc: 'Finish your first session' },
-  streak3: { title: 'Drei am Stück', desc: '3-day streak' },
-  streak7: { title: 'Eine Woche!', desc: '7-day streak' },
-  streak30: { title: 'Gewohnheit', desc: '30-day streak' },
-  words50: { title: '50 Wörter', desc: 'Produce 50 words from memory' },
-  words100: { title: '100 Wörter', desc: 'Produce 100 words from memory' },
-  words250: { title: '250 Wörter', desc: 'Produce 250 words from memory' },
-  words500: { title: '500 Wörter', desc: 'Produce 500 words from memory' },
-  boss: { title: 'Bossbezwinger', desc: 'Win a boss battle' },
-  gender15: { title: 'Artikel-Profi', desc: '15 articles right in a row' },
-  perfect: { title: 'Fehlerlos', desc: 'A session of 20+ answers with no mistakes' },
-  speaker: { title: 'Sprechmaschine', desc: 'Say 25 answers correctly out loud' },
-  early: { title: 'Frühaufsteher', desc: 'Study before 9 a.m.' },
+  first: { title: 'First steps', desc: 'Finish your first session' },
+  streak3: { title: 'Three in a row', desc: '3-day streak' },
+  streak7: { title: 'One week!', desc: '7-day streak' },
+  streak30: { title: 'Habit formed', desc: '30-day streak' },
+  words50: { title: '50 cards', desc: 'Know 50 cards from memory' },
+  words100: { title: '100 cards', desc: 'Know 100 cards from memory' },
+  words250: { title: '250 cards', desc: 'Know 250 cards from memory' },
+  words500: { title: '500 cards', desc: 'Know 500 cards from memory' },
+  boss: { title: 'Boss slayer', desc: 'Win a boss battle' },
+  gender15: { title: 'Sorting pro', desc: '15 right in a row in a category sprint' },
+  perfect: { title: 'Flawless', desc: 'A session of 20+ answers with no mistakes' },
+  speaker: { title: 'Speaking machine', desc: 'Say 25 answers correctly out loud' },
+  early: { title: 'Early bird', desc: 'Study before 9 a.m.' },
 };
 
 function metDays(d: DB): Set<string> {
@@ -32,8 +33,19 @@ export function streakState(d: DB = getDb(), now = new Date()): StreakState {
   return s;
 }
 
-export function wordsProducible(d: DB = getDb()): number {
-  return Number(d.prepare(`SELECT COUNT(*) AS n FROM item_state st JOIN items i ON i.id = st.item_id WHERE st.mastery >= 3 AND i.kind != 'grammar'`).get().n);
+export function wordsProducible(d: DB = getDb(), deckId?: number | null): number {
+  return Number(d.prepare(`SELECT COUNT(*) AS n FROM item_state st JOIN items i ON i.id = st.item_id WHERE st.mastery >= 3 AND i.kind != 'grammar'${deckId ? ` AND i.deck_id = ${Number(deckId)}` : ''}`).get().n);
+}
+
+function goalProgress(deckId: number | null, d: DB) {
+  const deck = deckId ? getDeck(deckId, d) : null;
+  const goal = deck?.settings.goal;
+  if (!goal) return null;
+  const known = goal.tag
+    ? Number(d.prepare(`SELECT COUNT(*) AS n FROM items i JOIN item_state st ON st.item_id = i.id WHERE i.deck_id = ? AND i.tags LIKE ? AND st.mastery >= 3`).get(deckId, `%${goal.tag}%`).n)
+    : wordsProducible(d, deckId);
+  const total = goal.tag ? Number(d.prepare(`SELECT COUNT(*) AS n FROM items WHERE deck_id = ? AND tags LIKE ?`).get(deckId, `%${goal.tag}%`).n) : goal.words;
+  return { label: goal.label, known, total };
 }
 
 export function appState(d: DB = getDb(), now = new Date()) {
@@ -44,26 +56,28 @@ export function appState(d: DB = getDb(), now = new Date()) {
   const t = d.prepare('SELECT * FROM days WHERE day = ?').get(today) ?? { xp: 0, sessions: 0, seconds: 0, goal_met: 0 };
   const month = today.slice(0, 7);
   const studyDaysMonth = Number(d.prepare(`SELECT COUNT(*) AS n FROM days WHERE day LIKE ? AND sessions > 0`).get(`${month}%`).n);
-  const itemCount = Number(d.prepare('SELECT COUNT(*) AS n FROM items').get().n);
-  const introduced = Number(d.prepare('SELECT COUNT(*) AS n FROM srs').get().n);
-  const goetheTotal = Number(d.prepare(`SELECT COUNT(*) AS n FROM items WHERE tags LIKE '%exam_goethe_b1%'`).get().n);
-  const goetheKnown = Number(
-    d.prepare(`SELECT COUNT(*) AS n FROM items i JOIN item_state st ON st.item_id = i.id WHERE i.tags LIKE '%exam_goethe_b1%' AND st.mastery >= 3`).get().n,
-  );
+  const deckId = activeDeckId(d);
+  const where = deckId ? ` WHERE deck_id = ${Number(deckId)}` : '';
+  const itemCount = Number(d.prepare(`SELECT COUNT(*) AS n FROM items${where}`).get().n);
+  const introduced = Number(d.prepare(`SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id${where ? where.replace('deck_id', 'i.deck_id') : ''}`).get().n);
+  const counts = deckCounts(d);
+  const decks = listDecks(d).map((dk) => ({ ...dk, ...(counts[dk.id] ?? { cards: 0, fresh: 0, learned: 0 }), due: dueItemIds(d, now, 2000, dk.id).length, languageName: dk.language ? LANGUAGES[dk.language] ?? dk.language : null }));
   const lastDay = d.prepare('SELECT MAX(day) AS d FROM days WHERE sessions > 0 AND day < ?').get(today).d as string | null;
   return {
-    imported: itemCount > 0,
+    imported: decks.length > 0,
+    decks,
+    activeDeck: deckId,
     itemCount,
     introduced,
-    due: dueItemIds(d, now).length,
-    newLeftToday: Math.min(Math.max(0, settings.newPerDay - introducedTodayCount(d, now)), newItemIds(d, 1000).length),
+    due: dueItemIds(d, now, 2000, deckId).length,
+    newLeftToday: Math.min(Math.max(0, deckNewPerDay(deckId, d) - introducedTodayCount(d, now, deckId)), newItemIds(d, 1000, undefined, deckId).length),
     totalXp,
     level: levelFor(totalXp),
     streak,
     today: { xp: Number(t.xp), sessions: Number(t.sessions), minutes: Math.round(Number(t.seconds) / 60), goalMet: !!t.goal_met },
     studyDaysMonth,
-    wordsProducible: wordsProducible(d),
-    goethe: { known: goetheKnown, total: goetheTotal },
+    wordsProducible: wordsProducible(d, deckId),
+    goal: goalProgress(deckId, d),
     achievements: getMeta<Record<string, string>>(d, 'achievements', {}),
     missedYesterday: !!lastDay && lastDay < addDays(today, -1) && Number(t.sessions) === 0,
     settings,
@@ -130,7 +144,7 @@ export function finishSession(f: FinishInput, d: DB = getDb(), now = new Date())
 
   const summary = dailySummary(d, now);
   try {
-    const dir = resolve(DATA_DIR, 'progress');
+    const dir = resolve(dataDir(), 'progress');
     mkdirSync(dir, { recursive: true });
     writeFileSync(resolve(dir, `${today}.json`), JSON.stringify(summary, null, 2));
   } catch { /* progress export is best-effort */ }
@@ -208,7 +222,7 @@ export function dailySummary(d: DB = getDb(), now = new Date()) {
     byFormat,
     newIntroducedToday: introducedTodayCount(d, now),
     wordsProducible: st.wordsProducible,
-    goetheB1: st.goethe,
+    goal: st.goal,
     reviews7d: Number(r7.n),
     again7d: Number(r7.again),
     retention7d: Number(r7.n) ? Math.round((1 - Number(r7.again) / Number(r7.n)) * 100) : null,
@@ -217,16 +231,18 @@ export function dailySummary(d: DB = getDb(), now = new Date()) {
 }
 
 /** Long-term progress: how far, how fast, how much is left, and a projected finish date. */
-export function progressReport(d: DB = getDb(), now = new Date()) {
+export function progressReport(d: DB = getDb(), now = new Date(), deckIdArg?: number | null) {
   const today = dayKey(now);
-  const settings = getSettings(d);
+  const deckId = deckIdArg === undefined ? activeDeckId(d) : deckIdArg;
+  const deck = deckId ? getDeck(deckId, d) : null;
+  const D = deckId ? ` AND i.deck_id = ${Number(deckId)}` : '';
   const n = (sql: string, ...p: any[]) => Number(d.prepare(sql).get(...p).n);
-  const vocabTotal = n(`SELECT COUNT(*) AS n FROM items WHERE kind != 'grammar' AND suspended = 0`);
-  const introduced = n(`SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.kind != 'grammar'`);
-  const producible = wordsProducible(d);
-  const spoken = n(`SELECT COUNT(*) AS n FROM item_state st JOIN items i ON i.id = st.item_id WHERE st.mastery >= 5 AND i.kind != 'grammar'`);
-  const groupsTotal = n(`SELECT COUNT(DISTINCT grp) AS n FROM items WHERE kind = 'grammar' AND grp IS NOT NULL`);
-  const groupsDone = n(`SELECT COUNT(DISTINCT i.grp) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.kind = 'grammar'`);
+  const vocabTotal = n(`SELECT COUNT(*) AS n FROM items i WHERE i.kind != 'grammar' AND i.suspended = 0${D}`);
+  const introduced = n(`SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.kind != 'grammar'${D}`);
+  const producible = wordsProducible(d, deckId);
+  const spoken = n(`SELECT COUNT(*) AS n FROM item_state st JOIN items i ON i.id = st.item_id WHERE st.mastery >= 5 AND i.kind != 'grammar'${D}`);
+  const groupsTotal = n(`SELECT COUNT(DISTINCT i.grp) AS n FROM items i WHERE i.kind = 'grammar' AND i.grp IS NOT NULL${D}`);
+  const groupsDone = n(`SELECT COUNT(DISTINCT i.grp) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.kind = 'grammar'${D}`);
   const seconds = n(`SELECT COALESCE(SUM(seconds), 0) AS n FROM days`);
   const studyDays = n(`SELECT COUNT(*) AS n FROM days WHERE sessions > 0`);
   const firstDay = (d.prepare(`SELECT MIN(day) AS d FROM days WHERE sessions > 0`).get().d as string | null) ?? today;
@@ -238,13 +254,13 @@ export function progressReport(d: DB = getDb(), now = new Date()) {
   for (const r of d.prepare(`SELECT day, seconds, xp FROM days WHERE day >= ?`).all(since) as any[]) {
     const x = days.get(r.day); if (x) { x.minutes = Math.round(Number(r.seconds) / 60); x.xp = Number(r.xp); }
   }
-  for (const r of d.prepare(`SELECT s.introduced_day AS day, COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.kind != 'grammar' AND s.introduced_day >= ? GROUP BY s.introduced_day`).all(since) as any[]) {
+  for (const r of d.prepare(`SELECT s.introduced_day AS day, COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.kind != 'grammar' AND s.introduced_day >= ?${D} GROUP BY s.introduced_day`).all(since) as any[]) {
     const x = days.get(r.day); if (x) x.newWords = Number(r.n);
   }
   const firstRecall = d.prepare(
     `SELECT first_day AS day, COUNT(*) AS n FROM (
        SELECT a.item_id, MIN(a.day) AS first_day FROM attempts a JOIN items i ON i.id = a.item_id
-       WHERE a.correct = 1 AND a.article_error = 0 AND a.format IN ('typed','cloze','dictation','speak','boss') AND i.kind != 'grammar'
+       WHERE a.correct = 1 AND a.article_error = 0 AND a.format IN ('typed','cloze','dictation','speak','boss','flip') AND i.kind != 'grammar'${D}
        GROUP BY a.item_id) GROUP BY first_day`,
   ).all() as any[];
   let before = 0;
@@ -257,12 +273,14 @@ export function progressReport(d: DB = getDb(), now = new Date()) {
   const wordsPerDay = last7.reduce((s, x) => s + x.learned, 0) / 7;
   const minutesPerDay = last7.reduce((s, x) => s + x.minutes, 0) / 7;
   const remainingDeck = Math.max(0, vocabTotal - producible);
-  const B1_WORDS = 2400; // Goethe-Zertifikat B1 Wortliste: about 2,400 lexical units
-  const remainingB1 = Math.max(0, B1_WORDS - producible);
+  const goal = deck?.settings.goal ?? null;
+  const goalWords = goal?.words ?? vocabTotal;
+  const remainingB1 = Math.max(0, goalWords - producible);
   const eta = (left: number, perDay: number) => (perDay > 0 ? addDays(today, Math.ceil(left / perDay)) : null);
 
   return {
     today,
+    deck: deck ? { id: deck.id, name: deck.name } : null,
     since: firstDay,
     totals: {
       vocabTotal, introduced, producible, spoken, remainingDeck,
@@ -273,14 +291,13 @@ export function progressReport(d: DB = getDb(), now = new Date()) {
     pace: {
       wordsPerDay: Math.round(wordsPerDay * 10) / 10,
       minutesPerDay: Math.round(minutesPerDay),
-      newPerDaySetting: settings.newPerDay,
+      newPerDaySetting: deckNewPerDay(deckId, d),
     },
     forecast: {
       deckAtCurrentPace: eta(remainingDeck, wordsPerDay),
-      deckAtSetting: eta(remainingDeck, settings.newPerDay),
-      b1Words: { target: B1_WORDS, remaining: remainingB1, atCurrentPace: eta(remainingB1, wordsPerDay), at30PerDay: eta(remainingB1, 30) },
-      // Goethe-Institut estimate for B1 from zero: about 260–490 hours of guided study.
-      b1Hours: { low: 260, high: 490, done: Math.round((seconds / 3600) * 10) / 10 },
+      deckAtSetting: eta(remainingDeck, deckNewPerDay(deckId, d)),
+      goal: goal ? { label: goal.label, target: goalWords, remaining: remainingB1, atCurrentPace: eta(remainingB1, wordsPerDay), at30PerDay: eta(remainingB1, 30),
+        hours: goal.hoursLow ? { low: goal.hoursLow, high: goal.hoursHigh ?? goal.hoursLow, done: Math.round((seconds / 3600) * 10) / 10 } : null } : null,
     },
     series,
   };

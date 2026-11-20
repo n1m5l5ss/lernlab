@@ -1,8 +1,8 @@
 {
   "name": "lernlab",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "A gamified, never-boring vocabulary and grammar trainer that imports your Anki decks. Built for learning German fast.",
+  "description": "Free, open-source, local-first study app: turn any deck into short game rounds with spaced repetition. Like Anki, but fun.",
   "type": "module",
   "license": "MIT",
   "engines": {
@@ -13,26 +13,108 @@
     "serve": "NODE_NO_WARNINGS=1 tsx server/index.ts",
     "dev": "NODE_NO_WARNINGS=1 LERNLAB_DEV=1 tsx watch --ignore ./data server/index.ts",
     "build": "vite build",
+    "build:electron": "vite build && esbuild electron/main.ts --bundle --platform=node --format=cjs --target=node22 --outfile=dist-electron/main.cjs --external:electron --external:vite --log-level=warning",
+    "desktop": "npm run build:electron && electron .",
+    "dist": "npm run build:electron && electron-builder --publish never",
+    "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
+    "dist:win": "npm run build:electron && electron-builder --win --publish never",
+    "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
     "import": "NODE_NO_WARNINGS=1 tsx server/cli-import.ts",
     "test": "NODE_NO_WARNINGS=1 tsx --test shared/*.test.ts server/*.test.ts",
     "typecheck": "tsc --noEmit"
   },
-  "dependencies": {
+  "devDependencies": {
     "@hono/node-server": "2.1.9",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "6.3.0",
     "canvas-confetti": "1.9.4",
+    "electron": "^45.4.1",
+    "electron-builder": "^26.18.0",
+    "esbuild": "^0.28.2",
+    "fflate": "^0.8.3",
+    "fzstd": "^0.1.1",
     "hono": "4.13.19",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "ts-fsrs": "5.4.2",
     "tsx": "4.23.15",
-    "vite": "8.3.8",
-    "@vitejs/plugin-react": "6.3.0"
+    "typescript": "5.9.3",
+    "vite": "8.3.8"
   },
-  "devDependencies": {
-    "@types/canvas-confetti": "^1.9.0",
-    "@types/node": "^22.13.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "typescript": "5.9.3"
+  "main": "dist-electron/main.cjs",
+  "author": {
+    "name": "LernLab contributors"
+  },
+  "homepage": "https://github.com/",
+  "build": {
+    "appId": "dev.lernlab.app",
+    "productName": "LernLab",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "dist/**",
+      "dist-electron/**",
+      "package.json"
+    ],
+    "npmRebuild": false,
+    "fileAssociations": [
+      {
+        "ext": "lernpack",
+        "name": "LernLab deck",
+        "role": "Editor"
+      },
+      {
+        "ext": "apkg",
+        "name": "Anki deck package",
+        "role": "Viewer"
+      }
+    ],
+    "mac": {
+      "category": "public.app-category.education",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.png",
+      "extendInfo": {
+        "NSMicrophoneUsageDescription": "LernLab listens when you practise speaking out loud."
+      }
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Education",
+      "icon": "build/icon.png",
+      "maintainer": "LernLab contributors <lernlab@users.noreply.github.com>",
+      "syncDesktopName": true
+    },
+    "publish": null
+  },
+  "desktopName": "lernlab.desktop",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/OWNER/lernlab.git"
   }
 }

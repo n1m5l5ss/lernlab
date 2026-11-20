@@ -15,6 +15,11 @@ export const XP_WEIGHT: Record<Format, number> = {
   rain: 1,
   boss: 1.5,
   speak: 2,
+  flip: 1.2,
+  truefalse: 0.4,
+  blitz: 0.5,
+  mcq: 1.5,
+  order: 1.5,
 };
 
 /** XP for one answer. Errors never cost XP; combos add a little (capped). */
@@ -22,7 +27,7 @@ export function xpFor(format: Format, correct: boolean, combo: number): number {
   if (!correct) return 1; // showing up still counts a little
   const base = Math.round(10 * XP_WEIGHT[format]);
   // Timed arcade rounds pay a flat rate: speed-tapping must never out-earn real recall.
-  if (format === 'gender' || format === 'rain' || format === 'match') return base;
+  if (format === 'gender' || format === 'rain' || format === 'match' || format === 'truefalse' || format === 'blitz') return base;
   const comboBonus = Math.min(10, Math.max(0, combo - 1) * 2);
   return base + comboBonus;
 }

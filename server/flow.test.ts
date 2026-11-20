@@ -24,8 +24,9 @@ const day1 = new Date(2026, 10, 21, 10, 17);
 
 test('import reads all notes, kinds and media', async () => {
   const r = await importDeck('Lang::German');
-  assert.equal(r.notes, 38);
+  assert.equal(r.total, 38);
   assert.equal(r.media, 38);
+  assert.equal(r.deck.language, 'de');
   const kinds = Object.fromEntries(getDb().prepare('SELECT kind, COUNT(*) n FROM items GROUP BY kind').all().map((x: any) => [x.kind, Number(x.n)]));
   assert.equal(kinds.noun, 16);
   assert.equal(kinds.grammar, 5);
@@ -65,7 +66,7 @@ test('answering: intro, recognition (no grade), recall (one grade per day)', () 
     recordAttempt({ ...base, itemId: e.itemId, format: 'typed', correct: true }, getDb(), day1);
   }
   // The grammar lesson introduces its items (the client sends an intro for each).
-  for (const gid of plan.blocks.flatMap((b: any) => b.title === 'Grammatik' ? b.exercises.map((e: any) => e.itemId).filter(Boolean) : [])) {
+  for (const gid of plan.blocks.flatMap((b: any) => b.title === 'Lesson' ? b.exercises.map((e: any) => e.itemId).filter(Boolean) : [])) {
     recordAttempt({ ...base, itemId: gid, format: 'intro', correct: true }, getDb(), day1);
     assert.equal(recordAttempt({ ...base, itemId: gid, format: 'unscramble', correct: true }, getDb(), day1).grade, 3, 'unscramble grades grammar items');
   }
@@ -102,5 +103,6 @@ test('progress report counts learned words and forecasts', async () => {
   assert.equal(p.totals.vocabTotal, 33);
   assert.equal(p.series.length, 60);
   assert.equal(p.series.at(-1)!.cumulative, p.series.reduce((s: number, x: any) => s + x.learned, 0));
-  assert.ok(p.forecast.b1Words.at30PerDay);
+  assert.ok(p.forecast.goal?.at30PerDay);
+  assert.equal(p.forecast.goal?.label, 'Goethe B1');
 });

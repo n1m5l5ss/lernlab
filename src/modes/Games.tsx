@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Block, Item } from '../../shared/types';
-import { acceptedAnswers, checkAnswer, shuffle, splitArticle, normalize } from '../../shared/text';
-import { T } from '../../shared/teacher';
+import { shuffle, splitArticle, normalize, stripHtml } from '../../shared/text';
+import { qa } from '../../shared/cards';
 import { say, sfx } from '../audio';
 import { useKeys, type Ctx, type BlockResult } from '../ctx';
-import { TypedEngine } from './Exercises';
-import { typedFor } from '../plan';
+import { Flip, TypedEngine } from './Exercises';
+import { Media, Rich } from '../rich';
+import { recallFor } from '../plan';
 
 type G<K extends Block['kind']> = { block: Extract<Block, { kind: K }>; ctx: Ctx; onDone: (r: BlockResult) => void };
 const now = () => performance.now();
@@ -25,52 +26,61 @@ function useCountdown(seconds: number, onEnd: () => void) {
   return left;
 }
 
-/* ───────────── Der/die/das sprint ───────────── */
+/* ───────────── Category sprint: der/die/das, or any card categories ───────────── */
 export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
-  const items = useMemo(() => shuffle(block.itemIds.map(ctx.item).filter((i) => i.article)), []);
+  const items = useMemo(() => shuffle(block.itemIds.map(ctx.item).filter((i) => i.category)), []);
+  const cats = useMemo(() => {
+    const set = [...new Set(items.map((i) => i.category!))];
+    const order = ['der', 'die', 'das'];
+    return set.every((c) => order.includes(c)) ? order.filter((c) => set.includes(c)) : set.slice(0, 4);
+  }, []);
+  const isArticles = cats.every((c) => ['der', 'die', 'das'].includes(c));
   const [idx, setIdx] = useState(0);
-  const [flash, setFlash] = useState<{ ok: boolean; art: string } | null>(null);
+  const [flash, setFlash] = useState<{ ok: boolean; cat: string } | null>(null);
   const stats = useRef({ correct: 0, total: 0, combo: 0, best: 0 });
   const shown = useRef(now());
   const done = useRef(false);
-  const best = Number(localStorage.getItem('pb-gender') ?? 0);
+  const pbKey = `pb-sprint-${ctx.plan.deckId}`;
+  const best = Number(localStorage.getItem(pbKey) ?? 0);
   const finish = () => {
     if (done.current) return;
     done.current = true;
-    if (stats.current.correct > best) localStorage.setItem('pb-gender', String(stats.current.correct));
+    if (stats.current.correct > best) localStorage.setItem(pbKey, String(stats.current.correct));
     onDone({ correct: stats.current.correct, total: stats.current.total, bestCombo: stats.current.best });
   };
   const left = useCountdown(block.seconds, finish);
   const item = items[idx % items.length];
-
-  const pick = (a: string) => {
+  const pick = (c: string) => {
     if (flash || done.current) return;
-    const ok = a === item.article;
-    const s = stats.current;
-    s.total++;
-    if (ok) { s.correct++; s.combo++; s.best = Math.max(s.best, s.combo); } else s.combo = 0;
+    const ok = c === item.category;
+    const st = stats.current;
+    st.total++;
+    if (ok) { st.correct++; st.combo++; st.best = Math.max(st.best, st.combo); } else st.combo = 0;
     ctx.answer({ itemId: item.id, format: 'gender', genderOnly: true, correct: ok, shownAt: shown.current });
-    setFlash({ ok, art: item.article! });
+    setFlash({ ok, cat: item.category! });
     setTimeout(() => { setFlash(null); setIdx((i) => i + 1); shown.current = now(); }, ok ? 220 : 900);
   };
   useKeys((e) => {
-    const map: Record<string, string> = { '1': 'der', '2': 'die', '3': 'das', ArrowLeft: 'der', ArrowDown: 'die', ArrowRight: 'das', j: 'der', k: 'die', l: 'das' };
-    if (map[e.key]) { e.preventDefault(); pick(map[e.key]); }
+    const keys: Record<string, number> = { '1': 0, '2': 1, '3': 2, '4': 3, ArrowLeft: 0, ArrowDown: 1, ArrowRight: 2, j: 0, k: 1, l: 2 };
+    if (e.key in keys && cats[keys[e.key]]) { e.preventDefault(); pick(cats[keys[e.key]]); }
   });
-
+  const label = isArticles ? item.word : stripHtml(item.target);
   return (
     <div>
       <div className="timer"><i style={{ width: `${(left / block.seconds) * 100}%` }} /></div>
-      <div className="row"><div className="blocktitle grow">Artikel-Sprint · {left}s</div><span className="pill">✓ {stats.current.correct}</span><span className="pill">Rekord {best}</span></div>
+      <div className="row"><div className="blocktitle grow">{isArticles ? 'Der · die · das' : 'Category sprint'} · {left}s</div><span className="pill">✓ {stats.current.correct}</span><span className="pill">Best {best}</span></div>
       <div className="center" style={{ margin: '28px 0' }}>
-        <div className="prompt de" style={{ fontSize: 56, marginBottom: 4 }}>
-          {flash ? <span className={`art-${flash.art}`}>{flash.art} </span> : null}{item.word}
+        <div className="prompt de" style={{ fontSize: label.length > 24 ? 34 : 52, marginBottom: 4 }}>
+          {flash && isArticles ? <span className={`art-${flash.cat}`}>{flash.cat} </span> : null}{label}
         </div>
-        <div className="muted">{item.meaning}</div>
+        <div className="muted">{isArticles ? item.meaning : ''}</div>
+        {flash && !isArticles && <div className={`feedback ${flash.ok ? 'right' : 'wrong'}`} style={{ display: 'inline-block' }}>{flash.cat}</div>}
       </div>
-      <div className="gender3">
-        {(['der', 'die', 'das'] as const).map((a, i) => (
-          <button key={a} className={`gbtn ${a} ${flash && a !== flash.art ? 'dim' : ''}`} onClick={() => pick(a)}>{a} <span className="kbd">{['←', '↓', '→'][i]}</span></button>
+      <div className="gender3" style={{ gridTemplateColumns: `repeat(${cats.length}, 1fr)` }}>
+        {cats.map((c, i) => (
+          <button key={c} className={`gbtn ${isArticles ? c : `cat-${i}`} ${flash && c !== flash.cat ? 'dim' : ''}`} style={{ fontSize: c.length > 8 ? 18 : undefined }} onClick={() => pick(c)}>
+            {c} <span className="kbd">{i + 1}</span>
+          </button>
         ))}
       </div>
     </div>
@@ -94,7 +104,7 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
     if (sel === null) return;
     if (it.id === sel) {
       ctx.answer({ itemId: it.id, format: 'match', correct: !missedOnce.current.has(it.id), shownAt: start.current });
-      say(it.target);
+      if (ctx.lang) say(it.target, 0.95, ctx.lang);
       const g = new Set(gone).add(it.id);
       setGone(g);
       setSel(null);
@@ -112,16 +122,16 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
 
   return (
     <div>
-      <div className="row"><div className="blocktitle grow">Paare finden</div><span className="pill">⏱ {elapsed}s</span></div>
+      <div className="row"><div className="blocktitle grow">Match pairs</div><span className="pill">⏱ {elapsed}s</span></div>
       <div className="match" style={{ marginTop: 10 }}>
         <div className="col">
           {left.map((it) => (
-            <button key={it.id} className={`${gone.has(it.id) ? 'gone' : ''} ${sel === it.id ? 'sel' : ''}`} onClick={() => { sfx.tap(); setSel(it.id); }}>{it.target}</button>
+            <button key={it.id} className={`${gone.has(it.id) ? 'gone' : ''} ${sel === it.id ? 'sel' : ''}`} onClick={() => { sfx.tap(); setSel(it.id); }}>{stripHtml(it.target)}</button>
           ))}
         </div>
         <div className="col">
           {right.map((it) => (
-            <button key={it.id} className={`${gone.has(it.id) ? 'gone' : ''} ${bad === `r${it.id}` ? 'bad' : ''}`} onClick={() => pickRight(it)}>{it.meaning}</button>
+            <button key={it.id} className={`${gone.has(it.id) ? 'gone' : ''} ${bad === `r${it.id}` ? 'bad' : ''}`} onClick={() => pickRight(it)}>{stripHtml(it.meaning)}</button>
           ))}
         </div>
       </div>
@@ -178,7 +188,7 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
 
   const tryType = (v: string) => {
     setValue(v);
-    const target = drops.find((d) => !d.hit && acceptedAnswers(d.item.target).some((a) => {
+    const target = drops.find((d) => !d.hit && qa(d.item).accepted.some((a) => {
       const bare = splitArticle(a).word;
       return normalize(v) === normalize(a) || normalize(v) === normalize(bare);
     }));
@@ -194,15 +204,15 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
   return (
     <div>
       <div className="timer"><i style={{ width: `${(left / block.seconds) * 100}%` }} /></div>
-      <div className="row"><div className="blocktitle grow">Wortregen · {left}s</div><span className="pill">💥 {score.hit}</span><span className="pill">💧 {score.miss}</span></div>
+      <div className="row"><div className="blocktitle grow">Word rain · {left}s</div><span className="pill">💥 {score.hit}</span><span className="pill">💧 {score.miss}</span></div>
       <div className="rain" style={{ marginTop: 8 }}>
         {drops.map((d) => (
-          <div key={d.key} className={`drop ${d.hit ? 'hit' : ''}`} style={{ left: `${d.x}%`, top: d.y }}>{d.hit ? d.item.target : d.item.meaning}</div>
+          <div key={d.key} className={`drop ${d.hit ? 'hit' : ''}`} style={{ left: `${d.x}%`, top: d.y }}>{d.hit ? qa(d.item).answer : stripHtml(qa(d.item).prompt)}</div>
         ))}
         <div className="ground" />
       </div>
-      <input ref={input} className="typed" style={{ marginTop: 12 }} value={value} onChange={(e) => tryType(e.target.value)} placeholder="Tippe das deutsche Wort…" spellCheck={false} autoComplete="off" />
-      <div className="small muted" style={{ marginTop: 6 }}>Article optional here. Speed rises as you go ({elapsed}s in).</div>
+      <input ref={input} className="typed" style={{ marginTop: 12 }} value={value} onChange={(e) => tryType(e.target.value)} placeholder="Type the answer…" spellCheck={false} autoComplete="off" />
+      <div className="small muted" style={{ marginTop: 6 }}>{ctx.lang === 'de' ? 'Article optional here. ' : ''}Speed rises as you go ({elapsed}s in).</div>
     </div>
   );
 }
@@ -226,31 +236,33 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
     const l = r.correct ? lives : lives - 1;
     if (r.correct) { correct.current++; sfx.hit(); setHit(true); setTimeout(() => setHit(false), 300); }
     setHp(h); setLives(l);
-    if (h <= 0) { setOver(true); sfx.win(); ctx.teacher(T.bossWin()); return; }
-    if (l <= 0) { setOver(false); ctx.teacher(T.bossLose()); return; }
+    if (h <= 0) { setOver(true); sfx.win(); ctx.teacher(ctx.t.bossWin()); return; }
+    if (l <= 0) { setOver(false); ctx.teacher(ctx.t.bossLose()); return; }
     setI((x) => x + 1);
   };
 
   const item = ctx.item(ids[i % ids.length]);
-  const ex = typedFor(item);
+  const ex = recallFor(item);
   return (
     <div>
       <div className="boss">
         <div className={`bossface ${hit ? 'hit' : ''}`}>{over === true ? '💀' : '👾'}</div>
         <div className="hp">
-          <div className="row"><b className="grow">Endgegner</b><span className="lives">{'❤️'.repeat(Math.max(0, lives))}{'🖤'.repeat(Math.max(0, block.lives - lives))}</span></div>
+          <div className="row"><b className="grow">Boss</b><span className="lives">{'❤️'.repeat(Math.max(0, lives))}{'🖤'.repeat(Math.max(0, block.lives - lives))}</span></div>
           <div className="bar"><i style={{ width: `${(hp / ids.length) * 100}%` }} /></div>
         </div>
       </div>
       {over === null ? (
-        <TypedEngine key={i} ctx={ctx} itemId={item.id} format="boss" accepted={ex.accepted} requireArticle={ex.requireArticle} hint={ex.hint}
-          onNext={after}
-          render={(input) => (<><div className="prompt">{ex.prompt}</div>{input}</>)} />
+        ex.type === 'typed' ? (
+          <TypedEngine key={i} ctx={ctx} itemId={item.id} format="boss" accepted={ex.accepted} requireArticle={ex.requireArticle} hint={ex.hint}
+            onNext={after}
+            render={(input) => (<><Media item={item} size="sm" /><div className="prompt"><Rich html={ex.prompt} /></div>{input}</>)} />
+        ) : ex.type === 'flip' ? <Flip key={i} ex={ex} ctx={ctx} onNext={after} format="boss" /> : null
       ) : (
         <div className="card center">
-          <div className="big" style={{ fontSize: 40, fontWeight: 900 }}>{over ? 'Besiegt! 🏆' : 'Noch nicht…'}</div>
-          <p className="muted">{over ? `+30 XP bonus. ${correct.current} hits.` : 'These words come back tomorrow. No penalty.'}</p>
-          <button className="btn primary" onClick={() => onDone({ correct: correct.current, total: i + 1, bossWon: over })}>Weiter <span className="kbd">Enter</span></button>
+          <div className="big" style={{ fontSize: 40, fontWeight: 900 }}>{over ? 'Defeated! 🏆' : 'Not yet…'}</div>
+          <p className="muted">{over ? `+30 XP bonus. ${correct.current} hits.` : 'These cards come back tomorrow. No penalty.'}</p>
+          <button className="btn primary" onClick={() => onDone({ correct: correct.current, total: i + 1, bossWon: over })}>Continue <span className="kbd">Enter</span></button>
         </div>
       )}
     </div>

@@ -1,11 +1,19 @@
 import type { Article } from './text';
 
-export type ItemKind = 'noun' | 'verb' | 'word' | 'phrase' | 'grammar' | 'number';
+export type ItemKind = 'noun' | 'verb' | 'word' | 'phrase' | 'grammar' | 'number' | 'card' | 'cloze' | 'mcq' | 'order';
 
-/** A study item, built from one Anki note. */
+/** A study item (one card/note). front = target/term/question, back = meaning/definition/answer. */
 export type Item = {
   id: number;
-  deck: string;
+  deckId: number;
+  /** BCP-47 language of the deck's front side (e.g. "de") for language decks; null for other subjects. */
+  lang: string | null;
+  deck: string; // sub-deck path from the source, e.g. "Lang::German::Tier1"
+  image: string | null;
+  video: string | null;
+  category: string | null;
+  /** Free-form extra fields: alt (alternative answers, "|" separated), choices/correct (mcq), steps (order), reading… */
+  extra: Record<string, string>;
   kind: ItemKind;
   target: string; // clean text, e.g. "der Sohn"
   article: Article | null;
@@ -35,9 +43,14 @@ export type Format =
   | 'dictation'
   | 'speak'
   | 'rain'
-  | 'boss';
+  | 'boss'
+  | 'flip'
+  | 'truefalse'
+  | 'blitz'
+  | 'mcq'
+  | 'order';
 
-export const RECALL_FORMATS: Format[] = ['typed', 'cloze', 'dictation', 'speak', 'boss'];
+export const RECALL_FORMATS: Format[] = ['typed', 'cloze', 'dictation', 'speak', 'boss', 'flip', 'mcq', 'order'];
 
 /** Mastery ladder: L0 seen → L1 recognised → L2 discriminated → L3 recalled → L4 in context → L5 spoken. */
 export const FORMAT_LEVEL: Partial<Record<Format, number>> = {
@@ -53,6 +66,11 @@ export const FORMAT_LEVEL: Partial<Record<Format, number>> = {
   unscramble: 4,
   dictation: 4,
   speak: 5,
+  flip: 3,
+  truefalse: 1,
+  blitz: 1,
+  mcq: 3,
+  order: 4,
 };
 
 export type Exercise =
@@ -64,7 +82,12 @@ export type Exercise =
   | { type: 'listen'; itemId: number; options: string[]; answerIndex: number }
   | { type: 'dictation'; itemId: number; sentence: string; translation: string }
   | { type: 'speak'; itemId: number; prompt: string; expected: string }
-  | { type: 'lesson'; group: string; title: string; text: string; examples: { de: string; en: string }[] };
+  | { type: 'lesson'; group: string; title: string; text: string; examples: { de: string; en: string }[] }
+  | { type: 'flip'; itemId: number; prompt: string; answer: string; reverse: boolean }
+  | { type: 'truefalse'; itemId: number; front: string; shown: string; isTrue: boolean }
+  | { type: 'imagemc'; itemId: number; options: string[]; answerIndex: number }
+  | { type: 'mcq'; itemId: number; stem: string; choices: string[]; correct: number[]; explanation: string }
+  | { type: 'order'; itemId: number; prompt: string; steps: string[]; shuffled: number[] };
 
 export type Block =
   | { id: string; kind: 'ignition'; title: string; teacher: string; exercises: Exercise[] }
@@ -73,12 +96,15 @@ export type Block =
   | { id: string; kind: 'gender'; title: string; teacher: string; itemIds: number[]; seconds: number }
   | { id: string; kind: 'match'; title: string; teacher: string; itemIds: number[] }
   | { id: string; kind: 'rain'; title: string; teacher: string; itemIds: number[]; seconds: number }
-  | { id: string; kind: 'boss'; title: string; teacher: string; itemIds: number[]; lives: number };
+  | { id: string; kind: 'boss'; title: string; teacher: string; itemIds: number[]; lives: number }
+  | { id: string; kind: 'blitz'; title: string; teacher: string; exercises: Exercise[]; secondsPerQuestion: number };
 
 export type SessionLength = 'mini' | 'standard' | 'long';
 
 export type SessionPlan = {
   id: string;
+  deckId: number | null;
+  lang: string | null;
   length: SessionLength;
   agenda: string; // teacher's one-line agenda (German)
   agendaEn: string;

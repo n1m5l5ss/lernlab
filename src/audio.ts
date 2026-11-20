@@ -44,32 +44,34 @@ export function playMedia(file: string | null | undefined): Promise<void> {
   });
 }
 
-let germanVoice: SpeechSynthesisVoice | null = null;
-function pickVoice() {
+const LOCALES: Record<string, string> = { de: 'de-DE', ja: 'ja-JP', ko: 'ko-KR', fr: 'fr-FR', es: 'es-ES', it: 'it-IT', pt: 'pt-BR', nl: 'nl-NL', sv: 'sv-SE', ru: 'ru-RU', zh: 'zh-CN', ar: 'ar-SA', hi: 'hi-IN', te: 'te-IN', en: 'en-US' };
+const locale = (lang: string) => LOCALES[lang] ?? lang;
+
+function voiceFor(lang: string): SpeechSynthesisVoice | null {
+  if (typeof speechSynthesis === 'undefined') return null;
   const voices = speechSynthesis.getVoices();
-  germanVoice = voices.find((v) => v.lang === 'de-DE' && /Anna|Helena|Google/i.test(v.name)) ?? voices.find((v) => v.lang.startsWith('de')) ?? null;
-}
-if (typeof speechSynthesis !== 'undefined') {
-  pickVoice();
-  speechSynthesis.onvoiceschanged = pickVoice;
+  const loc = locale(lang);
+  return voices.find((v) => v.lang === loc && /Anna|Helena|Google|Premium|Enhanced/i.test(v.name)) ?? voices.find((v) => v.lang === loc) ?? voices.find((v) => v.lang.startsWith(lang)) ?? null;
 }
 
-export function say(text: string, rate = 0.95) {
+/** Text-to-speech in the deck's language (system voices). */
+export function say(text: string, rate = 0.95, lang = 'de') {
   if (typeof speechSynthesis === 'undefined' || !text) return;
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = 'de-DE';
-  if (germanVoice) u.voice = germanVoice;
+  const u = new SpeechSynthesisUtterance(text.replace(/<[^>]+>/g, ''));
+  u.lang = locale(lang);
+  const v = voiceFor(lang);
+  if (v) u.voice = v;
   u.rate = rate;
   speechSynthesis.speak(u);
 }
 
 /** Speech recognition (Chrome, Edge, Safari). Returns null if the browser has none. */
-export function recognizer(): any | null {
+export function recognizer(lang = 'de'): any | null {
   const SR = (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition;
   if (!SR) return null;
   const r = new SR();
-  r.lang = 'de-DE';
+  r.lang = locale(lang);
   r.interimResults = false;
   r.maxAlternatives = 4;
   return r;

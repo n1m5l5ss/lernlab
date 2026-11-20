@@ -16,14 +16,43 @@ export type AnswerInput = {
 
 export type Ctx = {
   plan: SessionPlan;
+  lang: string | null;
+  t: ReturnType<typeof import('../shared/teacher').teacherFor>;
+  /** Seconds per multiple-choice/true-false question (0 = untimed). */
+  timer: number;
   item: (id: number) => Item;
   pool: Item[];
   answer: (a: AnswerInput) => number;
+  /** "I was right": undo today's failing grade for this card. */
+  override: (itemId: number) => void;
   combo: number;
   missed: Set<number>;
   teacher: (de: string, en?: string) => void;
-  settings: { sound: boolean; teacherVoice: boolean };
+  settings: { sound: boolean; teacherVoice: boolean; questionTimer?: number; blitzSeconds?: number };
 };
+
+/** A shrinking bar for timed questions; calls onTimeout once. */
+import { createElement, useState as useS, useEffect as useE } from 'react';
+export function QuestionTimer({ seconds, running, onTimeout }: { seconds: number; running: boolean; onTimeout: () => void }) {
+  const [left, setLeft] = useS(seconds * 1000);
+  const cb = useRef(onTimeout);
+  cb.current = onTimeout;
+  useE(() => {
+    if (!running || !seconds) return;
+    const start = performance.now();
+    let raf = 0;
+    const tick = () => {
+      const l = seconds * 1000 - (performance.now() - start);
+      setLeft(Math.max(0, l));
+      if (l <= 0) cb.current(); else raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [running, seconds]);
+  if (!seconds) return null;
+  const pct = (left / (seconds * 1000)) * 100;
+  return createElement('div', { className: 'qtimer' }, createElement('i', { style: { width: `${pct}%`, background: pct < 30 ? 'var(--bad)' : undefined } }));
+}
 
 export type BlockResult = { correct: number; total: number; bossWon?: boolean | null; bestCombo?: number; missedIds?: number[] };
 
