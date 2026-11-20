@@ -6,21 +6,23 @@ import { addDays, BONUS, dayKey, levelFor, NEW_STREAK, recordSession, settleStre
 import { activeDeckId, deckNewPerDay, dueItemIds, getSettings, introducedTodayCount, newItemIds } from './learn';
 import { deckCounts, getDeck, listDecks, LANGUAGES } from './library';
 
-export const ACHIEVEMENTS: Record<string, { title: string; desc: string }> = {
-  first: { title: 'First steps', desc: 'Finish your first session' },
-  streak3: { title: 'Three in a row', desc: '3-day streak' },
-  streak7: { title: 'One week!', desc: '7-day streak' },
-  streak30: { title: 'Habit formed', desc: '30-day streak' },
-  words50: { title: '50 cards', desc: 'Know 50 cards from memory' },
-  words100: { title: '100 cards', desc: 'Know 100 cards from memory' },
-  words250: { title: '250 cards', desc: 'Know 250 cards from memory' },
-  words500: { title: '500 cards', desc: 'Know 500 cards from memory' },
-  boss: { title: 'Boss slayer', desc: 'Win a boss battle' },
-  gender15: { title: 'Sorting pro', desc: '15 right in a row in a category sprint' },
-  perfect: { title: 'Flawless', desc: 'A session of 20+ answers with no mistakes' },
-  speaker: { title: 'Speaking machine', desc: 'Say 25 answers correctly out loud' },
-  early: { title: 'Early bird', desc: 'Study before 9 a.m.' },
-};
+/** Badge ids, in display order. Their names and descriptions live in locales/<code>.json under badges.<id>. */
+export const ACHIEVEMENTS = [
+  'first',
+  'streak3',
+  'streak7',
+  'streak30',
+  'words50',
+  'words100',
+  'words250',
+  'words500',
+  'boss',
+  'gender15',
+  'perfect',
+  'speaker',
+  'early',
+] as const;
+export type AchievementId = (typeof ACHIEVEMENTS)[number];
 
 function metDays(d: DB): Set<string> {
   return new Set(
@@ -175,7 +177,7 @@ export function finishSession(f: FinishInput, d: DB = getDb(), now = new Date())
   // Achievements
   const ach = getMeta<Record<string, string>>(d, 'achievements', {});
   const unlocked: string[] = [];
-  const unlock = (k: string, cond: boolean) => {
+  const unlock = (k: AchievementId, cond: boolean) => {
     if (cond && !ach[k]) {
       ach[k] = today;
       unlocked.push(k);
@@ -212,7 +214,7 @@ export function finishSession(f: FinishInput, d: DB = getDb(), now = new Date())
     sessionXp,
     goalMetNow: goalNow && !before.goal_met,
     streak,
-    unlocked: unlocked.map((k) => ({ key: k, ...ACHIEVEMENTS[k] })),
+    unlocked: unlocked.map((k) => ({ key: k })),
     state: appState(d, now),
   };
 }

@@ -1,10 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { Trans, useTranslation } from 'react-i18next';
 import { teacherFor } from '@lernlab/core/teacher';
 import { sfx } from './audio';
 import { formatPercent } from './i18n';
 import { useKeys } from './ctx';
+import { bubbleFor } from './lines';
 import type { SessionResult } from './Session';
 
 export function Summary({
@@ -23,8 +24,8 @@ export function Summary({
   const { t } = useTranslation();
   const acc = result.answers ? result.correct / result.answers : 0;
   const teacher = teacherFor(lang);
-  const [done, doneEn] = teacher.done();
-  const hw = teacher.homework(new Date().getDate());
+  const done = useMemo(() => bubbleFor(teacher.done(), t), []);
+  const hw = bubbleFor(teacher.homework(new Date().getDate()), t);
   useEffect(() => {
     sfx.win();
     if (server?.goalMetNow || server?.unlocked?.length)
@@ -44,8 +45,8 @@ export function Summary({
           {t('home.teacherInitial')}
         </div>
         <div className="bubble" style={{ textAlign: 'left' }}>
-          <div>{done}</div>
-          {doneEn && <div className="en">{doneEn}</div>}
+          <div>{done.main}</div>
+          {done.gloss && <div className="en">{done.gloss}</div>}
         </div>
       </div>
       <div className="big">{t('summary.xp', { xp: result.xp + (server?.bonus ?? 0) })}</div>
@@ -76,14 +77,18 @@ export function Summary({
       )}
       {server?.unlocked?.map((u: any) => (
         <div key={u.key} className="card" style={{ borderColor: 'var(--accent)' }}>
-          <Trans i18nKey="summary.newBadge" values={{ title: u.title, desc: u.desc }} components={{ b: <b /> }} />
+          <Trans
+            i18nKey="summary.newBadge"
+            values={{ title: t(`badges.${u.key}.title`), desc: t(`badges.${u.key}.desc`) }}
+            components={{ b: <b /> }}
+          />
         </div>
       ))}
       {result.bossWon === true && <div className="card">{t('summary.bossDefeated', { xp: 30 })}</div>}
       <div className="card" style={{ textAlign: 'left' }}>
         <b>{t('summary.homework')}</b>
-        <div style={{ marginTop: 6 }}>{hw[0]}</div>
-        {hw[1] && <div className="small muted">{hw[1]}</div>}
+        <div style={{ marginTop: 6 }}>{hw.main}</div>
+        {hw.gloss && <div className="small muted">{hw.gloss}</div>}
       </div>
       <div className="row" style={{ justifyContent: 'center' }}>
         <button className="btn primary" onClick={onAgain}>

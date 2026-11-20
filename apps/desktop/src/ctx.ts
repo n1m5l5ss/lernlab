@@ -1,4 +1,6 @@
+import type { Line } from '@lernlab/core/teacher';
 import type { Format, Item, SessionPlan } from '@lernlab/core/types';
+import type { TextTeacher } from './lines';
 
 export type AnswerInput = {
   itemId: number;
@@ -17,7 +19,8 @@ export type AnswerInput = {
 export type Ctx = {
   plan: SessionPlan;
   lang: string | null;
-  t: ReturnType<typeof import('@lernlab/core/teacher').teacherFor>;
+  /** Teacher lines as ready-to-show text in the interface (or deck) language. */
+  t: TextTeacher;
   /** Seconds per multiple-choice/true-false question (0 = untimed). */
   timer: number;
   item: (id: number) => Item;
@@ -27,7 +30,8 @@ export type Ctx = {
   override: (itemId: number) => void;
   combo: number;
   missed: Set<number>;
-  teacher: (de: string, en?: string) => void;
+  /** Show a line in the speech bubble (a core Line, or text already translated). */
+  teacher: (line: Line | string) => void;
   settings: { sound: boolean; teacherVoice: boolean; questionTimer?: number; blitzSeconds?: number };
 };
 

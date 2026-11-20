@@ -313,5 +313,127 @@
     "againKey": "Space",
     "done": "Done",
     "doneKey": "Enter"
+  },
+  "badges": {
+    "first": {
+      "title": "First steps",
+      "desc": "Finish your first session"
+    },
+    "streak3": {
+      "title": "Three in a row",
+      "desc": "3-day streak"
+    },
+    "streak7": {
+      "title": "One week!",
+      "desc": "7-day streak"
+    },
+    "streak30": {
+      "title": "Habit formed",
+      "desc": "30-day streak"
+    },
+    "words50": {
+      "title": "50 cards",
+      "desc": "Know 50 cards from memory"
+    },
+    "words100": {
+      "title": "100 cards",
+      "desc": "Know 100 cards from memory"
+    },
+    "words250": {
+      "title": "250 cards",
+      "desc": "Know 250 cards from memory"
+    },
+    "words500": {
+      "title": "500 cards",
+      "desc": "Know 500 cards from memory"
+    },
+    "boss": {
+      "title": "Boss slayer",
+      "desc": "Win a boss battle"
+    },
+    "gender15": {
+      "title": "Sorting pro",
+      "desc": "15 right in a row in a category sprint"
+    },
+    "perfect": {
+      "title": "Flawless",
+      "desc": "A session of 20+ answers with no mistakes"
+    },
+    "speaker": {
+      "title": "Speaking machine",
+      "desc": "Say 25 answers correctly out loud"
+    },
+    "early": {
+      "title": "Early bird",
+      "desc": "Study before 9 a.m."
+    }
+  },
+  "teacher": {
+    "start": ["Let's go!", "Here we go – three quick ones.", "Hi! Quick warm-up."],
+    "right": ["Correct!", "Exactly!", "Yes!", "Very good!", "Perfect!"],
+    "rightStreak": ["Great streak!", "Keep going!", "Strong!"],
+    "rightHot": ["Unstoppable!", "Amazing!", "What a run!"],
+    "rightArticle": ["Correct – article too!", "Exactly, with the article. Perfect!"],
+    "near": ["Almost perfect!", "Good – small fix:", "Okay, but exactly like this:"],
+    "retry": ["Close! Try once more.", "Not quite – one more try.", "Hmm. Try again."],
+    "reveal": ["Look closely – then type it out.", "Here it is. Now you:", "Remember this – type it once more."],
+    "kick": ["Quick action round!", "Speed it up!", "Stay awake – sprint!"],
+    "idle": ["Still there? Let's keep going!", "Hello? Just a few more!"],
+    "bossWin": ["Boss defeated!", "You beat the boss – strong!"],
+    "bossLose": ["The boss won this time – tomorrow!", "So close! Next time you'll get it."],
+    "done": ["Done for today. Well done!", "Session complete!"],
+    "missedDay": ["You took yesterday off. No problem – let's continue today."],
+    "timeUp": ["Time's up!", "Too slow – next!"],
+    "goalMet": ["Daily goal done! One more round?"],
+    "homework": [
+      "Explain one card from today to someone – or out loud to yourself.",
+      "Write 3 new cards about something you read today.",
+      "Skim your weak cards in Stats before bed."
+    ],
+    "homeworkLanguage": [
+      "Watch one episode of Nicos Weg (A1) on DW.",
+      "Watch one Easy German video with subtitles.",
+      "3 minutes of shadowing: repeat one sentence 5 times.",
+      "Say 5 sentences about your day – out loud!"
+    ],
+    "block": {
+      "warm": "Three quick ones. Go!",
+      "newCards_one": "{{count}} new card. Take a good look.",
+      "newCards_other": "{{count}} new cards. Take a good look.",
+      "review": "Answer from memory.",
+      "recall": "Now without help!",
+      "boss": "Your hardest cards. Three lives. Fight!",
+      "sortGender": "Der, die or das? As fast as you can!",
+      "sort": "Sort each card into its group. Fast!",
+      "match": "Match the pairs – against the clock!",
+      "trueFalse": "Quick: does this match?",
+      "lesson": "One idea, then practise it right away.",
+      "blitz": "Blitz round: answer before the timer runs out!",
+      "listen": "Listen. What does it mean?",
+      "picture": "What is this?",
+      "cloze": "What is missing?",
+      "speak": "Say it out loud!",
+      "rain": "Type the answers before they land!",
+      "rescue": "Quick look back at the hard ones."
+    },
+    "agenda": {
+      "today": "Today: {{parts}}.",
+      "todayDeck": "{{deck}} · Today: {{parts}}.",
+      "reviews_one": "{{count}} review",
+      "reviews_other": "{{count}} reviews",
+      "newCards_one": "{{count}} new card",
+      "newCards_other": "{{count}} new cards",
+      "lesson": "one lesson",
+      "games": "review games"
+    }
+  },
+  "session": {
+    "blitz": "⚡ Blitz · {{n}}/{{total}}",
+    "perQuestion": "{{count}}s each",
+    "stop": "Stop (Esc)",
+    "combo": "🔥 {{count}}",
+    "xp": "⭐ {{xp, number}}",
+    "xpLabel": "XP this session",
+    "xpFloat": "+{{xp}}"
   }
 }

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
 import { xpFor } from '@lernlab/core/game';
-import { teacherFor } from '@lernlab/core/teacher';
+import { teacherFor, type Line } from '@lernlab/core/teacher';
 import { sendAttempt, sendOverride } from './api';
 import { say, sfx } from './audio';
 import { useKeys, type AnswerInput, type BlockResult, type Ctx } from './ctx';
@@ -21,6 +22,7 @@ import {
 } from './modes/Exercises';
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { mcFor, recallFor } from './plan';
+import { agendaText, bubbleFor, textTeacher, type Bubble } from './lines';
 
 export type SessionResult = {
   sessionId: string;
@@ -116,6 +118,7 @@ function BlitzBlock({
   ctx: Ctx;
   onDone: (r: BlockResult) => void;
 }) {
+  const { t } = useTranslation();
   const [i, setI] = useState(0);
   const tally = useRef({ correct: 0, total: 0 });
   const ex = block.exercises[i];
@@ -129,10 +132,8 @@ function BlitzBlock({
   return (
     <div>
       <div className="row" style={{ marginBottom: 6 }}>
-        <div className="blocktitle grow">
-          ⚡ Blitz · {i + 1}/{block.exercises.length}
-        </div>
-        <span className="pill">{block.secondsPerQuestion}s each</span>
+        <div className="blocktitle grow">{t('session.blitz', { n: i + 1, total: block.exercises.length })}</div>
+        <span className="pill">{t('session.perQuestion', { count: block.secondsPerQuestion })}</span>
       </div>
       {ex.type === 'truefalse' ? (
         <TrueFalse key={i} ex={ex} ctx={ctx} onNext={next} seconds={block.secondsPerQuestion} />
@@ -154,11 +155,15 @@ export function Session({
   onFinish: (r: SessionResult) => void;
   onQuit: () => void;
 }) {
+  const { t: tr, i18n } = useTranslation();
   const [blocks, setBlocks] = useState<Block[]>(plan.blocks);
   const [bi, setBi] = useState(0);
   const [xp, setXp] = useState(0);
   const [combo, setCombo] = useState(0);
-  const [bubble, setBubble] = useState<{ de: string; en?: string }>({ de: plan.agenda, en: plan.agendaEn });
+  const [bubble, setBubble] = useState<Bubble>(() => {
+    const agenda = agendaText(plan, tr, i18n.language);
+    return plan.agendaTarget ? { main: plan.agendaTarget, gloss: agenda } : { main: agenda, gloss: '' };
+  });
   const [floats, setFloats] = useState<{ id: number; xp: number }[]>([]);
   const started = useRef({ at: Date.now(), iso: new Date().toISOString() });
   const totals = useRef({ answers: 0, correct: 0, perfectBlocks: 0, bestGender: 0, bossWon: null as boolean | null });
@@ -173,18 +178,23 @@ export function Session({
   const pool: Item[] = useMemo(() => [...Object.values(plan.items), ...Object.values(plan.extras)], [plan]);
   const item = useCallback((id: number) => plan.items[id] ?? plan.extras[id], [plan]);
 
-  const t = useMemo(() => teacherFor(plan.lang), [plan.lang]);
+  const coach = useMemo(() => teacherFor(plan.lang), [plan.lang]);
+  const t = useMemo(() => textTeacher(coach, tr), [coach, tr]);
   const voice = settings.teacherVoice && !!plan.lang;
-  const teacher = useCallback(
-    (de: string, en?: string) => {
-      setBubble({ de, en });
-      if (voice) say(de, 1, plan.lang ?? 'en');
+  const show = useCallback(
+    (b: Bubble) => {
+      setBubble(b);
+      if (voice) say(b.main, 1, plan.lang ?? 'en');
     },
     [voice],
   );
+  const teacher = useCallback(
+    (line: Line | string) => show(typeof line === 'string' ? { main: line, gloss: '' } : bubbleFor(line, tr)),
+    [show, tr],
+  );
 
   useEffect(() => {
-    if (voice) say(plan.agenda, 1, plan.lang ?? 'en');
+    if (voice) say(bubble.main, 1, plan.lang ?? 'en');
   }, []);
 
   // Attention: nudge after 20 s idle; a long tab switch or several slow answers triggers an action round.
@@ -192,7 +202,7 @@ export function Session({
     const idleTimer = setInterval(() => {
       if (Date.now() - lastActivity.current > 20000) {
         lastActivity.current = Date.now();
-        setBubble({ de: t.idle(), en: plan.lang === 'de' ? 'Still there? Keep going!' : '' });
+        setBubble(bubbleFor(coach.idle(), tr));
         sfx.tick();
       }
     }, 2000);
@@ -307,8 +317,8 @@ export function Session({
             id: `rescue-${bi}`,
             kind: 'drill',
             format: 'mc',
-            title: 'Rescue',
-            teacher: plan.lang === 'de' ? 'Kurz zurück zu den schweren Wörtern.' : 'Quick look back at the hard ones.',
+            title: 'rescue',
+            teacher: coach.block('rescue'),
             exercises: ids.map((id) => mcFor(item(id), pool)),
           },
           ...rest,
@@ -317,7 +327,7 @@ export function Session({
     // Attention dipped? Insert a 25-second action round.
     if (kickPending.current && b.kind !== 'gender' && rest[0]?.kind !== 'gender') {
       kickPending.current = false;
-      const [de, en] = t.kick();
+      const kick = coach.kick();
       const cats = new Set(pool.filter((p) => p.category).map((p) => p.category));
       const withCat = pool
         .filter((p) => p.category)
@@ -325,23 +335,23 @@ export function Session({
         .slice(0, 30);
       if (withCat.length >= 4 && cats.size >= 2) {
         rest = [
-          { id: `kick-${bi}`, kind: 'gender', title: 'Action round', teacher: de, itemIds: withCat, seconds: 25 },
+          { id: `kick-${bi}`, kind: 'gender', title: 'action-round', teacher: kick, itemIds: withCat, seconds: 25 },
           ...rest,
         ];
-        setBubble({ de, en });
+        setBubble(bubbleFor(kick, tr));
       } else if (pool.length >= 4) {
         rest = [
           {
             id: `kick-${bi}`,
             kind: 'blitz',
-            title: 'Action round',
-            teacher: de,
+            title: 'action-round',
+            teacher: kick,
             secondsPerQuestion: 6,
             exercises: pool.slice(0, 6).map((p) => mcFor(p, pool)),
           },
           ...rest,
         ];
-        setBubble({ de, en });
+        setBubble(bubbleFor(kick, tr));
       }
     }
     const nb = [...blocks.slice(0, bi + 1), ...rest];
@@ -376,7 +386,7 @@ export function Session({
   return (
     <div className="wrap">
       <div className="topbar">
-        <button className="x" onClick={onQuit} title="Stop (Esc)">
+        <button className="x" onClick={onQuit} title={tr('session.stop')} aria-label={tr('session.stop')}>
           ✕
         </button>
         <div className="segs">
@@ -385,15 +395,19 @@ export function Session({
           ))}
         </div>
         <span className={`pill combo ${combo >= 3 ? 'hot' : ''}`} key={combo}>
-          🔥 {combo}
+          {tr('session.combo', { count: combo })}
         </span>
-        <span className="pill">⭐ {xp}</span>
+        <span className="pill" title={tr('session.xpLabel')}>
+          {tr('session.xp', { xp })}
+        </span>
       </div>
       <div className="teacher" style={{ marginBottom: 18 }}>
-        <div className="avatar">L</div>
-        <div className="bubble">
-          <div>{bubble.de}</div>
-          {bubble.en && bubble.en !== bubble.de && <div className="en">{bubble.en}</div>}
+        <div className="avatar" aria-hidden="true">
+          {tr('home.teacherInitial')}
+        </div>
+        <div className="bubble" aria-live="polite">
+          <div>{bubble.main}</div>
+          {bubble.gloss && bubble.gloss !== bubble.main && <div className="en">{bubble.gloss}</div>}
         </div>
       </div>
       <div className="stage" key={b.id}>
@@ -413,7 +427,7 @@ export function Session({
       </div>
       {floats.map((f) => (
         <div key={f.id} className="xpfloat" style={{ right: 'max(160px, calc(50vw - 300px))', top: 70 }}>
-          +{f.xp}
+          {tr('session.xpFloat', { xp: f.xp })}
         </div>
       ))}
     </div>

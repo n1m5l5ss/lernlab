@@ -15,11 +15,12 @@ export function pseudoString(s: string): string {
   return `[!! ${out}${pad} !!]`;
 }
 
-type Tree = { [k: string]: string | Tree };
+type Tree = { [k: string]: string | string[] | Tree };
 
-/** Pseudo-translate a whole resource tree (same keys, accented values). */
+/** Pseudo-translate a whole resource tree (same keys and arrays, accented values). */
 export function pseudoize<T extends Tree>(tree: T): T {
   const out: Tree = {};
-  for (const [k, v] of Object.entries(tree)) out[k] = typeof v === 'string' ? pseudoString(v) : pseudoize(v);
+  for (const [k, v] of Object.entries(tree))
+    out[k] = typeof v === 'string' ? pseudoString(v) : Array.isArray(v) ? v.map(pseudoString) : pseudoize(v);
   return out as T;
 }

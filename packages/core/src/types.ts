@@ -1,3 +1,4 @@
+import type { Line } from './teacher';
 import type { Article } from './text';
 
 export type ItemKind = 'noun' | 'verb' | 'word' | 'phrase' | 'grammar' | 'number' | 'card' | 'cloze' | 'mcq' | 'order';
@@ -97,15 +98,16 @@ export type Exercise =
   | { type: 'mcq'; itemId: number; stem: string; choices: string[]; correct: number[]; explanation: string }
   | { type: 'order'; itemId: number; prompt: string; steps: string[]; shuffled: number[] };
 
+/** A session block. `title` is an internal name for logs and tests, never shown; `teacher` is shown. */
 export type Block =
-  | { id: string; kind: 'ignition'; title: string; teacher: string; exercises: Exercise[] }
-  | { id: string; kind: 'learn'; title: string; teacher: string; exercises: Exercise[] }
-  | { id: string; kind: 'drill'; format: Format; title: string; teacher: string; exercises: Exercise[] }
-  | { id: string; kind: 'gender'; title: string; teacher: string; itemIds: number[]; seconds: number }
-  | { id: string; kind: 'match'; title: string; teacher: string; itemIds: number[] }
-  | { id: string; kind: 'rain'; title: string; teacher: string; itemIds: number[]; seconds: number }
-  | { id: string; kind: 'boss'; title: string; teacher: string; itemIds: number[]; lives: number }
-  | { id: string; kind: 'blitz'; title: string; teacher: string; exercises: Exercise[]; secondsPerQuestion: number };
+  | { id: string; kind: 'ignition'; title: string; teacher: Line; exercises: Exercise[] }
+  | { id: string; kind: 'learn'; title: string; teacher: Line; exercises: Exercise[] }
+  | { id: string; kind: 'drill'; format: Format; title: string; teacher: Line; exercises: Exercise[] }
+  | { id: string; kind: 'gender'; title: string; teacher: Line; itemIds: number[]; seconds: number }
+  | { id: string; kind: 'match'; title: string; teacher: Line; itemIds: number[] }
+  | { id: string; kind: 'rain'; title: string; teacher: Line; itemIds: number[]; seconds: number }
+  | { id: string; kind: 'boss'; title: string; teacher: Line; itemIds: number[]; lives: number }
+  | { id: string; kind: 'blitz'; title: string; teacher: Line; exercises: Exercise[]; secondsPerQuestion: number };
 
 export type SessionLength = 'mini' | 'standard' | 'long';
 
@@ -114,8 +116,9 @@ export type SessionPlan = {
   deckId: number | null;
   lang: string | null;
   length: SessionLength;
-  agenda: string; // teacher's one-line agenda (German)
-  agendaEn: string;
+  /** The agenda line in the deck's language (German decks); the UI builds the translated one from `counts`. */
+  agendaTarget: string | null;
+  deckName: string | null;
   blocks: Block[];
   items: Record<number, Item>; // every item referenced in the plan
   extras: Record<number, Item>; // distractor pool for client-generated exercises
