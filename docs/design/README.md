@@ -1,6 +1,7 @@
 # Design
 
-- **Mockups (light and dark):** https://claude.ai/artifact/6kaq72rGnUE3vvNLwnoscT. They cover Welcome, Home, Study session, a wrong answer, Block summary, Decks, and the visual style sheet. Status: **waiting for the owner's approval** (issue #1).
+- **Mockups (light and dark):** https://claude.ai/artifact/6kaq72rGnUE3vvNLwnoscT. They cover Welcome, Home, Study session, a wrong answer, Block summary, Decks, and the visual style sheet. Status: **approved by the owner on 2026-11-20** (issue #1).
+- **Exported images:** `images/` (light and dark per screen, plus `Style.png`). They match the mockup source at 1280 × 800.
 - **Source of the mockups:** `canvas/project/*.dc.html`. Each is a plain HTML file; read them for exact sizes, colours and copy.
 - **Design tokens:** `tokens.json`, the single source for colours, type, spacing, radius and motion (issue #2; implemented in #59).
 - **Why it looks like this:** the design research, summarised below. The full report is in the planning chat; the key numbers are in `docs/research.md` and here.
