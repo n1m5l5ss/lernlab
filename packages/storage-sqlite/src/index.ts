@@ -15,7 +15,7 @@ import {
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { setHost, type DB, type Host } from '@lernlab/core/host';
-import { migrate, type Migration } from '@lernlab/core/migrate';
+import { migrate, schemaVersion, type Migration } from '@lernlab/core/migrate';
 
 // Node 22–25 call the class DatabaseSync; newer releases may call it Database.
 type SqliteCtor = new (file: string, options?: { readOnly?: boolean }) => DB;
@@ -86,6 +86,12 @@ export function getAppDb(file = resolve(dataDir(), 'lernlab.db')): DB {
   mkdirSync(mediaDir(), { recursive: true });
   db = openDb(file);
   return db;
+}
+
+/** Back up the app database now (e.g. before an app update is installed). Returns the backup's path. */
+export function backupAppDb(file = resolve(dataDir(), 'lernlab.db')): string {
+  const d = getAppDb(file);
+  return backupDb(d, file, schemaVersion(d));
 }
 
 /** Read-only copy of SQLite bytes, kept in a temp folder that is removed on close. */

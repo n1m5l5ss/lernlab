@@ -1,7 +1,7 @@
 // The request table behind the desktop bridge: validation, errors as values, and a round trip.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync } from 'node:fs';
+import { existsSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { cleanupTempDir } from '../test/test-utils';
@@ -51,4 +51,14 @@ test('create a deck, add and edit a card, import a file, plan a session', async 
   assert.ok(plan.blocks.length > 0);
   const state = await ok('state.get');
   assert.equal(state.itemCount, 3);
+});
+
+test('update settings default to on and stable, and a backup can be taken before an update', async () => {
+  const s = await ok('settings.save', { betaUpdates: 'yes', autoUpdate: undefined });
+  assert.equal(s.autoUpdate, true);
+  assert.equal(s.betaUpdates, false);
+  assert.equal((await ok('settings.save', { betaUpdates: true, autoUpdate: false })).betaUpdates, true);
+  const { file } = await ok('backup.create');
+  assert.match(file, /^lernlab-\d{8}.*\.db$/);
+  assert.ok(existsSync(join(dir, 'backups', file)));
 });

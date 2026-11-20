@@ -19,9 +19,10 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { setupUpdates } from './updates';
 
 const configFile = () => join(app.getPath('userData'), 'config.json');
-const readConfig = (): { dataDir?: string } => {
+const readConfig = (): { dataDir?: string; lastUpdateCheck?: number } => {
   try {
     return JSON.parse(readFileSync(configFile(), 'utf8'));
   } catch {
@@ -265,6 +266,20 @@ async function main() {
   globalShortcut.register('CommandOrControl+Shift+L', startSession);
 
   [...pendingFiles, ...process.argv.slice(1).filter(isDeckFile)].forEach(importDeckFile);
+
+  setupUpdates({
+    trusted,
+    window: () => win,
+    prefs: async () => {
+      const res = await callData('state.get', undefined);
+      const s = res.ok ? (res.value as { settings?: { autoUpdate?: boolean; betaUpdates?: boolean } }).settings : {};
+      return { autoUpdate: s?.autoUpdate !== false, betaUpdates: s?.betaUpdates === true };
+    },
+    backup: () => callData('backup.create', undefined),
+    lastCheck: () => readConfig().lastUpdateCheck,
+    setLastCheck: (time) =>
+      writeFileSync(configFile(), JSON.stringify({ ...readConfig(), lastUpdateCheck: time }, null, 2)),
+  });
 }
 
 app.on('window-all-closed', () => {

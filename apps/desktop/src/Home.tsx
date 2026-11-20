@@ -5,6 +5,7 @@ import { teacherFor } from '@lernlab/core/teacher';
 import { api } from './api';
 import { useKeys } from './ctx';
 import { bubbleFor } from './lines';
+import { UpdateNote } from './UpdateNote';
 
 const LENGTHS: { key: SessionLength; minutes: number }[] = [
   { key: 'mini', minutes: 4 },
@@ -85,6 +86,7 @@ export function Home({
           ))}
         </select>
       </div>
+      <UpdateNote />
       <div className="hero">
         <div className="card">
           <button className="start" onClick={() => onStart(length)}>

@@ -32,6 +32,7 @@
     "canvas-confetti": "1.9.4",
     "electron": "45.4.1",
     "electron-builder": "^26.18.0",
+    "electron-updater": "6.8.11",
     "esbuild": "^0.28.2",
     "hono": "4.13.19",
     "i18next": "26.7.2",
@@ -101,7 +102,14 @@
       "maintainer": "LernLab contributors <lernlab@users.noreply.github.com>",
       "syncDesktopName": true
     },
-    "publish": null
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "n1m5l5ss",
+        "repo": "lernlab"
+      }
+    ],
+    "detectUpdateChannel": false
   },
   "desktopName": "lernlab.desktop",
   "repository": {

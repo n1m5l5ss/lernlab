@@ -103,6 +103,33 @@ export function Settings({ state, onSaved }: { state: any; onSaved: () => void }
         <input type="checkbox" checked={s.teacherVoice} onChange={(e) => set('teacherVoice', e.target.checked)} />
       </div>
       <div className="field">
+        <label htmlFor="set-updates">
+          {t('settings.autoUpdate')}
+          <br />
+          <span className="small muted">{t('settings.autoUpdateHint')}</span>
+        </label>
+        <input
+          id="set-updates"
+          type="checkbox"
+          checked={s.autoUpdate !== false}
+          onChange={(e) => set('autoUpdate', e.target.checked)}
+        />
+      </div>
+      <div className="field">
+        <label htmlFor="set-beta">
+          {t('settings.betaUpdates')}
+          <br />
+          <span className="small muted">{t('settings.betaUpdatesHint')}</span>
+        </label>
+        <input
+          id="set-beta"
+          type="checkbox"
+          checked={s.betaUpdates === true}
+          disabled={s.autoUpdate === false}
+          onChange={(e) => set('betaUpdates', e.target.checked)}
+        />
+      </div>
+      <div className="field">
         <span>
           {t('settings.retention')}
           <br />
