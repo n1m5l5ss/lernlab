@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Item } from '@lernlab/core/types';
-import { MISSED_SHOWN, summaryFacts } from './summary-logic';
+import { MISSED_SHOWN, summaryFacts, summaryMoments } from './summary-logic';
 
 const item = (id: number) => ({ id, target: `word ${id}`, meaning: `meaning ${id}` }) as Item;
 const items = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8].map((id) => [id, item(id)]));
@@ -30,4 +30,40 @@ test('without a server answer (finish failed) the summary still shows the sessio
   assert.equal(f.level, null);
   assert.equal(f.daysThisWeek, null);
   assert.equal(f.xp, 120);
+});
+
+test('a level-up shows when the session pushed total XP past a level line', () => {
+  // Level 2 starts at 100 XP: 80 + 40 crosses it; 200 - 40 = 160 was already level 2.
+  const up = summaryFacts(result, { bonus: 0, sessionXp: 40, state: { totalXp: 120, week } }, items);
+  assert.equal(up.levelUp, 2);
+  const flat = summaryFacts(result, { bonus: 0, sessionXp: 40, state: { totalXp: 200, week } }, items);
+  assert.equal(flat.levelUp, null);
+  assert.equal(summaryFacts(result, null, items).levelUp, null);
+});
+
+test('moments: level-up first, then badges, then streak news; nothing for an ordinary session', () => {
+  const server = {
+    bonus: 0,
+    sessionXp: 40,
+    state: { totalXp: 120, week },
+    unlocked: [{ key: 'first' }],
+    streakChange: { freezeEarned: true, repaired: false, repairDone: null },
+  };
+  assert.deepEqual(summaryMoments(summaryFacts(result, server, items), server), [
+    { kind: 'level', level: 2 },
+    { kind: 'badge', key: 'first' },
+    { kind: 'freeze' },
+  ]);
+  const repair = {
+    ...server,
+    sessionXp: 0,
+    unlocked: [],
+    streakChange: { freezeEarned: false, repaired: false, repairDone: 1 },
+  };
+  assert.deepEqual(summaryMoments(summaryFacts(result, repair, items), repair), [{ kind: 'repairProgress', done: 1 }]);
+  const fixed = { ...repair, streakChange: { freezeEarned: false, repaired: true, repairDone: null } };
+  assert.deepEqual(summaryMoments(summaryFacts(result, fixed, items), fixed), [{ kind: 'repaired' }]);
+  const quiet = { ...repair, streakChange: { freezeEarned: false, repaired: false, repairDone: null } };
+  assert.deepEqual(summaryMoments(summaryFacts(result, quiet, items), quiet), []);
+  assert.deepEqual(summaryMoments(summaryFacts(result, null, items), null), []);
 });

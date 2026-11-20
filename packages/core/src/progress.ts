@@ -10,6 +10,7 @@ import {
   NEW_STREAK,
   recordSession,
   settleStreak,
+  streakChange,
   type StreakState,
   weekDays,
   weekStart,
@@ -219,7 +220,8 @@ export function finishSession(f: FinishInput, d: DB = getDb(), now = new Date())
     JSON.stringify(f),
   );
 
-  const streak = recordSession(streakState(d, now), today, goalNow);
+  const streakBefore = streakState(d, now);
+  const streak = recordSession(streakBefore, today, goalNow);
   setMeta(d, 'streak', streak);
 
   // Achievements
@@ -262,6 +264,7 @@ export function finishSession(f: FinishInput, d: DB = getDb(), now = new Date())
     sessionXp,
     goalMetNow: goalNow && !before.goal_met,
     streak,
+    streakChange: streakChange(streakBefore, streak),
     unlocked: unlocked.map((k) => ({ key: k })),
     state: appState(d, now),
   };

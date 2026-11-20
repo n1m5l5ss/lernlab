@@ -8,6 +8,7 @@ import { api } from './api';
 import { useKeys } from './ctx';
 import { formatDate, formatNumber } from './i18n';
 import { LENGTHS } from './lengths';
+import { dayDate, MotivationIcon } from './Motivation';
 import { parseSourceValue, sourceValue } from './sources';
 import { UpdateNote } from './UpdateNote';
 
@@ -144,8 +145,15 @@ export function Home({
       </section>
       {s.repair && (
         <p className="panel home-repair">
-          <b>{t('home.repairTitle')}</b>{' '}
-          {t('home.repairBody', { deadline: s.repair.deadline, days: s.repair.value, done: s.repair.sessionsDone })}
+          <MotivationIcon kind="repair" />
+          <span>
+            <b>{t('home.repairTitle')}</b>{' '}
+            {t('home.repairBody', {
+              deadline: dayDate(s.repair.deadline),
+              count: s.repair.value,
+              done: s.repair.sessionsDone,
+            })}
+          </span>
         </p>
       )}
       <div className="home-tiles">
@@ -165,6 +173,10 @@ export function Home({
               </li>
             ))}
           </ol>
+          <p className="home-freezes muted">
+            <MotivationIcon kind="freeze" off={!s.freezes} />
+            {s.freezes ? t('home.freezes', { count: s.freezes }) : t('home.freezesNone')}
+          </p>
         </section>
         <section className="panel home-tile" aria-labelledby="home-level">
           <h2 id="home-level">{t('home.levelTitle', { level: lvl.level })}</h2>
