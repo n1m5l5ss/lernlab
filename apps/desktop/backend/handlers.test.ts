@@ -76,14 +76,13 @@ test('backups: before an update, listed with counts, restored; export and import
 
   const refused = await handle('data.deleteAll', { confirm: 'yes' });
   assert.equal(!refused.ok && refused.error.code, 'invalid_input', 'deleting everything needs the confirmation');
-  const gone = await ok('data.deleteAll', { confirm: 'delete-all-data' });
-  assert.match(gone.backup, /-before-delete-all-/);
+  assert.deepEqual(await ok('data.deleteAll', { confirm: 'delete-all-data' }), { ok: true });
   assert.equal((await ok('state.get')).decks.length, 0);
+  assert.deepEqual(await ok('backup.list'), [], 'backups are deleted too');
+  const old = await handle('backup.restore', { file });
+  assert.equal(!old.ok && old.error.code, 'backup_not_found');
 
-  assert.equal((await ok('data.import', { data: zip.data })).counts.decks, decks);
-  assert.equal((await ok('state.get')).decks.length, decks);
-  await ok('data.deleteAll', { confirm: 'delete-all-data' });
-  assert.equal((await ok('backup.restore', { file })).counts.decks, decks);
+  assert.equal((await ok('data.import', { data: zip.data })).counts.decks, decks, 'an export still brings it back');
   assert.equal((await ok('state.get')).decks.length, decks);
   const bad = await handle('data.import', { data: new TextEncoder().encode('nope') });
   assert.equal(!bad.ok && bad.error.code, 'not_data_export');

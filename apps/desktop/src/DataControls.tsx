@@ -181,6 +181,9 @@ export function DataControls({ say }: { say: (msg: string) => void }) {
         <span className="settings-hint">{t('settings.data.deleteHint')}</span>
         {asking === 'delete' ? (
           <div className="data-confirm data-danger">
+            <p className="data-warning" role="alert">
+              {t('settings.data.deleteWarning')}
+            </p>
             <label htmlFor="set-delete-word">{t('settings.data.deleteType', { word })}</label>
             <input
               id="set-delete-word"
@@ -193,7 +196,12 @@ export function DataControls({ say }: { say: (msg: string) => void }) {
               <button
                 className="btn danger"
                 disabled={busy || !confirmed(typed, word, i18n.language)}
-                onClick={() => run(async () => t('settings.data.deleted', { file: (await api.deleteAll()).backup }))}
+                onClick={() =>
+                  run(async () => {
+                    await api.deleteAll();
+                    return t('settings.data.deleted');
+                  })
+                }
               >
                 {t('settings.data.deleteNow')}
               </button>
