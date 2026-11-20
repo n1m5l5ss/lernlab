@@ -38,10 +38,12 @@ test('create a deck, add and edit a card, import a file, plan a session', async 
   const deck = await ok('decks.create', { name: 'Capitals', language: null });
   const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'France', back: 'Paris', tags: 'geo eu' } });
   await ok('cards.update', { id, card: { front: 'France', back: 'Paris', starred: true, unknownField: 'ignored' } });
-  const list = await ok('cards.list', { deckId: deck.id });
+  const list = await ok('cards.find', { deckId: deck.id });
   assert.equal(list.total, 1);
-  assert.equal(list.cards[0].meaning, 'Paris');
-  assert.equal(list.cards[0].starred, true);
+  assert.equal(list.rows[0].back, 'Paris');
+  assert.equal(list.rows[0].starred, true);
+  const card = await ok('cards.get', { id });
+  assert.equal(card.meaning, 'Paris');
   const csv = new TextEncoder().encode('front,back\nGermany,Berlin\nItaly,Rome\n');
   const imp = await ok('import.file', { name: 'more.csv', data: csv, deckId: deck.id });
   assert.equal(imp.added, 2);
@@ -131,4 +133,35 @@ test('deck settings are checked, and deleting a deck takes a backup first', asyn
   assert.ok(existsSync(join(dir, 'backups', del.backup)), 'backup file exists');
   const again = await handle('decks.delete', { id: deck.id });
   assert.equal(!again.ok && again.error.code, 'deck_not_found');
+});
+
+test('the card browser filters across decks and changes many cards at once', async () => {
+  const a = await ok('decks.create', { name: 'Bulk A', language: null });
+  const b = await ok('decks.create', { name: 'Bulk B', language: null });
+  const csv = new TextEncoder().encode('front,back,tags\nOne,1,num\nTwo,2,num\nThree,3,num\n');
+  await ok('import.file', { name: 'n.csv', data: csv, deckId: a.id });
+  const found = await ok('cards.find', { tag: 'num', state: 'new' });
+  assert.equal(found.total, 3);
+  const ids = found.rows.map((r: { id: number }) => r.id);
+  assert.deepEqual(await ok('cards.bulk', { ids, action: { kind: 'tag', tag: 'maths' } }), { count: 3 });
+  await ok('cards.bulk', { ids: ids.slice(0, 2), action: { kind: 'move', deckId: b.id } });
+  assert.equal((await ok('cards.find', { deckId: b.id, tag: 'maths' })).total, 2);
+  await ok('cards.bulk', { ids, action: { kind: 'suspend' } });
+  assert.equal((await ok('cards.find', { tag: 'num', state: 'suspended' })).total, 3);
+  const del = await ok('cards.bulk', { ids, action: { kind: 'delete' } });
+  assert.equal(del.count, 3);
+  assert.ok(existsSync(join(dir, 'backups', del.backup)), 'delete takes a backup first');
+  assert.equal((await ok('cards.find', { tag: 'num' })).total, 0);
+  for (const bad of [
+    { ids, action: { kind: 'explode' } },
+    { ids, action: { kind: 'tag', tag: '  ' } },
+    { ids: ['1'], action: { kind: 'star' } },
+  ]) {
+    const r = await handle('cards.bulk', bad);
+    assert.equal(!r.ok && r.error.code, 'invalid_input', JSON.stringify(bad));
+  }
+  const badState = await handle('cards.find', { state: 'forgotten' });
+  assert.equal(!badState.ok && badState.error.code, 'invalid_input');
+  const missing = await handle('cards.bulk', { ids, action: { kind: 'move', deckId: 99999 } });
+  assert.equal(!missing.ok && missing.error.code, 'deck_not_found');
 });

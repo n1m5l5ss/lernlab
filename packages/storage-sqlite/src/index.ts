@@ -45,12 +45,11 @@ export function backupDb(d: DB, file: string, fromVersion: number, now = new Dat
   const dir = resolve(dirname(file), 'backups');
   mkdirSync(dir, { recursive: true });
   const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}`;
+  const time = `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
   let out = resolve(dir, `lernlab-${stamp}-v${fromVersion}.db`);
-  if (existsSync(out))
-    out = resolve(
-      dir,
-      `lernlab-${stamp}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}-v${fromVersion}.db`,
-    );
+  // Several backups can be taken in the same second (two deletes in a row): number them.
+  for (let n = 1; existsSync(out); n++)
+    out = resolve(dir, `lernlab-${stamp}-${time}${n > 1 ? `-${n}` : ''}-v${fromVersion}.db`);
   d.prepare('VACUUM INTO ?').run(out);
   return out;
 }

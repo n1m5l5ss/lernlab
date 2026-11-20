@@ -32,6 +32,7 @@ import {
 import { ACHIEVEMENTS, appState, dailySummary, finishSession, progressReport, stats } from '@lernlab/core/progress';
 import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
+import { bulkCards, CARD_STATES, findCards, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
 import { anki, ankiAvailable, ankiConnect } from './anki';
@@ -84,6 +85,27 @@ const studySource: Check<StudySource> = (value, path = '') => {
   const source = asStudySource(value);
   if (!source) throw new InvalidInput(`${path || 'input'} must be a study source`);
   return source;
+};
+
+const tagName = (value: unknown, path = '') => {
+  const tag = v.string(200)(value, path).trim();
+  if (!tag || /\s/.test(tag)) throw new InvalidInput(`${path || 'input'} must be one tag`);
+  return tag;
+};
+const bulkAction: Check<BulkAction> = (value, path = 'action') => {
+  const kind = v.oneOf(
+    'tag',
+    'untag',
+    'move',
+    'suspend',
+    'unsuspend',
+    'star',
+    'unstar',
+    'delete',
+  )(v.record(value, path).kind, `${path}.kind`);
+  if (kind === 'tag' || kind === 'untag') return { kind, ...v.object({ tag: tagName })(value, path) };
+  if (kind === 'move') return { kind, ...v.object({ deckId: v.id })(value, path) };
+  return { kind };
 };
 
 export const importStatus = {
@@ -214,6 +236,34 @@ export const handlers = {
       };
     },
   ),
+  /** Light rows for the browser, across every deck unless one is given. */
+  'cards.find': h(
+    v.object({
+      deckId: v.optional(v.nullable(v.id)),
+      q: v.optional(v.string(500)),
+      tag: v.optional(v.string(200)),
+      state: v.optional(v.oneOf(...CARD_STATES)),
+    }),
+    (filter) => ({ ...findCards(filter), limit: MAX_ROWS }),
+  ),
+  /** One full card for the editor. */
+  'cards.get': h(v.object({ id: v.id }), ({ id }) => {
+    const r = getDb().prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(id);
+    if (!r) throw new AppError('card_not_found', 'Card not found');
+    return {
+      ...rowToItem(r),
+      suspended: !!r.suspended,
+      starred: !!r.starred,
+      extra: JSON.parse((r.extra as string | null) ?? '{}') as Record<string, string>,
+    };
+  }),
+  /** One change to many cards. Deleting takes a backup of the whole database first. */
+  'cards.bulk': h(v.object({ ids: v.array(v.id, 100_000), action: bulkAction }), ({ ids, action }) => {
+    if (action.kind === 'move' && !getDeck(action.deckId)) throw new AppError('deck_not_found', 'Deck not found');
+    const backup = action.kind === 'delete' ? basename(backupAppDb()) : undefined;
+    const count = bulkCards(ids, action);
+    return backup ? { count, backup } : { count };
+  }),
   'cards.add': h(v.object({ deckId: v.id, card: cardInput }), ({ deckId, card: b }) => {
     const deck = getDeck(deckId);
     if (!deck) throw new AppError('deck_not_found', 'Deck not found');
@@ -271,6 +321,7 @@ export const handlers = {
     }
     return { ok: true };
   }),
+
   'cards.delete': h(v.object({ id: v.id }), ({ id }) => {
     const d = getDb();
     for (const t of ['srs', 'item_state']) d.prepare(`DELETE FROM ${t} WHERE item_id = ?`).run(id);
