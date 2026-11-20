@@ -297,16 +297,20 @@ export type AnkiNote = {
   cards: number[];
 };
 
+/** How far a live Anki import is: reading notes, then copying media files. */
+export type AnkiProgress = { step: 'notes' } | { step: 'media'; done: number; total: number };
+
 /** Live import from a running Anki desktop. */
 export async function importFromAnki(
   anki: AnkiSource,
   source: string,
   opts: ImportOptions = {},
-  onProgress?: (msg: string) => void,
+  onProgress?: (p: AnkiProgress) => void,
   d: DB = getDb(),
 ): Promise<ImportReport> {
-  onProgress?.(`Reading notes from Anki deck "${source}"…`);
+  onProgress?.({ step: 'notes' });
   const notes = await anki.notesInDeck(source);
+  if (!notes.length) throw new UserError('anki_deck_empty', 'This Anki deck has no notes', { deck: source });
   const deckOf = await anki.cardDecks(notes.map((n) => n.cards[0]).filter(Boolean));
   const fieldMapped = notes.map((n) => {
     const f = (...names: string[]) => {
@@ -373,14 +377,11 @@ export async function importFromAnki(
   const media: Record<string, Uint8Array> = {};
   const files = [...new Set(ordered.flatMap((c) => [c.audio, c.image]).filter(Boolean) as string[])];
   for (const [i, file] of files.entries()) {
-    if (i % 50 === 0) onProgress?.(`Copying media ${i + 1}/${files.length}…`);
+    if (i % 20 === 0) onProgress?.({ step: 'media', done: i, total: files.length });
     const buf = await anki.mediaFile(file).catch(() => null);
     if (buf) media[file] = buf;
   }
   const report = finish({ format: 'anki', cards: ordered, media }, () => deck, d);
   setMeta(d, 'lastImport', { source, at: new Date().toISOString(), notes: ordered.length });
-  onProgress?.(
-    `Done: ${report.total} cards (${report.added} new, ${report.updated} updated), ${report.media} media files.`,
-  );
   return report;
 }

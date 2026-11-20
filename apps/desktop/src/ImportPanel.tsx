@@ -5,6 +5,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import type { ColumnMapping, ImportPreview, MappableField } from '@lernlab/core/importpreview';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
+import { AnkiImport } from './AnkiImport';
 import { formatNumber } from './i18n';
 import type { ImportReport as Report } from '@lernlab/core/importer';
 import { MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './import-logic';
@@ -15,7 +16,6 @@ const CSV_OPTIONAL =
   'example, explanation, notes, category, tags, image, audio, video, alt_answers, type, choices, correct, steps';
 
 type AppState = OutputOf<'state.get'>;
-type AnkiInfo = Partial<OutputOf<'import.ankiInfo'>> & { anki: boolean };
 type Source = { file: File } | { text: string };
 
 export function ImportPanel({
@@ -45,9 +45,6 @@ export function ImportPanel({
   const [deckName, setDeckName] = useState('');
   const [language, setLanguage] = useState('');
   const [report, setReport] = useState<Report | null>(null);
-  const [anki, setAnki] = useState<AnkiInfo | null>(null);
-  const [ankiDeck, setAnkiDeck] = useState('');
-  const [ankiMsg, setAnkiMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const source: Source | null = tab === 'file' && file ? { file } : tab === 'paste' && text.trim() ? { text } : null;
@@ -115,46 +112,6 @@ export function ImportPanel({
       setError((e as Error).message);
     }
     setBusy(false);
-  };
-
-  // ── From Anki (unchanged; issue #26 polishes it) ──
-  useEffect(() => {
-    if (tab === 'anki')
-      api
-        .ankiInfo()
-        .then((a) => {
-          setAnki(a);
-          setAnkiDeck((d) => d || a.ankiDecks?.[0] || '');
-        })
-        .catch(() => setAnki({ anki: false }));
-  }, [tab]);
-  useEffect(() => {
-    if (!anki?.running) return;
-    const timer = setInterval(async () => {
-      const a = await api.ankiInfo();
-      setAnki(a);
-      if (!a.running) {
-        clearInterval(timer);
-        setBusy(false);
-        setAnkiMsg(
-          a.error
-            ? { ok: false, text: a.error }
-            : { ok: true, text: t('decks.importPanel.ankiDone', { count: a.result?.total ?? 0 }) },
-        );
-        refresh();
-      }
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [anki?.running]);
-  const doAnki = async () => {
-    setAnkiMsg(null);
-    try {
-      await api.ankiImport({ source: ankiDeck, deckName: deckName || undefined });
-      setBusy(true);
-      setAnki({ ...anki, anki: true, running: true });
-    } catch (e) {
-      setAnkiMsg({ ok: false, text: (e as Error).message });
-    }
   };
 
   return (
@@ -259,32 +216,7 @@ export function ImportPanel({
               </div>
             </>
           )}
-          {tab === 'anki' && (
-            <div className="col">
-              {!anki ? (
-                <div className="muted">{t('decks.importPanel.checkingAnki')}</div>
-              ) : !anki.anki ? (
-                <div className="muted">
-                  <Trans i18nKey="decks.importPanel.ankiUnreachable" components={{ b: <b />, code: <code /> }} />
-                </div>
-              ) : (
-                <div className="row">
-                  <select className="input grow" value={ankiDeck} onChange={(e) => setAnkiDeck(e.target.value)}>
-                    {(anki.ankiDecks ?? []).map((d: string) => (
-                      <option key={d}>{d}</option>
-                    ))}
-                  </select>
-                  <button className="btn primary" onClick={doAnki} disabled={busy || !ankiDeck}>
-                    {busy ? t('common.importing') : t('decks.importPanel.importDeck')}
-                  </button>
-                </div>
-              )}
-              {!!anki?.log?.length && anki.running && (
-                <div className="small muted">{anki.log[anki.log.length - 1]}</div>
-              )}
-              {ankiMsg && <div className={`feedback ${ankiMsg.ok ? 'right' : 'wrong'}`}>{ankiMsg.text}</div>}
-            </div>
-          )}
+          {tab === 'anki' && <AnkiImport onImported={refresh} />}
           {tab !== 'anki' && preview && (
             <>
               <p className="import-found" role="status">
