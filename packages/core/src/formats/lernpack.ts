@@ -1,7 +1,7 @@
 // The open LernLab deck format (.lernpack): a zip with manifest.json, cards.csv (or cards.jsonl)
 // and media/ (any subfolders, e.g. media/images, media/audio, media/video).
-import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
-import { basename } from 'node:path';
+import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
+import { basename } from '../paths';
 import type { DeckSettings, NormalizedCard } from '../library';
 import { csvToCards } from './csv';
 
@@ -49,7 +49,11 @@ export function readLernpack(buf: Uint8Array): Pack {
     if (name.startsWith(`${root}media/`) && !name.endsWith('/') && !/\.(txt|md)$/i.test(name))
       media[basename(name)] = data;
   }
-  return { manifest, cards: cards.map((c: any) => ({ ...c, sourceId: c.sourceId ?? c.id })), media };
+  return {
+    manifest,
+    cards: cards.map((c: NormalizedCard & { id?: string }) => ({ ...c, sourceId: c.sourceId ?? c.id })),
+    media,
+  };
 }
 
 export function writeLernpack(
@@ -64,12 +68,12 @@ export function writeLernpack(
     created: new Date().toISOString(),
     ...manifest,
   };
-  const files: Record<string, Uint8Array> = {
+  const files: Zippable = {
     'manifest.json': strToU8(JSON.stringify(full, null, 2)),
     'cards.jsonl': strToU8(
       cards.map(({ sourceId, ...c }) => JSON.stringify({ id: String(sourceId ?? ''), ...c })).join('\n') + '\n',
     ),
   };
-  for (const [name, data] of Object.entries(media)) files[`media/${name}`] = [data, { level: 0 }] as any;
+  for (const [name, data] of Object.entries(media)) files[`media/${name}`] = [data, { level: 0 }];
   return zipSync(files, { level: 6 });
 }

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Block, Exercise, Item, SessionPlan } from '../shared/types';
-import { xpFor } from '../shared/game';
-import { teacherFor } from '../shared/teacher';
+import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
+import { xpFor } from '@lernlab/core/game';
+import { teacherFor } from '@lernlab/core/teacher';
 import { sendAttempt, sendOverride } from './api';
 import { say, sfx } from './audio';
 import { useKeys, type AnswerInput, type BlockResult, type Ctx } from './ctx';

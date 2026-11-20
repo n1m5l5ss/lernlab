@@ -1,8 +1,8 @@
 // Session planner: builds a varied, never-monotonous session out of short blocks (about 60–90 s each)
 // for ANY deck. Rules: formats rotate (never the same twice in a row); easy win first; new cards are
 // met, recognised, then recalled in the same session; a boss fight at the end recycles today's mistakes.
-import { randomUUID } from 'node:crypto';
 import { getDb, type DB } from './db';
+import { host } from './host';
 import {
   activeDeckId,
   allItems,
@@ -21,10 +21,10 @@ import {
 } from './learn';
 import { getDeck } from './library';
 import * as gen from './exercises';
-import { qa } from '../shared/cards';
-import { dayKey } from '../shared/game';
-import { shuffle, stripHtml } from '../shared/text';
-import type { Block, Exercise, Item, SessionLength, SessionPlan } from '../shared/types';
+import { qa } from './cards';
+import { dayKey } from './game';
+import { shuffle, stripHtml } from './text';
+import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
 const SIZES: Record<
   SessionLength,
@@ -45,7 +45,7 @@ function rotate(blocks: Block[]): Block[] {
   for (const b of blocks) {
     const last = out[out.length - 1];
     if (last && blockKey(last) === blockKey(b) && 'exercises' in last && 'exercises' in b && last.kind === b.kind) {
-      (last as any).exercises = [...last.exercises, ...b.exercises];
+      (last as { exercises: Exercise[] }).exercises = [...last.exercises, ...b.exercises];
     } else out.push(b);
   }
   for (let i = 1; i < out.length - 1; i++) {
@@ -374,7 +374,7 @@ export function planSession(
   const agendaEn = `${deck ? `${deck.name} · ` : ''}Today: ${partsEn.join(', ')}.`;
 
   return {
-    id: randomUUID(),
+    id: host().randomId(),
     deckId: deckId ?? null,
     lang,
     length,

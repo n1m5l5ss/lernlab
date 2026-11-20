@@ -1,9 +1,11 @@
 // Core learning state: items, spaced repetition (FSRS), attempts, mastery, days.
+import type { Row } from './host';
+import type { ItemRow } from './schema';
 import { fsrs, generatorParameters, createEmptyCard, type Card, type Grade as FsrsGrade } from 'ts-fsrs';
 import { getDb, getMeta, tx, type DB } from './db';
-import { gradeFor, dayKey } from '../shared/game';
-import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from '../shared/types';
-import { qa } from '../shared/cards';
+import { gradeFor, dayKey } from './game';
+import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from './types';
+import { qa } from './cards';
 
 export type Settings = {
   deck: string;
@@ -38,7 +40,7 @@ export function deckNewPerDay(deckId: number | null | undefined, d: DB = getDb()
   const g = getSettings(d).newPerDay;
   if (!deckId) return g;
   const r = d.prepare('SELECT settings FROM decks WHERE id = ?').get(deckId);
-  const s = r ? JSON.parse(r.settings) : {};
+  const s = r ? JSON.parse(r.settings as string) : {};
   return typeof s.newPerDay === 'number' ? s.newPerDay : g;
 }
 
@@ -50,7 +52,8 @@ const scheduler = (retention: number) =>
 export const ITEM_SELECT = 'SELECT i.*, dk.language AS lang FROM items i JOIN decks dk ON dk.id = i.deck_id';
 const dk = (deckId?: number | null, alias = 'i') => (deckId ? ` AND ${alias}.deck_id = ${Number(deckId)}` : '');
 
-export function rowToItem(r: any): Item {
+export function rowToItem(row: Row): Item {
+  const r = row as unknown as ItemRow;
   return {
     id: Number(r.id),
     deckId: Number(r.deck_id),
@@ -66,9 +69,9 @@ export function rowToItem(r: any): Item {
       }
     })(),
     deck: r.deck,
-    kind: r.kind,
+    kind: r.kind as Item['kind'],
     target: r.target,
-    article: r.article,
+    article: r.article as Item['article'],
     word: r.word,
     meaning: r.meaning,
     sentenceHtml: r.sentence_html,
@@ -106,7 +109,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
       introduce(a.itemId, d, now);
 
     // Mastery ladder and counters
-    const st = d.prepare('SELECT * FROM item_state WHERE item_id = ?').get(a.itemId);
+    const st = d.prepare('SELECT * FROM item_state WHERE item_id = ?').get(a.itemId)!;
     if (a.genderOnly) {
       d.prepare(
         'UPDATE item_state SET gender_seen = gender_seen + 1, gender_right = gender_right + ? WHERE item_id = ?',
@@ -114,7 +117,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     } else if (a.format !== 'intro') {
       const lvl = FORMAT_LEVEL[a.format] ?? 0;
       const mastery = a.correct && !a.articleError ? Math.max(Number(st.mastery), lvl) : Number(st.mastery);
-      let spoken: string[] = JSON.parse(st.spoken_days);
+      let spoken: string[] = JSON.parse(st.spoken_days as string);
       if (a.format === 'speak' && a.correct && !spoken.includes(day)) spoken = [...spoken, day].slice(-10);
       d.prepare(
         `UPDATE item_state SET mastery = ?, seen = seen + 1, right = right + ?, wrong = wrong + ?,
@@ -144,7 +147,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
       });
       if (grade) {
         const settings = getSettings(d);
-        const card: Card = reviveCard(JSON.parse(srs.card));
+        const card: Card = reviveCard(JSON.parse(srs.card as string));
         const next = scheduler(settings.retention).next(card, now, grade as FsrsGrade).card;
         d.prepare(
           `UPDATE srs SET prev_card = card, prev_due = due, card = ?, due = ?, last_graded_day = ?, reps = reps + 1, lapses = lapses + ? WHERE item_id = ?`,
@@ -190,7 +193,7 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
       .prepare('SELECT * FROM attempts WHERE item_id = ? AND day = ? AND grade IS NOT NULL ORDER BY id DESC LIMIT 1')
       .get(itemId, day);
     if (!srs || !last || srs.last_graded_day !== day || !srs.prev_card || Number(last.grade) >= 3) return { ok: false };
-    const prev = reviveCard(JSON.parse(srs.prev_card));
+    const prev = reviveCard(JSON.parse(srs.prev_card as string));
     const next = scheduler(getSettings(d).retention).next(prev, now, 3 as FsrsGrade).card;
     d.prepare('UPDATE srs SET card = ?, due = ?, lapses = MAX(0, lapses - ?) WHERE item_id = ?').run(
       JSON.stringify(next),
@@ -206,7 +209,7 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
   });
 }
 
-function reviveCard(c: any): Card {
+function reviveCard(c: Omit<Card, 'due' | 'last_review'> & { due: string; last_review?: string }): Card {
   return { ...c, due: new Date(c.due), last_review: c.last_review ? new Date(c.last_review) : undefined };
 }
 
@@ -232,7 +235,7 @@ export function dueItemIds(d: DB = getDb(), now = new Date(), limit = 500, deckI
        ORDER BY s.due LIMIT ?`,
     )
     .all(endOfDay(now).toISOString(), dayKey(now), limit)
-    .map((r: any) => Number(r.item_id));
+    .map((r: Row) => Number(r.item_id));
 }
 
 /** Introduced today but not yet graded: these must be recalled before the session ends. */
@@ -242,7 +245,7 @@ export function learningTodayIds(d: DB = getDb(), now = new Date(), deckId?: num
       `SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id WHERE s.reps = 0 AND s.introduced_day = ?${dk(deckId)}`,
     )
     .all(dayKey(now))
-    .map((r: any) => Number(r.item_id));
+    .map((r: Row) => Number(r.item_id));
 }
 
 export function introducedTodayCount(d: DB = getDb(), now = new Date(), deckId?: number | null): number {
@@ -251,7 +254,7 @@ export function introducedTodayCount(d: DB = getDb(), now = new Date(), deckId?:
       .prepare(
         `SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE s.introduced_day = ?${dk(deckId)}`,
       )
-      .get(dayKey(now)).n,
+      .get(dayKey(now))!.n,
   );
 }
 
@@ -263,7 +266,7 @@ export function newItemIds(d: DB = getDb(), limit: number, kinds?: string[], dec
        WHERE s.item_id IS NULL AND i.suspended = 0 ${kindFilter}${dk(deckId)} ORDER BY i.ord LIMIT ?`,
     )
     .all(...(kinds ?? []), limit)
-    .map((r: any) => Number(r.id));
+    .map((r: Row) => Number(r.id));
 }
 
 export function learnedIds(d: DB = getDb(), limit = 200, deckId?: number | null): number[] {
@@ -273,7 +276,7 @@ export function learnedIds(d: DB = getDb(), limit = 200, deckId?: number | null)
        ORDER BY s.reps DESC, s.item_id LIMIT ?`,
     )
     .all(limit)
-    .map((r: any) => Number(r.item_id));
+    .map((r: Row) => Number(r.item_id));
 }
 
 export function leechIds(d: DB = getDb(), limit = 6, deckId?: number | null): number[] {
@@ -283,7 +286,7 @@ export function leechIds(d: DB = getDb(), limit = 6, deckId?: number | null): nu
        WHERE st.wrong > 0${dk(deckId)} ORDER BY (st.wrong * 1.0 / (st.seen + 1)) DESC, s.lapses DESC LIMIT ?`,
     )
     .all(limit)
-    .map((r: any) => Number(r.item_id));
+    .map((r: Row) => Number(r.item_id));
 }
 
 /** Next grammar group to teach: the first group with untaught items, at most one new group per day. */
@@ -292,7 +295,7 @@ export function nextGrammarGroup(d: DB = getDb(), now = new Date(), deckId?: num
     .prepare(
       `SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.grp IS NOT NULL AND s.introduced_day = ?${dk(deckId)}`,
     )
-    .get(dayKey(now)).n;
+    .get(dayKey(now))!.n;
   if (Number(taughtToday) > 0) return null;
   const row = d
     .prepare(
@@ -301,7 +304,7 @@ export function nextGrammarGroup(d: DB = getDb(), now = new Date(), deckId?: num
        ORDER BY i.ord LIMIT 1`,
     )
     .get();
-  return row ? row.grp : null;
+  return row ? (row.grp as string | null) : null;
 }
 
 export function grammarItemIds(group: string, d: DB = getDb(), deckId?: number | null): number[] {
@@ -310,13 +313,13 @@ export function grammarItemIds(group: string, d: DB = getDb(), deckId?: number |
       `SELECT i.id FROM items i WHERE i.grp = ? AND i.kind = 'grammar' AND i.suspended = 0${dk(deckId)} ORDER BY i.ord`,
     )
     .all(group)
-    .map((r: any) => Number(r.id));
+    .map((r: Row) => Number(r.id));
 }
 
 export function itemsByIds(ids: number[], d: DB = getDb()): Record<number, Item> {
   if (!ids.length) return {};
   const rows = d.prepare(`${ITEM_SELECT} WHERE i.id IN (${ids.map(() => '?').join(',')})`).all(...ids);
-  return Object.fromEntries(rows.map((r: any) => [Number(r.id), rowToItem(r)]));
+  return Object.fromEntries(rows.map((r: Row) => [Number(r.id), rowToItem(r)]));
 }
 
 export function srsInfo(ids: number[], d: DB = getDb()): Record<number, { reps: number; mastery: number }> {
@@ -328,5 +331,5 @@ export function srsInfo(ids: number[], d: DB = getDb()): Record<number, { reps: 
        WHERE i.id IN (${ids.map(() => '?').join(',')})`,
     )
     .all(...ids);
-  return Object.fromEntries(rows.map((r: any) => [Number(r.id), { reps: Number(r.reps), mastery: Number(r.mastery) }]));
+  return Object.fromEntries(rows.map((r: Row) => [Number(r.id), { reps: Number(r.reps), mastery: Number(r.mastery) }]));
 }

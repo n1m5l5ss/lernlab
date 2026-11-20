@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Block, Item } from '../../shared/types';
-import { shuffle, splitArticle, normalize, stripHtml } from '../../shared/text';
-import { qa } from '../../shared/cards';
+import type { Block, Item } from '@lernlab/core/types';
+import { shuffle, splitArticle, normalize, stripHtml } from '@lernlab/core/text';
+import { qa } from '@lernlab/core/cards';
 import { say, sfx } from '../audio';
 import { useKeys, type Ctx, type BlockResult } from '../ctx';
 import { Flip, TypedEngine } from './Exercises';

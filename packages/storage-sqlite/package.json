@@ -1,0 +1,17 @@
+{
+  "name": "@lernlab/storage-sqlite",
+  "version": "0.0.0",
+  "private": true,
+  "description": "LernLab's storage host for Node and Electron: node:sqlite plus media and progress files on disk.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@lernlab/core": "*"
+  }
+}

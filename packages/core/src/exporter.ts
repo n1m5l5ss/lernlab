@@ -1,3 +1,5 @@
+import type { Row } from './host';
+import type { ItemRow } from './schema';
 import { getDb, type DB } from './db';
 import { getDeck, readMedia, type NormalizedCard } from './library';
 import { writeLernpack } from './formats/lernpack';
@@ -7,24 +9,27 @@ function deckCards(deckId: number, d: DB): NormalizedCard[] {
   return d
     .prepare('SELECT * FROM items WHERE deck_id = ? ORDER BY ord')
     .all(deckId)
-    .map((r: any) => ({
-      sourceId: String(r.id),
-      front: r.target,
-      back: r.meaning,
-      example: r.sentence_html || undefined,
-      exampleTranslation: r.sentence_meaning || undefined,
-      explanation: r.grammar || undefined,
-      notes: r.notes || undefined,
-      image: r.image || undefined,
-      audio: r.audio || undefined,
-      video: r.video || undefined,
-      category: r.category || undefined,
-      tags: JSON.parse(r.tags),
-      subdeck: r.deck,
-      group: r.grp || undefined,
-      rank: Number(r.rank) || undefined,
-      extra: Object.keys(JSON.parse(r.extra ?? '{}')).length ? JSON.parse(r.extra) : undefined,
-    }));
+    .map((row: Row) => {
+      const r = row as unknown as ItemRow;
+      return {
+        sourceId: String(r.id),
+        front: r.target,
+        back: r.meaning,
+        example: r.sentence_html || undefined,
+        exampleTranslation: r.sentence_meaning || undefined,
+        explanation: r.grammar || undefined,
+        notes: r.notes || undefined,
+        image: r.image || undefined,
+        audio: r.audio || undefined,
+        video: r.video || undefined,
+        category: r.category || undefined,
+        tags: JSON.parse(r.tags),
+        subdeck: r.deck,
+        group: r.grp || undefined,
+        rank: Number(r.rank) || undefined,
+        extra: Object.keys(JSON.parse(r.extra ?? '{}')).length ? JSON.parse(r.extra!) : undefined,
+      };
+    });
 }
 
 export function exportDeck(

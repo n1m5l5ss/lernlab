@@ -1,7 +1,6 @@
 // Import decks from any supported source into the library. Progress on existing cards is always kept.
 import { unzipSync, strFromU8 } from 'fflate';
-import { basename, extname } from 'node:path';
-import { notesInDeck, cardDecks, mediaFile } from './anki';
+import { basename, extname } from './paths';
 import { getDb, setMeta, type DB } from './db';
 import {
   createDeck,
@@ -42,7 +41,7 @@ function attachMedia(cards: NormalizedCard[], media: Record<string, Uint8Array>)
   const renamed: Record<string, string> = {};
   let stored = 0;
   for (const [name, data] of Object.entries(media)) {
-    renamed[name] = storeMedia(name, Buffer.from(data));
+    renamed[name] = storeMedia(name, data);
     stored++;
   }
   let missing = 0;
@@ -121,10 +120,12 @@ export function importFile(
   const text = new TextDecoder().decode(data);
   if (ext === '.json' || /^\s*[[{]/.test(text)) {
     const j = JSON.parse(text);
-    const cards: NormalizedCard[] = (Array.isArray(j) ? j : (j.cards ?? [])).map((c: any) => ({
-      ...c,
-      sourceId: c.sourceId ?? c.id,
-    }));
+    const cards: NormalizedCard[] = (Array.isArray(j) ? j : (j.cards ?? [])).map(
+      (c: NormalizedCard & { id?: string }) => ({
+        ...c,
+        sourceId: c.sourceId ?? c.id,
+      }),
+    );
     const deck = pickDeck(
       j.deck?.name ?? base,
       opts,
@@ -147,16 +148,33 @@ export function importFile(
   };
 }
 
-/** Live import from a running Anki desktop (AnkiConnect add-on). */
+/** A running Anki desktop. The desktop app implements this with the AnkiConnect add-on. */
+export interface AnkiSource {
+  notesInDeck(deck: string): Promise<AnkiNote[]>;
+  /** Deck name for each note id, looked up from one card id per note. */
+  cardDecks(cardIds: number[]): Promise<Record<number, string>>;
+  mediaFile(filename: string): Promise<Uint8Array | null>;
+}
+
+export type AnkiNote = {
+  noteId: number;
+  modelName: string;
+  tags: string[];
+  fields: Record<string, { value: string; order: number }>;
+  cards: number[];
+};
+
+/** Live import from a running Anki desktop. */
 export async function importFromAnki(
+  anki: AnkiSource,
   source: string,
   opts: ImportOptions = {},
   onProgress?: (msg: string) => void,
   d: DB = getDb(),
 ): Promise<ImportResult> {
   onProgress?.(`Reading notes from Anki deck "${source}"…`);
-  const notes = await notesInDeck(source);
-  const deckOf = await cardDecks(notes.map((n) => n.cards[0]).filter(Boolean));
+  const notes = await anki.notesInDeck(source);
+  const deckOf = await anki.cardDecks(notes.map((n) => n.cards[0]).filter(Boolean));
   const fieldMapped = notes.map((n) => {
     const f = (...names: string[]) => {
       for (const x of names) if (n.fields[x]) return n.fields[x].value ?? '';
@@ -223,7 +241,7 @@ export async function importFromAnki(
   const files = [...new Set(ordered.flatMap((c) => [c.audio, c.image]).filter(Boolean) as string[])];
   for (const [i, file] of files.entries()) {
     if (i % 50 === 0) onProgress?.(`Copying media ${i + 1}/${files.length}…`);
-    const buf = await mediaFile(file).catch(() => null);
+    const buf = await anki.mediaFile(file).catch(() => null);
     if (buf) media[file] = buf;
   }
   const m = attachMedia(ordered, media);
@@ -232,7 +250,3 @@ export async function importFromAnki(
   onProgress?.(`Done: ${res.total} cards (${res.added} new, ${res.updated} updated), ${m.stored} media files.`);
   return { ...res, format: 'anki', media: m.stored, mediaMissing: m.missing };
 }
-
-/** Back-compat for the v0.1 CLI and auto-import. */
-export const importDeck = (source: string, onProgress?: (m: string) => void, d: DB = getDb()) =>
-  importFromAnki(source, {}, onProgress, d);

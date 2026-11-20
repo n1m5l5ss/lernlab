@@ -1,53 +1,10 @@
-// Local database using Node's built-in SQLite (no install needed; Node >= 22.13).
-import * as sqlite from 'node:sqlite';
-import { mkdirSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+// The database schema. Plain SQLite, so every storage host shares it.
+import type { Row } from './host';
+import { getMeta, setMeta } from './db';
+import type { DB } from './host';
 
-// Node 22–25 call the class DatabaseSync; newer releases may call it Database.
-const Ctor: any = (sqlite as any).DatabaseSync ?? (sqlite as any).Database;
-
-// Read lazily so the desktop app can point LERNLAB_DATA at the OS app-data folder before first use.
-export const dataDir = () => resolve(process.env.LERNLAB_DATA ?? 'data');
-export const mediaDir = () => resolve(dataDir(), 'media');
-
-export type DB = {
-  exec(sql: string): void;
-  prepare(sql: string): {
-    run(...p: any[]): any;
-    get(...p: any[]): any;
-    all(...p: any[]): any[];
-  };
-  close(): void;
-};
-
-let db: DB | null = null;
-
-export function getDb(file = resolve(dataDir(), 'lernlab.db')): DB {
-  if (db) return db;
-  mkdirSync(dirname(file), { recursive: true });
-  mkdirSync(mediaDir(), { recursive: true });
-  db = new Ctor(file) as DB;
-  db.exec('PRAGMA journal_mode = WAL; PRAGMA foreign_keys = ON;');
-  migrate(db);
-  return db;
-}
-
-/** A plain SQLite handle without LernLab's schema (for reading/writing other apps' files). */
-export function openRaw(file: string): DB {
-  return new Ctor(file) as DB;
-}
-
-export function openReadonly(file: string): DB {
-  return new Ctor(file, { readOnly: true }) as DB;
-}
-
-export function openDb(file: string): DB {
-  const d = new Ctor(file) as DB;
-  migrate(d);
-  return d;
-}
-
-function migrate(d: DB) {
+/** Create or upgrade LernLab's tables. Safe to run on every start. */
+export function migrate(d: DB) {
   d.exec(`
     CREATE TABLE IF NOT EXISTS items (
       id INTEGER PRIMARY KEY,
@@ -140,7 +97,7 @@ function migrate(d: DB) {
     d
       .prepare('PRAGMA table_info(items)')
       .all()
-      .map((c: any) => c.name),
+      .map((c: Row) => c.name),
   );
   const add = (name: string, type: string) => {
     if (!cols.has(name)) d.exec(`ALTER TABLE items ADD COLUMN ${name} ${type}`);
@@ -155,7 +112,7 @@ function migrate(d: DB) {
     d
       .prepare('PRAGMA table_info(srs)')
       .all()
-      .map((c: any) => c.name),
+      .map((c: Row) => c.name),
   );
   if (!scols.has('prev_card')) d.exec('ALTER TABLE srs ADD COLUMN prev_card TEXT');
   if (!scols.has('prev_due')) d.exec('ALTER TABLE srs ADD COLUMN prev_due TEXT');
@@ -165,12 +122,12 @@ function migrate(d: DB) {
 
 /** v0.1 stored one German deck without a decks table: give those cards a proper deck. */
 function migrateLegacyDeck(d: DB) {
-  const orphan = d.prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id IS NULL').get();
+  const orphan = d.prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id IS NULL').get()!;
   if (!Number(orphan.n)) return;
-  const settings = getMeta<any>(d, 'settings', {});
+  const settings = getMeta<{ deck?: string; newPerDay?: number }>(d, 'settings', {});
   const source = settings.deck ?? 'Lang::German';
   const german = /german|deutsch/i.test(source);
-  const name = german ? 'German' : source.split('::').pop();
+  const name = german ? 'German' : source.split('::').pop()!;
   d.prepare(`INSERT OR IGNORE INTO decks(name, language, settings, created_at) VALUES (?, ?, ?, ?)`).run(
     name,
     german ? 'de' : null,
@@ -183,31 +140,43 @@ function migrateLegacyDeck(d: DB) {
     }),
     new Date().toISOString(),
   );
-  const deck = d.prepare('SELECT id FROM decks WHERE name = ?').get(name);
+  const deck = d.prepare('SELECT id FROM decks WHERE name = ?').get(name)!;
   d.prepare('UPDATE items SET deck_id = ? WHERE deck_id IS NULL').run(deck.id);
   if (!getMeta(d, 'activeDeck', null)) setMeta(d, 'activeDeck', Number(deck.id));
 }
 
-export function getMeta<T>(d: DB, key: string, fallback: T): T {
-  const row = d.prepare('SELECT value FROM meta WHERE key = ?').get(key);
-  return row ? (JSON.parse(row.value) as T) : fallback;
-}
+/** A row of `items` as SQLite returns it (plus the deck's language when joined as `lang`). */
+export type ItemRow = {
+  id: number;
+  deck_id: number;
+  deck: string;
+  kind: string;
+  target: string;
+  article: string | null;
+  word: string;
+  meaning: string;
+  sentence_html: string;
+  sentence: string;
+  sentence_meaning: string;
+  grammar: string;
+  notes: string;
+  audio: string | null;
+  image: string | null;
+  video: string | null;
+  category: string | null;
+  extra: string | null;
+  rank: number;
+  tags: string;
+  grp: string | null;
+  lang?: string | null;
+};
 
-export function setMeta(d: DB, key: string, value: unknown) {
-  d.prepare('INSERT INTO meta(key, value) VALUES(?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value').run(
-    key,
-    JSON.stringify(value),
-  );
-}
-
-export function tx<T>(d: DB, fn: () => T): T {
-  d.exec('BEGIN');
-  try {
-    const r = fn();
-    d.exec('COMMIT');
-    return r;
-  } catch (e) {
-    d.exec('ROLLBACK');
-    throw e;
-  }
-}
+/** A row of `decks`. */
+export type DeckRow = {
+  id: number;
+  name: string;
+  language: string | null;
+  description: string;
+  settings: string;
+  created_at: string;
+};

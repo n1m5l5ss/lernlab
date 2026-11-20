@@ -1,7 +1,7 @@
 // Client-side exercise builders (boss, rescue and action rounds are assembled on the fly).
-import { qa } from '../shared/cards';
-import { stripHtml } from '../shared/text';
-import type { Exercise, Item } from '../shared/types';
+import { qa } from '@lernlab/core/cards';
+import { stripHtml } from '@lernlab/core/text';
+import type { Exercise, Item } from '@lernlab/core/types';
 
 export function typedFor(item: Item): Extract<Exercise, { type: 'typed' }> {
   const q = qa(item);

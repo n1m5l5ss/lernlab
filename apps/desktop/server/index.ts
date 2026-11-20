@@ -1,7 +1,7 @@
 // CLI entry: `npm start` / `npm run dev`. The desktop app uses server.ts directly.
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { getDb } from './db';
+import { getDb } from './storage';
 import { ankiAvailable } from './anki';
 import { runAnkiImport } from './app';
 import { startServer } from './server';
@@ -26,7 +26,7 @@ startServer({
 })
   .then(async ({ port }) => {
     console.log(`\n  LernLab is running → http://localhost:${port}\n`);
-    const decks = Number(getDb().prepare('SELECT COUNT(*) AS n FROM decks').get().n);
+    const decks = Number(getDb().prepare('SELECT COUNT(*) AS n FROM decks').get()!.n);
     if (decks === 0 && process.env.LERNLAB_AUTO_ANKI !== '0' && (await ankiAvailable())) {
       console.log('  First start: importing Lang::German from Anki…');
       void runAnkiImport();
