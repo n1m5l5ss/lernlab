@@ -1,15 +1,13 @@
 // Anki .apkg / .colpkg import: legacy collection.anki2/anki21 and the newer zstd-compressed anki21b.
-import type { Row } from '../host';
-import { unzipSync, strFromU8 } from 'fflate';
-import { decompress } from 'fzstd';
+import type { DB, Row } from '../host';
+import { strFromU8 } from 'fflate';
 import { host } from '../host';
 import { stripHtml } from '../text';
 import type { NormalizedCard } from '../library';
 import { UserError } from '../errors';
+import { IMPORT_LIMITS, isZstd, readZip, unzstd } from './zip';
 
-const ZSTD = [0x28, 0xb5, 0x2f, 0xfd];
-const isZstd = (b: Uint8Array) => ZSTD.every((x, i) => b[i] === x);
-const unz = (b: Uint8Array) => (isZstd(b) ? decompress(b) : b);
+const MEDIA_MAP_BYTES = 64 * 1024 * 1024;
 
 /** Minimal protobuf reader for Anki's MediaEntries { repeated MediaEntry entries = 1 { string name = 1 } }. */
 function mediaNamesFromProto(buf: Uint8Array): string[] {
@@ -66,13 +64,35 @@ const FIELD_MAP: [keyof NormalizedCard | 'reading', RegExp][] = [
   ['category', /^(category|gender)$/i],
 ];
 
-export type ApkgResult = { cards: NormalizedCard[]; media: Record<string, Uint8Array>; decks: string[] };
+export type ApkgResult = {
+  cards: NormalizedCard[];
+  media: Record<string, Uint8Array>;
+  decks: string[];
+  /** Media the package lists but does not contain. */
+  mediaMissing: string[];
+};
+
+const safeDecode = (s: string) => {
+  try {
+    return decodeURIComponent(s);
+  } catch {
+    return s;
+  }
+};
+
+const damaged = () => new UserError('anki_damaged', 'This Anki package is damaged and could not be read');
 
 export function readApkg(buf: Uint8Array): ApkgResult {
-  const files = unzipSync(buf);
+  const files = readZip(buf, (n) => /^(collection\.anki2|collection\.anki21b?|media)$/.test(n));
   const colName = ['collection.anki21b', 'collection.anki21', 'collection.anki2'].find((n) => files[n]);
   if (!colName) throw new UserError('not_anki', 'Not an Anki package (no collection inside)');
-  const db = host().openSqliteBytes(unz(files[colName]));
+  let db: DB;
+  try {
+    db = host().openSqliteBytes(unzstd(files[colName], IMPORT_LIMITS.collectionBytes));
+  } catch (e) {
+    if (e instanceof UserError) throw e;
+    throw damaged();
+  }
   try {
     // Note types → ordered field names. Newer collections keep them in tables, older ones in col.models JSON.
     const fieldNames = new Map<number, string[]>();
@@ -125,7 +145,7 @@ export function readApkg(buf: Uint8Array): ApkgResult {
       const sound = all.match(/\[sound:([^\]]+)\]/)?.[1];
       const img = all.match(/<img[^>]+src=["']?([^"' >]+)/i)?.[1];
       if (sound) card.audio = sound;
-      if (img) card.image = decodeURIComponent(img);
+      if (img) card.image = safeDecode(img);
       names.forEach((name, i) => {
         const raw = (values[i] ?? '')
           .replace(/\[sound:[^\]]+\]/g, '')
@@ -158,18 +178,29 @@ export function readApkg(buf: Uint8Array): ApkgResult {
     }
 
     // Media: a map from zip entry ("0", "1"…) to file name; JSON in old packages, zstd protobuf in new ones.
+    // Only files a card uses are unpacked.
     const media: Record<string, Uint8Array> = {};
-    if (files.media) {
-      const raw = files.media;
+    const mediaMissing: string[] = [];
+    const mediaMap = files.media;
+    if (mediaMap) {
       let names: Record<string, string> = {};
-      if (isZstd(raw))
-        mediaNamesFromProto(decompress(raw)).forEach((n, i) => {
+      if (isZstd(mediaMap))
+        mediaNamesFromProto(unzstd(mediaMap, MEDIA_MAP_BYTES)).forEach((n, i) => {
           names[String(i)] = n;
         });
-      else names = JSON.parse(strFromU8(raw));
-      for (const [k, name] of Object.entries(names)) if (files[k]) media[name] = unz(files[k]);
+      else names = JSON.parse(strFromU8(mediaMap)) as Record<string, string>;
+      const used = new Set(cards.flatMap((c) => [c.audio, c.image]).filter(Boolean));
+      const wanted = new Map(Object.entries(names).filter(([, name]) => used.has(name)));
+      const entries = readZip(buf, (n) => wanted.has(n));
+      for (const [k, name] of wanted) {
+        if (entries[k]) media[name] = unzstd(entries[k], IMPORT_LIMITS.video);
+        else mediaMissing.push(name);
+      }
     }
-    return { cards, media, decks: [...usedDecks] };
+    return { cards, media, decks: [...usedDecks], mediaMissing };
+  } catch (e) {
+    if (e instanceof UserError) throw e;
+    throw damaged();
   } finally {
     db.close();
   }

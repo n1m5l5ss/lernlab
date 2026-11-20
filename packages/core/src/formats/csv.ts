@@ -1,15 +1,20 @@
 // CSV / TSV / Quizlet-style text import. Header row optional; columns matched by common names.
 import type { NormalizedCard } from '../library';
 
-/** RFC 4180-ish parser: quoted fields, doubled quotes, newlines inside quotes. */
-export function parseDelimited(text: string, delim: string): string[][] {
+/** RFC 4180-ish parser: quoted fields, doubled quotes, newlines inside quotes.
+ *  `lines`, when given, receives the 1-based line each returned row starts on. */
+export function parseDelimited(text: string, delim: string, lines?: number[]): string[][] {
   const rows: string[][] = [];
+  const starts: number[] = [];
   let row: string[] = [];
   let cell = '';
   let q = false;
+  let line = 1;
+  let start = 1;
   for (let i = 0; i < text.length; i++) {
     const ch = text[i];
     if (q) {
+      if (ch === '\n') line++;
       if (ch === '"') {
         if (text[i + 1] === '"') {
           cell += '"';
@@ -24,6 +29,8 @@ export function parseDelimited(text: string, delim: string): string[][] {
       if (ch === '\r' && text[i + 1] === '\n') i++;
       row.push(cell);
       rows.push(row);
+      starts.push(start);
+      start = ++line;
       row = [];
       cell = '';
     } else cell += ch;
@@ -31,8 +38,11 @@ export function parseDelimited(text: string, delim: string): string[][] {
   if (cell || row.length) {
     row.push(cell);
     rows.push(row);
+    starts.push(start);
   }
-  return rows.filter((r) => r.some((c) => c.trim()));
+  const keep = rows.map((r) => r.some((c) => c.trim()));
+  lines?.push(...starts.filter((_, i) => keep[i]));
+  return rows.filter((_, i) => keep[i]);
 }
 
 export function detectDelimiter(text: string): string {
@@ -75,19 +85,24 @@ const COLUMNS: Record<string, string[]> = {
 
 export function csvToCards(text: string): {
   cards: NormalizedCard[];
+  /** The 1-based line in the file each card starts on. */
+  lines: number[];
   columns: Record<string, number>;
   header: boolean;
 } {
   const clean = text.replace(/^﻿/, '');
   const delim = detectDelimiter(clean);
+  const starts: number[] = [];
+  // Comment lines become empty lines, so line numbers still match the file.
   const rows = parseDelimited(
     clean
       .split(/\r?\n/)
-      .filter((l) => !l.startsWith('#'))
+      .map((l) => (l.startsWith('#') ? '' : l))
       .join('\n'),
     delim,
+    starts,
   );
-  if (!rows.length) return { cards: [], columns: {}, header: false };
+  if (!rows.length) return { cards: [], lines: [], columns: {}, header: false };
   const head = rows[0].map((h) => h.trim().toLowerCase());
   const columns: Record<string, number> = {};
   for (const [key, names] of Object.entries(COLUMNS)) {
@@ -103,36 +118,37 @@ export function csvToCards(text: string): {
   if (header && !('back' in columns))
     columns.back = [1, 0, 2].find((i) => !Object.values(columns).includes(i) && i !== columns.front) ?? 1;
   const body = header ? rows.slice(1) : rows;
+  const lines = header ? starts.slice(1) : starts;
   const get = (r: string[], k: string) => (k in columns ? (r[columns[k]] ?? '').trim() : '');
-  const cards = body
-    .map((r) => {
-      const reading = get(r, 'reading');
-      return {
-        sourceId: get(r, 'sourceId') || undefined,
-        front: get(r, 'front'),
-        back: get(r, 'back'),
-        example: get(r, 'example') || undefined,
-        exampleTranslation: get(r, 'exampleTranslation') || undefined,
-        explanation: get(r, 'explanation') || undefined,
-        notes: get(r, 'notes') || undefined,
-        image: get(r, 'image') || undefined,
-        audio: get(r, 'audio') || undefined,
-        video: get(r, 'video') || undefined,
-        category: get(r, 'category') || undefined,
-        tags: get(r, 'tags') ? get(r, 'tags').split(/[\s,;]+/) : [],
-        subdeck: get(r, 'subdeck') || undefined,
-        group: get(r, 'group') || undefined,
-        rank: Number(get(r, 'rank')) || undefined,
-        extra: reading ? { reading } : undefined,
-        type: get(r, 'type') || undefined,
-        choices: get(r, 'choices') || undefined,
-        correct: get(r, 'correct') || undefined,
-        steps: get(r, 'steps') || undefined,
-        altAnswers: get(r, 'altAnswers') || undefined,
-      } as NormalizedCard;
-    })
-    .filter((c) => c.front || c.back);
-  return { cards, columns, header };
+  // A row with a back but no front is kept, so the import report can name it; a row with neither is not a card.
+  const all = body.map((r) => {
+    const reading = get(r, 'reading');
+    return {
+      sourceId: get(r, 'sourceId') || undefined,
+      front: get(r, 'front'),
+      back: get(r, 'back'),
+      example: get(r, 'example') || undefined,
+      exampleTranslation: get(r, 'exampleTranslation') || undefined,
+      explanation: get(r, 'explanation') || undefined,
+      notes: get(r, 'notes') || undefined,
+      image: get(r, 'image') || undefined,
+      audio: get(r, 'audio') || undefined,
+      video: get(r, 'video') || undefined,
+      category: get(r, 'category') || undefined,
+      tags: get(r, 'tags') ? get(r, 'tags').split(/[\s,;]+/) : [],
+      subdeck: get(r, 'subdeck') || undefined,
+      group: get(r, 'group') || undefined,
+      rank: Number(get(r, 'rank')) || undefined,
+      extra: reading ? { reading } : undefined,
+      type: get(r, 'type') || undefined,
+      choices: get(r, 'choices') || undefined,
+      correct: get(r, 'correct') || undefined,
+      steps: get(r, 'steps') || undefined,
+      altAnswers: get(r, 'altAnswers') || undefined,
+    } as NormalizedCard;
+  });
+  const keep = all.map((c) => !!(c.front || c.back));
+  return { cards: all.filter((_, i) => keep[i]), lines: lines.filter((_, i) => keep[i]), columns, header };
 }
 
 const esc = (s: string) => (/[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
@@ -149,6 +165,7 @@ export function cardsToCsv(cards: NormalizedCard[]): string {
     'image',
     'audio',
     'video',
+    'id',
   ];
   const lines = [cols.join(',')];
   for (const c of cards) {
@@ -165,6 +182,7 @@ export function cardsToCsv(cards: NormalizedCard[]): string {
         c.image,
         c.audio,
         c.video,
+        c.sourceId === undefined ? '' : String(c.sourceId),
       ]
         .map((v) => esc(v ?? ''))
         .join(','),

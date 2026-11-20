@@ -1,6 +1,7 @@
 // Import screen logic: column mapping edits, the target deck and the report lines. No React here.
 import type { ColumnMapping, MappableField } from '@lernlab/core/importpreview';
-import type { ImportResult } from '@lernlab/core/importer';
+import type { ImportReport } from '@lernlab/core/importer';
+import type { SkipCode } from '@lernlab/core/library';
 
 /** Card fields a column can feed, in the order the mapping menu lists them. */
 export const MAPPABLE: MappableField[] = [
@@ -45,25 +46,34 @@ export function setColumn(fields: Fields, column: number, field: MappableField |
 export const defaultTarget = (decks: { id: number; name: string }[], suggested: string): number | 'new' =>
   decks.find((d) => d.name.trim().toLowerCase() === suggested.trim().toLowerCase())?.id ?? 'new';
 
-/** A reason a card or file was skipped, as the report names it (locales: decks.importReport.reason.<reason>). */
-export type SkipLine = { reason: string; count: number };
-/** What the report shows: the result, plus reasons the screen learned from the preview. */
-export type ReportInput = ImportResult & { skipped?: SkipLine[] };
+/** A reason cards were skipped and how many (locales: decks.importReport.reason.<code>). */
+export type SkipLine = { code: SkipCode | 'missing_media'; count: number };
 
-export type ReportLines = { added: number; updated: number; total: number; skipped: SkipLine[] };
+export type ReportLines = {
+  added: number;
+  updated: number;
+  total: number;
+  skipped: SkipLine[];
+  /** Skipped rows beyond the ones the report lists by row. */
+  moreSkipped: number;
+  /** Names of media files cards use that were not in the import (the report lists at most 500). */
+  missingMedia: string[];
+  /** Files left out, with the reason (each code has a message under errors.<code>). */
+  warnings: ImportReport['warnings'];
+};
 
-/** Report lines from an import result; skipped reasons from the result and the preview are merged. */
-export function reportLines(r: ReportInput, fromPreview: SkipLine[] = []): ReportLines {
-  const skipped = new Map<string, number>();
-  for (const s of [
-    ...(r.skipped ?? fromPreview),
-    ...(r.mediaMissing ? [{ reason: 'missing_media', count: r.mediaMissing }] : []),
-  ])
-    if (s.count > 0) skipped.set(s.reason, (skipped.get(s.reason) ?? 0) + s.count);
+/** What the report screen shows for an import: counts, skipped rows grouped by reason, missing media and warnings. */
+export function reportLines(r: ImportReport): ReportLines {
+  const counts = new Map<SkipLine['code'], number>();
+  for (const s of r.skipped) counts.set(s.code, (counts.get(s.code) ?? 0) + 1);
+  if (r.mediaMissing) counts.set('missing_media', r.mediaMissing);
   return {
     added: r.added,
     updated: r.updated,
     total: r.total,
-    skipped: [...skipped].map(([reason, count]) => ({ reason, count })),
+    skipped: [...counts].map(([code, count]) => ({ code, count })),
+    moreSkipped: Math.max(0, r.skippedCount - r.skipped.length),
+    missingMedia: r.missingMedia,
+    warnings: r.warnings,
   };
 }

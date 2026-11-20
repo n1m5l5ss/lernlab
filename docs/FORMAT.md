@@ -12,7 +12,7 @@ LernLab imports and exports decks in open formats, so your cards never get locke
 | Anki `.apkg` / `.colpkg` | ✅ | (planned) | Moving from Anki: old (`collection.anki2/anki21`) and new (`anki21b`, zstd) packages |
 | Live Anki (AnkiConnect) | ✅ | — | Pulling a deck straight from a running Anki |
 
-Re-importing a deck **updates** cards instead of duplicating them, and keeps your progress. Cards are matched by their `id`, or, if there is none, by deck name plus front and back.
+Re-importing a deck **updates** cards instead of duplicating them, and keeps your progress. Cards are matched by their `id`, or, if there is none, by deck name plus front and back. Exports (CSV and `.lernpack`) write each card's own id, so importing an export back into the same deck updates it in place; importing it into another deck makes a copy.
 
 ## Deck package: `.lernpack` format version 1
 
@@ -53,10 +53,7 @@ Rules:
   - `image`, `audio` and `video` may also be an `https://` URL; it is shown when the computer is online.
   - Missing files are listed in the import report, never silently dropped.
   - GIFs are images: put them in `images/`.
-- **Limits** (enforced by the importer, ticket #25):
-  - **Size:** images up to 20 MB, audio up to 50 MB, video up to 200 MB, 2 GB in total.
-  - **Not accepted:** nested zips; file paths containing `..` or starting with `/`.
-  - **File type:** checked by the file's content, not its name.
+- **Limits:** see [Limits](#limits) below. They apply to every zip-based format.
 - **Without a manifest.** A zip with just a CSV and media files also imports, as a plain CSV with media (not a `.lernpack`). The deck is named after the CSV file.
 
 What LernLab writes when it exports: `manifest.json`, `cards.jsonl` and every media file the cards use, flat in `media/`. Writing a matching `cards.csv` beside it and sorting media into `images/`, `audio/` and `video/` is ticket #57; both are already valid version 1 packages, so readers must handle either layout.
@@ -66,6 +63,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl` and every me
 - `version` is an integer. This spec is version 1.
 - **Readers ignore unknown fields.** A key that a reader does not know, in `manifest.json`, in `deck`, or in a card, is skipped without an error. So are unknown files in the zip. This lets a newer writer add optional fields without breaking older readers.
 - Readers ignore an unknown card `type` and pick the type from the card's content, as if `type` were missing.
+- **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
 
@@ -182,6 +180,42 @@ To include media with a CSV, zip the CSV together with the files it references a
 - Cloze notes (`{{c1::…}}`) become cloze cards.
 - Anki's own scheduling history is not imported yet (planned), so cards start fresh.
 - Packages exported by current Anki (`collection.anki21b`, zstd-compressed) and older ones both work.
+
+## Limits
+
+Deck files are treated as untrusted. The importer checks them before it unpacks anything (`IMPORT_LIMITS` in `packages/core/src/formats/zip.ts`):
+
+| What | Limit | What happens |
+|---|---|---|
+| File you import | 500 MB | The file is refused |
+| Everything inside a zip, unpacked (as the zip declares it) | 2 GB | `zip_too_big`: the file is refused |
+| One zip entry's compression ratio | 1000 : 1 (entries over 1 MB) | `zip_too_big`: refused as a zip bomb |
+| Files inside one zip | 20,000 | `zip_too_many_files` |
+| Anki collection after zstd decompression | 1 GB | `zip_too_big` |
+| Cards in one import | 100,000 | `too_many_cards`: split the file |
+| Image / audio / video file | 20 MB / 50 MB / 200 MB | `media_too_large`: that file is left out, the cards still import |
+
+- **Paths:** a zip entry whose path contains `..`, starts with `/` or `\`, or names a drive (`C:`) makes the whole file fail with `zip_unsafe_path`. Media files are always saved under their own name in the media folder, never at a path from the zip.
+- **Nested zips** (`.zip`, `.apkg`, `.colpkg`, `.lernpack` inside a zip) are not opened: `nested_zip_ignored`.
+- **File type** is checked by content, not by name: an image that is really a program, a web page or audio is left out (`media_wrong_type`). Only the image, audio and video types listed above are saved (`media_unsupported`). Only media files that a card uses are unpacked.
+- **Text encoding:** UTF-8, and UTF-16 with a byte order mark (Excel's "Unicode text"). A file that is not valid UTF-8 is read as Windows-1252 with the warning `encoding_guessed`. A binary file fails with `not_text`.
+
+## Import report
+
+Every import (file, pasted text, live Anki) answers with the same report (`ImportReport` in `packages/core/src/importer.ts`):
+
+| Field | Meaning |
+|---|---|
+| `deck` | The deck the cards went into |
+| `format` | `lernpack`, `apkg`, `csv+media`, `json`, `csv`, `tsv`, `paste` or `anki` |
+| `added`, `updated`, `total` | New cards, cards matched by id (text updated, progress kept), cards in the deck afterwards |
+| `skipped` | Rows not imported: `{ row, code }`. `row` is the line in a CSV, TSV or JSONL file, otherwise the card's position (from 1) |
+| `skippedCount` | All skipped rows (`skipped` lists the first 500) |
+| `media` | Media files saved |
+| `mediaMissing`, `missingMedia` | How many media files cards refer to that were not in the file, and their names (first 500) |
+| `warnings` | Files left out: `{ code, file }` |
+
+Codes for skipped rows: `row_no_front`, `row_duplicate` (the same card earlier in the file), `row_invalid` (a JSON value that is not a card). Warning codes: `media_unsupported`, `media_too_large`, `media_wrong_type`, `nested_zip_ignored`, `encoding_guessed`. A file that cannot be imported at all fails with one error code instead: `zip_damaged`, `zip_unsafe_path`, `zip_too_big`, `zip_too_many_files`, `too_many_cards`, `bad_json`, `not_text`, `no_cards`, `unsupported_zip`, `not_lernpack`, `lernpack_too_new`, `lernpack_no_cards`, `not_anki`, `anki_damaged`. Every code has a message under `errors.<code>` in `locales/*.json`; `file`, `mb` and `max` fill its placeholders.
 
 ## Progress export
 

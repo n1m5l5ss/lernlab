@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAPPABLE_FIELDS } from '@lernlab/core/importpreview';
-import type { ImportResult } from '@lernlab/core/importer';
+import type { ImportReport } from '@lernlab/core/importer';
 import { MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './import-logic';
 
 test('the mapping menu lists every field the importer can map', () => {
@@ -30,20 +30,36 @@ test('the target deck is an existing deck with the same name, else a new one', (
   assert.equal(defaultTarget(decks, 'Biology'), 'new');
 });
 
-test('the report counts added and updated cards and lists skips with their reasons', () => {
-  const r = { added: 3, updated: 2, total: 9, mediaMissing: 1, media: 0, format: 'csv' } as ImportResult;
-  assert.deepEqual(reportLines(r, [{ reason: 'no_front', count: 2 }]), {
+test('the report counts added and updated cards and groups skips by reason', () => {
+  const r = {
     added: 3,
     updated: 2,
     total: 9,
     skipped: [
-      { reason: 'no_front', count: 2 },
-      { reason: 'missing_media', count: 1 },
+      { row: 4, code: 'row_no_front' },
+      { row: 7, code: 'row_duplicate' },
+      { row: 9, code: 'row_no_front' },
     ],
+    skippedCount: 5,
+    media: 0,
+    mediaMissing: 1,
+    missingMedia: ['hund.png'],
+    warnings: [{ code: 'media_wrong_type', file: 'evil.png' }],
+    format: 'csv',
+  } as ImportReport;
+  assert.deepEqual(reportLines(r), {
+    added: 3,
+    updated: 2,
+    total: 9,
+    skipped: [
+      { code: 'row_no_front', count: 2 },
+      { code: 'row_duplicate', count: 1 },
+      { code: 'missing_media', count: 1 },
+    ],
+    moreSkipped: 2,
+    missingMedia: ['hund.png'],
+    warnings: [{ code: 'media_wrong_type', file: 'evil.png' }],
   });
-  const own = reportLines({ ...r, mediaMissing: 0, skipped: [{ reason: 'duplicate', count: 1 }] }, [
-    { reason: 'no_front', count: 2 },
-  ]);
-  assert.deepEqual(own.skipped, [{ reason: 'duplicate', count: 1 }], 'reasons from the import win over the preview');
-  assert.deepEqual(reportLines({ ...r, mediaMissing: 0 }).skipped, []);
+  const clean = reportLines({ ...r, skipped: [], skippedCount: 0, mediaMissing: 0, missingMedia: [], warnings: [] });
+  assert.deepEqual([clean.skipped, clean.moreSkipped, clean.warnings], [[], 0, []]);
 });

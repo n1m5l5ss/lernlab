@@ -290,17 +290,29 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   };
 }
 
-export type UpsertResult = { deck: Deck; added: number; updated: number; total: number };
+/** Why a card in an import was not saved. Each code has a message under errors.<code> in the language files. */
+export type SkipCode = 'row_no_front' | 'row_duplicate' | 'row_invalid';
+/** `index` is the card's position in the list given to upsertCards (0-based). */
+export type UpsertResult = {
+  deck: Deck;
+  added: number;
+  updated: number;
+  total: number;
+  skipped: { index: number; code: SkipCode }[];
+};
 
 /** Insert or update cards in a deck. Progress (srs/item_state) is untouched for existing cards. */
 export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()): UpsertResult {
   const now = new Date().toISOString();
   let added = 0;
   let updated = 0;
+  const skipped: UpsertResult['skipped'] = [];
+  const seen = new Set<number>();
   const maxOrd = Number(d.prepare('SELECT COALESCE(MAX(ord), -1) AS n FROM items WHERE deck_id = ?').get(deck.id)!.n);
   const ranked = cards.map((c, i) => ({ c, i })).sort((a, b) => (a.c.rank || 1e9) - (b.c.rank || 1e9) || a.i - b.i);
   tx(d, () => {
     const exists = d.prepare('SELECT ord FROM items WHERE id = ?');
+    const inDeck = d.prepare('SELECT 1 FROM items WHERE id = ? AND deck_id = ?');
     const up = d.prepare(`
       INSERT INTO items (id, deck_id, deck, kind, target, article, word, meaning, sentence_html, sentence, sentence_meaning,
         grammar, notes, audio, image, video, category, rank, tags, grp, ord, extra, updated_at)
@@ -310,13 +322,19 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
         sentence=excluded.sentence, sentence_meaning=excluded.sentence_meaning, grammar=excluded.grammar, notes=excluded.notes,
         audio=excluded.audio, image=excluded.image, video=excluded.video, category=excluded.category, rank=excluded.rank,
         tags=excluded.tags, grp=excluded.grp, extra=excluded.extra, updated_at=excluded.updated_at`);
-    ranked.forEach(({ c }, i) => {
+    ranked.forEach(({ c, i: index }, i) => {
       const item = cardToItem(deck, c);
-      if (!item) return;
+      if (!item) return skipped.push({ index, code: 'row_no_front' });
+      // An exported card carries its own id as text: back in the same deck, it updates that card.
+      const own = typeof c.sourceId === 'string' && /^\d{1,16}$/.test(c.sourceId) ? Number(c.sourceId) : NaN;
       const id =
         typeof c.sourceId === 'number'
           ? c.sourceId
-          : stableId(`${deck.name}\u0000${c.sourceId ?? `${clean(c.front)}\u0000${clean(c.back)}`}`);
+          : Number.isSafeInteger(own) && inDeck.get(own, deck.id)
+            ? own
+            : stableId(`${deck.name}\u0000${c.sourceId ?? `${clean(c.front)}\u0000${clean(c.back)}`}`);
+      if (seen.has(id)) return skipped.push({ index, code: 'row_duplicate' });
+      seen.add(id);
       const prev = exists.get(id);
       prev ? updated++ : added++;
       up.run(
@@ -347,7 +365,8 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
     });
   });
   const total = Number(d.prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id = ?').get(deck.id)!.n);
-  return { deck, added, updated, total };
+  skipped.sort((a, b) => a.index - b.index);
+  return { deck, added, updated, total, skipped };
 }
 
 export function deckCounts(d: DB = getDb()) {
