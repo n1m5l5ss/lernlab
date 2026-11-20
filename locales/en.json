@@ -55,6 +55,12 @@
     },
     "language": "Language",
     "languageHint": "More languages will come from volunteer translators.",
+    "theme": "Theme",
+    "themeOption": {
+      "system": "Match my computer",
+      "light": "Light",
+      "dark": "Dark"
+    },
     "pseudo": "Pseudo-locale (shows untranslated text)",
     "summaryLink": "Today's summary (JSON for tutors/scripts)",
     "perDeckNote": "New cards per day, language and goals are set per deck (Decks → ⚙).",

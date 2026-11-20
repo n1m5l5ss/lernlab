@@ -360,6 +360,7 @@ export const handlers = {
     next.questionTimer = Math.max(0, Math.min(60, Number(next.questionTimer) || 0));
     next.autoUpdate = next.autoUpdate !== false;
     next.betaUpdates = next.betaUpdates === true;
+    if (!['system', 'light', 'dark'].includes(next.theme)) next.theme = 'system';
     setMeta(getDb(), 'settings', next);
     return next;
   }),

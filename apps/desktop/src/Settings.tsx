@@ -1,7 +1,10 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import i18next, { LANGUAGES, PSEUDO, formatPercent, setLanguage } from './i18n';
+import { THEMES } from '@lernlab/ui/tokens';
+import { applyTheme } from './theme';
 
 const TIMERS = [
   { key: 'off', blitz: 0, q: 0 },
@@ -20,11 +23,14 @@ const RETENTION = [
   { key: 'intense', value: 0.95 },
 ] as const;
 
-export function Settings({ state, onSaved }: { state: any; onSaved: () => void }) {
+type AppState = OutputOf<'state.get'>;
+type SettingsValue = AppState['settings'];
+
+export function Settings({ state, onSaved }: { state: AppState; onSaved: () => void }) {
   const { t } = useTranslation();
   const [s, setS] = useState(state.settings);
   const [msg, setMsg] = useState('');
-  const set = (k: string, v: any) => setS({ ...s, [k]: v });
+  const set = <K extends keyof SettingsValue>(k: K, v: SettingsValue[K]) => setS({ ...s, [k]: v });
   const save = async (next = s) => {
     await api.saveSettings(next);
     await setLanguage(next.uiLanguage);
@@ -59,6 +65,25 @@ export function Settings({ state, onSaved }: { state: any; onSaved: () => void }
         </select>
       </div>
       <div className="field">
+        <label htmlFor="set-theme">{t('settings.theme')}</label>
+        <select
+          id="set-theme"
+          value={s.theme ?? 'system'}
+          onChange={(e) => {
+            const next = { ...s, theme: e.target.value as SettingsValue['theme'] };
+            setS(next);
+            applyTheme(next.theme);
+            save(next);
+          }}
+        >
+          {THEMES.map((theme) => (
+            <option key={theme} value={theme}>
+              {t(`settings.themeOption.${theme}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <div className="field">
         <span>{t('settings.dailyGoal')}</span>
         <input
           type="number"
@@ -68,7 +93,10 @@ export function Settings({ state, onSaved }: { state: any; onSaved: () => void }
       </div>
       <div className="field">
         <span>{t('settings.sessionLength')}</span>
-        <select value={s.sessionLength} onChange={(e) => set('sessionLength', e.target.value)}>
+        <select
+          value={s.sessionLength}
+          onChange={(e) => set('sessionLength', e.target.value as SettingsValue['sessionLength'])}
+        >
           {LENGTHS.map((l) => (
             <option key={l.key} value={l.key}>
               {t(`settings.length.${l.key}`, { minutes: l.minutes })}

@@ -1,0 +1,96 @@
+/* Generated from docs/design/tokens.json by `npm run tokens -w @lernlab/ui`. Do not edit by hand. */
+
+:root {
+  --color-bg: #FAF8F5;
+  --color-surface: #FFFFFF;
+  --color-subtle: #F1EDE7;
+  --color-border: #E4DED6;
+  --color-text: #1F1D1A;
+  --color-text-muted: #5C574F;
+  --color-accent: #2F5BB7;
+  --color-on-accent: #FFFFFF;
+  --color-accent-tint: rgba(47,91,183,0.10);
+  --color-correct: #007A5E;
+  --color-correct-fill: #009E73;
+  --color-incorrect: #B04A00;
+  --color-incorrect-fill: #D55E00;
+  --font-ui: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', Roboto, 'Noto Sans', 'Nirmala UI', 'Noto Sans Telugu', 'Noto Sans Devanagari', 'Noto Sans Arabic', 'Hiragino Sans', 'Yu Gothic UI', 'PingFang SC', 'Microsoft YaHei UI', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans CJK JP', sans-serif;
+  --font-reading: 'Noto Serif', Georgia, serif;
+  --font-mono: ui-monospace, 'Cascadia Code', 'SF Mono', 'JetBrains Mono', monospace;
+  --text-caption: 13px;
+  --text-body: 16px;
+  --text-subhead: 20px;
+  --text-title: 25px;
+  --text-prompt: 31px;
+  --text-prompt-large: 39px;
+  --text-display: 49px;
+  --line-body: 1.5;
+  --line-heading: 1.25;
+  --line-complex-scripts: 1.7;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+  --radius-control: 6px;
+  --radius-card: 12px;
+  --radius-pill: 999px;
+  --size-min-target: 44px;
+  --size-progress-bar: 4px;
+  --size-card-max-width: 720px;
+  --motion-press: 120ms;
+  --motion-feedback: 200ms;
+  --motion-card: 280ms;
+  --motion-summary: 400ms;
+  --motion-ease-enter: cubic-bezier(0.2, 0, 0, 1);
+  --motion-ease-exit: cubic-bezier(0.3, 0, 1, 1);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --color-bg: #1A1917;
+    --color-surface: #24221F;
+    --color-subtle: #2D2B27;
+    --color-border: #3A3732;
+    --color-text: #ECE9E4;
+    --color-text-muted: #A8A39B;
+    --color-accent: #8FA8F0;
+    --color-on-accent: #1A1917;
+    --color-accent-tint: rgba(143,168,240,0.14);
+    --color-correct: #4FC4A0;
+    --color-correct-fill: #4FC4A0;
+    --color-incorrect: #F0A070;
+    --color-incorrect-fill: #F0A070;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --color-bg: #1A1917;
+  --color-surface: #24221F;
+  --color-subtle: #2D2B27;
+  --color-border: #3A3732;
+  --color-text: #ECE9E4;
+  --color-text-muted: #A8A39B;
+  --color-accent: #8FA8F0;
+  --color-on-accent: #1A1917;
+  --color-accent-tint: rgba(143,168,240,0.14);
+  --color-correct: #4FC4A0;
+  --color-correct-fill: #4FC4A0;
+  --color-incorrect: #F0A070;
+  --color-incorrect-fill: #F0A070;
+  color-scheme: dark;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-press: 0ms;
+    --motion-card: 200ms;
+    --motion-summary: 200ms;
+  }
+}
+

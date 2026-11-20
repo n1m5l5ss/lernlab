@@ -25,6 +25,8 @@ export type Settings = {
   autoUpdate: boolean;
   /** Also get beta releases. */
   betaUpdates: boolean;
+  /** Colour theme: follow the system (default), or always light or dark. */
+  theme: 'system' | 'light' | 'dark';
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -40,6 +42,7 @@ export const DEFAULT_SETTINGS: Settings = {
   uiLanguage: 'en',
   autoUpdate: true,
   betaUpdates: false,
+  theme: 'system',
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
