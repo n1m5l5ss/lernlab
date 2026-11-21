@@ -5,6 +5,7 @@ import { host } from '../host';
 import { stripHtml } from '../text';
 import type { NormalizedCard } from '../library';
 import { UserError } from '../errors';
+import { hasRiskySchema } from './untrusted-db';
 import { IMPORT_LIMITS, isZstd, readZip, unzstd } from './zip';
 import { reviewsFromRevlog, type PastReview, type RevlogRow } from '../ankihistory';
 import { mediaKind } from '../library';
@@ -133,15 +134,8 @@ export function readApkg(buf: Uint8Array): ApkgResult {
     throw damaged();
   }
   try {
-    // The collection is a database someone else wrote. A view (say an endless WITH RECURSIVE named `notes`),
-    // a trigger or a virtual table could make a plain SELECT run forever, so only real tables are read.
-    db.exec('PRAGMA trusted_schema = OFF');
-    const odd = db
-      .prepare(
-        "SELECT 1 FROM sqlite_master WHERE type IN ('view', 'trigger') OR upper(sql) LIKE 'CREATE VIRTUAL%' LIMIT 1",
-      )
-      .get();
-    if (odd) throw damaged();
+    // The collection is a database someone else wrote: only real tables are read (see untrusted-db.ts).
+    if (hasRiskySchema(db)) throw damaged();
     // Note types → ordered field names. Newer collections keep them in tables, older ones in col.models JSON.
     const fieldNames = new Map<number, string[]>();
     const deckNames = new Map<number, string>();
