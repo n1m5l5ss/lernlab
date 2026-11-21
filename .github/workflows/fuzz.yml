@@ -1,0 +1,53 @@
+# Nightly fuzzing of the deck importers (packages/core/test/fuzz.test.ts): the same properties as in
+# `npm test`, with many more random and damaged files and a new seed each night. When it finds a
+# crash it opens (or updates) one issue with the seed, so anyone can reproduce it with
+# FUZZ_SEED=<seed> FUZZ_RUNS=<runs> npm run fuzz.
+name: fuzz
+on:
+  schedule:
+    - cron: '7 2 * * *'
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: Cases per property
+        required: false
+        default: '20000'
+permissions:
+  contents: read
+jobs:
+  fuzz:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      issues: write
+    env:
+      FUZZ_RUNS: ${{ inputs.runs || '20000' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - id: run
+        run: |
+          seed=$(od -An -N4 -tu4 /dev/urandom | tr -d ' ')
+          echo "seed=$seed" >> "$GITHUB_OUTPUT"
+          echo "Seed $seed, $FUZZ_RUNS cases per property"
+          FUZZ_SEED=$seed npm run fuzz 2>&1 | tee fuzz.log
+          exit "${PIPESTATUS[0]}"
+      - if: failure() && steps.run.outputs.seed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SEED: ${{ steps.run.outputs.seed }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          title="Fuzzing found a crash in a deck importer"
+          body=$(printf 'The nightly fuzz run failed: %s\n\nReproduce with:\n\n```\nFUZZ_SEED=%s FUZZ_RUNS=%s npm run fuzz\n```\n\nThe log shows the smallest failing input. Turn it into a normal test, fix the importer, then close this issue. If the input could run code or touch files, treat it as a security problem (SECURITY.md).\n\n```\n%s\n```\n' \
+            "$RUN_URL" "$SEED" "$FUZZ_RUNS" "$(grep -E 'not ok|error:|Counterexample|Property failed' fuzz.log | head -40)")
+          gh label create bug --color D73A4A 2>/dev/null || true
+          gh label create fuzzing --color D93F0B --description "Found by the nightly fuzz run" 2>/dev/null || true
+          n=$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --label fuzzing --json number --jq '.[0].number')
+          if [ -n "$n" ]; then gh issue comment "$n" --repo "$GITHUB_REPOSITORY" --body "$body"
+          else gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label fuzzing,bug --body "$body"; fi
