@@ -8,12 +8,18 @@ LernLab is built test-first. For every ticket, write the failing test first, the
 |---|---|---|---|
 | Unit | Vitest | `packages/core`: grading, scheduling, session planner, XP, importers | ≥ 90% lines, ≥ 85% branches in core |
 | Property-based | fast-check | Scheduler and grader invariants over thousands of random inputs | All invariants hold |
+| Fuzz | fast-check (`packages/core/test/fuzz.test.ts`) | Random, damaged and hostile CSV, JSON, `.lernpack` and Anki `.apkg` files, zip paths and card HTML | Every input imports or fails with a `UserError`; no tag or attribute that runs code survives sanitising |
 | Repository contract | Vitest | The same suite against the in-memory and SQLite repositories | Both pass |
 | Component | React Testing Library | Each UI component, queried by role and label as a user would | Every component |
 | Visual | Storybook stories + Playwright `toHaveScreenshot` | Every component and screen: light/dark, hover/focus/disabled, left-to-right/right-to-left, long Telugu/CJK text | Pixel diff within threshold |
 | Accessibility | `@axe-core/playwright` | Every story and screen | No serious or critical issues |
 | End-to-end | Playwright `_electron` on the packaged app | First run → import → full session → summary → progress | Passes on Windows, macOS, Linux |
 | Performance | Vitest bench, Playwright traces | Budgets below | No regression past threshold |
+
+## Coverage and fuzzing
+
+- **Coverage:** `npm run coverage` runs the `packages/core` tests with Node's built-in coverage and fails below the floor: 88% of lines, 85% of branches, 90% of functions (November 2026: 89% / 91% / 97%). CI runs it on Linux. The target is 90% of lines; raise the floor in `packages/core/package.json` as coverage grows, never lower it.
+- **Fuzzing:** `npm test` runs every fuzz property 150 times or more. `.github/workflows/fuzz.yml` runs 20,000 cases per property each night with a new seed and opens a `fuzzing` issue with the seed when something breaks. Reproduce locally with `FUZZ_SEED=<seed> FUZZ_RUNS=<runs> npm run fuzz`. A new importer or file format gets a property in `fuzz.test.ts`.
 
 ## Scheduler invariants (property tests)
 

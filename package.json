@@ -26,6 +26,8 @@
     "dist:linux": "npm run --workspace apps/desktop dist:linux",
     "import": "tsx --no-warnings apps/desktop/server/cli-import.ts",
     "test": "npm run test --workspaces --if-present",
+    "coverage": "npm run coverage --workspace packages/core",
+    "fuzz": "npm run fuzz --workspace packages/core",
     "test:e2e": "npm run build:electron && npm run --workspace apps/desktop e2e",
     "bench": "npm run bench --workspace bench",
     "bench:startup": "npm run startup --workspace bench --",
