@@ -1,5 +1,5 @@
 // Settings: every option in one place, grouped into sections. Each change is saved as soon as it is made.
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
@@ -13,6 +13,7 @@ import { cleanReminderTime } from '@lernlab/core/reminder';
 import { ASSISTANT_GUIDE_URL, LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
 import { clientConfig } from './assistant-logic';
 import { DataControls } from './DataControls';
+import { allowRemoteMedia } from './remote-media';
 import { Button, Card, Input, SegmentedControl, Select } from './components';
 
 const TIMERS = [
@@ -61,6 +62,9 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
   const [reminderTime, setReminderTime] = useState(state.settings.reminderTime);
   const desktop = isDesktop();
   const [msg, setMsg] = useState('');
+  // Internet media (#177) turns on only after the warning is accepted; keeping it off is the default button.
+  const remoteDialog = useRef<HTMLDialogElement>(null);
+  const keepOffButton = useRef<HTMLButtonElement>(null);
   const [info, setInfo] = useState<Info | null>(null);
   useEffect(() => {
     api.appInfo().then(setInfo, (err: Error) => setMsg(err.message));
@@ -79,6 +83,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
     try {
       const saved = await api.saveSettings(next);
       setS(saved);
+      allowRemoteMedia(saved.remoteMedia);
       setNewPerDay(String(saved.newPerDay));
       setDailyGoal(String(saved.dailyGoalSessions));
       setReminderTime(saved.reminderTime);
@@ -334,6 +339,18 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
         <Row id="set-beta" label={t('settings.betaUpdates')} hint={t('settings.betaUpdatesHint')}>
           {check('betaUpdates', 'set-beta', s.autoUpdate === false)}
         </Row>
+        <Row id="set-remote-media" label={t('settings.remoteMedia.label')} hint={t('settings.remoteMedia.hint')}>
+          <input
+            id="set-remote-media"
+            type="checkbox"
+            checked={s.remoteMedia === true}
+            onChange={(e) => {
+              if (!e.target.checked) return void update({ remoteMedia: false });
+              remoteDialog.current?.showModal();
+              keepOffButton.current?.focus();
+            }}
+          />
+        </Row>
         <div className="settings-block">
           <span className="settings-label" id="set-online">
             {t('settings.online.intro')}
@@ -346,6 +363,25 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
           <span className="settings-hint">{t('settings.online.outro')}</span>
         </div>
       </Section>
+
+      <dialog ref={remoteDialog} className="panel session-dialog" aria-labelledby="remote-media-title">
+        <h2 id="remote-media-title">{t('settings.remoteMedia.warnTitle')}</h2>
+        <p className="muted">{t('settings.remoteMedia.warnBody')}</p>
+        <div className="session-dialog-actions">
+          <button
+            className="btn"
+            onClick={() => {
+              remoteDialog.current?.close();
+              void update({ remoteMedia: true });
+            }}
+          >
+            {t('settings.remoteMedia.accept')}
+          </button>
+          <button ref={keepOffButton} className="btn primary" onClick={() => remoteDialog.current?.close()}>
+            {t('settings.remoteMedia.cancel')}
+          </button>
+        </div>
+      </dialog>
 
       <Section id="about" title={t('settings.section.about')}>
         <div className="settings-block">

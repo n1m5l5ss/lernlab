@@ -59,8 +59,9 @@ These live in the repository settings, not in files. Check them once a year and 
 `apps/desktop/electron/hardening.test.ts` fails if the CSP or the fuses are loosened. To read the fuses of a
 built app: `npx @electron/fuses read --app <path to the app>`.
 
-Deck media may also be an `https://` link, which the CSP allows for images and sound. Studying such a card
-contacts that server.
+Deck media may also be an `https://` link. LernLab never loads one unless the user turns on Settings → Privacy →
+"Allow pictures and sounds from the internet" and accepts a warning (#177); until then the card shows a note
+instead (`apps/desktop/src/remote-media.ts`). The CSP still allows `https:` images and sound for that opt-in.
 
 ## Releases
 
