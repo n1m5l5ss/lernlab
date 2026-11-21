@@ -2854,3 +2854,79 @@ textarea.input.code-input {
   white-space: pre;
   direction: ltr;
 }
+/* ---- Deck gallery (#50): community decks from GitHub, opened from Decks. Online only while open. ---- */
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.gallery-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.gallery-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-subhead);
+}
+.gallery-head a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.gallery p {
+  margin: 0;
+}
+.gallery-offline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+}
+.gallery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.gallery-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-5);
+  padding-block: var(--space-4);
+  border-block-start: 1px solid var(--color-border);
+}
+.gallery-text {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.gallery-text h3 {
+  margin: 0;
+  font-size: var(--text-body);
+}
+.gallery-licence {
+  color: var(--color-text-muted);
+}
+.gallery-licence a,
+.gallery-licence b {
+  color: var(--color-text);
+  font-weight: 600;
+}
+.gallery-actions {
+  display: flex;
+  flex: 0 1 16rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  text-align: end;
+}
+.gallery-done {
+  color: var(--color-correct);
+  font-weight: 600;
+}

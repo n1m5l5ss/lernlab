@@ -71,6 +71,7 @@ import {
   topLevelDecks,
   type AnkiDeck,
 } from './anki';
+import { downloadGalleryDeck, loadGallery } from './gallery';
 import { getDb } from './storage';
 import { backupAppDb, dataDir } from '@lernlab/storage-sqlite';
 import {
@@ -493,6 +494,15 @@ export const handlers = {
     },
   ),
   'import.status': h(v.none, async () => ({ ...importStatus, anki: await ankiAvailable() })),
+  /** The deck gallery: goes online only when the user opens it (principle 4). */
+  'gallery.list': h(v.none, () => loadGallery()),
+  /** Install a deck from the last gallery list: checked against its SHA-256, then imported as an untrusted file. */
+  'gallery.install': h(v.object({ id: v.string(80) }), async ({ id }) => {
+    const { deck, data } = await downloadGalleryDeck(id);
+    const res = importFile(`${deck.id}.lernpack`, data, { deckName: deck.title, language: deck.language });
+    chooseDeck(res.deck.id);
+    return res;
+  }),
   'media.upload': h(v.object({ name: v.string(500), data: v.bytes(50 * MB) }), ({ name, data }) => {
     if (!mediaKind(name)) throw new AppError('unsupported_media', 'Unsupported media type');
     return { file: storeMedia(name, data), kind: mediaKind(name) };
