@@ -16,7 +16,7 @@ LernLab is a free, open-source desktop flashcard app for any subject. It makes s
 1. **Recall over recognition.** Only real recall attempts change the FSRS schedule, once per card per day. Games never mark a card as known.
 2. **Short and varied.** Blocks of 60–90 s, rotating formats. Sessions are 5, 10 or 20 min.
 3. **Forgiving.** Streak freezes, no guilt messages, nothing that blocks studying.
-4. **Local and private.** No telemetry. The app may go online in only three cases: update checks, the deck gallery when the user asks, and the user's own AI key.
+4. **Local and private.** No telemetry. The app may go online in only three cases: update checks, the deck gallery when the user asks, and an AI assistant the user connects (MCP), only when turned on.
 5. **Open formats.** CSV and `.lernpack` in and out.
 6. **Translatable and accessible.** No visible string in code; all text comes from `locales/*.json` through i18next. WCAG 2.2 AA.
 7. **One obvious action.** The home screen leads with a single Start button.

@@ -226,6 +226,17 @@ export async function runAnkiImport(sources?: string[], deckName?: string) {
   importStatus.current = null;
 }
 
+/** The command an AI assistant runs to start LernLab's MCP server (#148). Main (desktop) or the web dev server sets it. */
+export type AssistantCommand = { command: string; args: string[]; env?: Record<string, string> };
+function assistantCommand(): AssistantCommand | null {
+  try {
+    const c = JSON.parse(process.env.LERNLAB_MCP_COMMAND ?? 'null') as AssistantCommand | null;
+    return c && typeof c.command === 'string' && Array.isArray(c.args) ? c : null;
+  } catch {
+    return null;
+  }
+}
+
 /** A handler: a validator for its input and the function that does the work. */
 type Handler<I, O> = { input: Check<I>; run: (input: I) => O | Promise<O> };
 const h = <I, O>(input: Check<I>, run: (input: I) => O | Promise<O>): Handler<I, O> => ({ input, run });
@@ -626,6 +637,7 @@ export const handlers = {
     licence: pkg.license,
     dataDir: dataDir(),
     backupsDir: join(dataDir(), 'backups'),
+    assistant: assistantCommand(),
   })),
   'settings.save': h(v.record, (body) => {
     const next: Settings = { ...getSettings(), ...(body as Partial<Settings>) };
@@ -641,6 +653,7 @@ export const handlers = {
     next.reminder = next.reminder === true;
     next.reminderTime = cleanReminderTime(next.reminderTime);
     next.launchAtLogin = next.launchAtLogin === true;
+    next.aiAssistant = next.aiAssistant === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

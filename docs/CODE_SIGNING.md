@@ -60,7 +60,7 @@ Everyone with one of these roles uses multi-factor authentication on GitHub and 
 
 ### Privacy
 
-LernLab does not send information to other computers unless the person using it asks for it, with one exception they can switch off: it checks GitHub for updates (Settings → "Update automatically"). It also goes online when the user opens the deck gallery or adds their own AI key. There is no telemetry, no account and no analytics. See the principles in [PLAN.md](PLAN.md).
+LernLab does not send information to other computers unless the person using it asks for it, with one exception they can switch off: it checks GitHub for updates (Settings → "Update automatically"). It also goes online when the user opens the deck gallery. An AI assistant the user connects (MCP, off by default) talks to LernLab only on the same computer; what it reads goes to that assistant's AI company. There is no telemetry, no account and no analytics. See the principles in [PLAN.md](PLAN.md).
 
 ### Apply to SignPath (owner checklist)
 

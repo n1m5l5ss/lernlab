@@ -10,7 +10,8 @@ import { applyTheme } from './theme';
 import { TEXT_SIZES, applyDisplay } from './display';
 import { LENGTHS } from './lengths';
 import { cleanReminderTime } from '@lernlab/core/reminder';
-import { LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
+import { ASSISTANT_GUIDE_URL, LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
+import { clientConfig } from './assistant-logic';
 import { DataControls } from './DataControls';
 import { Button, Card, Input, SegmentedControl, Select } from './components';
 
@@ -96,7 +97,8 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
     }
   };
   const timer = TIMERS.findIndex((x) => x.blitz === s.blitzSeconds && x.q === (s.questionTimer ?? 0));
-  type Toggle = 'sound' | 'teacherVoice' | 'reducedMotion' | 'betaUpdates' | 'reminder' | 'launchAtLogin';
+  type Toggle =
+    'sound' | 'teacherVoice' | 'reducedMotion' | 'betaUpdates' | 'reminder' | 'launchAtLogin' | 'aiAssistant';
   const check = (key: Toggle, id: string, disabled = false) => (
     <input
       id={id}
@@ -286,6 +288,38 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
           </div>
         </div>
         <DataControls say={setMsg} />
+      </Section>
+
+      <Section id="assistant" title={t('settings.section.assistant')}>
+        <Row id="set-assistant" label={t('settings.assistant.enable')} hint={t('settings.assistant.enableHint')}>
+          {check('aiAssistant', 'set-assistant')}
+        </Row>
+        <p className="settings-hint assistant-privacy">{t('settings.assistant.privacy')}</p>
+        {s.aiAssistant && info?.assistant && (
+          <div className="settings-block">
+            <span className="settings-hint" id="set-assistant-config">
+              {t('settings.assistant.connect')}
+            </span>
+            <pre className="settings-path assistant-config" aria-labelledby="set-assistant-config">
+              {clientConfig(info.assistant)}
+            </pre>
+            <div className="settings-actions">
+              <Button
+                onClick={() =>
+                  navigator.clipboard.writeText(clientConfig(info.assistant!)).then(
+                    () => setMsg(t('settings.assistant.copied')),
+                    (err: Error) => setMsg(err.message),
+                  )
+                }
+              >
+                {t('settings.assistant.copy')}
+              </Button>
+            </div>
+          </div>
+        )}
+        <a className="small" href={ASSISTANT_GUIDE_URL} target="_blank" rel="noreferrer">
+          {t('settings.assistant.guide')}
+        </a>
       </Section>
 
       <Section id="privacy" title={t('settings.section.privacy')}>

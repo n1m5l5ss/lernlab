@@ -19,6 +19,7 @@ Languages, AWS, medicine, physics, law, history: if you can put it on a card, Le
 - **Safe with your data:** a daily backup, restore with a preview, and export everything as a zip.
 - **For everyone:** works fully by keyboard and with screen readers, in light and dark themes, and lays out right to left for Arabic, Hebrew and Urdu.
 - **Stays up to date:** Windows and Linux update themselves; Mac users download each new version from the website.
+- **Bring your own AI assistant (optional):** connect an AI app that supports MCP, such as Claude Desktop, to ask about your progress or be quizzed in the chat. Off until you turn it on, and LernLab itself stays offline. See [AI assistants](docs/AI-ASSISTANTS.md).
 
 New here? The [user guide](docs/USER-GUIDE.md) shows how to import, study, follow your progress and back up.
 
@@ -223,6 +224,7 @@ To move the folder, use **File → Use a different data folder…**, for example
 
 - [User guide](docs/USER-GUIDE.md)
 - [Deck formats](docs/FORMAT.md)
+- [Connect your own AI assistant (MCP)](docs/AI-ASSISTANTS.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Code signing policy](docs/CODE_SIGNING.md)

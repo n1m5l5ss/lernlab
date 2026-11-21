@@ -96,6 +96,7 @@
       "reminders": "Reminders",
       "data": "Your data",
       "privacy": "Updates and privacy",
+      "assistant": "AI assistant",
       "about": "About"
     },
     "textSize": "Text size",
@@ -161,8 +162,17 @@
       "intro": "LernLab goes online in only these three cases:",
       "updates": "Checking for updates on GitHub, while “Update automatically” is on.",
       "gallery": "Loading a deck from the deck gallery, when you ask for it.",
-      "aiKey": "Using your own AI key, if you add one.",
+      "aiAssistant": "Your AI assistant, if you connect one and turn it on below: LernLab itself stays offline, but what the assistant reads is sent to its AI company.",
       "outro": "Nothing else leaves your computer: no account, no tracking."
+    },
+    "assistant": {
+      "enable": "Let an AI assistant use LernLab",
+      "enableHint": "Off until you turn it on. Works with AI apps that support MCP (Model Context Protocol), such as Claude Desktop.",
+      "privacy": "LernLab itself never goes online for this. While this is on, the assistant you connect can read your decks, cards, answers and study history, and whatever it reads is sent to that assistant's AI company under its privacy terms. It cannot delete anything. Turn this off at any time and it can read nothing.",
+      "connect": "To connect, add this to your assistant's MCP settings (in Claude Desktop: Settings → Developer → Edit Config), then restart the assistant:",
+      "copy": "Copy",
+      "copied": "Copied",
+      "guide": "How to connect an assistant (setup guide)"
     },
     "about": {
       "version": "Version {{version}}",

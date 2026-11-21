@@ -16,7 +16,7 @@ test('the About list names the licence each bundled library really has', () => {
 });
 
 test('Settings lists exactly the three cases in which the app goes online', () => {
-  assert.deepEqual(ONLINE_CASES, ['updates', 'gallery', 'aiKey']);
+  assert.deepEqual(ONLINE_CASES, ['updates', 'gallery', 'aiAssistant']);
   const online: Record<string, string> = en.settings.online;
   for (const c of ONLINE_CASES) assert.ok(online[c], c);
 });

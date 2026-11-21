@@ -217,7 +217,8 @@ In the desktop app, **File → Use a different data folder…** moves LernLab to
 - **Studying**: daily goal, default session length, timers (**Off**, **Relaxed**, **Normal**, **Challenge**), new cards per day, target memory retention, sound effects, and the teacher's voice for language decks.
 - **Reminders** (desktop app): a daily reminder at a time you choose, and opening LernLab when you log in.
 - **Your data**: the data folder, backups, restore, export, import and delete.
-- **Updates and privacy**: automatic updates and beta updates. LernLab goes online only to check for updates, to load a deck from the gallery when you ask, and to use your own AI key if you add one.
+- **AI assistant**: let an AI assistant you use (Claude Desktop or another app that supports MCP) read your decks, cards and study history. Off until you turn it on. LernLab itself stays offline, but whatever the assistant reads is sent to that assistant's AI company. When it is on, Settings shows the snippet to paste into the assistant's MCP settings; see [AI-ASSISTANTS.md](AI-ASSISTANTS.md). Turn it off and every request from the assistant is refused.
+- **Updates and privacy**: automatic updates and beta updates. LernLab goes online only to check for updates, to load a deck from the gallery when you ask, and for an AI assistant you connect and turn on.
 
 ## Keyboard
 
