@@ -69,11 +69,9 @@ test('no raw colours in the stylesheet: design tokens only', () => {
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
 });
 
-test('the download page credits SignPath and links the code signing policy (SignPath Foundation terms)', () => {
-  assert.match(
-    html,
-    /Free code signing provided by <a href="https:\/\/about\.signpath\.io">SignPath\.io<\/a>, certificate by\s+<a href="https:\/\/signpath\.org">SignPath Foundation<\/a>/,
-  );
+test('the download page links the code signing policy', () => {
+  // The SignPath credit (SignPath Foundation terms) comes back when Windows signing is switched on;
+  // win-guide.test.ts checks it waits in a comment until then.
   assert.match(
     html,
     /href="https:\/\/github\.com\/n1m5l5ss\/lernlab\/blob\/main\/docs\/CODE_SIGNING\.md">Code signing policy</,

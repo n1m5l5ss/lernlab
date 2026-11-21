@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-labelledby="t">
+  <title id="t">Drawing of a browser's downloads list warning that LernLab-Setup.exe isn't commonly downloaded, with Keep and then Keep anyway marked</title>
+  <style>
+    .desk{fill:#F1EDE7}.panel{fill:#FFFFFF;stroke:#E4DED6}.ink{fill:#1F1D1A}.muted{fill:#5C574F}.line{stroke:#E4DED6}
+    .btn{fill:#F1EDE7;stroke:#8A847B}.file{fill:#E4DED6}.mark{fill:none;stroke:#2F5BB7;stroke-width:3}
+    text{font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+    @media (prefers-color-scheme: dark){
+      .desk{fill:#1A1917}.panel{fill:#24221F;stroke:#3A3732}.ink{fill:#ECE9E4}.muted{fill:#A8A39B}.line{stroke:#3A3732}
+      .btn{fill:#2D2B27;stroke:#807B73}.file{fill:#3A3732}.mark{stroke:#8FA8F0}
+    }
+  </style>
+  <rect class="desk" width="480" height="300" rx="12"/>
+  <rect class="panel" x="16" y="16" width="260" height="120" rx="12"/>
+  <text class="ink" x="32" y="42" font-size="14" font-weight="700">Downloads</text>
+  <path class="line" d="M16 54h260"/>
+  <rect class="file" x="32" y="70" width="26" height="32" rx="4"/>
+  <path class="muted" d="M38 80h14v3H38zM38 88h14v3H38z"/>
+  <text class="ink" x="70" y="83" font-size="12" font-weight="700">LernLab-Setup.exe</text>
+  <text class="muted" x="70" y="99" font-size="11">isn't commonly downloaded.</text>
+  <text class="ink" x="252" y="88" font-size="16" font-weight="700" text-anchor="middle">…</text>
+  <rect class="panel" x="292" y="40" width="110" height="74" rx="8"/>
+  <text class="ink" x="310" y="66" font-size="12" font-weight="700">Keep</text>
+  <text class="muted" x="310" y="96" font-size="12">Delete</text>
+  <rect class="mark" x="298" y="47" width="98" height="28" rx="7"/>
+  <path class="mark" d="M266 82q14-14 28-20"/>
+  <rect class="panel" x="60" y="150" width="360" height="134" rx="14"/>
+  <text class="ink" x="80" y="180" font-size="13" font-weight="700">Make sure you trust LernLab-Setup.exe</text>
+  <text class="ink" x="80" y="198" font-size="13" font-weight="700">before you open it</text>
+  <text class="muted" x="80" y="222" font-size="11">Show more ˅</text>
+  <rect class="btn" x="80" y="238" width="120" height="30" rx="8"/>
+  <text class="ink" x="140" y="258" font-size="12" font-weight="700" text-anchor="middle">Keep anyway</text>
+  <rect class="btn" x="212" y="238" width="120" height="30" rx="8"/>
+  <text class="ink" x="272" y="258" font-size="12" text-anchor="middle">Delete</text>
+  <rect class="mark" x="74" y="232" width="132" height="42" rx="11"/>
+  <path class="mark" d="M347 114q0 30-40 40"/>
+</svg>

@@ -49,14 +49,34 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 
 ## Install
 
-Download the file for your system from the [LernLab website](https://n1m5l5ss.github.io/lernlab/), which picks the right one for you, or from the [Releases page](https://github.com/n1m5l5ss/lernlab/releases). Until the Windows installer is signed through SignPath, Windows warns you the first time; macOS always does, because the Mac app isn't signed with a paid Apple certificate (see the [code signing policy](docs/CODE_SIGNING.md)). Everything LernLab needs is inside the installer: you don't need Node.js or anything else.
+Download the file for your system from the [LernLab website](https://n1m5l5ss.github.io/lernlab/), which picks the right one for you, or from the [Releases page](https://github.com/n1m5l5ss/lernlab/releases). The installers aren't signed with a paid certificate, so Windows and macOS warn you the first time you open LernLab: see [Opening LernLab on Windows for the first time](#opening-lernlab-on-windows-for-the-first-time) and [on a Mac](#opening-lernlab-on-a-mac-for-the-first-time), and the [code signing policy](docs/CODE_SIGNING.md). Everything LernLab needs is inside the installer: you don't need Node.js or anything else.
 
 ### Windows 10 and 11
 
-1. Download `LernLab-Setup-x.y.z.exe`.
-2. Double-click it. If SmartScreen says "Windows protected your PC", choose **More info → Run anyway**.
-3. Follow the installer. Installing it just for you doesn't need admin rights.
-4. Start LernLab from the Start menu.
+#### Opening LernLab on Windows for the first time
+
+**Why Windows warns you.** LernLab is free and open source, and it isn't signed with a paid code-signing certificate. Microsoft Defender SmartScreen warns about apps it doesn't know yet, so it says *"Windows protected your PC"*. The file on the website is the same file published on the [Releases page](https://github.com/n1m5l5ss/lernlab/releases), built in public from this repository. If you want to be sure, [check the download](docs/CODE_SIGNING.md#check-a-download-yourself) against the SHA-256 checksum GitHub shows for it.
+
+**Your choice.** Opening it takes two extra clicks the first time. If you'd rather not, that's fine: nothing is installed until you run the installer, and you can delete the downloaded `LernLab-Setup-x.y.z.exe` from Downloads.
+
+**The steps:**
+
+1. Download `LernLab-Setup-x.y.z.exe`. If your browser says the file *isn't commonly downloaded*, keep it. In Edge, point at the download, press **…** → **Keep**, then **Show more** → **Keep anyway**. In Chrome, open the downloads list and choose to keep the file.
+
+   <img src="apps/site/public/media/win-open-0-browser.svg" width="480" alt="The browser's downloads list says LernLab-Setup.exe isn't commonly downloaded. In its menu, Keep is marked, and in the box that follows, Keep anyway is marked.">
+2. Open the downloaded file. A blue box says *"Windows protected your PC"*. Press **More info** (not Don't run).
+
+   <img src="apps/site/public/media/win-open-1-smartscreen.svg" width="480" alt="The blue box Windows protected your PC: SmartScreen prevented an unrecognised app from starting. The More info link under the text is marked; the only button is Don't run.">
+3. The box now shows the file name and *"Publisher: Unknown publisher"*. Press **Run anyway**.
+
+   <img src="apps/site/public/media/win-open-2-run-anyway.svg" width="480" alt="The same blue box, now listing the app LernLab-Setup.exe and Publisher: Unknown publisher. Of its two buttons, Run anyway and Don't run, Run anyway is marked.">
+4. The installer runs by itself: no questions and no admin password (it installs just for you). When it's done, LernLab opens, and you'll find it in the Start menu and on the desktop. From now on it opens like any other app, and it updates itself.
+
+   <img src="apps/site/public/media/win-open-3-installed.svg" width="480" alt="A small installing box with a progress bar, followed by LernLab open on its home screen with the Start button.">
+
+**If Windows says Smart App Control blocked LernLab,** there is no Run anyway button on that computer: Smart App Control only allows signed apps. Please [ask for help](https://github.com/n1m5l5ss/lernlab/issues).
+
+To uninstall: Settings → Apps → Installed apps → LernLab → Uninstall.
 
 ### macOS (Apple silicon and Intel)
 

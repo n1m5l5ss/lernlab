@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-labelledby="t">
+  <title id="t">Drawing of the SmartScreen box after More info, showing Publisher: Unknown publisher, with the Run anyway button marked</title>
+  <style>
+    .desk{fill:#F1EDE7}.blue{fill:#2F5BB7}.on{fill:#FFFFFF}.btn{fill:none;stroke:#FFFFFF;stroke-width:1.5}
+    .ring{fill:none;stroke:#FFFFFF;stroke-width:3}.badge{fill:#2F5BB7;stroke:#F1EDE7;stroke-width:3}
+    text{font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+    @media (prefers-color-scheme: dark){
+      .desk{fill:#1A1917}.blue{fill:#8FA8F0}.on{fill:#1A1917}.btn{stroke:#1A1917}.ring{stroke:#1A1917}
+      .badge{fill:#8FA8F0;stroke:#1A1917}
+    }
+  </style>
+  <rect class="desk" width="480" height="300" rx="12"/>
+  <rect class="blue" x="20" y="22" width="408" height="256" rx="6"/>
+  <text class="on" x="44" y="66" font-size="22" font-weight="700">Windows protected your PC</text>
+  <text class="on" x="44" y="100" font-size="12">Microsoft Defender SmartScreen prevented an</text>
+  <text class="on" x="44" y="118" font-size="12">unrecognised app from starting. Running this</text>
+  <text class="on" x="44" y="136" font-size="12">app might put your PC at risk.</text>
+  <text class="on" x="44" y="168" font-size="12">App:</text>
+  <text class="on" x="120" y="168" font-size="12" font-weight="700">LernLab-Setup.exe</text>
+  <text class="on" x="44" y="188" font-size="12">Publisher:</text>
+  <text class="on" x="120" y="188" font-size="12" font-weight="700">Unknown publisher</text>
+  <rect class="btn" x="176" y="230" width="104" height="30" rx="3"/>
+  <text class="on" x="228" y="250" font-size="12" font-weight="700" text-anchor="middle">Run anyway</text>
+  <rect class="ring" x="169" y="223" width="118" height="44" rx="8"/>
+  <rect class="btn" x="304" y="230" width="100" height="30" rx="3"/>
+  <text class="on" x="354" y="250" font-size="12" text-anchor="middle">Don't run</text>
+  <circle class="badge" cx="452" cy="245" r="15"/>
+  <text class="on" x="452" y="250" font-size="14" font-weight="700" text-anchor="middle">2</text>
+</svg>
