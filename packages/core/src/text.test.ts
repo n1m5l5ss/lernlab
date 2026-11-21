@@ -69,6 +69,8 @@ test('stripHtml drops script and style code, even when pieces would join into a 
   assert.equal(stripHtml('a<script>alert(1)</script>b'), 'ab');
   assert.equal(stripHtml('<scr<script>x</script>ipt>alert(1)</script>ok'), 'alert(1)ok');
   assert.equal(stripHtml('<style>p{}</style><b>Hund</b>'), 'Hund');
+  assert.equal(stripHtml('<SCRIPT type="x">a</SCRIPT >b<script>c'), 'b');
+  assert.equal(stripHtml('<scripture>Psalm</scripture> 23'), 'Psalm 23');
 });
 
 test('stripHtml decodes &amp; last, so escaped entities stay as text', () => {

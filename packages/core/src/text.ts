@@ -5,14 +5,39 @@ import { hasMath, mathKey } from './math';
 export const ARTICLES = ['der', 'die', 'das'] as const;
 export type Article = (typeof ARTICLES)[number];
 
+/** Cut out every <script> and <style> element with its contents; an unclosed one runs to the end. */
+function dropCode(html: string): string {
+  const lower = html.toLowerCase();
+  let out = '';
+  let i = 0;
+  while (i < html.length) {
+    const s = lower.indexOf('<script', i);
+    const t = lower.indexOf('<style', i);
+    const at = s < 0 ? t : t < 0 ? s : Math.min(s, t);
+    if (at < 0) break;
+    const name = at === s ? 'script' : 'style';
+    if (/[\w-]/.test(lower.charAt(at + name.length + 1))) {
+      out += html.slice(i, at + 1);
+      i = at + 1;
+      continue;
+    }
+    out += html.slice(i, at);
+    const close = '</' + name;
+    const end = lower.indexOf(close, at);
+    if (end < 0) return out;
+    const gt = lower.indexOf('>', end);
+    i = gt < 0 ? html.length : gt + 1;
+  }
+  return out + html.slice(i);
+}
+
 /** Remove HTML tags (and the code inside script and style) and decode the few entities Anki commonly stores. */
 export function stripHtml(html: string): string {
   // Repeat until nothing changes, so pieces like "<scr<b></b>ipt>" can't join into a new tag.
   let text = html;
   for (let prev = ''; prev !== text;) {
     prev = text;
-    text = text
-      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+    text = dropCode(text)
       .replace(/<br\s*\/?>/gi, ' ')
       .replace(/<[^>]+>/g, '');
   }
