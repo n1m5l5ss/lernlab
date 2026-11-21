@@ -42,9 +42,9 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 
 - [x] **Anki import with scheduling history:** replay the review log into FSRS (#48).
 - [x] **Exam simulator:** timed and tutor modes, flag and review, score by tag (#43). Tutor answers count toward the schedule; timed answers are practice.
-- [ ] **Image occlusion:** hide labels on a diagram, for medicine and anatomy (#44).
-- [ ] **Math cards:** LaTeX rendering and answers (#45).
-- [ ] **Code cards:** syntax highlighting, predict the output (#46).
+- [x] **Image occlusion:** hide labels on a diagram, for medicine and anatomy (#44).
+- [x] **Math cards:** LaTeX rendering and answers (#45).
+- [x] **Code cards:** syntax highlighting, predict the output (#46).
 - [x] **Record your own audio** on a card (#47).
 - [x] **Anki `.apkg` export** (#49).
 - [x] **Deck gallery:** browse and install community decks (#50).
@@ -58,7 +58,7 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 - [ ] **Cloze with a word bank** (scaffolded), then typed.
 - [ ] **Slow audio replay** for listening and dictation.
 - [ ] **Hotspot / click-on-image; labelled diagrams.**
-- [ ] **STEM:** numeric answers with tolerance and units.
+- [x] **STEM:** numeric answers with tolerance and units (with #45).
 - [ ] **Parsons problems** (order the lines), timed list recall ("name all 7 …").
 - [ ] **Hands-free audio mode;** mastery by tag; exam-readiness view.
 - [ ] **Mochi, Brainscape, Kahoot and Blooket importers;** deep links and QR codes.
