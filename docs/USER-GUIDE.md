@@ -43,6 +43,8 @@ Drop a file or press **Choose file**. LernLab reads:
 
 Before anything is saved, you see the first cards and how many were found. If LernLab can't tell what each column holds, it asks you: choose **Front**, **Back** or another field for each column, or **Ignore this column**. Under **Import into**, pick an existing deck or **A new deck**. Then press **Import**.
 
+An Anki `.apkg` with past reviews shows **Keep my Anki progress**. Leave it ticked and cards you already know in Anki come up when they are due, instead of starting from zero.
+
 You can leave **Deck name** empty: the name comes from the file. Set **Language** for a language deck. Language decks get listening, speaking and sentence rounds.
 
 ### Paste text
@@ -144,6 +146,7 @@ Studying on a day keeps your streak going. The day starts at 4 a.m., so a late-n
 - An **Image occlusion** card hides parts of a picture. Add an image, then drag on it to draw a box over each part (or press **Add box**), and give each box a label. Tab to a box to move it with the arrow keys, resize it with Shift + arrow keys or remove it with Delete. Choose **Hide one** (the other boxes show their labels) or **Hide all** (every box is hidden). Each box becomes its own card: you type the hidden label. The rules are in [FORMAT.md](FORMAT.md#image-occlusion-cards).
 - Write math in LaTeX between `\( … \)` in a line, or `\[ … \]` on its own line: `\( \frac{1}{2} mv^2 \)`. When the answer is a formula, type its LaTeX; spaces and braces around one symbol don't matter. The rules are in [FORMAT.md](FORMAT.md#math-and-numeric-cards).
 - Drop an image, GIF, audio or video file on the editor to add it to the card.
+- Press **Record** to record your own voice on a card (up to a minute), **Play** to hear it and **Record again** to redo it. Cards with a recording play it instead of the computer voice. The first time, your system asks whether LernLab may use the microphone.
 - Tick several cards to add or remove a tag, move them to another deck, suspend them or delete them. A backup is saved before a delete.
 - **☆ Star** marks a card, so you can study your starred cards from Home. **Suspend** keeps a card out of your sessions.
 
