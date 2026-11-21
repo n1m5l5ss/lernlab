@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { checkAnswer, splitBold, acceptedAnswers, splitArticle, similarity, tokenize } from './text';
+import { checkAnswer, splitBold, stripHtml, acceptedAnswers, splitArticle, similarity, tokenize } from './text';
 
 test('exact noun with article is correct', () => {
   const r = checkAnswer('der Sohn', ['der Sohn'], { requireArticle: true });
@@ -63,4 +63,16 @@ test('similarity tolerates speech-recognition noise', () => {
 
 test('tokenize strips html', () => {
   assert.deepEqual(tokenize('Ich <b>bin</b> müde.'), ['Ich', 'bin', 'müde.']);
+});
+
+test('stripHtml drops script and style code, even when pieces would join into a new tag', () => {
+  assert.equal(stripHtml('a<script>alert(1)</script>b'), 'ab');
+  assert.equal(stripHtml('<scr<script>x</script>ipt>alert(1)</script>ok'), 'alert(1)ok');
+  assert.equal(stripHtml('<style>p{}</style><b>Hund</b>'), 'Hund');
+});
+
+test('stripHtml decodes &amp; last, so escaped entities stay as text', () => {
+  assert.equal(stripHtml('&amp;lt;b&amp;gt;'), '&lt;b&gt;');
+  assert.equal(stripHtml('Tom &amp; Jerry'), 'Tom & Jerry');
+  assert.equal(stripHtml('1 &lt; 2'), '1 < 2');
 });

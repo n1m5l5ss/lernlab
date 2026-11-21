@@ -7,16 +7,22 @@ export type Article = (typeof ARTICLES)[number];
 
 /** Remove HTML tags (and the code inside script and style) and decode the few entities Anki commonly stores. */
 export function stripHtml(html: string): string {
-  return html
-    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
+  // Repeat until nothing changes, so pieces like "<scr<b></b>ipt>" can't join into a new tag.
+  let text = html;
+  for (let prev = ''; prev !== text;) {
+    prev = text;
+    text = text
+      .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<[^>]+>/g, '');
+  }
+  return text
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
     .trim();
 }
