@@ -2633,6 +2633,7 @@ h1.session-title:focus,
 .editor-audio .btn {
   display: inline-flex;
   align-items: center;
+  gap: var(--space-1);
 }
 
 /* ---- Exam simulator (#43): no mockup yet, so it follows Session (question) and Summary (intro, result). ---- */

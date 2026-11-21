@@ -30,6 +30,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - picture quizzes, listening, dictation, speaking;
   - exam-style multi-select questions, ordering;
   - a timed Blitz, and a boss fight over everything you missed.
+- **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark and a score by topic.
 - **Honest grading:**
   - you type or say the answer, and LernLab grades it;
   - it forgives capitals, small typos and German umlauts typed as `ae`, `oe`, `ue`;
