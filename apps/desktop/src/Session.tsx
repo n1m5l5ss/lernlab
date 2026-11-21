@@ -22,6 +22,7 @@ import {
   Unscramble,
 } from './modes/Exercises';
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
+import { GuessBlock } from './modes/Guess';
 import { mcFor, recallFor } from './plan';
 import { agendaText, bubbleFor, textTeacher, type Bubble } from './lines';
 import { Relearn, answerKind, asRepeat, blockKey, needsRescue, plannedRecalls, playableOnly } from './session-logic';
@@ -592,6 +593,10 @@ export function Session({
             ) : (
               <Boss block={b} ctx={ctx} onDone={blockDone} />
             )}
+          </div>
+        ) : b.kind === 'guess' ? (
+          <div className="panel ex-card">
+            <GuessBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
           </div>
         ) : b.kind === 'blitz' ? (
           <div className="panel ex-card" aria-live="polite">

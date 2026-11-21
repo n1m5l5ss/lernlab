@@ -1055,7 +1055,8 @@
       "cloze": "What is missing?",
       "speak": "Say it out loud!",
       "rain": "Type the answers before they land!",
-      "rescue": "Quick look back at the hard ones."
+      "rescue": "Quick look back at the hard ones.",
+      "guess": "New topic: {{topic}}. Have a guess before you learn it."
     },
     "agenda": {
       "today": "Today: {{parts}}.",
@@ -1102,7 +1103,22 @@
       "word-rain": "Word rain",
       "boss": "Boss fight",
       "rescue": "Quick rescue",
-      "action-round": "Action round"
+      "action-round": "Action round",
+      "guess-first": "Guess first"
+    },
+    "guess": {
+      "title": "Guess first · {{topic}}",
+      "kind": "Wrong guesses are expected and help you learn. Nothing here counts – the answer always follows.",
+      "skip": "Skip to the new cards",
+      "yours": "Your guess",
+      "optional": "Optional. A quick thought is enough.",
+      "show": "Show answer",
+      "answer": "Answer:",
+      "yourGuess": "You guessed: {{guess}}",
+      "next": "Next question",
+      "toCards": "Meet the new cards",
+      "choices": "Choices",
+      "gap": "?"
     }
   },
   "keys": {

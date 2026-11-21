@@ -24,6 +24,7 @@ import {
 import { getDeck } from './library';
 import * as gen from './exercises';
 import { qa } from './cards';
+import { GUESS_MAX, pickGuessRound, topicIsNew, topicName } from './guess';
 import { variantIndex, variantsOf } from './variants';
 import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
@@ -160,6 +161,20 @@ export function planSession(
       teacher: say('review'),
       exercises: dueA.map(review),
     });
+
+  // 4a. Guess first: the first new cards of a new topic (concepts, facts, maths) are asked before they are met.
+  const guess = fresh.length ? pickGuessRound(fresh.map(get), pool, (t) => topicIsNew(t, d), GUESS_MAX[length]) : null;
+  if (guess) {
+    const topic = topicName(guess.topic, getDeck(guess.topic.deckId, d)?.name ?? '');
+    blocks.push({
+      id: bid(),
+      kind: 'guess',
+      title: 'Guess first',
+      teacher: { key: 'teacher.block.guess', params: { topic } },
+      topic,
+      itemIds: guess.ids,
+    });
+  }
 
   // 4. New cards: meet each one, then recognise it right away.
   if (fresh.length) {

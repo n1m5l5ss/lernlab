@@ -35,7 +35,8 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - math in LaTeX, and number answers with a tolerance and units;
   - code cards with syntax highlighting: predict the output, fill in the missing token, put the lines in order;
   - image occlusion: draw boxes over a picture and name each hidden part, one card per box;
-  - a timed Blitz, and a boss fight over everything you missed.
+  - a timed Blitz, and a boss fight over everything you missed;
+  - "Guess first": before you meet the cards of a new topic, guess a few of its questions, then see the answers (practice only, no timer).
 - **Ask each card in several ways:** add apply and analyse questions to a card ("A patient has X. Which drug?", "What if the dose doubles?"). Sessions take turns asking them, so you learn the idea and not just the wording, and the card keeps one schedule.
 - **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark, a score by topic and by question level.
 - **Honest grading:**
