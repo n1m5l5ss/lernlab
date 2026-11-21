@@ -140,3 +140,11 @@ test('a column of question variants is recognised, and can be mapped by hand', (
   const extra = getDb().prepare('SELECT extra FROM items WHERE deck_id = ?').get(res.deck.id)!.extra;
   assert.equal(JSON.parse(String(extra)).variants, 'apply: A patient with angina?');
 });
+
+test('a column of corrections for wrong choices is recognised', () => {
+  const known = previewFile(
+    'Cloud.csv',
+    strToU8('front,type,choices,correct,misconceptions\nServerless?,mcq,EC2|Lambda,2,Many think EC2 is\n'),
+  );
+  assert.equal(known.table?.fields.corrections, 4);
+});

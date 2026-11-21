@@ -4,6 +4,8 @@ import {
   EMPTY,
   addVariant,
   canAddVariant,
+  choiceRows,
+  editCorrection,
   editVariant,
   fieldsToSave,
   formFor,
@@ -220,4 +222,42 @@ test('question variants: added, changed and removed in the form, saved as one li
   const full = Array.from({ length: VARIANTS_MAX }, () => ({ prompt: 'q', level: 'apply' as const }));
   assert.equal(canAddVariant(full), false);
   assert.equal(addVariant(full).length, VARIANTS_MAX);
+});
+
+test('corrections: one per wrong choice, written in the form and saved as one line in the order of the choices', () => {
+  let f = form({
+    type: 'mcq',
+    front: 'Which two are serverless?',
+    choices: 'EC2|Lambda|<b>Fargate</b>|RDS',
+    correct: '2|3',
+  });
+  assert.deepEqual(choiceRows(f), [
+    { choice: 'EC2', correct: false },
+    { choice: 'Lambda', correct: true },
+    { choice: 'Fargate', correct: true },
+    { choice: 'RDS', correct: false },
+  ]);
+  assert.deepEqual(f.corrections, []);
+  f = { ...f, corrections: editCorrection(f.corrections, 3, 'RDS is a database | not compute') };
+  assert.deepEqual(f.corrections, ['', '', '', 'RDS is a database | not compute']);
+  f = { ...f, corrections: editCorrection(f.corrections, 0, 'Many people think EC2 is serverless.') };
+  assert.equal(fieldsToSave(f).corrections, 'Many people think EC2 is serverless.|||RDS is a database / not compute');
+  assert.equal(previewOf(f, deck)!.item.extra.corrections, fieldsToSave(f).corrections);
+  const card = { ...previewOf(f, deck)!.item, suspended: false, starred: false };
+  assert.deepEqual(formFor(card).corrections, [
+    'Many people think EC2 is serverless.',
+    '',
+    '',
+    'RDS is a database / not compute',
+  ]);
+  assert.equal(
+    fieldsToSave({ ...f, correct: '1|2|3' }).corrections,
+    '|||RDS is a database / not compute',
+    'a choice marked correct loses its correction',
+  );
+  assert.equal(fieldsToSave({ ...f, type: 'basic' }).corrections, '', 'other card types have no choices');
+  assert.deepEqual(choiceRows(form({ type: 'mcq', choices: 'A|B' })), [
+    { choice: 'A', correct: false },
+    { choice: 'B', correct: false },
+  ]);
 });

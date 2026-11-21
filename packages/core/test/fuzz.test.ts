@@ -25,6 +25,8 @@ const { writeApkg } = await import('../src/formats/apkgwrite');
 const { listZip, unsafeZipPath } = await import('../src/formats/zip');
 const { sanitizeHtml, SAFE_TAGS } = await import('../src/cards');
 const { cleanVariants, parseVariants, VARIANTS_MAX, VARIANT_MAX_LENGTH } = await import('../src/variants');
+const { cleanCorrections, correctionHtml, parseCorrections, CORRECTION_MAX_LENGTH } =
+  await import('../src/misconceptions');
 const { UserError } = await import('../src/errors');
 const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
@@ -143,6 +145,23 @@ test('question variants: any text gives a few plain-text questions, and cleaning
       const line = cleanVariants(text);
       assert.equal(cleanVariants(line), line, 'cleaning twice changes nothing');
       assert.equal(parseVariants(line).length, variants.length);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test('corrections: any text gives plain-text corrections, cleaning is stable and the HTML stays safe', () => {
+  const mcq = { choices: ['a', 'b', 'c', 'd'], correct: [1] };
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      for (const c of parseCorrections(text)) {
+        assert.ok(c.length <= CORRECTION_MAX_LENGTH && !c.includes('|'));
+        assert.equal(sanitizeHtml(correctionHtml(c)), correctionHtml(c), 'already safe HTML');
+      }
+      const line = cleanCorrections(text, mcq);
+      assert.equal(cleanCorrections(line, mcq), line, 'cleaning twice changes nothing');
+      const list = parseCorrections(line);
+      assert.ok(list.length <= 4 && !list[1]);
     }),
     params(RUNS * 2),
   );

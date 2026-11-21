@@ -6,11 +6,12 @@ import { host } from './host';
 import { basename, extname } from './paths';
 import { sha1Hex } from './sha1';
 import { stripHtml, splitArticle } from './text';
-import { markdownLite, sanitizeHtml } from './cards';
+import { markdownLite, mcqOf, sanitizeHtml } from './cards';
 import { parseQuantity, parseTolerance } from './numeric';
 import { normalizeCode } from './code';
 import { formatBox, modeOf, parseBox } from './occlusion';
 import { cleanVariants, takesVariants } from './variants';
+import { cleanCorrections } from './misconceptions';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -99,6 +100,8 @@ export type NormalizedCard = {
   correct?: string; // "2|4" (1-based) or the correct choice texts
   steps?: string; // "first|second|third"
   altAnswers?: string; // "colour|color"
+  /** mcq cards: a correction per wrong choice, in the choices' order: "Many people think…||" (misconceptions.ts). '' clears them. */
+  corrections?: string;
   /** Other ways to ask the question, with a level: "apply: A patient has X. Which mechanism? | analyse: …" (variants.ts). '' clears them. */
   variants?: string;
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
@@ -290,6 +293,11 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   const variants = cleanVariants(c.variants ?? extra.variants);
   if (variants && takesVariants(kind)) extra.variants = variants;
   else delete extra.variants;
+  // Corrections for wrong choices: plain text, kept only on a multiple-choice card, one slot per choice.
+  const corrections =
+    kind === 'mcq' ? cleanCorrections(c.corrections ?? extra.corrections, mcqOf({ extra, meaning: back })) : '';
+  if (corrections) extra.corrections = corrections;
+  else delete extra.corrections;
   // Same for a numeric card's tolerance: kept only when the card is numeric and the value reads.
   const tolerance = (c.tolerance ?? extra.tolerance ?? '').trim();
   if (kind === 'numeric' && parseTolerance(tolerance)) extra.tolerance = tolerance;
