@@ -2,6 +2,19 @@
 
 All notable changes to LernLab are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/). New entries are added automatically by release-please from pull-request titles. See [docs/RELEASING.md](docs/RELEASING.md).
 
+## [1.1.1](https://github.com/n1m5l5ss/lernlab/compare/v1.1.0...v1.1.1) (2026-11-21)
+
+
+### Fixed
+
+* check a backup is safe before restoring it ([#186](https://github.com/n1m5l5ss/lernlab/issues/186)) ([fe5880c](https://github.com/n1m5l5ss/lernlab/commit/fe5880c7acb27efdf8ed2d1fbc33d41164842186))
+* show today's study day on Home right after a session ([#187](https://github.com/n1m5l5ss/lernlab/issues/187)) ([a587820](https://github.com/n1m5l5ss/lernlab/commit/a587820a0a257177418eac3ad58fb639c6e4ca7c)), closes [#178](https://github.com/n1m5l5ss/lernlab/issues/178)
+
+
+### Performance
+
+* import big decks with far fewer file writes ([#188](https://github.com/n1m5l5ss/lernlab/issues/188)) ([ef5ee95](https://github.com/n1m5l5ss/lernlab/commit/ef5ee958e56852f7a4f3362a2c567aab5b2579ff))
+
 ## [1.1.0](https://github.com/n1m5l5ss/lernlab/compare/v1.0.0...v1.1.0) (2026-11-21)
 
 
