@@ -49,7 +49,7 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 - [ ] **Anki `.apkg` export** (#49).
 - [ ] **Deck gallery:** browse and install community decks (#50).
 - [ ] **Translations through Weblate** (#51).
-- [ ] **AI cards with your own API key:** generate cards from notes or PDFs, reviewed before they are added (#52).
+- [ ] **Connect your own AI assistant (MCP):** Claude, ChatGPT, Hermes Agent or any MCP client can read your decks, stats and hard cards, and suggest new decks and cards (from your PDFs or links) that you review before they are saved. Off by default (#148).
 
 ## Later
 
@@ -60,7 +60,6 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 - [ ] **Hotspot / click-on-image; labelled diagrams.**
 - [ ] **STEM:** numeric answers with tolerance and units.
 - [ ] **Parsons problems** (order the lines), timed list recall ("name all 7 …").
-- [ ] **AI:** "explain in your own words" grading, better distractors.
 - [ ] **Hands-free audio mode;** mastery by tag; exam-readiness view.
 - [ ] **Mochi, Brainscape, Kahoot and Blooket importers;** deep links and QR codes.
 - [ ] **2.0:** sync and a phone app.
