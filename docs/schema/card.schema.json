@@ -11,9 +11,9 @@
       "type": ["string", "number"]
     },
     "type": {
-      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit (added after v1 was published). Readers treat an unknown type as if it were missing.",
+      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit; code: a code snippet in `code` (both added after v1 was published). Readers treat an unknown type as if it were missing.",
       "type": "string",
-      "enum": ["basic", "cloze", "mcq", "order", "numeric"]
+      "enum": ["basic", "cloze", "mcq", "order", "numeric", "code"]
     },
     "front": {
       "description": "Term, question or prompt. Cloze: text with {{c1::answer}} or {{c1::answer::hint}} (Anki syntax). A card with an empty front is skipped.",
@@ -50,6 +50,14 @@
     },
     "tolerance": {
       "description": "Numeric card: how far a typed number may be off and still count, as a number in the card's unit (\"0.05\") or a percentage (\"1%\"). Added after v1 was published; older readers ignore it.",
+      "type": "string"
+    },
+    "code": {
+      "description": "Code card: the code snippet as plain text (never HTML), with its line breaks and indentation. A {{c1::token}} gap makes a fill-the-token card; a back makes predict-the-output; otherwise the lines are put in order. Added after v1 was published; older readers ignore it.",
+      "type": "string"
+    },
+    "codeLang": {
+      "description": "Code card: the snippet's programming language, e.g. python, javascript, sql (optional; used for highlighting and read out to screen readers).",
       "type": "string"
     },
     "image": {
