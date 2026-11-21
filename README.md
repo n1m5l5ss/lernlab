@@ -48,6 +48,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - a quick action round when your attention drifts.
 - **Learning science, not slot machines:**
   - new cards are never timed;
+  - a missed card comes back a few cards later until you get it right, and a new card until you've recalled it twice;
   - recognition games never count as "knowing" a card;
   - only your first real recall each day moves the schedule.
 

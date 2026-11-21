@@ -46,6 +46,21 @@ test('practice answers are logged as practice and never change the schedule', ()
   assert.notEqual(attempt(known, 'typed', true).grade, null, 'a real review later that day still counts');
 });
 
+test('a missed card brought back in the session never grades it a second time that day', () => {
+  const card = ids[5];
+  attempt(card, 'intro', true);
+  const first = attempt(card, 'typed', false);
+  assert.equal(first.grade, 1, 'the first recall of the day grades the card (Again)');
+  const graded = state(card);
+  // The session brings it back as practice until it is right: logged, but the schedule and mastery stay.
+  assert.equal(attempt(card, 'typed', false, true).grade, null);
+  assert.equal(attempt(card, 'typed', true, true).grade, null);
+  assert.deepEqual(state(card), graded);
+  // Even a real (non-practice) answer later the same day can't grade it again.
+  assert.equal(attempt(card, 'typed', true).grade, null);
+  assert.deepEqual(state(card).srs, graded.srs);
+});
+
 test('a practice session covers any card in the source and teaches nothing new', () => {
   const plan = planSession('standard', getDb(), at, deck.id, { practice: true });
   assert.equal(plan.practice, true);

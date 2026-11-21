@@ -108,6 +108,7 @@ Some things to know:
 - **Hint** (`Tab`) shows the first letter and the length of the answer. Press it again to **Show answer**; then type the answer once to fix it in memory.
 - **Show answer** on a flip card turns it over. Then say how you did: **Didn't know**, **Partly** or **Knew it**.
 - **New cards are never timed.** Timers only appear on cards you already know.
+- **Missed cards come back.** A card you miss comes back after 4 to 6 other cards, until you get it right once. A new card comes back until you have recalled it twice in the session. Once a card has done that, it doesn't come back again in this session, and no card comes back more than 3 times, so a hard card never holds you up. These extra tries are practice: they never change when the card is next due. If the session ends first, that's fine: the card comes back on another day.
 - **Games never count as knowing a card.** Only a real attempt to remember (typing, saying, choosing the answer to a question) moves a card's schedule, and only the first one each day.
 - To stop, press **End session** or `Esc`. Every answer so far is saved, and the session still counts for today.
 
