@@ -134,6 +134,8 @@ export type Exercise =
 export type Block =
   | { id: string; kind: 'ignition'; title: string; teacher: Line; exercises: Exercise[] }
   | { id: string; kind: 'learn'; title: string; teacher: Line; exercises: Exercise[] }
+  /** Guess first: a new topic's questions before its cards are met. Practice only, never graded (guess.ts). */
+  | { id: string; kind: 'guess'; title: string; teacher: Line; topic: string; itemIds: number[] }
   | { id: string; kind: 'drill'; format: Format; title: string; teacher: Line; exercises: Exercise[] }
   | { id: string; kind: 'gender'; title: string; teacher: Line; itemIds: number[]; seconds: number }
   | { id: string; kind: 'match'; title: string; teacher: Line; itemIds: number[] }

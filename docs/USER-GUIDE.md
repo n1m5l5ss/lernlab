@@ -108,6 +108,7 @@ The [`examples/`](../examples/) folder has ready decks to try or copy:
 A session is a run of short blocks. Each block lasts about a minute and has its own format. The name of the block is at the top of the screen. You may see:
 
 - **Warm-up**: three quick, easy cards;
+- **Guess first**: when your new cards start a topic you haven't met yet, a few of its questions come before the cards (see below);
 - **New cards**: meet a card, then answer it;
 - **Review** and **Recall**: answer from memory, typed or with a multiple-choice question;
 - **Fill the gap**: type the missing word;
@@ -124,6 +125,7 @@ Some things to know:
 - **Show answer** on a flip card turns it over. Then say how you did: **Didn't know**, **Partly** or **Knew it**.
 - **New cards are never timed.** Timers only appear on cards you already know.
 - **Missed cards come back.** A card you miss comes back after 4 to 6 other cards, until you get it right once. A new card comes back until you have recalled it twice in the session. Once a card has done that, it doesn't come back again in this session, and no card comes back more than 3 times, so a hard card never holds you up. These extra tries are practice: they never change when the card is next due. If the session ends first, that's fine: the card comes back on another day.
+- **Guess first.** When today's new cards start a new topic (a tag, a sub-deck, or a whole new deck, where you haven't seen any of its cards yet), you get 5 to 8 of its questions first, mostly the cards you are about to learn. Type a guess if you like, or just think of one, then press **Show answer** (`Enter`); on a multiple-choice question, pick a choice (or press its number). Wrong guesses are expected and help you learn: guessing first helps you remember those answers later. There is no timer, and nothing you guess is marked or changes when a card is next due. **Skip to the new cards** ends the round at any time. Language decks don't get this round, because you can't guess a foreign word; neither do ordering cards.
 - **Games never count as knowing a card.** Only a real attempt to remember (typing, saying, choosing the answer to a question) moves a card's schedule, and only the first one each day.
 - To stop, press **End session** or `Esc`. Every answer so far is saved, and the session still counts for today.
 
