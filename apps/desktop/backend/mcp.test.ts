@@ -17,7 +17,7 @@ process.env.LERNLAB_DATA = dir;
 const { handle } = await import('./handlers');
 type Channel = import('./handlers').Channel;
 type OutputOf<C extends Channel> = import('./handlers').OutputOf<C>;
-const { openAppDbReadonly } = await import('@lernlab/storage-sqlite');
+const { openAppDbReadonly, checkpointNow } = await import('@lernlab/storage-sqlite');
 const { callTool, createMcpServer, THIRD_PARTY_NOTICE, TOOLS, toolList } = await import('./mcp');
 const { getDb } = await import('@lernlab/core/db');
 after(() => cleanupTempDir(dir));
@@ -279,6 +279,9 @@ test('search_cards: plain text only, pages read in SQL, and no answer is bigger 
 
 test('the stdio server never writes lernlab.db, even while it takes proposals', async () => {
   await setAssistant(true);
+  // Finish this test process's own deferred checkpoint after the seed import (#140) first, so that only
+  // the stdio server could change the files below.
+  checkpointNow();
   const files = ['lernlab.db', 'lernlab.db-wal'].map((f) => join(dir, f));
   const hash = () =>
     files.map((f) => (existsSync(f) ? createHash('sha256').update(readFileSync(f)).digest('hex') : 'missing'));

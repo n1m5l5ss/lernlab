@@ -193,6 +193,39 @@ function buildSqliteBytes(build: (db: DB) => void): Uint8Array {
   }
 }
 
+/** How long after a big write its checkpoint waits, so the reply and the next requests go first. */
+export const CHECKPOINT_DELAY_MS = 1000;
+/** Connections waiting for a checkpoint, with the automatic checkpoint setting to give back. */
+const waiting = new Map<DB, number>();
+let checkpointTimer: ReturnType<typeof setTimeout> | null = null;
+
+/**
+ * Checkpoint now every connection a big write left waiting (#140): copy the write-ahead log into the
+ * database file (PASSIVE: never waits for readers) and turn automatic checkpoints back on. A connection
+ * closed meanwhile is skipped; closing it already checkpointed.
+ */
+export function checkpointNow(): void {
+  if (checkpointTimer) clearTimeout(checkpointTimer);
+  checkpointTimer = null;
+  for (const [d, auto] of waiting) {
+    try {
+      d.exec('PRAGMA wal_checkpoint(PASSIVE)');
+      d.exec(`PRAGMA wal_autocheckpoint = ${auto}`);
+    } catch {
+      // Closed connection: nothing left to do.
+    }
+  }
+  waiting.clear();
+}
+
+/** Checkpoint `d` when no big write has come for CHECKPOINT_DELAY_MS. Keeps the first setting it was given. */
+function checkpointLater(d: DB, autoCheckpoint: number): void {
+  if (!waiting.has(d)) waiting.set(d, autoCheckpoint);
+  if (checkpointTimer) clearTimeout(checkpointTimer);
+  checkpointTimer = setTimeout(checkpointNow, CHECKPOINT_DELAY_MS);
+  checkpointTimer.unref?.();
+}
+
 const mediaPath = (name: string) => resolve(mediaDir(), basename(name));
 
 export const nodeHost: Host = {
@@ -200,7 +233,8 @@ export const nodeHost: Host = {
   openSqliteBytes,
   buildSqliteBytes,
   media: {
-    size: (name) => (existsSync(mediaPath(name)) ? statSync(mediaPath(name)).size : null),
+    // One file-system call per check: each one is costly on Windows (#140).
+    size: (name) => statSync(mediaPath(name), { throwIfNoEntry: false })?.size ?? null,
     read: (name) => (existsSync(mediaPath(name)) ? readFileSync(mediaPath(name)) : null),
     write: (name, data) => writeFileSync(mediaPath(name), data),
   },
@@ -210,6 +244,7 @@ export const nodeHost: Host = {
     writeFileSync(resolve(dir, `${day}.json`), json);
   },
   randomId: () => randomUUID(),
+  checkpointLater,
 };
 
 /** Use this package as the engine's storage. Call once at startup. */

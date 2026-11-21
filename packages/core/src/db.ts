@@ -44,6 +44,25 @@ export function whileUnchanged<T>(d: DB, key: string, compute: () => T): T {
   return value;
 }
 
+/**
+ * A transaction for a big write, such as an import (#140). Its commit does not run SQLite's automatic
+ * checkpoint, which would copy every page a second time into the database file and flush both files to
+ * disk (slow and uneven on Windows). The storage host checkpoints soon after instead; until then no
+ * other commit on this connection checkpoints either. The data is safe in the write-ahead log meanwhile.
+ * Without a host that can do that, it is a plain transaction.
+ */
+export function bulkTx<T>(d: DB, fn: () => T): T {
+  const later = host().checkpointLater;
+  if (!later) return tx(d, fn);
+  const auto = Number(Object.values(d.prepare('PRAGMA wal_autocheckpoint').get() ?? {})[0] ?? 1000);
+  d.exec('PRAGMA wal_autocheckpoint = 0');
+  try {
+    return tx(d, fn);
+  } finally {
+    later(d, auto);
+  }
+}
+
 export function tx<T>(d: DB, fn: () => T): T {
   d.exec('BEGIN');
   try {
