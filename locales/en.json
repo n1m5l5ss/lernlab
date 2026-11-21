@@ -1147,7 +1147,9 @@
       "toCards": "Meet the new cards",
       "choices": "Choices",
       "gap": "?"
-    }
+    },
+    "confidentMiss": "Confident mistakes are the easiest to fix. That one comes back in a moment.",
+    "confidentMissBack": "The one you were sure of is back. Another go, just for practice."
   },
   "keys": {
     "enter": "Enter",

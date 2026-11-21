@@ -13,6 +13,7 @@ import {
   asksConfidence,
   blockKey,
   confidenceKey,
+  isConfidentMiss,
   blockProgress,
   needsRescue,
   playableOnly,
@@ -311,4 +312,29 @@ test('"How sure were you?" is asked on real answers only, and only when it is tu
 test('the keys 1 to 5 rate how sure you were; other keys do not', () => {
   assert.deepEqual(['1', '2', '3', '4', '5'].map(confidenceKey), [1, 2, 3, 4, 5]);
   for (const k of ['0', '6', 'Enter', ' ', 'a', '12']) assert.equal(confidenceKey(k), null);
+});
+
+test('a confident miss is a wrong answer rated 4 or 5', () => {
+  assert.equal(isConfidentMiss(false, 5), true);
+  assert.equal(isConfidentMiss(false, 4), true);
+  assert.equal(isConfidentMiss(false, 3), false);
+  assert.equal(isConfidentMiss(false, undefined), false, 'not rated');
+  assert.equal(isConfidentMiss(true, 5), false);
+});
+
+test('a confident miss comes back later in the session even when a recall of it is planned further on', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false, { surprise: true });
+  r.answered(8, 'recall', false);
+  for (let n = 0; n < 5; n++) r.answered(100 + n, 'other', true);
+  const planned = () => 1; // both cards have a recall planned in a later block
+  assert.equal(r.due(planned), 7, 'the confident miss does not wait');
+  assert.equal(r.isSurprise(7), true);
+  assert.equal(r.isSurprise(8), false);
+  r.shown(7);
+  assert.equal(r.due(planned), null, 'the other miss waits for its planned recall');
+  // Its second try is practice (asRepeat): right now, and it is done; it is not flagged again.
+  r.answered(7, 'recall', true);
+  for (let n = 0; n < 7; n++) r.answered(200 + n, 'other', true);
+  assert.equal(r.due(), 8);
 });
