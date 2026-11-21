@@ -6,6 +6,7 @@ import { stripHtml } from '../text';
 import type { NormalizedCard } from '../library';
 import { UserError } from '../errors';
 import { IMPORT_LIMITS, isZstd, readZip, unzstd } from './zip';
+import { reviewsFromRevlog, type PastReview, type RevlogRow } from '../ankihistory';
 
 const MEDIA_MAP_BYTES = 64 * 1024 * 1024;
 
@@ -70,6 +71,8 @@ export type ApkgResult = {
   decks: string[];
   /** Media the package lists but does not contain. */
   mediaMissing: string[];
+  /** Past answers that count, per note id (the note's first card), from the revlog when the package has one. */
+  history: Map<number, PastReview[]>;
 };
 
 const safeDecode = (s: string) => {
@@ -81,6 +84,34 @@ const safeDecode = (s: string) => {
 };
 
 const damaged = () => new UserError('anki_damaged', 'This Anki package is damaged and could not be read');
+
+/**
+ * A LernLab card is one Anki note, so the note's first card (lowest `ord`, usually front → back) gives the
+ * history; reviews of its other cards (e.g. the reverse card) are left out.
+ */
+function history(db: DB, firstCard: Map<number, number>): Map<number, PastReview[]> {
+  const rows = new Map<number, RevlogRow[]>();
+  const all = db.prepare('SELECT id, cid, ease, ivl, factor, type FROM revlog ORDER BY cid, id').all();
+  for (const r of all) {
+    const nid = firstCard.get(Number(r.cid));
+    if (nid === undefined) continue;
+    const list = rows.get(nid) ?? [];
+    list.push({
+      time: Number(r.id),
+      ease: Number(r.ease),
+      type: Number(r.type),
+      ivl: Number(r.ivl),
+      factor: Number(r.factor),
+    });
+    rows.set(nid, list);
+  }
+  const out = new Map<number, PastReview[]>();
+  for (const [nid, list] of rows) {
+    const reviews = reviewsFromRevlog(list);
+    if (reviews.length) out.set(nid, reviews);
+  }
+  return out;
+}
 
 export function readApkg(buf: Uint8Array): ApkgResult {
   const files = readZip(buf, (n) => /^(collection\.anki2|collection\.anki21b?|media)$/.test(n));
@@ -122,8 +153,12 @@ export function readApkg(buf: Uint8Array): ApkgResult {
     }
 
     const noteDeck = new Map<number, number>();
-    for (const r of db.prepare('SELECT nid, did FROM cards ORDER BY ord').all() as Row[])
-      if (!noteDeck.has(Number(r.nid))) noteDeck.set(Number(r.nid), Number(r.did));
+    const firstCard = new Map<number, number>();
+    for (const r of db.prepare('SELECT id, nid, did FROM cards ORDER BY ord').all() as Row[])
+      if (!noteDeck.has(Number(r.nid))) {
+        noteDeck.set(Number(r.nid), Number(r.did));
+        firstCard.set(Number(r.id), Number(r.nid));
+      }
 
     const cards: NormalizedCard[] = [];
     const usedDecks = new Set<string>();
@@ -197,7 +232,13 @@ export function readApkg(buf: Uint8Array): ApkgResult {
         else mediaMissing.push(name);
       }
     }
-    return { cards, media, decks: [...usedDecks], mediaMissing };
+    return {
+      cards,
+      media,
+      decks: [...usedDecks],
+      mediaMissing,
+      history: hasTable('revlog') ? history(db, firstCard) : new Map(),
+    };
   } catch (e) {
     if (e instanceof UserError) throw e;
     throw damaged();

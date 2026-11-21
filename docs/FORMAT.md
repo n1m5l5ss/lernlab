@@ -181,7 +181,12 @@ To include media with a CSV, zip the CSV together with the files it references a
 - Notes are mapped by field name. `Front/Term/Word/Question/Text` become the front; `Back/Meaning/Definition/Answer/Extra` become the back; `Sentence/Example`, `Notes`, `Grammar` and a reading field are recognised too. Any other field is kept in `extra`.
 - `[sound:…]` and `<img src="…">` become the card's audio and image; the media files are copied.
 - Cloze notes (`{{c1::…}}`) become cloze cards.
-- Anki's own scheduling history is not imported yet (planned), so cards start fresh.
+- **Review history.** When the package has Anki's review log (a `.colpkg`, or an `.apkg` exported with scheduling information), the import preview offers "Keep my Anki progress", on by default. The reviews are replayed with FSRS (LernLab's scheduler, at your retention setting), so each card gets its stability, difficulty and next due date, and the reviews are kept in the `imported_reviews` table (they are not answers given in LernLab, so they add no XP or streak days). The report says how many came over (`reviews`). The rules:
+  - Anki's buttons map to FSRS grades: 1 Again, 2 Hard, 3 Good, 4 Easy, in time order.
+  - Counted: learning, review and relearning answers, and answers in a filtered deck that reschedules. Skipped: cramming in a filtered deck with rescheduling off, manual changes ("set due date"), Anki's own rescheduling, and entries without a button. A "forget" (reset to new) drops the history before it.
+  - One grade per card per day, as in LernLab: the first answer of each day (days start at 4 a.m.) counts, later ones that day are skipped.
+  - A LernLab card is one Anki note: the history of the note's first card (usually front → back) is used; reviews of its other cards, such as the reverse card, are left out.
+  - Cards you have already studied in LernLab keep their own progress; importing the same package again brings nothing over twice.
 - Packages exported by current Anki (`collection.anki21b`, zstd-compressed) and older ones both work.
 
 ## Live import from Anki (AnkiConnect)
@@ -224,6 +229,7 @@ Every import (file, pasted text, live Anki) answers with the same report (`Impor
 | `media` | Media files saved |
 | `mediaMissing`, `missingMedia` | How many media files cards refer to that were not in the file, and their names (first 500) |
 | `warnings` | Files left out: `{ code, file }` |
+| `reviews` | Past Anki reviews replayed into the schedule (0 for other formats) |
 
 Codes for skipped rows: `row_no_front`, `row_duplicate` (the same card earlier in the file), `row_invalid` (a JSON value that is not a card). Warning codes: `media_unsupported`, `media_too_large`, `media_wrong_type`, `nested_zip_ignored`, `encoding_guessed`. A file that cannot be imported at all fails with one error code instead: `zip_damaged`, `zip_unsafe_path`, `zip_too_big`, `zip_too_many_files`, `too_many_cards`, `bad_json`, `not_text`, `no_cards`, `unsupported_zip`, `not_lernpack`, `lernpack_too_new`, `lernpack_no_cards`, `not_anki`, `anki_damaged`. Every code has a message under `errors.<code>` in `locales/*.json`; `file`, `mb` and `max` fill its placeholders.
 
