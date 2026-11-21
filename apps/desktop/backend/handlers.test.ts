@@ -151,6 +151,20 @@ test('the card editor saves, keeps and clears corrections for wrong choices', as
   assert.ok(!('corrections' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
+test('the card editor saves, keeps and clears key points; attempts may say "easy"', async () => {
+  const deck = await ok('decks.create', { name: 'Why', language: null });
+  const card = { front: 'Why seasons?', back: 'Tilt', type: 'explain' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, keyPoints: '<b>Tilt</b>|Angle' } });
+  assert.equal((await ok('cards.get', { id })).extra.keyPoints, 'Tilt|Angle');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.keyPoints, 'Tilt|Angle', 'kept when the field is not sent');
+  await ok('cards.update', { id, card: { ...card, type: 'basic' } });
+  assert.ok(!('keyPoints' in (await ok('cards.get', { id })).extra), 'a basic card has none');
+  const attempt = { sessionId: 's', itemId: id, format: 'flip', correct: true, responseMs: 1, xp: 1 };
+  const wrong = await handle('attempt.record', { ...attempt, easy: 'yes' }); // recording one would study today
+  assert.equal(!wrong.ok && wrong.error.code, 'invalid_input');
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');

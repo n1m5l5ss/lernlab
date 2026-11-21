@@ -5,6 +5,7 @@ import { hasMath, splitMath } from './math';
 import { codeTask, GAP } from './code';
 import { variantsOf } from './variants';
 import { correctionHtml, correctionsOf, isMyth } from './misconceptions';
+import { askedOwnWay, asksWhy, isExplain, keyPointHtml, keyPointsOf } from './explain';
 import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
@@ -29,7 +30,7 @@ function pickDistractors(item: Item, pool: Item[], n: number, key: (i: Item) => 
       (p) =>
         p.id !== item.id &&
         !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(p.kind) &&
-        !isMyth(p) &&
+        !askedOwnWay(p) &&
         key(p) &&
         !seen.has(key(p).toLowerCase()),
     )
@@ -135,6 +136,22 @@ export function flip(item: Item, k = 0): Exercise {
   };
 }
 
+/**
+ * Explain first (explain.ts): an explain card, with its key points to tick, or a basic card tagged why/how
+ * (no points: the usual self-grade after the reveal). The model answer is the card's back ('' for none).
+ */
+export function explain(item: Item, k = 0): Exercise {
+  const v = isExplain(item) ? null : variantOf(item, k);
+  return {
+    type: 'explain',
+    itemId: item.id,
+    prompt: v?.prompt ?? item.target, // never reversed: the question is the front
+    answer: item.meaning,
+    points: keyPointsOf(item).map(keyPointHtml),
+    ...(v && { level: v.level }),
+  };
+}
+
 /** A myth card's recall: reject the statement, then say why (the card's back). */
 export const myth = (item: Item): Exercise => ({
   type: 'myth',
@@ -207,15 +224,25 @@ export function codeExercise(item: Item): Exercise | null {
 export const recall = (item: Item, variant = 0): Exercise =>
   (isMyth(item)
     ? myth(item)
-    : item.kind === 'mcq'
-      ? mcq(item)
-      : item.kind === 'order'
-        ? order(item)
-        : item.kind === 'code'
-          ? codeExercise(item)
-          : item.kind === 'occlusion'
-            ? typed(item)
-            : null) ?? (qa(item).typeable ? typed(item, variant) : flip(item, variant));
+    : isExplain(item)
+      ? explain(item)
+      : item.kind === 'mcq'
+        ? mcq(item)
+        : item.kind === 'order'
+          ? order(item)
+          : item.kind === 'code'
+            ? codeExercise(item)
+            : item.kind === 'occlusion'
+              ? typed(item)
+              : null) ?? recallBasic(item, variant);
+
+/** A basic card: typed when the answer is short, explained first when tagged why/how, otherwise flipped. */
+function recallBasic(item: Item, variant: number): Exercise {
+  const q = qa(item);
+  const why = asksWhy(item);
+  if (q.typeable && !(why && q.prompt !== item.target)) return typed(item, variant);
+  return why ? explain(item, variant) : flip(item, variant);
+}
 
 export function cloze(item: Item): Exercise | null {
   if (item.kind === 'cloze') {

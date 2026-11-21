@@ -23,6 +23,7 @@ const TEXT_FIELDS = [
   'altAnswers',
   'variants',
   'corrections',
+  'keyPoints',
   'tolerance',
   'code',
   'codeLang',

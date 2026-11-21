@@ -23,6 +23,7 @@ import {
   Typed,
   Unscramble,
 } from './modes/Exercises';
+import { Explain } from './modes/Explain';
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { GuessBlock } from './modes/Guess';
 import { mcFor, recallFor } from './plan';
@@ -166,6 +167,8 @@ function ExerciseBlock({
       return <Flip key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'myth':
       return <Myth key={k} ex={ex} ctx={ctx} onNext={next} />;
+    case 'explain':
+      return <Explain key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'mcq':
       return <Mcq key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'order':
@@ -409,6 +412,7 @@ export function Session({
         genderOnly: a.genderOnly,
         practice: plan.practice || !!a.practice,
         level: a.level,
+        easy: a.easy,
       });
       return gained;
     },

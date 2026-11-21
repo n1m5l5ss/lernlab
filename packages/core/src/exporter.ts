@@ -7,8 +7,9 @@ import { writeLernpack } from './formats/lernpack';
 import { writeApkg } from './formats/apkgwrite';
 import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
+import { keyPointsAsBack, parseKeyPoints } from './explain';
 
-/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
 const FROM_EXTRA = {
   choices: 'choices',
   correct: 'correct',
@@ -17,6 +18,7 @@ const FROM_EXTRA = {
   imageAlt: 'imageAlt',
   variants: 'variants',
   corrections: 'corrections',
+  keyPoints: 'keyPoints',
   tolerance: 'tolerance',
   code: 'code',
   codeLang: 'codeLang',
@@ -47,11 +49,14 @@ export function rowToCard(row: Row, deckName: string): NormalizedCard {
     sourceId: String(r.id),
     type: myth
       ? 'myth'
-      : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
-        ? r.kind
-        : undefined,
+      : fields.keyPoints
+        ? 'explain'
+        : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
+          ? r.kind
+          : undefined,
     front: r.target,
-    back: r.meaning,
+    // An explain card without a model explanation: older readers and Anki get its key points as the back.
+    back: !r.meaning && fields.keyPoints ? keyPointsAsBack(parseKeyPoints(fields.keyPoints)) : r.meaning,
     ...fields,
     example: r.sentence_html || undefined,
     exampleTranslation: r.sentence_meaning || undefined,

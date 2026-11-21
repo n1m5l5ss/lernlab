@@ -476,7 +476,8 @@
         "steps": "Steps",
         "altAnswers": "Other accepted answers",
         "variants": "Question variants",
-        "corrections": "Corrections for wrong choices"
+        "corrections": "Corrections for wrong choices",
+        "keyPoints": "Key points"
       },
       "previewCaption_one": "The first card",
       "previewCaption_other": "The first {{count}} cards",
@@ -1209,6 +1210,28 @@
       "hint": "Say or think why first, then check.",
       "because": "It's a myth, because:",
       "fooled": "It's a myth, a common one. Here's why:"
+    },
+    "explain": {
+      "title": "Explain it in your own words",
+      "label": "Your explanation",
+      "placeholder": "Why or how? Write it as if you were teaching a friend.",
+      "check": "Check my explanation",
+      "checkKeys": "Ctrl + Enter",
+      "checkKeysMac": "⌘ + Enter",
+      "dontKnow": "I don't know yet",
+      "model": "A model answer:",
+      "gaveUp": "Here is one way to explain it. This card comes back soon.",
+      "pointsLegend": "Tick the key points you covered",
+      "resultAll": "All points covered: counts as Good.",
+      "resultSome": "Some points covered: counts as Hard.",
+      "resultNone": "No points ticked yet: counts as Again.",
+      "done": "Done",
+      "easy": "That was easy",
+      "understand": "How well do you understand this? (optional)",
+      "understandAfter": "And now? (optional)",
+      "gapDown": "You rated {{before}} before and {{after}} after. Explaining often shows what is still unclear: that is how it helps.",
+      "gapUp": "You rated {{before}} before and {{after}} after: explaining made it clearer.",
+      "gapSame": "You rated {{before}} before and after."
     },
     "flip": {
       "title": "Recall · think of the answer",

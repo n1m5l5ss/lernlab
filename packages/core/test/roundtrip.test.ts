@@ -65,6 +65,13 @@ upsertCards(deck, [
   { front: 'Order mitosis', back: '', type: 'order', steps: 'Prophase|Metaphase|Anaphase|Telophase', rank: 2 },
   { front: 'The {{c1::mitochondrion}} makes ATP', back: 'Cell biology', rank: 4 },
   { front: '#1 rule, "quoted", with commas', back: 'line one\nline two', rank: 5, variants: 'Say it, "again"' },
+  {
+    front: 'Why does the heart have four chambers?',
+    back: '',
+    type: 'explain',
+    keyPoints: 'Two pumps, "lungs" and body|Oxygen-rich blood stays apart, with commas',
+    rank: 6,
+  },
 ]);
 
 /** Every stored card field except the row's own id, deck, order and timestamps; the deck's own name reads <deck>. */
@@ -83,7 +90,7 @@ test('.lernpack: export then import into a new deck gives identical cards, with 
   const pack = exportDeck(deck.id, 'lernpack');
   assert.equal(pack.name, 'Biology.lernpack');
   const r = importFile(pack.name, pack.data, { deckName: 'Biology copy' });
-  assert.equal(r.added, 5);
+  assert.equal(r.added, 6);
   assert.equal(r.media, 4);
   assert.equal(r.mediaMissing, 0);
   assert.deepEqual(cardsOf(r.deck.id, 'Biology copy'), original);
@@ -135,6 +142,7 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
     'image_alt',
     'variants',
     'corrections',
+    'key_points',
     'audio',
     'video',
     'id',
@@ -151,7 +159,7 @@ test('.lernpack: its cards.csv alone imports to identical cards, with media', ()
   const { 'cards.jsonl': _jsonl, ...rest } = files;
   const r = importFile('csv-only.lernpack', zipSync(rest as Zippable), { deckName: 'Biology from CSV' });
   assert.equal(r.format, 'lernpack');
-  assert.equal(r.added, 5);
+  assert.equal(r.added, 6);
   assert.equal(r.media, 4);
   assert.equal(r.mediaMissing, 0);
   assert.deepEqual(cardsOf(r.deck.id, 'Biology from CSV'), original);
@@ -162,7 +170,7 @@ test('CSV: export then import into a new deck gives identical cards (media files
   assert.equal(csv.name, 'Biology.csv');
   const r = importFile('Fresh.csv', csv.data);
   assert.equal(r.deck.name, 'Fresh');
-  assert.equal(r.added, 5);
+  assert.equal(r.added, 6);
   const copy = cardsOf(r.deck.id, 'Fresh');
   // A plain CSV carries the file name of a picture, not the picture itself.
   assert.equal(r.mediaMissing, 4);
@@ -193,6 +201,14 @@ test('corrections for wrong choices are stored with the cards, one slot per choi
   assert.deepEqual(original.map((c) => extraOf(c).corrections).filter(Boolean), [
     '|Many people think the heart is an organelle, "a big one". In fact it is an organ, made of cells.||A lung is an organ, too',
   ]);
+});
+
+test('key points are stored with the cards, and an empty back stays empty (so the round trips above carry them)', () => {
+  const explain = original.filter((c) => extraOf(c).keyPoints);
+  assert.deepEqual(
+    explain.map((c) => extraOf(c).keyPoints),
+    ['Two pumps, "lungs" and body|Oxygen-rich blood stays apart, with commas'],
+  );
 });
 
 test('the CSV template imports as three example cards', () => {

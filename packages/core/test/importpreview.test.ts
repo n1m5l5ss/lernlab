@@ -148,3 +148,8 @@ test('a column of corrections for wrong choices is recognised', () => {
   );
   assert.equal(known.table?.fields.corrections, 4);
 });
+
+test('a column of key points is recognised', () => {
+  const known = previewFile('Why.csv', strToU8('front,back,key_points\nWhy seasons?,Tilt,Tilt|Angle\n'));
+  assert.equal(known.table?.fields.keyPoints, 2);
+});

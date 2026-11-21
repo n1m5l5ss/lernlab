@@ -138,6 +138,7 @@ const cardInput = v.object({
   alt: text,
   variants: text,
   corrections: text,
+  keyPoints: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -447,6 +448,7 @@ export const handlers = {
           altAnswers: opt(b.alt),
           variants: opt(b.variants),
           corrections: opt(b.corrections),
+          keyPoints: opt(b.keyPoints),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);
@@ -610,6 +612,7 @@ export const handlers = {
       genderOnly: v.optional(v.boolean),
       practice: v.optional(v.boolean),
       level: v.optional(v.oneOf(...LEVELS)),
+      easy: v.optional(v.boolean),
     }),
     (a) => recordAttempt(a as Attempt),
   ),

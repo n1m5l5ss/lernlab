@@ -65,7 +65,8 @@ export type Grade = 1 | 2 | 3 | 4;
 /**
  * Map the FIRST recall attempt of the day on an item to an FSRS grade.
  * Wrong → Again. Right with a hint, typo, umlaut or article slip → Hard. Right → Good.
- * Easy only for fast answers on production formats for items already reviewed before.
+ * Easy only for fast answers on production formats, or when the learner says so after ticking every key point
+ * of an explain card, and only for items already reviewed before.
  */
 export function gradeFor(a: {
   format: Format;
@@ -73,6 +74,7 @@ export function gradeFor(a: {
   nearMiss?: boolean;
   articleError?: boolean;
   usedHint?: boolean;
+  easy?: boolean;
   responseMs: number;
   answerLength: number;
   reps: number;
@@ -81,6 +83,7 @@ export function gradeFor(a: {
   if (a.articleError) return 2;
   if (!a.correct) return 1;
   if (a.usedHint || a.nearMiss) return 2;
+  if (a.easy && a.reps >= 1) return 4; // said so after ticking every key point (explain.ts); new cards never Easy
   const fastMs = 2500 + 150 * a.answerLength;
   if ((a.format === 'typed' || a.format === 'speak') && a.reps >= 2 && a.responseMs < fastMs) return 4;
   return 3;

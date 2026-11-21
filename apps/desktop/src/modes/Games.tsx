@@ -6,6 +6,7 @@ import { qa } from '@lernlab/core/cards';
 import { say, sfx } from '../audio';
 import { useKeys, type Ctx, type BlockResult } from '../ctx';
 import { Cloze, Flip, Myth, Order, TypedEngine } from './Exercises';
+import { Explain } from './Explain';
 import { CodeBlock } from '../code-block';
 import { Media, Rich } from '../rich';
 import { recallFor } from '../plan';
@@ -468,6 +469,8 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
           <Flip key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
         ) : ex.type === 'myth' ? (
           <Myth key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
+        ) : ex.type === 'explain' ? (
+          <Explain key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
         ) : ex.type === 'cloze' ? (
           <Cloze key={i} ex={ex} ctx={ctx} onNext={after} />
         ) : ex.type === 'order' ? (

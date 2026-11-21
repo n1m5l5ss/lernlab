@@ -169,3 +169,23 @@ test('.apkg: Anki has no corrections for wrong choices, so they are kept under t
   db.close();
   assert.equal(fields[5], 'EC2: A &amp; B<br>RDS: C');
 });
+
+test('.apkg: Anki has no key points, so they go under the notes, or become the back when there is none', () => {
+  const deck = createDeck('Explain', null);
+  upsertCards(deck, [
+    { front: 'Why seasons?', back: 'The tilt', type: 'explain', keyPoints: 'Tilt <b>&</b> angle|Not distance' },
+    { front: 'How tides?', back: '', type: 'explain', keyPoints: 'Moon|Spin' },
+  ]);
+  const db = collection(unzipSync(exportDeck(deck.id, 'apkg').data));
+  const notes = db
+    .prepare('SELECT flds FROM notes')
+    .all()
+    .map((r) => String(r.flds).split('\x1f'));
+  db.close();
+  const seasons = notes.find((f) => f[0] === 'Why seasons?')!;
+  assert.equal(seasons[1], 'The tilt');
+  assert.equal(seasons[5], '• Tilt &amp; angle<br>• Not distance');
+  const tides = notes.find((f) => f[0] === 'How tides?')!;
+  assert.equal(tides[1], '• Moon<br>• Spin');
+  assert.equal(tides[5], '', 'not twice');
+});
