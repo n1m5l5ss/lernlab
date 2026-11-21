@@ -5,6 +5,7 @@
 import type { DB } from './db';
 import { mcqOf, qa, replaceClozes } from './cards';
 import { codeTask } from './code';
+import { isMyth } from './misconceptions';
 import type { Item, SessionLength } from './types';
 
 /** Fewest questions worth a round; the most a session asks, by its length. */
@@ -21,7 +22,7 @@ const GUESS_KINDS = new Set<Item['kind']>(['card', 'cloze', 'mcq', 'numeric', 'c
  * words of a language deck, no. Line ordering (order cards, code with only lines) is not a guess either.
  */
 export function guessable(item: Item): boolean {
-  if (item.lang || !GUESS_KINDS.has(item.kind)) return false;
+  if (item.lang || !GUESS_KINDS.has(item.kind) || isMyth(item)) return false;
   if (item.kind === 'mcq') return !!mcqOf(item);
   if (item.kind === 'code') return codeTask(item)?.mode === 'fill' || codeTask(item)?.mode === 'output';
   return true;

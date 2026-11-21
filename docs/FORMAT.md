@@ -68,7 +68,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong".
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong". The card type `myth` (November 2026): an older reader studies it as a basic card (front: the myth, back: why it is wrong).
 
 ### manifest.json
 
@@ -120,7 +120,7 @@ Each line is one card. Only `front` is required.
 | Field | Meaning |
 |---|---|
 | `id` | Stable id so updates keep progress. Write a string; readers also accept a number |
-| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card |
+| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)), `myth` (see [Myth cards](#myth-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card |
 | `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
@@ -184,6 +184,16 @@ corrections: Many people think EC2 is serverless. In fact you still patch and sc
 - Plain text: formatting tags are removed, but `**bold**`, `*italic*` and `` `code` `` work. At most 500 characters per correction.
 - Slots of correct choices and slots past the last choice are dropped. Other card types drop the field.
 - Exported to Anki, each correction is added under the notes, after its choice ("EC2: Many people think…").
+
+## Myth cards
+
+A card of type `myth` states a common misconception on its front and explains on its back why it is wrong:
+
+```json
+{"type":"myth","front":"We only use 10% of our brains.","back":"Brain scans show activity all over the brain, even during sleep."}
+```
+
+In CSV, put `myth` in the `type` column. A session asks "True or myth?" (the answer is always myth), then asks you to say why before it shows the back, and you rate yourself as on a flip card. It is a normal recall with one grade per day. Myth cards have no question variants, and they are left out of games, guess-first rounds and mock exams, so a myth is never shown as a fact. Exported to Anki, a myth card is a basic card.
 
 ## Math and numeric cards
 

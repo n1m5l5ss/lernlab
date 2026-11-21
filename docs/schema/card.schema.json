@@ -11,9 +11,9 @@
       "type": ["string", "number"]
     },
     "type": {
-      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit; code: a code snippet in `code`; occlusion: a box hidden on the image (all added after v1 was published). Readers treat an unknown type as if it were missing.",
+      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit; code: a code snippet in `code`; occlusion: a box hidden on the image; myth: a common misconception on the front, why it is wrong on the back (all added after v1 was published). Readers treat an unknown type as if it were missing.",
       "type": "string",
-      "enum": ["basic", "cloze", "mcq", "order", "numeric", "code", "occlusion"]
+      "enum": ["basic", "cloze", "mcq", "order", "numeric", "code", "occlusion", "myth"]
     },
     "front": {
       "description": "Term, question or prompt. Cloze: text with {{c1::answer}} or {{c1::answer::hint}} (Anki syntax). A card with an empty front is skipped.",

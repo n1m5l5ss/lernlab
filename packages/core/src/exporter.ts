@@ -37,13 +37,19 @@ export function rowToCard(row: Row, deckName: string): NormalizedCard {
   const r = row as unknown as ItemRow;
   const extra: Record<string, string> = JSON.parse(r.extra ?? '{}');
   const fields: Partial<NormalizedCard> = {};
+  const myth = extra.myth === '1';
+  delete extra.myth;
   for (const [key, field] of Object.entries(FROM_EXTRA)) {
     if (extra[key]) fields[field] = extra[key];
     delete extra[key];
   }
   return {
     sourceId: String(r.id),
-    type: ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind) ? r.kind : undefined,
+    type: myth
+      ? 'myth'
+      : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
+        ? r.kind
+        : undefined,
     front: r.target,
     back: r.meaning,
     ...fields,

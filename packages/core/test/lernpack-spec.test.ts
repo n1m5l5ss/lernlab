@@ -106,7 +106,16 @@ test('the schema files are draft 2020-12 JSON Schemas with the required keys', (
       assert.ok(p.description, `${k} is described`);
   }
   assert.equal(manifestSchema.properties.version.const, 1);
-  assert.deepEqual(cardSchema.properties.type.enum, ['basic', 'cloze', 'mcq', 'order', 'numeric', 'code', 'occlusion']);
+  assert.deepEqual(cardSchema.properties.type.enum, [
+    'basic',
+    'cloze',
+    'mcq',
+    'order',
+    'numeric',
+    'code',
+    'occlusion',
+    'myth',
+  ]);
   // The checker used below really checks.
   assert.equal(validate(cardSchema, { front: '', tags: 'x', type: 'quiz', bogus: 1 }, true).length, 4);
   assert.equal(validate(cardSchema, { front: 'x', bogus: 1 }).length, 0, 'unknown keys pass when not strict');

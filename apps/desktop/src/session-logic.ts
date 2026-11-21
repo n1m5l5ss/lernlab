@@ -102,7 +102,7 @@ export function playableOnly<T extends Playable>(exercises: T[], canHear: (itemI
 }
 
 /** Exercise types that are real recall attempts (they can grade a card; recognition and games never do). */
-const RECALL_TYPES = new Set(['typed', 'cloze', 'flip', 'mcq', 'order']);
+const RECALL_TYPES = new Set(['typed', 'cloze', 'flip', 'mcq', 'order', 'myth']);
 export const answerKind = (type: string): AnswerKind =>
   type === 'intro' ? 'meet' : RECALL_TYPES.has(type) ? 'recall' : 'other';
 

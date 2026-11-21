@@ -4,7 +4,7 @@ import { clozeText, mcqOf, parseCloze, qa, stepsOf } from './cards';
 import { hasMath, splitMath } from './math';
 import { codeTask, GAP } from './code';
 import { variantsOf } from './variants';
-import { correctionHtml, correctionsOf } from './misconceptions';
+import { correctionHtml, correctionsOf, isMyth } from './misconceptions';
 import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
@@ -29,6 +29,7 @@ function pickDistractors(item: Item, pool: Item[], n: number, key: (i: Item) => 
       (p) =>
         p.id !== item.id &&
         !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(p.kind) &&
+        !isMyth(p) &&
         key(p) &&
         !seen.has(key(p).toLowerCase()),
     )
@@ -134,6 +135,14 @@ export function flip(item: Item, k = 0): Exercise {
   };
 }
 
+/** A myth card's recall: reject the statement, then say why (the card's back). */
+export const myth = (item: Item): Exercise => ({
+  type: 'myth',
+  itemId: item.id,
+  statement: item.target,
+  why: item.meaning,
+});
+
 export function mcq(item: Item): Exercise | null {
   const m = mcqOf(item);
   if (!m) return null;
@@ -196,15 +205,17 @@ export function codeExercise(item: Item): Exercise | null {
  * `variant` asks one of the card's other wordings instead (variants.ts); 0 is the card's own question.
  */
 export const recall = (item: Item, variant = 0): Exercise =>
-  (item.kind === 'mcq'
-    ? mcq(item)
-    : item.kind === 'order'
-      ? order(item)
-      : item.kind === 'code'
-        ? codeExercise(item)
-        : item.kind === 'occlusion'
-          ? typed(item)
-          : null) ?? (qa(item).typeable ? typed(item, variant) : flip(item, variant));
+  (isMyth(item)
+    ? myth(item)
+    : item.kind === 'mcq'
+      ? mcq(item)
+      : item.kind === 'order'
+        ? order(item)
+        : item.kind === 'code'
+          ? codeExercise(item)
+          : item.kind === 'occlusion'
+            ? typed(item)
+            : null) ?? (qa(item).typeable ? typed(item, variant) : flip(item, variant));
 
 export function cloze(item: Item): Exercise | null {
   if (item.kind === 'cloze') {
