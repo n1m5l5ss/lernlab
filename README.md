@@ -229,7 +229,7 @@ To move the folder, use **File → Use a different data folder…**, for example
 - [Roadmap](docs/ROADMAP.md)
 - [Code signing policy](docs/CODE_SIGNING.md)
 - [Security policy](SECURITY.md): how to report a vulnerability privately
-- [Security practices](docs/SECURITY-PRACTICES.md) and [testing](docs/TESTING.md)
+- [Security practices](docs/SECURITY-PRACTICES.md), [testing](docs/TESTING.md) and our [OpenSSF Best Practices answers](docs/OPENSSF-BEST-PRACTICES.md)
 
 ## Contributing
 
