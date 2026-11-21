@@ -10,6 +10,7 @@ import {
   ConfidenceRow,
   Feedback,
   Input,
+  KeyPointChecklist,
   LevelTag,
   Misconception,
   ProgressBar,
@@ -159,5 +160,27 @@ test('Misconception shows the lead, the correction and then the right answer', (
     html(h(Misconception, { lead: 'A common mix-up', answer: 'Correct: B', children: 'Many people think A.' })),
     '<span class="misconception-lead">A common mix-up</span><div class="misconception">Many people think A.</div>' +
       '<div class="misconception-answer">Correct: B</div>',
+  );
+});
+
+test('KeyPointChecklist is a fieldset of labelled checkboxes, one per key point', () => {
+  const out = html(
+    h(KeyPointChecklist, {
+      legend: 'Tick what you covered',
+      points: ['Tilt', 'Angle'],
+      checked: [true],
+      onToggle: () => {},
+    }),
+  );
+  assert.match(out, /^<fieldset class="keypoints"><legend>Tick what you covered<\/legend><ul>/);
+  const boxes = [
+    ...out.matchAll(/<input type="checkbox" id="([^"]+)"( checked="")?\/><label for="([^"]+)">(\w+)<\/label>/g),
+  ];
+  assert.deepEqual(
+    boxes.map((m) => [!!m[2], m[1] === m[3], m[4]]),
+    [
+      [true, true, 'Tilt'],
+      [false, true, 'Angle'],
+    ],
   );
 });

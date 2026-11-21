@@ -20,6 +20,8 @@ export type AnswerInput = {
   practice?: boolean;
   /** Asked with one of the card's question variants: its level. */
   level?: Level;
+  /** "That was easy" after ticking every key point of an explain card (core/explain.ts). */
+  easy?: boolean;
 };
 
 export type Ctx = {

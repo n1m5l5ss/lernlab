@@ -1,4 +1,6 @@
-// "Explain it" cards (#199): a why/how question with 2–5 key points, carried by every file format.
+// "Explain it" cards (#199): a why/how question with 2–5 key points. The session asks for an explanation, then
+// shows the model answer and the key points to tick. It is a real recall: one FSRS grade per card per day.
+// Games, distractors, guess rounds and exams leave explain cards out; cards tagged why/how never flip.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtempSync } from 'node:fs';
@@ -12,8 +14,11 @@ process.env.LERNLAB_DATA = dir;
 const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
 const { createDeck, upsertCards } = await import('../src/library');
-const { allItems } = await import('../src/learn');
-const { isExplain, keyPointsAsBack } = await import('../src/explain');
+const { planSession } = await import('../src/session');
+const { allItems, recordAttempt } = await import('../src/learn');
+const { isExplain, explainOutcome, keyPointsAsBack } = await import('../src/explain');
+const { guessable } = await import('../src/guess');
+const { buildExam } = await import('../src/examplan');
 const { exportDeck } = await import('../src/exporter');
 const { importFile } = await import('../src/importer');
 const { getDb } = await import('../src/db');
@@ -44,6 +49,58 @@ upsertCards(deck, [
     tags: ['earth', 'why'],
   },
 ]);
+const items = allItems(getDb(), deck.id);
+const seasons = items.find((i) => i.target === SEASONS.front)!;
+const explains = new Set(items.filter(isExplain).map((i) => i.id));
+const sky = items.find((i) => i.target === 'Why is the sky blue?')!;
+
+test('sessions ask explain cards only as explanations: no games, pairs, sprints, guess rounds or exams', () => {
+  assert.equal(explains.size, 2);
+  assert.equal(guessable(seasons), false);
+  for (let k = 0; k < 5; k++) {
+    const plan = planSession('standard', getDb(), new Date(2026, 10, 2, 10), deck.id);
+    for (const b of plan.blocks) {
+      if ('itemIds' in b)
+        assert.ok(
+          b.itemIds.every((id) => !explains.has(id)),
+          b.title,
+        );
+      if (!('exercises' in b)) continue;
+      for (const e of b.exercises) {
+        if (!('itemId' in e)) continue;
+        if (explains.has(e.itemId)) assert.equal(e.type, 'explain', `${b.title}: ${e.type}`);
+        if (e.itemId === sky.id) assert.ok(e.type !== 'flip', 'a why card never flips');
+      }
+    }
+    const all = plan.blocks.flatMap((b) => ('exercises' in b ? b.exercises : []));
+    assert.ok(
+      all.filter((e) => e.type === 'explain' && explains.has(e.itemId)).length >= 2,
+      'new explain cards are asked',
+    );
+    for (const e of all)
+      if (e.type === 'mc' || e.type === 'truefalse')
+        assert.ok(!JSON.stringify(e).includes('tilted axis'), 'never a distractor');
+  }
+  const exam = buildExam(deck.id, getDb());
+  assert.ok(exam.questions.length > 0);
+  assert.ok(exam.questions.every((q) => !explains.has(q.itemId)));
+  assert.ok(exam.questions.every((q) => !q.choices.some((c) => c.includes('tilted axis'))));
+});
+
+test('an explanation is a real recall: it introduces the card and grades it once per day, never Easy when new', () => {
+  const day = new Date(2026, 10, 3, 10);
+  const a = (o: ReturnType<typeof explainOutcome>, when = day) =>
+    recordAttempt(
+      { sessionId: 'e', itemId: seasons.id, format: 'flip', responseMs: 40_000, xp: 1, ...o },
+      getDb(),
+      when,
+    );
+  assert.equal(a(explainOutcome(3, 3, true)).grade, 3, 'a new card is Good at most');
+  assert.equal(a(explainOutcome(0, 3)).grade, null, 'a second answer the same day does not grade');
+  assert.ok(getDb().prepare('SELECT introduced_day FROM srs WHERE item_id = ?').get(seasons.id)?.introduced_day);
+  assert.equal(a(explainOutcome(3, 3, true), new Date(2026, 10, 6, 10)).grade, 4, '"That was easy" after a review');
+  assert.equal(a(explainOutcome(1, 3, true), new Date(2026, 10, 9, 10)).grade, 2, 'some points: Hard, never Easy');
+});
 
 test('.lernpack, CSV and JSON carry the explain type and key points; older readers get the points as the back', () => {
   const pack = unzipSync(exportDeck(deck.id, 'lernpack').data);

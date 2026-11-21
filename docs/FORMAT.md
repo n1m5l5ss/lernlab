@@ -207,6 +207,8 @@ A card of type `explain` asks a why or how question. Its back is a model explana
 - In CSV, put `explain` in the `type` column and the points in a `key_points` column. Two or more key points make an explain card even without a type.
 - Key points are plain text with `**bold**`, `*italic*` and `` `code` ``, at most 300 characters each. Repeats and blanks are dropped, a sixth point and later ones too. With fewer than two, the card is a basic card and keeps none.
 - The back may be empty. A writer then puts the key points in the back, one per line starting with `• `, so an older reader still has an answer; a reader that knows explain cards drops such a back again.
+- A session asks you to type your explanation, then shows the back and the key points. You tick the points you covered: all of them is Good, some is Hard, none is Again, and only with every point ticked can you say "That was easy" (Easy, once you have reviewed the card before). It is a normal recall with one grade per day, with no timer. Explain cards have no question variants, and they are left out of games, guess-first rounds, distractors and mock exams, which need a short answer.
+- A basic card tagged `why` or `how` is never flipped either: you type an explanation before its back shows, then rate yourself as on a flip card. (A short back is still typed and checked.)
 - Exported to Anki, an explain card is a basic card with its key points under the notes (or as its back when it has none).
 
 ## Math and numeric cards

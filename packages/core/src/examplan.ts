@@ -7,7 +7,7 @@ import { host } from './host';
 import { qa } from './cards';
 import { asHtml, backText, mc, mcq } from './exercises';
 import { variantsOf } from './variants';
-import { isMyth } from './misconceptions';
+import { askedOwnWay } from './explain';
 import { allItems, deckNewPerDay, introducedTodayCount, recordAttempt } from './learn';
 import { getDeck, type Deck } from './library';
 import { shuffle, stripHtml } from './text';
@@ -55,8 +55,10 @@ function question(item: Item, pool: Item[]): ExamQuestion | null {
 export function buildExam(deckId: number, d: DB = getDb()): Exam {
   const deck: Deck | null = getDeck(deckId, d);
   const settings = examSettings(deck?.settings.exam);
-  // Myth cards ask "true or myth?" in sessions; they are neither questions nor answers in an exam.
-  const pool = allItems(d, deckId).filter((i) => !['grammar', 'order', 'occlusion'].includes(i.kind) && !isMyth(i));
+  // Myth and explain cards are asked in their own way in sessions; they are neither questions nor answers in an exam.
+  const pool = allItems(d, deckId).filter(
+    (i) => !['grammar', 'order', 'occlusion'].includes(i.kind) && !askedOwnWay(i),
+  );
   const questions: ExamQuestion[] = [];
   for (const item of shuffle(pool)) {
     if (questions.length >= settings.questions) break;

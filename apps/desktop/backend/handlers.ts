@@ -612,6 +612,7 @@ export const handlers = {
       genderOnly: v.optional(v.boolean),
       practice: v.optional(v.boolean),
       level: v.optional(v.oneOf(...LEVELS)),
+      easy: v.optional(v.boolean),
     }),
     (a) => recordAttempt(a as Attempt),
   ),

@@ -5,6 +5,7 @@
 // Stored in the card's extra fields as one line of plain text, separated by '|' like choices, which is also
 // what CSV and .lernpack carry (no migration). Cards tagged `why` or `how` also explain first, without points.
 import { correctionHtml } from './misconceptions';
+import { isMyth } from './misconceptions';
 import { stripHtml } from './text';
 import type { Item } from './types';
 
@@ -49,6 +50,12 @@ export const keyPointsOf = (item: Pick<Item, 'extra'>): string[] => parseKeyPoin
 /** An explain card: a basic card whose extra fields hold its key points (cardToItem keeps them only then). */
 export const isExplain = (item: Pick<Item, 'extra'>): boolean => !!item.extra?.keyPoints;
 
+/** Myth and explain cards are asked only in their own way: no games, distractors, guess rounds or exams. */
+export const askedOwnWay = (item: Pick<Item, 'extra'>): boolean => isMyth(item) || isExplain(item);
+
+/** Cards tagged `why` or `how` are explained before the answer shows, never flipped. */
+export const asksWhy = (item: Pick<Item, 'tags'>): boolean => item.tags.some((t) => /^(why|how)$/i.test(t.trim()));
+
 /** A key point as safe HTML to show: its text escaped, with **bold**, *italic* and `code`. */
 export const keyPointHtml = correctionHtml;
 
@@ -57,3 +64,18 @@ export const keyPointHtml = correctionHtml;
  * apps, Anki) when the card has no model explanation of its own. Read back in, it gives an empty back again.
  */
 export const keyPointsAsBack = (points: string[]): string => points.map((p) => `• ${p}`).join('\n');
+
+export type ExplainOutcome = { correct: boolean; nearMiss: boolean; easy: boolean };
+
+/** The answer for `ticked` of `total` key points: all → Good, some → Hard, none → Again; Easy needs all. */
+export function explainOutcome(ticked: number, total: number, easy = false): ExplainOutcome {
+  const all = total > 0 && ticked >= total;
+  return { correct: ticked > 0, nearMiss: ticked > 0 && !all, easy: all && easy };
+}
+
+/** "How well do you understand this?" is rated 1–7, before and after explaining. It never touches FSRS. */
+export const UNDERSTANDING_SCALE = 7;
+
+/** After minus before, when both ratings were given; null otherwise. */
+export const understandingGap = (before: number | null, after: number | null): number | null =>
+  before && after ? after - before : null;

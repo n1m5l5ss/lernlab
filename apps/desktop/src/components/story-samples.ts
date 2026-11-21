@@ -10,3 +10,6 @@ export const TELUGU_SHORT = 'తెలుగు పాఠం';
 export const CJK_LONG =
   'この文はとても長くて、部品の中で文字がどのように折り返されるかを確認するためのものです。这是一个很长的句子。';
 export const CJK_SHORT = '日本語の練習';
+
+/** An explain card's key points (#199), learning content like the strings above. */
+export const KEY_POINTS = ['Earth is tilted', 'The tilt changes the angle of sunlight', 'Not the distance to the sun'];
