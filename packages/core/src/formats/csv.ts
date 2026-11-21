@@ -84,6 +84,9 @@ const COLUMNS: Record<string, string[]> = {
   tolerance: ['tolerance', 'tol'],
   code: ['code', 'snippet', 'source code'],
   codeLang: ['code_lang', 'code language', 'programming language'],
+  occlusion: ['occlusion', 'occlusion box'],
+  occlusionGroup: ['occlusion_group', 'occlusion group'],
+  occlusionMode: ['occlusion_mode', 'occlusion mode'],
   extra: [],
 };
 
@@ -159,6 +162,9 @@ export function csvToCards(text: string): {
       tolerance: get(r, 'tolerance') || undefined,
       code: 'code' in columns ? r[columns.code] || undefined : undefined, // untrimmed: indentation matters
       codeLang: get(r, 'codeLang') || undefined,
+      occlusion: get(r, 'occlusion') || undefined,
+      occlusionGroup: get(r, 'occlusionGroup') || undefined,
+      occlusionMode: get(r, 'occlusionMode') || undefined,
     } as NormalizedCard;
   });
   const keep = all.map((c) => !!(c.front || c.back));
@@ -183,6 +189,9 @@ const CSV_COLUMNS: [string, (c: NormalizedCard) => string | number | undefined][
   ['tolerance', (c) => c.tolerance],
   ['code', (c) => c.code],
   ['code_lang', (c) => c.codeLang],
+  ['occlusion', (c) => c.occlusion],
+  ['occlusion_group', (c) => c.occlusionGroup],
+  ['occlusion_mode', (c) => c.occlusionMode],
   ['image', (c) => c.image],
   ['image_alt', (c) => c.imageAlt],
   ['audio', (c) => c.audio],

@@ -24,6 +24,9 @@ const TEXT_FIELDS = [
   'tolerance',
   'code',
   'codeLang',
+  'occlusion',
+  'occlusionGroup',
+  'occlusionMode',
 ] as const;
 
 const text = (v: unknown) =>

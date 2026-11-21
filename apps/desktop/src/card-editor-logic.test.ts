@@ -5,6 +5,32 @@ import { EMPTY, fieldsToSave, formFor, previewOf, showImageAlt, sortDrop, type F
 const deck = { id: 1, language: null };
 const form = (f: Partial<Form>): Form => ({ ...EMPTY, ...f });
 
+test('an occlusion preview asks the selected box over its group, and says what is missing', () => {
+  const shapes = [
+    { box: { x: 0.1, y: 0.1, w: 0.2, h: 0.1 }, label: 'Aorta' },
+    { box: { x: 0.5, y: 0.5, w: 0.2, h: 0.1 }, label: 'Left ventricle' },
+  ];
+  const f = form({ type: 'occlusion', front: 'Label the heart', image: 'heart.png', occlusionMode: 'all' });
+  const p = previewOf(f, deck, shapes, 1)!;
+  assert.deepEqual(p.view, { type: 'occlusion', prompt: 'Label the heart', answer: 'Left ventricle' });
+  assert.deepEqual(
+    p.item.occlusionBoxes?.map((b) => b.label),
+    ['Aorta', 'Left ventricle'],
+  );
+  assert.equal(p.item.extra.occlusionMode, 'all');
+  assert.equal(previewOf({ ...f, image: '' }, deck, shapes, 0)!.view.type, 'problem', 'needs an image');
+  assert.equal(previewOf(f, deck, [], 0)!.view.type, 'problem', 'needs a box');
+  assert.deepEqual(
+    Object.entries(fieldsToSave({ ...f, type: 'basic', occlusion: '0,0,1,1' })).filter(([k]) => k.startsWith('occl')),
+    [
+      ['occlusion', ''],
+      ['occlusionGroup', ''],
+      ['occlusionMode', ''],
+    ],
+    'a basic card drops the box',
+  );
+});
+
 test('no preview until the front has text', () => {
   assert.equal(previewOf(form({ front: '  ' }), deck), null);
 });

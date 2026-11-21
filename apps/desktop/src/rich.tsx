@@ -5,6 +5,7 @@ import { imageAltOf } from '@lernlab/core/cards';
 import type { Item } from '@lernlab/core/types';
 import { mediaUrl } from './bridge';
 import { renderCardHtml } from './math-render';
+import { OccludedImage } from './occlusion';
 
 export function Rich({ html, className }: { html: string; className?: string }) {
   const __html = useMemo(() => renderCardHtml(html), [html]);
@@ -15,6 +16,8 @@ const src = (f: string) => (/^https?:\/\//.test(f) ? f : mediaUrl(f));
 
 export function Media({ item, size = 'md' }: { item: Item; size?: 'sm' | 'md' | 'lg' }) {
   if (!item.image && !item.video) return null;
+  // An occlusion card's picture is always shown with its boxes masked.
+  if (item.kind === 'occlusion') return <OccludedImage item={item} />;
   const max = size === 'lg' ? 320 : size === 'md' ? 220 : 120;
   return (
     <div className="media" style={{ maxHeight: max }}>

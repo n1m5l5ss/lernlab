@@ -56,6 +56,7 @@ import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
+import { setOcclusionMode, withOcclusionBoxes } from '@lernlab/core/occlusion';
 import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
 import { buildExam, recordExam, type Exam } from '@lernlab/core/examplan';
 import { EXAM_MODES } from '@lernlab/core/exam';
@@ -117,6 +118,9 @@ const cardInput = v.object({
   tolerance: text,
   code: text,
   codeLang: text,
+  occlusion: text,
+  occlusionGroup: text,
+  occlusionMode: text,
   alt: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
@@ -336,7 +340,7 @@ export const handlers = {
     const r = getDb().prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(id);
     if (!r) throw new AppError('card_not_found', 'Card not found');
     return {
-      ...rowToItem(r),
+      ...withOcclusionBoxes([rowToItem(r)], getDb())[0],
       suspended: !!r.suspended,
       starred: !!r.starred,
       extra: JSON.parse((r.extra as string | null) ?? '{}') as Record<string, string>,
@@ -408,10 +412,15 @@ export const handlers = {
           tolerance: opt(b.tolerance),
           code: opt(b.code),
           codeLang: opt(b.codeLang),
+          occlusion: opt(b.occlusion),
+          occlusionGroup: opt(b.occlusionGroup),
+          occlusionMode: opt(b.occlusionMode),
           altAnswers: opt(b.alt),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);
+      // The hide-one / hide-all mode belongs to the whole picture.
+      if (b.occlusionMode) setOcclusionMode(id, b.occlusionMode);
     }
     return { ok: true };
   }),

@@ -103,6 +103,32 @@ test('the card editor saves a code card with its code and language, and turning 
   assert.ok(!('code' in basic.extra) && !('codeLang' in basic.extra));
 });
 
+test('the card editor saves one occlusion card per box; editing one keeps its siblings, the mode is shared', async () => {
+  const deck = await ok('decks.create', { name: 'Anatomy', language: null });
+  const base = { front: 'Label the heart', type: 'occlusion', image: 'heart.png', occlusionGroup: 'g1' };
+  const boxes = [
+    ['Aorta', '0.4,0.05,0.2,0.1'],
+    ['Left ventricle', '0.55,0.6,0.25,0.2'],
+  ];
+  const ids: number[] = [];
+  for (const [back, occlusion] of boxes)
+    ids.push((await ok('cards.add', { deckId: deck.id, card: { ...base, back, occlusion, occlusionMode: 'one' } })).id);
+  const first = await ok('cards.get', { id: ids[0] });
+  assert.equal(first.kind, 'occlusion');
+  assert.deepEqual(
+    first.occlusionBoxes.map((b: { label: string }) => b.label),
+    ['Aorta', 'Left ventricle'],
+  );
+  await ok('cards.update', {
+    id: ids[0],
+    card: { ...base, back: 'Aortic arch', occlusion: '0.3,0.05,0.3,0.1', occlusionMode: 'all' },
+  });
+  const second = await ok('cards.get', { id: ids[1] });
+  assert.deepEqual([second.meaning, second.extra.occlusion], ['Left ventricle', '0.55,0.6,0.25,0.2'], 'untouched');
+  assert.equal(second.extra.occlusionMode, 'all', 'the mode is set for the whole group');
+  assert.equal(second.occlusionBoxes[0].label, 'Aortic arch');
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');

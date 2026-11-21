@@ -9,6 +9,7 @@ import { stripHtml, splitArticle } from './text';
 import { markdownLite, sanitizeHtml } from './cards';
 import { parseQuantity, parseTolerance } from './numeric';
 import { normalizeCode } from './code';
+import { formatBox, modeOf, parseBox } from './occlusion';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -91,7 +92,7 @@ export type NormalizedCard = {
   group?: string; // lesson group, e.g. "G01" (taught together as a mini-lesson)
   rank?: number; // frequency rank / introduction order
   extra?: Record<string, string>;
-  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code. */
+  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image). */
   type?: string;
   choices?: string; // "A|B|C|D"
   correct?: string; // "2|4" (1-based) or the correct choice texts
@@ -100,6 +101,9 @@ export type NormalizedCard = {
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
   code?: string; // code cards: the snippet, as plain text (never HTML)
   codeLang?: string; // code cards: its language, e.g. "python"
+  occlusion?: string; // occlusion cards: the box hidden on the image, "x,y,w,h" as fractions of its size
+  occlusionGroup?: string; // occlusion cards: shared by the boxes of one image
+  occlusionMode?: string; // occlusion cards: "one" (only the asked box hidden) or "all"
 };
 
 export const LANGUAGES: Record<string, string> = {
@@ -213,6 +217,7 @@ export function detectKind(
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
   if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
   if ((c?.code ?? c?.extra?.code ?? '').trim() && (t === 'code' || !t)) return 'code';
+  if (c?.image && parseBox(c.occlusion ?? c.extra?.occlusion) && (t === 'occlusion' || !t)) return 'occlusion';
   if (/\{\{c\d+::/.test(front)) return 'cloze';
   if (tags.includes('grammar')) return 'grammar';
   if (!language) return 'card';
@@ -288,6 +293,15 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   delete extra.code;
   delete extra.codeLang;
   if (kind === 'code') Object.assign(extra, { code }, codeLang && { codeLang });
+  // An occlusion card's box, group (the image's name when none is given) and mode, kept only on such a card.
+  const box = parseBox(c.occlusion ?? extra.occlusion);
+  const group = stripHtml(c.occlusionGroup ?? extra.occlusionGroup ?? '') || c.image || '';
+  const mode = modeOf(c.occlusionMode ?? extra.occlusionMode);
+  delete extra.occlusion;
+  delete extra.occlusionGroup;
+  delete extra.occlusionMode;
+  if (kind === 'occlusion' && box)
+    Object.assign(extra, { occlusion: formatBox(box), occlusionGroup: group, occlusionMode: mode });
   const { article, word } = splitArticle(stripHtml(front));
   const example = clean(c.example);
   const isNoun = kind === 'noun';

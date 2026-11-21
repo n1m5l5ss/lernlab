@@ -1,8 +1,21 @@
 import type { Line } from './teacher';
 import type { Article } from './text';
+import type { OcclusionBox } from './occlusion';
 
 export type ItemKind =
-  'noun' | 'verb' | 'word' | 'phrase' | 'grammar' | 'number' | 'card' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code';
+  | 'noun'
+  | 'verb'
+  | 'word'
+  | 'phrase'
+  | 'grammar'
+  | 'number'
+  | 'card'
+  | 'cloze'
+  | 'mcq'
+  | 'order'
+  | 'numeric'
+  | 'code'
+  | 'occlusion';
 
 /** A study item (one card/note). front = target/term/question, back = meaning/definition/answer. */
 export type Item = {
@@ -30,6 +43,8 @@ export type Item = {
   rank: number;
   tags: string[];
   group: string | null; // grammar group, e.g. "G01"
+  /** Occlusion cards: the boxes of the card's group, itself included (added when cards are loaded for study). */
+  occlusionBoxes?: OcclusionBox[];
 };
 
 /** Exercise formats. Only RECALL formats may write a spaced-repetition grade. */

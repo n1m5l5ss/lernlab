@@ -26,7 +26,7 @@ function pickDistractors(item: Item, pool: Item[], n: number, key: (i: Item) => 
     .filter(
       (p) =>
         p.id !== item.id &&
-        !['grammar', 'mcq', 'order', 'code'].includes(p.kind) &&
+        !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(p.kind) &&
         key(p) &&
         !seen.has(key(p).toLowerCase()),
     )
@@ -173,7 +173,9 @@ export const recall = (item: Item): Exercise =>
       ? order(item)
       : item.kind === 'code'
         ? codeExercise(item)
-        : null) ?? (qa(item).typeable ? typed(item) : flip(item));
+        : item.kind === 'occlusion'
+          ? typed(item)
+          : null) ?? (qa(item).typeable ? typed(item) : flip(item));
 
 export function cloze(item: Item): Exercise | null {
   if (item.kind === 'cloze') {
@@ -216,7 +218,8 @@ export function truefalse(item: Item, pool: Item[]): Exercise {
 }
 
 export function imagemc(item: Item, pool: Item[]): Exercise | null {
-  if (!item.image) return null;
+  // An occlusion picture is asked box by box (recall), never as a picture quiz.
+  if (!item.image || item.kind === 'occlusion') return null;
   const ds = pickDistractors(item, pool, 3, frontText);
   if (ds.length < 2) return null;
   const options = shuffle([frontText(item), ...ds.map(frontText)]);
@@ -232,7 +235,7 @@ export function unscramble(item: Item): Exercise | null {
 }
 
 /** Can the app play this card aloud: its own recording, or the system voice for a language deck. */
-export const hearable = (item: Item) => !!item.audio || !!item.lang;
+export const hearable = (item: Item) => item.kind !== 'occlusion' && (!!item.audio || !!item.lang);
 
 export function listen(item: Item, pool: Item[]): Exercise | null {
   if (!hearable(item)) return null;

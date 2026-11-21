@@ -33,6 +33,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - exam-style multi-select questions, ordering;
   - math in LaTeX, and number answers with a tolerance and units;
   - code cards with syntax highlighting: predict the output, fill in the missing token, put the lines in order;
+  - image occlusion: draw boxes over a picture and name each hidden part, one card per box;
   - a timed Blitz, and a boss fight over everything you missed.
 - **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark and a score by topic.
 - **Honest grading:**
