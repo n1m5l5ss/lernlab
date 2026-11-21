@@ -2,6 +2,34 @@
 
 All notable changes to LernLab are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/). New entries are added automatically by release-please from pull-request titles. See [docs/RELEASING.md](docs/RELEASING.md).
 
+## [1.1.0](https://github.com/n1m5l5ss/lernlab/compare/v1.0.0...v1.1.0) (2026-11-21)
+
+
+### Added
+
+* add a mock exam simulator with tutor and timed modes ([#149](https://github.com/n1m5l5ss/lernlab/issues/149)) ([58ca9d9](https://github.com/n1m5l5ss/lernlab/commit/58ca9d9c1ee5f7749d2fa8d5ae89cb792abbc8e6))
+* add code cards to predict the output, fill in a token or put lines in order ([#152](https://github.com/n1m5l5ss/lernlab/issues/152)) ([82317ee](https://github.com/n1m5l5ss/lernlab/commit/82317ee6853651686ea80c8e8e58b27fe455926f))
+* browse and install community decks from the deck gallery ([#153](https://github.com/n1m5l5ss/lernlab/issues/153)) ([2a5eede](https://github.com/n1m5l5ss/lernlab/commit/2a5eedecae582fda730b9a56c51d465a0303381e))
+* connect your own AI assistant to LernLab (read only, off by default) ([#157](https://github.com/n1m5l5ss/lernlab/issues/157)) ([e913bc9](https://github.com/n1m5l5ss/lernlab/commit/e913bc989978a877c527498e4db048e898e2028c))
+* export a deck for Anki as an .apkg ([#150](https://github.com/n1m5l5ss/lernlab/issues/150)) ([66cbc25](https://github.com/n1m5l5ss/lernlab/commit/66cbc25a3eddceaca607272193f2b2faf9badae5)), closes [#49](https://github.com/n1m5l5ss/lernlab/issues/49)
+* hide parts of a picture with image occlusion cards ([#156](https://github.com/n1m5l5ss/lernlab/issues/156)) ([80e7b38](https://github.com/n1m5l5ss/lernlab/commit/80e7b3888960207877b90afcf9183a83bc3f721a)), closes [#44](https://github.com/n1m5l5ss/lernlab/issues/44)
+* keep your Anki progress when importing an Anki package ([#145](https://github.com/n1m5l5ss/lernlab/issues/145)) ([fd4f586](https://github.com/n1m5l5ss/lernlab/commit/fd4f586de05f084a0213556d98ac45747b47cfcb)), closes [#48](https://github.com/n1m5l5ss/lernlab/issues/48)
+* let your AI assistant propose fixes, merges and tidy-ups for your cards ([#161](https://github.com/n1m5l5ss/lernlab/issues/161)) ([942700c](https://github.com/n1m5l5ss/lernlab/commit/942700ce3aec23054ad31dc0abda05e8ee81931d))
+* let your AI assistant propose goals, an exam study plan and deck exports ([#169](https://github.com/n1m5l5ss/lernlab/issues/169)) ([5a648ac](https://github.com/n1m5l5ss/lernlab/commit/5a648ac32d04f54945900a4ecc3b724db0d1470d))
+* record your own audio on a card ([#146](https://github.com/n1m5l5ss/lernlab/issues/146)) ([ac73588](https://github.com/n1m5l5ss/lernlab/commit/ac73588489e7d3db15ca3bc861aac3d9e817d576)), closes [#47](https://github.com/n1m5l5ss/lernlab/issues/47)
+* review decks and cards your AI assistant proposes before they are added ([#160](https://github.com/n1m5l5ss/lernlab/issues/160)) ([8e6f490](https://github.com/n1m5l5ss/lernlab/commit/8e6f490c393c055962bb497225956afc51ded09f))
+* show math on cards and check number answers with a tolerance and units ([#151](https://github.com/n1m5l5ss/lernlab/issues/151)) ([d9fae63](https://github.com/n1m5l5ss/lernlab/commit/d9fae6349a58d32b4b3add9a8013c7bbe339c3f9))
+
+
+### Fixed
+
+* ask before loading pictures and sounds from the internet in shared decks ([#180](https://github.com/n1m5l5ss/lernlab/issues/180)) ([8c42d03](https://github.com/n1m5l5ss/lernlab/commit/8c42d03002c7c26f0944f1b3fa62a0fa0832bcc4)), closes [#177](https://github.com/n1m5l5ss/lernlab/issues/177)
+* block scripts from deck files and lock down the packaged app ([#162](https://github.com/n1m5l5ss/lernlab/issues/162)) ([de317c2](https://github.com/n1m5l5ss/lernlab/commit/de317c26f6a309ccccd41cc0b500a453163c7b6c)), closes [#158](https://github.com/n1m5l5ss/lernlab/issues/158)
+* build the installers right after every release ([#144](https://github.com/n1m5l5ss/lernlab/issues/144)) ([1e2cf2c](https://github.com/n1m5l5ss/lernlab/commit/1e2cf2c9e6ee7739844a1d286bf202fedc20b90c))
+* escape code and typed answers in Anki exports ([#155](https://github.com/n1m5l5ss/lernlab/issues/155)) ([932f0b3](https://github.com/n1m5l5ss/lernlab/commit/932f0b384eda4a889a04a1470f043b57fe4d2c46))
+* harden the AI assistant connection against untrusted deck text ([#171](https://github.com/n1m5l5ss/lernlab/issues/171)) ([9b8e03e](https://github.com/n1m5l5ss/lernlab/commit/9b8e03e6ee1d2df01f0f1a8286cc4392d556ca6c))
+* stop hostile deck files and other websites from freezing or changing LernLab ([#175](https://github.com/n1m5l5ss/lernlab/issues/175)) ([f673954](https://github.com/n1m5l5ss/lernlab/commit/f673954d56f0abb1fc8af51c5b61517750041dcc))
+
 ## [1.0.0](https://github.com/n1m5l5ss/lernlab/compare/v0.3.0...v1.0.0) (2026-11-21)
 
 
