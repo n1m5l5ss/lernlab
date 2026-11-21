@@ -339,6 +339,11 @@
     "sample": "Try a 2-minute sample first",
     "skip": "Skip for now"
   },
+  "plan": {
+    "sentence_one": "After I {{after}}, I'll study for {{count}} minute.",
+    "sentence_other": "After I {{after}}, I'll study for {{count}} minutes.",
+    "backupSentence": "If {{backup}}, I'll do one 5-minute session."
+  },
   "decks": {
     "newDeck": "New deck",
     "import": "Import",

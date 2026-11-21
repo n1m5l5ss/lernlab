@@ -239,7 +239,14 @@ test('the daily reminder is off by default, its time is checked, and it knows wh
   assert.deepEqual([bad.reminder, bad.reminderTime, bad.launchAtLogin], [false, '19:00', false]);
   await ok('settings.save', { reminder: true, reminderTime: '08:30' });
   const before = await ok('reminder.status');
-  assert.deepEqual(before, { enabled: true, time: '08:30', launchAtLogin: false, language: 'en', studiedToday: false });
+  assert.deepEqual(before, {
+    enabled: true,
+    time: '08:30',
+    launchAtLogin: false,
+    language: 'en',
+    plan: null,
+    studiedToday: false,
+  });
   await ok('session.finish', {
     sessionId: 'reminder-test',
     length: 'mini',
@@ -253,6 +260,45 @@ test('the daily reminder is off by default, its time is checked, and it knows wh
   });
   assert.equal((await ok('reminder.status')).studiedToday, true);
   await ok('settings.save', { reminder: false });
+});
+
+test('the if-then study plan is plain text, checked, and goes into the reminder', async () => {
+  const d = (await ok('state.get')).settings;
+  assert.deepEqual([d.planAfter, d.planMinutes, d.planBackup, d.habitNote], ['', 5, '', true]);
+  const s = await ok('settings.save', {
+    planAfter: '  <b>finish dinner</b>. ',
+    planMinutes: '10',
+    planBackup: "I'm tired\n" + 'x'.repeat(300),
+    habitNote: false,
+  });
+  assert.equal(s.planAfter, 'bfinish dinner/b');
+  assert.equal(s.planMinutes, 10);
+  assert.ok(s.planBackup.startsWith("I'm tired x") && s.planBackup.length <= 80);
+  assert.equal(s.habitNote, false);
+  const bad = await ok('settings.save', { planAfter: { evil: 1 }, planMinutes: 7, planBackup: 3, habitNote: 'no' });
+  assert.deepEqual([bad.planAfter, bad.planMinutes, bad.planBackup, bad.habitNote], ['', 5, '', true]);
+  await ok('settings.save', { planAfter: 'lunch', planMinutes: 20, planBackup: '' });
+  assert.deepEqual((await ok('reminder.status')).plan, { after: 'lunch', minutes: 20, backup: '' });
+  await ok('settings.save', { planAfter: '', planMinutes: 5 });
+});
+
+test('LernLab suggests the hour you usually study, from local sessions only', async () => {
+  assert.deepEqual(await ok('plan.suggestTime'), { time: null });
+  for (const [i, h] of [19, 19, 19].entries()) {
+    const start = new Date(2026, 10, 2 + i, h, 5);
+    await ok('session.finish', {
+      sessionId: `usual-${i}`,
+      length: 'mini',
+      seconds: 60,
+      answers: 0,
+      correct: 0,
+      bossWon: null,
+      bestGenderCombo: 0,
+      perfectBlocks: 0,
+      startedAt: start.toISOString(),
+    });
+  }
+  assert.equal((await ok('plan.suggestTime')).time, '19:00');
 });
 
 test('Settings can show the version, licence and data folder', async () => {

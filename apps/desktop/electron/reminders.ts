@@ -6,9 +6,10 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { localDate, reminderDue } from '@lernlab/core/reminder';
+import type { StudyPlan } from '@lernlab/core/studyplan';
 import { HIDDEN_ARG, linuxAutostartEntry, REMINDER_TICK_MS, reminderText, type ReminderPrefs } from './reminder-policy';
 
-export type ReminderStatus = ReminderPrefs & { language?: string; studiedToday: boolean };
+export type ReminderStatus = ReminderPrefs & { language?: string; plan?: StudyPlan | null; studiedToday: boolean };
 
 type Deps = {
   /** Reminder settings and whether you studied today, from the data process (null if it is down). */
@@ -37,7 +38,7 @@ export async function setupReminders(deps: Deps) {
     deps.setLastShown(localDate(now)); // checked once a day, shown or not
     if (!s.enabled || s.studiedToday || !Notification.isSupported()) return;
     const dayNumber = Math.floor(now.getTime() / 86_400_000);
-    shown = new Notification(reminderText(s.language, dayNumber));
+    shown = new Notification(reminderText(s.language, dayNumber, s.plan));
     shown.on('click', () => {
       deps.startSession();
       shown = null;
