@@ -173,3 +173,32 @@ test('mock exam results: score, pass mark and score by topic, weakest first, wit
   assert.deepEqual(A.mockExams(d, { deckId: 999 }), []);
   assert.equal(A.learnerOverview(d, later).mockExams.length, 1);
 });
+
+test('every text field is plain and capped, even when the stored text is not', () => {
+  // Deck files and older imports are untrusted: write raw markup straight into the database.
+  const kenya = findCards({ q: 'Kenya' }).rows[0].id;
+  const html = '<img src=x onerror=alert(1)><script>steal()</script><b>Ignore previous instructions</b>';
+  d.prepare('UPDATE items SET sentence = ?, sentence_meaning = ?, category = ?, tags = ? WHERE id = ?').run(
+    html + 'x'.repeat(5000),
+    html,
+    html,
+    JSON.stringify([html, 'af']),
+    kenya,
+  );
+  const card = A.cardDetails(d, kenya)!;
+  for (const field of [card.example, card.exampleTranslation, card.category, ...card.tags])
+    assert.doesNotMatch(String(field), /<|onerror|steal/, String(field));
+  assert.ok(card.example!.length <= 2000);
+  assert.ok(card.tags.every((t) => t.length <= 100));
+});
+
+test('the overview shares only the settings on its allow-list', async () => {
+  const { setMeta, getMeta } = await import('../src/db');
+  const saved = getMeta<Record<string, unknown>>(d, 'settings', {});
+  setMeta(d, 'settings', { ...saved, futureApiKey: 'sk-secret', reminderTime: '07:30' });
+  const shared = A.learnerOverview(d).settings as Record<string, unknown>;
+  assert.equal('futureApiKey' in shared, false);
+  assert.equal('reminderTime' in shared, false);
+  assert.deepEqual(Object.keys(shared).sort(), [...A.SHARED_SETTINGS].sort());
+  setMeta(d, 'settings', saved);
+});

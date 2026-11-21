@@ -5,17 +5,68 @@ import { hasMath, mathKey } from './math';
 export const ARTICLES = ['der', 'die', 'das'] as const;
 export type Article = (typeof ARTICLES)[number];
 
-/** Remove HTML tags and decode the few entities Anki commonly stores. */
+/** Cut out every <script> and <style> element with its contents; an unclosed one runs to the end. */
+function dropCode(html: string): string {
+  const lower = html.toLowerCase();
+  let out = '';
+  let i = 0;
+  while (i < html.length) {
+    const s = lower.indexOf('<script', i);
+    const t = lower.indexOf('<style', i);
+    const at = s < 0 ? t : t < 0 ? s : Math.min(s, t);
+    if (at < 0) break;
+    const name = at === s ? 'script' : 'style';
+    if (/[\w-]/.test(lower.charAt(at + name.length + 1))) {
+      out += html.slice(i, at + 1);
+      i = at + 1;
+      continue;
+    }
+    out += html.slice(i, at);
+    const close = '</' + name;
+    const end = lower.indexOf(close, at);
+    if (end < 0) return out;
+    const gt = lower.indexOf('>', end);
+    i = gt < 0 ? html.length : gt + 1;
+  }
+  return out + html.slice(i);
+}
+
+/** Remove tags; <br> becomes a space. A "<" counts as a tag only before a letter, "/", "!" or "?", so "1 < 2" stays. */
+function dropTags(html: string): string {
+  let out = '';
+  let i = 0;
+  while (i < html.length) {
+    const lt = html.indexOf('<', i);
+    if (lt < 0) break;
+    if (!/[A-Za-z/!?]/.test(html.charAt(lt + 1))) {
+      out += html.slice(i, lt + 1);
+      i = lt + 1;
+      continue;
+    }
+    out += html.slice(i, lt);
+    const gt = html.indexOf('>', lt);
+    if (gt < 0) return out; // an unclosed tag: drop the rest
+    if (/^<br\b/i.test(html.slice(lt, gt + 1))) out += ' ';
+    i = gt + 1;
+  }
+  return out + html.slice(i);
+}
+
+/** Remove HTML tags (and the code inside script and style) and decode the few entities Anki commonly stores. */
 export function stripHtml(html: string): string {
-  return html
-    .replace(/<br\s*\/?>/gi, ' ')
-    .replace(/<[^>]+>/g, '')
+  // Repeat until nothing changes, so pieces like "<scr<b></b>ipt>" can't join into a new tag.
+  let text = html;
+  for (let prev = ''; prev !== text;) {
+    prev = text;
+    text = dropTags(dropCode(text));
+  }
+  return text
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&quot;/g, '"')
     .replace(/&#39;|&apos;/g, "'")
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
     .trim();
 }
