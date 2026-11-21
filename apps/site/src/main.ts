@@ -1,8 +1,8 @@
 // The website's only script: highlight the download for this computer and point the main button at it.
 // Without JavaScript the page still works: the main button jumps to the list of all downloads.
-// A Mac download first explains the one-time macOS warning (mac-guide.ts).
+// A Mac or Windows download first explains the one-time system warning (first-open-guide.ts).
 import { detectSystem, recommendedDownloads, type BrowserInfo } from './detect.js';
-import { setupMacGuide } from './mac-guide.js';
+import { setupGuides } from './first-open-guide.js';
 
 interface UserAgentData {
   platform?: string;
@@ -61,4 +61,4 @@ function startDemo() {
 
 highlightDownload();
 startDemo();
-setupMacGuide(document);
+setupGuides(document);

@@ -3,7 +3,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { guideView, isMacDownload } from './mac-guide';
+import { guideView, isMacDownload } from './first-open-guide';
 
 const PUBLIC = join(import.meta.dirname, '..', 'public');
 const html = readFileSync(join(PUBLIC, 'index.html'), 'utf8');
@@ -48,10 +48,10 @@ test('only the Mac downloads go through the guide', () => {
 test('without JavaScript the guide is a plain section: why and steps visible, the choice hidden', () => {
   assert.ok(guide.length > 500, 'the guide is on the page');
   assert.match(guide, /^id="mac-guide"[^>]*tabindex="-1"/);
-  assert.match(guide, /<div class="mac-why" data-mac-why>/);
+  assert.match(guide, /<div class="os-why" data-mac-why>/);
   assert.match(guide, /data-mac-choice hidden/);
   assert.match(guide, /data-mac-cancelled hidden/);
-  assert.match(guide, /<div class="mac-steps" data-mac-steps>/);
+  assert.match(guide, /<div class="os-steps" data-mac-steps>/);
   assert.match(guide, /data-mac-steps-title[^>]*tabindex="-1"/);
   // The Mac cards and the first-open note link to it.
   assert.ok((html.match(/href="#mac-guide"/g) ?? []).length >= 2);

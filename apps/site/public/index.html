@@ -303,6 +303,7 @@
               >
               <code class="file" data-file="windows">LernLab-Setup.exe</code>
             </div>
+            <p class="requires"><a href="#win-guide">How to open it the first time</a></p>
           </section>
           <section class="system" data-system-card="mac" aria-labelledby="sys-mac">
             <h3 id="sys-mac">macOS</h3>
@@ -351,9 +352,104 @@
           </section>
         </div>
 
-        <section class="mac-guide" id="mac-guide" aria-labelledby="mac-guide-title" tabindex="-1" data-mac-guide>
+        <section class="os-guide" id="win-guide" aria-labelledby="win-guide-title" tabindex="-1" data-win-guide>
+          <h3 id="win-guide-title">Opening LernLab on Windows for the first time</h3>
+          <div class="os-why" data-win-why>
+            <p>
+              <strong>Windows will warn you once, and that's expected.</strong> LernLab is free and open source, and it
+              isn't signed with a paid code-signing certificate. Microsoft Defender SmartScreen warns about apps it
+              doesn't know yet, so it says “Windows protected your PC”. The file you get here is the same file published
+              on <a href="https://github.com/n1m5l5ss/lernlab/releases">GitHub</a>, built in public from the source
+              code.
+            </p>
+            <p>
+              Want to be sure? You can
+              <a href="https://github.com/n1m5l5ss/lernlab/blob/main/docs/CODE_SIGNING.md#check-a-download-yourself"
+                >check the download</a
+              >
+              against the SHA-256 checksum GitHub shows for it. Opening LernLab takes two extra clicks the first time.
+            </p>
+          </div>
+          <div class="os-choice" data-win-choice hidden>
+            <p>Do you want to download LernLab and see the steps?</p>
+            <div class="actions">
+              <a class="btn primary" data-win-continue href="https://github.com/n1m5l5ss/lernlab/releases/latest"
+                >Continue: download and show me how</a
+              >
+              <button type="button" class="btn" data-win-cancel>No thanks, I won't install it</button>
+            </div>
+          </div>
+          <div class="os-cancelled" data-win-cancelled hidden tabindex="-1">
+            <p>
+              <strong>Nothing was downloaded or installed.</strong> If you downloaded LernLab before and don't want it,
+              delete the file (it starts with “LernLab-Setup” and ends in .exe, usually in Downloads). If you installed
+              it: Settings → Apps → Installed apps → LernLab → Uninstall. That's all.
+            </p>
+          </div>
+          <div class="os-steps" data-win-steps>
+            <h4 id="win-steps-title" data-win-steps-title tabindex="-1">Steps for Windows 10 and 11</h4>
+            <p>
+              <strong>If your browser says the file “isn't commonly downloaded”</strong>, keep it. In Edge, point at the
+              download, press <strong>…</strong> → <strong>Keep</strong>, then <strong>Show more</strong> →
+              <strong>Keep anyway</strong>. In Chrome, open the downloads list and choose to keep the file.
+            </p>
+            <img
+              src="media/win-open-0-browser.svg"
+              width="480"
+              height="300"
+              alt="The browser's downloads list says LernLab-Setup.exe isn't commonly downloaded. In its menu, Keep is marked, and in the box that follows, Keep anyway is marked."
+            />
+            <ol class="steps">
+              <li>
+                <p>
+                  Open the downloaded file. A blue box says “Windows protected your PC”. Press
+                  <strong>More info</strong> (not Don't run).
+                </p>
+                <img
+                  src="media/win-open-1-smartscreen.svg"
+                  width="480"
+                  height="300"
+                  alt="The blue box Windows protected your PC: SmartScreen prevented an unrecognised app from starting. The More info link under the text is marked; the only button is Don't run."
+                />
+              </li>
+              <li>
+                <p>
+                  The box now shows the file name and “Publisher: Unknown publisher”. Press
+                  <strong>Run anyway</strong>.
+                </p>
+                <img
+                  src="media/win-open-2-run-anyway.svg"
+                  width="480"
+                  height="300"
+                  alt="The same blue box, now listing the app LernLab-Setup.exe and Publisher: Unknown publisher. Of its two buttons, Run anyway and Don't run, Run anyway is marked."
+                />
+              </li>
+              <li>
+                <p>
+                  The installer runs by itself: no questions and no admin password. When it's done, LernLab opens, and
+                  you'll find it in the Start menu and on the desktop. From now on it opens like any other app, and it
+                  updates itself.
+                </p>
+                <img
+                  src="media/win-open-3-installed.svg"
+                  width="480"
+                  height="300"
+                  alt="A small installing box with a progress bar, followed by LernLab open on its home screen with the Start button."
+                />
+              </li>
+            </ol>
+            <p class="requires">
+              If Windows says Smart App Control blocked LernLab, there is no Run anyway button on that computer. Still
+              stuck? <a href="https://github.com/n1m5l5ss/lernlab#install">See the install guide</a> or
+              <a href="https://github.com/n1m5l5ss/lernlab/issues">ask for help</a>.
+            </p>
+          </div>
+        </section>
+        <!-- /win-guide -->
+
+        <section class="os-guide" id="mac-guide" aria-labelledby="mac-guide-title" tabindex="-1" data-mac-guide>
           <h3 id="mac-guide-title">Opening LernLab on a Mac for the first time</h3>
-          <div class="mac-why" data-mac-why>
+          <div class="os-why" data-mac-why>
             <p>
               <strong>macOS will warn you once, and that's expected.</strong> LernLab isn't signed with a paid Apple
               developer certificate, which costs 99 dollars a year. It is free and open source, and the file you get
@@ -369,7 +465,7 @@
               minute.
             </p>
           </div>
-          <div class="mac-choice" data-mac-choice hidden>
+          <div class="os-choice" data-mac-choice hidden>
             <p>Do you want to download LernLab and see the steps?</p>
             <div class="actions">
               <a class="btn primary" data-mac-continue href="https://github.com/n1m5l5ss/lernlab/releases/latest"
@@ -378,13 +474,13 @@
               <button type="button" class="btn" data-mac-cancel>No thanks, I won't install it</button>
             </div>
           </div>
-          <div class="mac-cancelled" data-mac-cancelled hidden tabindex="-1">
+          <div class="os-cancelled" data-mac-cancelled hidden tabindex="-1">
             <p>
               <strong>Nothing was downloaded or installed.</strong> If you downloaded LernLab before and don't want it,
               drag the file (it starts with “LernLab” and ends in .dmg, usually in Downloads) to the Bin. That's all.
             </p>
           </div>
-          <div class="mac-steps" data-mac-steps>
+          <div class="os-steps" data-mac-steps>
             <h4 id="mac-steps-title" data-mac-steps-title tabindex="-1">Steps for macOS 15 Sequoia and later</h4>
             <ol class="steps">
               <li>
@@ -453,7 +549,8 @@
           </p>
           <ul>
             <li>
-              <strong>Windows:</strong> if SmartScreen says “Windows protected your PC”, choose More info → Run anyway.
+              <strong>Windows:</strong> if SmartScreen says “Windows protected your PC”, choose More info → Run anyway:
+              <a href="#win-guide">see the steps with pictures</a>.
             </li>
             <li>
               <strong>macOS:</strong> drag LernLab into Applications and open it. macOS asks you to allow it once in
@@ -472,10 +569,12 @@
     <footer class="site-footer">
       <div class="wrap footer-inner">
         <p>LernLab is free software under the MIT license and made in the open.</p>
+        <!-- Windows ships unsigned for now (docs/CODE_SIGNING.md). Put this credit back when SignPath signing is on:
         <p class="footer-signing">
           Windows: Free code signing provided by <a href="https://about.signpath.io">SignPath.io</a>, certificate by
           <a href="https://signpath.org">SignPath Foundation</a>.
         </p>
+        -->
         <ul class="footer-links">
           <li><a href="https://github.com/n1m5l5ss/lernlab">Source code</a></li>
           <li><a href="https://github.com/n1m5l5ss/lernlab/blob/main/docs/USER-GUIDE.md">User guide</a></li>

@@ -4,13 +4,25 @@ LernLab is free and open source, and it is signed only with free services for op
 
 | System | Signed? | By whom | What users see the first time |
 |---|---|---|---|
-| Windows | Yes, once SignPath Foundation accepts the project (see [Apply to SignPath](#apply-to-signpath-owner-checklist)) | **SignPath Foundation**, through SignPath.io's free programme for open source | Publisher "SignPath Foundation"; SmartScreen may still warn until the certificate has built up reputation |
+| Windows | No, for now (owner decision, 21 November 2026). Free signing through SignPath Foundation is prepared and switches on when the secret is added (see [Apply to SignPath](#apply-to-signpath-owner-checklist)) | — | "Windows protected your PC": More info → Run anyway (see [Windows](#windows-unsigned-for-now)) |
 | macOS | Ad-hoc only (no Apple certificate) | electron-builder, on GitHub's build machines | "Apple could not verify…": open it once through System Settings (see [macOS](#macos-unsigned-by-choice)) |
 | Linux | No | — | Nothing; AppImage and deb don't use signatures this way |
 
-## Windows: SignPath Foundation
+## Windows: unsigned for now
+
+**The Windows installer ships unsigned.** The owner decided on 21 November 2026 not to apply to SignPath for now and not to pay for a certificate. Free signing through SignPath Foundation is fully prepared below and stays dormant: it switches on when the owner follows the [checklist](#apply-to-signpath-owner-checklist) and adds the secret. Nothing else needs to change in the code.
+
+- **The first open needs two extra clicks.** Microsoft Defender SmartScreen shows "Windows protected your PC" for apps it doesn't know yet. Press **More info**, then **Run anyway** (the box shows "Publisher: Unknown publisher"). Edge or Chrome may first say the download "isn't commonly downloaded": choose **Keep** (in Edge, then **Show more → Keep anyway**). The installer then installs just for the current user, without an admin prompt. The illustrated guide is on the [website](https://n1m5l5ss.github.io/lernlab/#win-guide) and in the [README](../README.md#opening-lernlab-on-windows-for-the-first-time).
+- **Automatic updates still work on Windows.** electron-updater checks an update's signature only when the app was built signed, so unsigned updates install as before.
+- **Smart App Control** (on some new Windows 11 PCs) blocks unsigned apps with no Run anyway button. Only signing fixes that.
+
+## Windows: SignPath Foundation (prepared, not active)
+
+When signing is switched on, the download page and this page carry SignPath's credit line, as its terms require:
 
 > Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+
+The website keeps it in a comment in `apps/site/public/index.html` (footer) until then.
 
 ### What is signed
 
@@ -58,7 +70,9 @@ Only the owner can do this. Check the current terms at <https://signpath.org/ter
    - [x] An OSI-approved licence (MIT) and no proprietary parts.
    - [x] Already released and working (v0.3.0 and earlier on GitHub Releases).
    - [x] Built in public on GitHub-hosted runners from this repository.
-   - [x] This page: what is signed, roles, privacy statement, and the SignPath credit line above. It must be reachable from the project's home page (it is linked from the README and the website footer, which also carries the credit line; SignPath requires the download page to mention it).
+   - [x] This page: what is signed, roles, privacy statement, and the SignPath credit line above. It must be reachable from the project's home page (it is linked from the README and the website footer).
+   - [ ] Put the credit line back in the website footer: remove the comment around `footer-signing` in `apps/site/public/index.html` (SignPath requires the download page to mention it), and update `win-guide.test.ts`, which checks it stays hidden while Windows is unsigned.
+   - [ ] Update the Windows guide on the website and in the README: SmartScreen may still warn until the certificate has built up reputation, but the publisher then shows "SignPath Foundation".
    - [ ] Multi-factor authentication switched on for your GitHub account.
 2. **Apply** with the form at <https://signpath.org/apply>. You'll need: the repository URL (`https://github.com/n1m5l5ss/lernlab`), the website (`https://n1m5l5ss.github.io/lernlab/`), a short description ("Free, open-source desktop flashcard app with spaced repetition for Windows, macOS and Linux"), the link to this page, and the files to sign (`LernLab.exe` and the NSIS installer `LernLab-Setup-X.Y.Z.exe`, built with electron-builder on GitHub Actions).
 3. **Wait for approval.** SignPath Foundation reviews the project and invites you to a SignPath organisation. Switch on multi-factor authentication there too.
@@ -93,7 +107,7 @@ Every file on the website is the same file as on the [GitHub Releases page](http
   - macOS: `shasum -a 256 ~/Downloads/LernLab-X.Y.Z-arm64.dmg`
   - Windows (PowerShell): `Get-FileHash .\LernLab-Setup-X.Y.Z.exe -Algorithm SHA256`
   - Linux: `sha256sum LernLab-X.Y.Z.AppImage`
-- **Windows, signed releases:** right-click the installer → Properties → Digital Signatures. The signer is "SignPath Foundation". In PowerShell: `Get-AuthenticodeSignature .\LernLab-Setup-X.Y.Z.exe` shows `Valid`.
+- **Windows, signed releases (once signing is on):** right-click the installer → Properties → Digital Signatures. The signer is "SignPath Foundation". In PowerShell: `Get-AuthenticodeSignature .\LernLab-Setup-X.Y.Z.exe` shows `Valid`.
 - **macOS:** `codesign -dv /Applications/LernLab.app` shows `Signature=adhoc`. That is expected; it only proves the app wasn't changed after it was built.
 
 ## Report a problem
