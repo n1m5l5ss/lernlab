@@ -41,3 +41,23 @@ These live in the repository settings, not in files. Check them once a year and 
   secret scanning, and push protection all **on**.
 - **Settings → Branches:** `dev` and `main` require a pull request and passing CI; no force pushes.
 - **Settings → Actions → General:** workflow permissions "Read repository contents".
+
+## The desktop app (Electron security checklist)
+
+| Item | Where | Status |
+|---|---|---|
+| No Node.js in the page, context isolation, sandbox | `electron/main.ts` `webPreferences` | On |
+| Only `window.lernlab.invoke` exposed to the page; every IPC call checks its sender | `electron/preload.ts`, `trusted()` in `main.ts` | On |
+| Content Security Policy: only the app's own scripts, no eval, no remote fetch, no frames | `apps/desktop/index.html` | On |
+| Links open in the system browser; navigation and new windows are blocked | `setWindowOpenHandler`, `will-navigate` | On |
+| Permissions: microphone for the app page only, never the camera | `electron/media-permission.ts` | On |
+| Fuses: no `ELECTRON_RUN_AS_NODE`, no `NODE_OPTIONS`, no `--inspect`, only the packaged `app.asar` and only if it is unmodified | `build.electronFuses` in `apps/desktop/package.json` | On (packaged builds) |
+| Media served from the data folder only, by file name | `lernlab-media://` handler | On |
+| No SQL or heavy work in the main process | `electron/no-sql.test.ts` | On |
+| Current Electron | Dependabot | Weekly |
+
+`apps/desktop/electron/hardening.test.ts` fails if the CSP or the fuses are loosened. To read the fuses of a
+built app: `npx @electron/fuses read --app <path to the app>`.
+
+Deck media may also be an `https://` link, which the CSP allows for images and sound. Studying such a card
+contacts that server.
