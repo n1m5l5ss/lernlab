@@ -20,6 +20,7 @@ import { formatDate, setLanguage } from './i18n';
 import { applyTheme } from './theme';
 import { applyDisplay } from './display';
 import { hashFor, isStartHash, routeFromHash, type Route } from './routes';
+import { markOnce, MARKS } from './perf';
 
 type AppState = OutputOf<'state.get'>;
 /** The study session and its summary fill the window; everything else sits in the shell. */
@@ -84,6 +85,7 @@ export function App() {
   };
 
   useEffect(() => {
+    markOnce(MARKS.firstRender);
     refresh().then((s) => {
       // #start opens straight into a session: zero clicks to begin (bookmark it, or use the desktop shortcut).
       if (s?.decks?.length && isStartHash(location.hash)) {

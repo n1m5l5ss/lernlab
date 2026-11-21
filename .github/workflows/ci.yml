@@ -49,4 +49,4 @@ jobs:
           name: e2e-screenshots-${{ matrix.os }}
           path: apps/desktop/e2e-results/
           if-no-files-found: ignore
-      # Added by later tickets: coverage gate (#6), visual (#2/#11), performance comparison (#54).
+      # Added by later tickets: coverage gate (#6), visual (#2/#11). The performance check (#54) is perf.yml.

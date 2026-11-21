@@ -6,3 +6,6 @@ data/
 release/
 dist-electron/
 apps/desktop/e2e-results/
+
+# Generated benchmark fixtures (bench/fixtures.ts)
+bench/fixtures/generated/

@@ -1,0 +1,21 @@
+{
+  "name": "@lernlab/bench",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Performance benchmarks and fixture generators (docs/TESTING.md, Performance budgets).",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "fixtures": "tsx --no-warnings fixtures.ts",
+    "bench": "tsx --no-warnings fixtures.ts && vitest bench --run",
+    "startup": "tsx --no-warnings startup.ts",
+    "budgets": "tsx --no-warnings budgets.ts",
+    "compare": "tsx --no-warnings compare.ts",
+    "test": "tsx --no-warnings --test \"*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@lernlab/core": "*",
+    "@lernlab/storage-sqlite": "*"
+  }
+}
