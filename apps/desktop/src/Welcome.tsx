@@ -4,16 +4,22 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { api } from './api';
 import { PICKS, welcomeStep, type Next, type Pick } from './welcome-logic';
+import { PlanFields } from './StudyPlan';
+import { planPatch, type PlanDraft } from './plan-logic';
 
 export function Welcome({ onDone, onError }: { onDone: (next: Next) => void; onError: (e: unknown) => void }) {
   const { t } = useTranslation();
   const [pick, setPick] = useState<Pick>('language');
   const [busy, setBusy] = useState(false);
+  // The optional if-then plan (#204); saved only when "After I…" was filled in.
+  const [plan, setPlan] = useState<PlanDraft>({ after: '', minutes: 5, backup: '' });
 
   const go = async (action: 'continue' | 'sample' | 'skip') => {
     const step = welcomeStep(action, pick);
     setBusy(true);
     try {
+      const patch = planPatch(plan, { onlyIfFilled: true });
+      if (patch) await api.saveSettings(patch);
       await api.finishWelcome(step.choice);
       onDone(step.next);
     } catch (e) {
@@ -41,6 +47,11 @@ export function Welcome({ onDone, onError }: { onDone: (next: Next) => void; onE
           </label>
         ))}
       </fieldset>
+      <details className="welcome-plan">
+        <summary>{t('plan.welcomeTitle')}</summary>
+        <p className="welcome-hint">{t('plan.lead')}</p>
+        <PlanFields idPrefix="welcome-plan" draft={plan} onChange={setPlan} disabled={busy} />
+      </details>
       <div className="welcome-actions">
         <button className="btn primary welcome-continue" disabled={busy} onClick={() => go('continue')}>
           {t('welcome.continue')}

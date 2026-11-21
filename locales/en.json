@@ -180,6 +180,7 @@
       "look": "Language and display",
       "study": "Studying",
       "reminders": "Reminders",
+      "plan": "Study plan",
       "data": "Your data",
       "privacy": "Updates and privacy",
       "assistant": "AI assistant",
@@ -340,9 +341,25 @@
     "skip": "Skip for now"
   },
   "plan": {
+    "title": "Your study plan",
+    "welcomeTitle": "Plan when you'll study (optional)",
+    "lead": "Tie studying to something you already do every day. People who plan when they'll study are more likely to do it.",
+    "after": "After I…",
+    "afterPlaceholder": "finish dinner",
+    "minutes": "I'll study for",
+    "backup": "Backup plan: if…",
+    "backupHint": "For days when the plan doesn't fit, one short session is enough.",
+    "backupPlaceholder": "I'm tired",
     "sentence_one": "After I {{after}}, I'll study for {{count}} minute.",
     "sentence_other": "After I {{after}}, I'll study for {{count}} minutes.",
-    "backupSentence": "If {{backup}}, I'll do one 5-minute session."
+    "backupSentence": "If {{backup}}, I'll do one 5-minute session.",
+    "preview": "Your daily reminder will say:",
+    "suggest": "You usually study around {{time}}.",
+    "suggestUse": "Remind me then",
+    "habitNote": "Habits take a few weeks to form. One missed day barely matters: just pick up where you left off.",
+    "habitHide": "Hide this note",
+    "habitSetting": "Show a note about building the habit",
+    "habitSettingHint": "A short note on Home, next to your week, that one missed day barely matters."
   },
   "decks": {
     "newDeck": "New deck",

@@ -25,6 +25,20 @@ The first time you open LernLab, it asks what you would like to do:
 
 Pick one and press **Continue**. **Try a 2-minute sample first** adds the sample deck and starts a short session right away. **Skip for now** opens the app with no decks. You can import the same sample decks later from the `examples/` folder.
 
+Below the choices, **Plan when you'll study (optional)** lets you make a study plan straight away (see [Study plan](#study-plan)). You can also leave it empty and make one later in Settings.
+
+### Study plan
+
+People who decide when they will study are more likely to do it. Tie studying to something you already do every day:
+
+- **After I…**: what you do just before, for example *finish dinner*.
+- **I'll study for**: 5, 10 or 20 minutes.
+- **Backup plan: if…** (optional): for days when the plan does not fit, for example *I'm tired*. Then one 5-minute session is enough.
+
+LernLab shows your plan as a sentence: "After I finish dinner, I'll study for 5 minutes. If I'm tired, I'll do one 5-minute session." When the daily reminder is on (desktop app), it shows this sentence instead of its usual lines. What you type stays plain text on this computer, up to 80 characters per field. To remove the plan, empty **After I…**.
+
+Once you have studied a few times, Settings → **Study plan** can tell you the hour you usually study, worked out from your own sessions on this computer. In the desktop app, **Remind me then** sets the daily reminder to that time.
+
 ## Get cards in
 
 Go to **Decks** and press **Import**, or drop a file on the dashed box on the Decks screen. In the desktop app you can also use **File → Import deck…** (`Ctrl+O`, or `Cmd+O` on a Mac), or open a `.lernpack` file from your file manager.
@@ -137,6 +151,7 @@ Studying on a day keeps your streak going. The day starts at 4 a.m., so a late-n
 
 - **Streak freezes** cover a day off for you, automatically. You start with 2 and earn one for every 7 days in a row, up to 3.
 - If you miss a day with no freeze left, your streak waits for you: study 2 sessions within the next 2 days and it comes back.
+- On Home, a short note next to your week says that habits take a few weeks to form and that one missed day barely matters. **Hide this note** hides it; Settings → **Study plan** → **Show a note about building the habit** brings it back.
 
 ## Edit cards
 
@@ -237,6 +252,7 @@ When you ask the assistant for cards (for example from a PDF or a web page), to 
 
 - **Language and display**: interface language, theme (**Match my computer**, **Light** or **Dark**), text size and **Reduce motion**.
 - **Studying**: daily goal, default session length, timers (**Off**, **Relaxed**, **Normal**, **Challenge**), new cards per day, target memory retention, sound effects, and the teacher's voice for language decks.
+- **Study plan**: your if-then plan and backup plan, a preview of what the reminder will say, the hour you usually study, and the habit note on Home. See [Study plan](#study-plan).
 - **Reminders** (desktop app): a daily reminder at a time you choose, and opening LernLab when you log in.
 - **Your data**: the data folder, backups, restore, export, import and delete.
 - **AI assistant**: let an AI assistant you use (Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other app that supports MCP) read your decks, cards and study history. Off until you turn it on. LernLab itself stays offline, but whatever the assistant reads is sent to that assistant's AI company. When it is on, Settings shows the snippet to paste into the assistant's MCP settings; see [AI-ASSISTANTS.md](AI-ASSISTANTS.md). Turn it off and every request from the assistant is refused.

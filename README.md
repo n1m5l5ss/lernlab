@@ -44,6 +44,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **Keeps you going:**
   - XP, levels, combos and badges;
   - a streak with freezes (one missed day doesn't wipe you out);
+  - an if-then study plan in your own words ("After I finish dinner, I'll study for 5 minutes"), which the daily reminder shows;
   - rescue rounds when you're struggling;
   - a quick action round when your attention drifts.
 - **Learning science, not slot machines:**
