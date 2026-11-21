@@ -23,7 +23,31 @@ export const LIST_MAX = 200;
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const isDate = (s: string) => DATE.test(s) && addDays(s, 0) === s;
-const plain = (html: unknown, max = 500) => stripHtml(String(html ?? '')).slice(0, max);
+/** Text from the database as plain, capped text: card and deck fields can come from untrusted deck files. */
+export const plain = (html: unknown, max = 500) => stripHtml(String(html ?? '')).slice(0, max);
+const plainOrNull = (html: unknown, max: number) => plain(html, max) || null;
+/** Tags as plain text, at most 50 of 100 characters each. */
+export const plainTags = (tags: unknown) =>
+  (Array.isArray(tags) ? tags : [])
+    .slice(0, 50)
+    .map((t) => plain(t, 100))
+    .filter(Boolean);
+
+/** The settings an assistant may see. An allow-list, so a setting added later is not shared by accident. */
+export const SHARED_SETTINGS = [
+  'newPerDay',
+  'dailyGoalSessions',
+  'sessionLength',
+  'retention',
+  'sound',
+  'teacherVoice',
+  'blitzSeconds',
+  'questionTimer',
+  'uiLanguage',
+  'theme',
+  'textSize',
+  'reducedMotion',
+] as const;
 const pct = (part: number, whole: number) => (whole ? Math.round((part / whole) * 1000) / 10 : null);
 
 /** First and last learning day (YYYY-MM-DD, both included) of a period around `date` (default today). */
@@ -106,7 +130,7 @@ export function periodStats(d: DB, range: Range, deckId?: number) {
   const reviews = Number(a.reviews);
   return {
     ...range,
-    deck: deckId ? (getDeck(deckId, d)?.name ?? null) : null,
+    deck: deckId ? plainOrNull(getDeck(deckId, d)?.name, 200) : null,
     reviews,
     recalled: Number(a.recalled),
     retentionPercent: pct(Number(a.recalled), reviews),
@@ -192,26 +216,31 @@ export function cardDetails(d: DB, id: number, now = new Date()) {
     .map((a: Row) => ({
       at: String(a.ts),
       format: String(a.format),
-      given: (a.given as string | null) ?? null,
+      given: plainOrNull(a.given, 500),
       practice: !!a.practice,
     }));
   return {
     id,
     deckId: item.deckId,
-    deck: getDeck(item.deckId, d)?.name ?? item.deck,
+    deck: plain(getDeck(item.deckId, d)?.name ?? item.deck, 200),
     language: item.lang,
     kind: item.kind,
     front: plain(item.target, 5000),
     back: plain(item.meaning, 5000),
-    example: item.sentence || null,
-    exampleTranslation: item.sentenceMeaning || null,
-    explanation: plain(item.grammar, 5000) || null,
-    notes: plain(item.notes, 5000) || null,
-    category: item.category,
-    tags: item.tags,
+    example: plainOrNull(item.sentence, 2000),
+    exampleTranslation: plainOrNull(item.sentenceMeaning, 2000),
+    explanation: plainOrNull(item.grammar, 5000),
+    notes: plainOrNull(item.notes, 5000),
+    category: plainOrNull(item.category, 100),
+    tags: plainTags(item.tags),
     starred: !!r.starred,
     suspended: !!r.suspended,
-    media: { image: item.image, imageAlt: item.extra.imageAlt ?? null, audio: item.audio, video: item.video },
+    media: {
+      image: plainOrNull(item.image, 300),
+      imageAlt: plainOrNull(item.extra.imageAlt, 500),
+      audio: plainOrNull(item.audio, 300),
+      video: plainOrNull(item.video, 300),
+    },
     state: !memory ? 'new' : Number(st?.mastery ?? 0) >= KNOWN_MASTERY ? 'known' : 'learning',
     mastery: Number(st?.mastery ?? 0),
     answers: { seen: Number(st?.seen ?? 0), right: Number(st?.right ?? 0), wrong: Number(st?.wrong ?? 0) },
@@ -259,7 +288,7 @@ export function deckOverview(d: DB, now = new Date()) {
     const perDay = typeof dk.settings.newPerDay === 'number' ? dk.settings.newPerDay : settings.newPerDay;
     return {
       id: dk.id,
-      name: dk.name,
+      name: plain(dk.name, 200),
       language: dk.language,
       languageName: dk.language ? (LANGUAGES[dk.language] ?? dk.language) : null,
       description: plain(dk.description, 2000),
@@ -269,7 +298,7 @@ export function deckOverview(d: DB, now = new Date()) {
       dueToday: s?.due ?? 0,
       newToday: newTodayFor(s, perDay),
       newPerDay: perDay,
-      goal: dk.settings.goal ?? null,
+      goal: dk.settings.goal ? { label: plain(dk.settings.goal.label, 100), words: dk.settings.goal.words } : null,
       examDate: dk.settings.examDate ?? null,
     };
   });
@@ -325,7 +354,7 @@ export function learnerOverview(d: DB, now = new Date()) {
         .filter((l): l is string => !!l),
     ),
   ].map((code) => ({ code, name: LANGUAGES[code] ?? code }));
-  const { reminderTime: _time, ...shared } = settings;
+  const shared = Object.fromEntries(SHARED_SETTINGS.map((k) => [k, settings[k] ?? null]));
   return {
     today,
     streak: { current: streak.current, longest: streak.longest, freezesLeft: streak.freezes, repair: streak.repair },
@@ -373,7 +402,7 @@ export function mockExams(d: DB, opts: { deckId?: number; limit?: number } = {})
     const topics = new Map<string, { correct: number; total: number }>();
     for (const a of answers.all(String(r.session_id))) {
       const tags = JSON.parse(String(a.tags ?? '[]')) as string[];
-      for (const topic of tags.length ? tags : ['']) {
+      for (const topic of tags.length ? plainTags(tags) : ['']) {
         const t = topics.get(topic) ?? { correct: 0, total: 0 };
         t.total++;
         if (a.correct) t.correct++;
@@ -383,7 +412,7 @@ export function mockExams(d: DB, opts: { deckId?: number; limit?: number } = {})
     return {
       at: String(r.at),
       deckId: Number(r.deck_id),
-      deck: deck?.name ?? null,
+      deck: deck ? plain(deck.name, 200) : null,
       questions,
       correct: Number(r.correct),
       percent,

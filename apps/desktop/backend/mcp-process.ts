@@ -18,6 +18,7 @@ class ParentPortTransport implements Transport {
     process.parentPort.on('message', ({ data }) => {
       if (!isRelayIn(data)) return;
       if (data.type === 'end') return void this.close();
+      if (data.type === 'reset') return void this.buffer.clear();
       this.buffer.append(Buffer.from(data.chunk));
       try {
         for (let m = this.buffer.readMessage(); m; m = this.buffer.readMessage()) this.onmessage?.(m);

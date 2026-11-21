@@ -5,9 +5,10 @@ import { hasMath, mathKey } from './math';
 export const ARTICLES = ['der', 'die', 'das'] as const;
 export type Article = (typeof ARTICLES)[number];
 
-/** Remove HTML tags and decode the few entities Anki commonly stores. */
+/** Remove HTML tags (and the code inside script and style) and decode the few entities Anki commonly stores. */
 export function stripHtml(html: string): string {
   return html
+    .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, '')
     .replace(/<br\s*\/?>/gi, ' ')
     .replace(/<[^>]+>/g, '')
     .replace(/&nbsp;/g, ' ')

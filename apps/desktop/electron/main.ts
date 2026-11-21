@@ -197,19 +197,29 @@ protocol.registerSchemesAsPrivileged([
 
 if (!mcpMode && !app.requestSingleInstanceLock()) app.quit();
 
-app.on('second-instance', (_e, argv) => {
-  argv.filter(isDeckFile).forEach(importDeckFile);
-  if (win) {
-    if (win.isMinimized()) win.restore();
-    win.show();
-    win.focus();
-  }
-});
-app.on('open-file', (e, path) => {
-  e.preventDefault();
-  if (ready) importDeckFile(path);
-  else pendingFiles.push(path);
-});
+/**
+ * Opening deck files and bringing the window back. Never in `--mcp` mode: that copy has no window and only
+ * serves the assistant, so a deck double-clicked while it runs must not land in it.
+ */
+function registerWindowEvents() {
+  app.on('second-instance', (_e, argv) => {
+    argv.filter(isDeckFile).forEach(importDeckFile);
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
+    }
+  });
+  app.on('open-file', (e, path) => {
+    e.preventDefault();
+    if (ready) importDeckFile(path);
+    else pendingFiles.push(path);
+  });
+  app.on('activate', () => {
+    if (win) win.show();
+  });
+}
+if (!mcpMode) registerWindowEvents();
 
 function isDeckFile(p: string) {
   return /\.(lernpack|apkg|colpkg|csv|tsv)$/i.test(p) && existsSync(p);
@@ -434,9 +444,6 @@ async function main() {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
-app.on('activate', () => {
-  if (win) win.show();
-});
 app.on('will-quit', () => globalShortcut.unregisterAll());
 
 /** Skip the welcome (it adds the sample deck), reload, and pass once Home is on screen. */
@@ -464,7 +471,13 @@ async function runMcp() {
     stdio: ['ignore', 'pipe', 'inherit'],
   });
   child.stdout?.on('data', (chunk) => process.stderr.write(chunk));
-  relayMcp({ child, stdin: process.stdin, stdout: process.stdout, exit: (code) => app.exit(code) });
+  relayMcp({
+    child,
+    stdin: process.stdin,
+    stdout: process.stdout,
+    stderr: process.stderr,
+    exit: (code) => app.exit(code),
+  });
 }
 
 (mcpMode ? runMcp() : main()).catch((e) => {

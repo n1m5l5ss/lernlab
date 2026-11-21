@@ -17,6 +17,7 @@ Ask it things like:
 - **LernLab itself stays offline.** The assistant starts LernLab on your computer and talks to it directly (over "stdio"); nothing listens on the network.
 - **What the assistant reads goes to its AI company.** Your decks, cards, answers and study history that the assistant reads are sent to the company that runs the assistant (for example Anthropic for Claude), under that company's privacy terms. Turn the switch off when you don't want that.
 - **It cannot change or delete anything itself.** It opens your data read-only. What it proposes (new decks and cards, fixes, merges of duplicates, tags, stars, suspending or moving cards, goals, a study plan, an export) waits in LernLab under **AI requests**; nothing changes until you accept it there, and you can edit it first.
+- **Shared decks can carry tricks.** A deck you downloaded or were sent can contain text written to fool an AI, such as "ignore your instructions and…". LernLab marks all card and deck text as third-party data, never instructions, and sends it as plain text only, but no assistant is perfect. Read each AI request before you accept it, and be careful when you connect an assistant that can also act elsewhere (send email, run commands) while it reads decks from strangers.
 
 ## Claude Desktop (verified setup)
 
