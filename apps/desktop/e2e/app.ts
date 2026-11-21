@@ -38,7 +38,9 @@ export async function launch(profile = freshProfile()): Promise<App> {
 
 export async function close(app: App, { keepProfile = false } = {}) {
   await app.electron.close();
-  if (!keepProfile) rmSync(app.profile, { recursive: true, force: true });
+  // On Windows the app's child processes can hold profile files for a moment after the window
+  // closes (EPERM/EBUSY), so retry the delete instead of failing a test that already passed.
+  if (!keepProfile) rmSync(app.profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
 }
 
 type Messages = { [key: string]: unknown };
