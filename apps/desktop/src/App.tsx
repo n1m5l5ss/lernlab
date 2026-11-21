@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SessionLength, SessionPlan } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
-import { api } from './api';
+import { api, attemptsSaved } from './api';
+import { sessionFinisher } from './finish-logic';
 import { setSound } from './audio';
 import { Home } from './Home';
 import { Session, type SessionResult } from './Session';
@@ -113,10 +114,20 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
+  // Every answer saved, the session recorded once, Home reloaded: then the summary (finish-logic.ts, #178).
+  const [endSession] = useState(() =>
+    sessionFinisher({ saved: attemptsSaved, finish: (r: SessionResult) => api.finish(r), reload: refresh }),
+  );
   const finish = async (result: SessionResult, plan: SessionPlan) => {
-    const server = await api.finish(result).catch(() => null);
-    setFull({ name: 'summary', result, server, lang: plan.lang, items: { ...plan.extras, ...plan.items } });
-    refresh();
+    const done = await endSession(result);
+    if (!done) return; // that session already ended (its last answer ended it twice)
+    setFull({
+      name: 'summary',
+      result,
+      server: done.server,
+      lang: plan.lang,
+      items: { ...plan.extras, ...plan.items },
+    });
   };
 
   if (error)
@@ -191,7 +202,10 @@ export function App() {
         lang={full.lang}
         items={full.items}
         onAgain={() => start('mini', full.result.practice)}
-        onHome={() => go('home')}
+        onHome={() => {
+          go('home');
+          refresh(); // Home shows today's work even if anything changed after the summary opened
+        }}
       />
     );
 

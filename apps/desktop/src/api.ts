@@ -108,3 +108,6 @@ export function sendAttempt(a: Attempt) {
   );
   return chain;
 }
+
+/** Resolves when every answer and override sent so far has been saved (or failed). */
+export const attemptsSaved = () => chain;
