@@ -149,11 +149,29 @@ function openSqliteBytes(bytes: Uint8Array): DB {
   }
 }
 
+/** A new SQLite file in a temp folder, filled by `build`; returns its bytes and removes the folder. */
+function buildSqliteBytes(build: (db: DB) => void): Uint8Array {
+  const dir = mkdtempSync(join(tmpdir(), 'apkg-out-'));
+  try {
+    const file = join(dir, 'col.db');
+    const d = openRaw(file);
+    try {
+      build(d);
+    } finally {
+      d.close();
+    }
+    return new Uint8Array(readFileSync(file));
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 const mediaPath = (name: string) => resolve(mediaDir(), basename(name));
 
 export const nodeHost: Host = {
   db: () => getAppDb(),
   openSqliteBytes,
+  buildSqliteBytes,
   media: {
     size: (name) => (existsSync(mediaPath(name)) ? statSync(mediaPath(name)).size : null),
     read: (name) => (existsSync(mediaPath(name)) ? readFileSync(mediaPath(name)) : null),

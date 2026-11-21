@@ -332,7 +332,7 @@ function DeckEditor({
       setErr(e instanceof Error ? e.message : String(e));
     }
   };
-  const exportAs = (format: 'csv' | 'lernpack') =>
+  const exportAs = (format: 'csv' | 'lernpack' | 'apkg') =>
     f.id && api.exportDeck(f.id, format).catch((x: Error) => setErr(x.message));
   const field = (k: keyof Form, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <label className="deck-field">
@@ -403,6 +403,9 @@ function DeckEditor({
             </button>
             <button className="btn ghost" onClick={() => exportAs('csv')}>
               {t('decks.editor.exportCsv')}
+            </button>
+            <button className="btn ghost" onClick={() => exportAs('apkg')}>
+              {t('decks.editor.exportAnki')}
             </button>
             <button className="btn danger" onClick={onDelete}>
               {t('common.delete')}

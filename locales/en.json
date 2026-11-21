@@ -257,6 +257,7 @@
       "goalSizePlaceholder": "cards",
       "exportLernpack": "Export .lernpack",
       "exportCsv": "Export CSV",
+      "exportAnki": "Export for Anki",
       "subdeckHint": "Use :: for a sub-deck, for example Medicine::Cardio.",
       "examDate": "Exam date (optional)",
       "voiceTitle": "Reading aloud",

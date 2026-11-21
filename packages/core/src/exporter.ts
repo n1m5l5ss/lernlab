@@ -1,9 +1,10 @@
-// Export a deck as a .lernpack (cards and media) or a CSV. Both import back to the same cards.
+// Export a deck as a .lernpack (cards and media), a CSV or an Anki .apkg. All import back to the same cards.
 import type { Row } from './host';
 import type { ItemRow } from './schema';
 import { getDb, type DB } from './db';
 import { getDeck, readMedia, type NormalizedCard } from './library';
 import { writeLernpack } from './formats/lernpack';
+import { writeApkg } from './formats/apkgwrite';
 import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
 
@@ -54,7 +55,7 @@ function deckCards(deckId: number, deckName: string, d: DB): NormalizedCard[] {
 
 export function exportDeck(
   deckId: number,
-  format: 'lernpack' | 'csv',
+  format: 'lernpack' | 'csv' | 'apkg',
   d: DB = getDb(),
 ): { name: string; data: Uint8Array; type: string } {
   const deck = getDeck(deckId, d);
@@ -72,6 +73,8 @@ export function exportDeck(
         if (b) media[f] = b;
       }
     }
+  if (format === 'apkg')
+    return { name: `${safe}.apkg`, data: writeApkg(deck.name, cards, media), type: 'application/zip' };
   const data = writeLernpack(
     {
       deck: { name: deck.name, language: deck.language, description: deck.description, goal: deck.settings.goal },
