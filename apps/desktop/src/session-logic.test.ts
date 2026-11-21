@@ -10,7 +10,9 @@ import {
   Relearn,
   answerKind,
   asRepeat,
+  CONFIDENCE_SHARE,
   asksConfidence,
+  asksConfidenceHere,
   blockKey,
   confidenceKey,
   isConfidentMiss,
@@ -337,4 +339,32 @@ test('a confident miss comes back later in the session even when a recall of it 
   r.answered(7, 'recall', true);
   for (let n = 0; n < 7; n++) r.answered(200 + n, 'other', true);
   assert.equal(r.due(), 8);
+});
+
+test('"How sure were you?" is asked on about 1 in 4 recall answers, the same way every time', () => {
+  assert.equal(CONFIDENCE_SHARE, 0.25);
+  // Deterministic: the same card, day and exercise always give the same answer.
+  for (const [id, day, i] of [
+    [7, '2026-11-24', 0],
+    [4181726926398173, '2026-11-25', 12],
+  ] as const)
+    assert.equal(asksConfidenceHere(id, day, i), asksConfidenceHere(id, day, i));
+  // About a quarter over many cards, days and positions, and it varies with each of the three.
+  let asked = 0;
+  const n = 4000;
+  for (let k = 0; k < n; k++) if (asksConfidenceHere(1000 + k * 7919, `2026-11-${10 + (k % 20)}`, k % 30)) asked++;
+  assert.ok(asked / n > 0.2 && asked / n < 0.3, `asked ${asked} of ${n}`);
+  const varies = (f: (k: number) => boolean) => new Set(Array.from({ length: 40 }, (_, k) => f(k))).size === 2;
+  assert.ok(
+    varies((k) => asksConfidenceHere(42 + k, '2026-11-24', 3)),
+    'by card',
+  );
+  assert.ok(
+    varies((k) => asksConfidenceHere(42, `2026-${10 + (k % 3)}-${10 + (k % 18)}`, 3)),
+    'by day',
+  );
+  assert.ok(
+    varies((k) => asksConfidenceHere(42, '2026-11-24', k)),
+    'by position',
+  );
 });

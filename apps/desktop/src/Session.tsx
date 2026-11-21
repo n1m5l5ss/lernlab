@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
-import { xpFor } from '@lernlab/core/game';
+import { dayKey, xpFor } from '@lernlab/core/game';
 import type { Confidence } from '@lernlab/core/confidence';
 import { teacherFor, type Line } from '@lernlab/core/teacher';
 import { api, sendAttempt, sendConfidence, sendOverride } from './api';
@@ -32,6 +32,7 @@ import {
   answerKind,
   asRepeat,
   asksConfidence,
+  asksConfidenceHere,
   blockKey,
   isConfidentMiss,
   needsRescue,
@@ -100,6 +101,7 @@ function ExerciseBlock({
   const { t: tr } = useTranslation();
   // How sure the learner was of each card's real answer in this block (#205): a confident miss comes back once.
   const sure = useRef(new Map<number, Confidence>());
+  const today = useMemo(() => dayKey(), []);
   const rate = useMemo(
     () =>
       confidence &&
@@ -148,7 +150,8 @@ function ExerciseBlock({
   const k = `${block.id}-${i}`;
   // Timers only on review blocks: time pressure while first learning a card hurts memory.
   if (block.kind !== 'drill') ctx = { ...ctx, timer: 0 };
-  if (rate) ctx = { ...ctx, confidence: rate };
+  // About 1 in 4 recall answers ask how sure you were; the others move on exactly as before.
+  if (rate && 'itemId' in ex && asksConfidenceHere(ex.itemId, today, i)) ctx = { ...ctx, confidence: rate };
   if (repeats.current.has(ex)) ctx = asRepeat<AnswerInput, Ctx>(ctx);
   switch (ex.type) {
     case 'intro':

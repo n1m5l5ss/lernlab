@@ -163,5 +163,24 @@ export const asksConfidence = (b: { on: boolean | undefined; practice: boolean; 
   b.on !== false && !b.practice && b.kind !== 'blitz';
 
 /** The keys 1 to 5 as a confidence rating. */
+/** Share of recall answers that ask "How sure were you?", so sessions stay quick. */
+export const CONFIDENCE_SHARE = 0.25;
+
+/**
+ * Whether this recall answer asks "How sure were you?": about 1 in 4, picked by the card, the day and the
+ * exercise's place in its block (FNV-1a hash), so the same answer is always asked or not, and tests can tell.
+ */
+export function asksConfidenceHere(itemId: number, day: string, index: number): boolean {
+  let h = 0x811c9dc5;
+  for (const ch of `${itemId}|${day}|${index}`) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 0x01000193);
+  }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  return (h >>> 0) / 0x100000000 < CONFIDENCE_SHARE;
+}
+
 export const confidenceKey = (key: string): Confidence | null =>
   /^[1-5]$/.test(key) ? (Number(key) as Confidence) : null;
