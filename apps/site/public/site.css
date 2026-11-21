@@ -479,6 +479,10 @@ section[id] {
 .footer-inner p {
   margin: 0;
 }
+.footer-inner .footer-signing {
+  flex-basis: 100%;
+  order: 1;
+}
 .footer-links {
   display: flex;
   flex-wrap: wrap;

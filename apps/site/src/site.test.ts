@@ -68,3 +68,14 @@ test('every image has alt text and size, and dark screenshots exist for each lig
 test('no raw colours in the stylesheet: design tokens only', () => {
   assert.doesNotMatch(css, /#[0-9a-f]{3,8}\b|rgba?\(|hsla?\(/i);
 });
+
+test('the download page credits SignPath and links the code signing policy (SignPath Foundation terms)', () => {
+  assert.match(
+    html,
+    /Free code signing provided by <a href="https:\/\/about\.signpath\.io">SignPath\.io<\/a>, certificate by\s+<a href="https:\/\/signpath\.org">SignPath Foundation<\/a>/,
+  );
+  assert.match(
+    html,
+    /href="https:\/\/github\.com\/n1m5l5ss\/lernlab\/blob\/main\/docs\/CODE_SIGNING\.md">Code signing policy</,
+  );
+});
