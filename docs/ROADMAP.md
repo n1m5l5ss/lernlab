@@ -74,6 +74,40 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 - [ ] **Mochi, Brainscape, Kahoot and Blooket importers;** deep links and QR codes.
 - [ ] **2.0:** sync and a phone app.
 
+## Future: from learning-science research (not scheduled)
+
+These come from a review of the research on remembering, understanding and staying motivated (November 2026). The evidence, the expected impact and the effort for each one are in [Future features from learning science](LEARNING-SCIENCE-IDEAS.md). None of them is started. Each becomes an issue when someone picks it up.
+
+**Tier 1: strong evidence, small to medium effort**
+
+- [ ] **Question variants per card:** recall, apply and analyse prompts that rotate, with one grade per day.
+- [ ] **"Explain it" cards:** explain first, then tick the key points you covered. Why and how cards never use a plain flip.
+- [ ] **Learn from your own mix-ups:** confused cards become each other's wrong choices and sit close together in a session, with an offer of a compare card.
+- [ ] **Relearn until right:** a missed card returns until you recall it once, and a new card needs 2–3 spaced recalls.
+- [ ] **Misconception feedback** on wrong multiple-choice answers.
+- [ ] **Guess first** before a new topic (practice only, no timer).
+- [ ] **If-then study plan,** with the reminder in your own words.
+- [ ] **Calibration:** confidence against real recall, a "will you know this tomorrow?" check, and confident misses re-checked.
+
+**Tier 2: good evidence, more effort or fewer subjects**
+
+- [ ] **Example ladder:** worked examples that fade step by step.
+- [ ] **Prerequisite links:** learn the basics first, without locking anything.
+- [ ] **Teach-back:** explain a topic aloud, then check yourself against its key points.
+- [ ] **Case chains:** one scenario with linked questions.
+- [ ] **Translate between representations,** such as graph and equation.
+- [ ] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme.
+- [ ] **Card-quality checker** and key-term highlight.
+- [ ] **Pattern feedback** at the end of a session.
+- [ ] **Weekly goals** and a progress card you can print or share.
+- [ ] **"Learn how to learn":** see spacing work on yourself.
+- [ ] **Calm mode,** and rewards that say what they are for.
+- [ ] **Sleep bridge:** learn in the evening, check in the morning.
+
+**Tier 3: weaker evidence, niche or large**
+
+- [ ] Try first for maths and science; concept map from memory; sketch pad; fading mnemonics; "say it aloud" on a few cards; cover related card families; study together on one computer; "act it out" cards; an optional quiet minute.
+
 ## Avoid
 
 These either hurt learning or create legal risk:
@@ -86,3 +120,4 @@ These either hurt learning or create legal risk:
 - Guilt notifications.
 - Copying other products' names, mascots or look.
 - Hosting copyrighted question banks or real exam questions.
+- Mixing brand-new vocabulary from the start, retry-until-right multiple choice, drilling one card many times in a session, leaderboards, and decorative pictures on cards (see [learning-science ideas](LEARNING-SCIENCE-IDEAS.md#what-not-to-build)).
