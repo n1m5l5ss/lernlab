@@ -4,7 +4,7 @@
 
 **Free, open-source flashcards that feel like a game, for any subject.**
 
-> **Status:** Version 1.0.0 is out. <!-- x-release-please-version -->
+> **Status:** Version 1.1.0 is out. <!-- x-release-please-version -->
 > Get it from the [LernLab website](https://n1m5l5ss.github.io/lernlab/) or the [Releases page](https://github.com/n1m5l5ss/lernlab/releases/latest); what changed is in the [changelog](CHANGELOG.md) and what comes next in the [roadmap](docs/ROADMAP.md). Installers are not signed yet, so your system will warn you the first time you open LernLab (see [Install](#install) and the [code signing policy](docs/CODE_SIGNING.md)).
 
 ![The Home screen: reviews due, new cards, what to study, session length and one Start button](docs/screenshots/home.png)
