@@ -41,6 +41,8 @@ export type Settings = {
   launchAtLogin: boolean;
   /** Let an AI assistant the user connects (MCP, #148) read their data and propose changes. Off by default. */
   aiAssistant: boolean;
+  /** Load pictures, video and sound that decks link from the internet (#177). Off by default: it tells those sites the learner's IP address. */
+  remoteMedia: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -63,6 +65,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reminderTime: DEFAULT_REMINDER_TIME,
   launchAtLogin: false,
   aiAssistant: false,
+  remoteMedia: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });

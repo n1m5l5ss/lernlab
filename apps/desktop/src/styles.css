@@ -846,6 +846,15 @@ table.t th {
   object-fit: contain;
   background: var(--color-subtle);
 }
+.media-blocked {
+  padding: 14px 18px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-subtle);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  text-align: center;
+}
 .tf {
   display: grid;
   grid-template-columns: 1fr 1fr;

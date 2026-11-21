@@ -249,7 +249,7 @@
       "updates": "Checking for updates on GitHub, while “Update automatically” is on.",
       "gallery": "Loading a deck from the deck gallery, when you ask for it.",
       "aiAssistant": "Your AI assistant, if you connect one and turn it on below: LernLab itself stays offline, but what the assistant reads is sent to its AI company.",
-      "outro": "Nothing else leaves your computer: no account, no tracking."
+      "outro": "Nothing else leaves your computer: no account, no tracking. The one exception is pictures and sounds from the internet, and only if you turn that on below."
     },
     "assistant": {
       "enable": "Let an AI assistant use LernLab",
@@ -268,6 +268,14 @@
       "source": "Source code on GitHub",
       "libraries": "Open-source libraries inside LernLab",
       "library": "{{name}} ({{licence}} licence)"
+    },
+    "remoteMedia": {
+      "label": "Allow pictures and sounds from the internet",
+      "hint": "Off by default. Some shared decks link pictures, videos or sounds from websites instead of including them. While this is off, those cards show a note instead, and everything stored in your decks still works.",
+      "warnTitle": "Load pictures and sounds from the internet?",
+      "warnBody": "Cards that link media from a website will contact that website each time you study them. That website can see your IP address and when you study. The links come from the people who made the deck, not from LernLab, so LernLab can't check what they show and isn't responsible for that content. You turn this on at your own risk, and you can turn it off at any time.",
+      "accept": "I understand, turn it on",
+      "cancel": "Keep it off"
     }
   },
   "home": {
@@ -1265,5 +1273,11 @@
     "fixed": "Fixed",
     "continue": "Continue",
     "fullChangelog": "Full changelog"
+  },
+  "media": {
+    "blocked": {
+      "image": "This picture is on the internet. To show it, turn on “Allow pictures and sounds from the internet” in Settings.",
+      "video": "This video is on the internet. To show it, turn on “Allow pictures and sounds from the internet” in Settings."
+    }
   }
 }

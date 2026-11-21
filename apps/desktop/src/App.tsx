@@ -21,6 +21,7 @@ import { WhatsNew } from './WhatsNew';
 import { formatDate, setLanguage } from './i18n';
 import { applyTheme } from './theme';
 import { applyDisplay } from './display';
+import { allowRemoteMedia } from './remote-media';
 import { hashFor, isStartHash, routeFromHash, type Route } from './routes';
 import { markOnce, MARKS } from './perf';
 
@@ -57,6 +58,7 @@ export function App() {
         void setLanguage(s.settings.uiLanguage);
         applyTheme(s.settings.theme);
         applyDisplay(s.settings);
+        allowRemoteMedia(s.settings.remoteMedia);
         return s;
       })
       .catch((e: unknown) => {

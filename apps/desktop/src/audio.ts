@@ -1,5 +1,5 @@
 // Game feel: tiny synthesised sound effects (no files, see sound-logic.ts), Anki audio playback and reading cards aloud.
-import { mediaUrl } from './bridge';
+import { mediaSrc } from './remote-media';
 import { SOUND, createSfx, type Tone } from './sound-logic';
 import { clampRate, localeFor, pickVoice, prefFor, type SpeechPref } from './voice-logic';
 
@@ -33,9 +33,10 @@ let current: HTMLAudioElement | null = null;
 export const stopMedia = () => current?.pause();
 
 export function playMedia(file: string | null | undefined, rate = 1): Promise<void> {
-  if (!file) return Promise.resolve();
+  const url = file ? mediaSrc(file) : null; // null: no audio, or an internet link that is turned off (#177)
+  if (!url) return Promise.resolve();
   current?.pause();
-  current = new Audio(mediaUrl(file));
+  current = new Audio(url);
   current.playbackRate = rate;
   return new Promise((resolve) => {
     current!.onended = () => resolve();

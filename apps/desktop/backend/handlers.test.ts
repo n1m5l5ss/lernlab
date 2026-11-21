@@ -167,6 +167,13 @@ test('update settings default to on and stable, and a backup can be taken before
   assert.ok(existsSync(join(dir, 'backups', file)));
 });
 
+test('internet media in decks is off until the learner turns it on (#177)', async () => {
+  assert.equal((await ok('state.get')).settings.remoteMedia, false);
+  assert.equal((await ok('settings.save', { remoteMedia: 'yes' })).remoteMedia, false);
+  assert.equal((await ok('settings.save', { remoteMedia: true })).remoteMedia, true);
+  assert.equal((await ok('settings.save', { remoteMedia: false })).remoteMedia, false);
+});
+
 test('backups: before an update, listed with counts, restored; export and import everything; delete all', async () => {
   const { file } = await ok('backup.create', { reason: 'update' });
   assert.match(file, /-before-update-v\d+\.db$/);

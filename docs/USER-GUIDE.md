@@ -234,7 +234,7 @@ When you ask the assistant for cards (for example from a PDF or a web page), to 
 - **Reminders** (desktop app): a daily reminder at a time you choose, and opening LernLab when you log in.
 - **Your data**: the data folder, backups, restore, export, import and delete.
 - **AI assistant**: let an AI assistant you use (Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other app that supports MCP) read your decks, cards and study history. Off until you turn it on. LernLab itself stays offline, but whatever the assistant reads is sent to that assistant's AI company. When it is on, Settings shows the snippet to paste into the assistant's MCP settings; see [AI-ASSISTANTS.md](AI-ASSISTANTS.md). Turn it off and every request from the assistant is refused.
-- **Updates and privacy**: automatic updates and beta updates. LernLab goes online only to check for updates, to load a deck from the gallery when you ask, and for an AI assistant you connect and turn on.
+- **Updates and privacy**: automatic updates and beta updates. LernLab goes online only to check for updates, to load a deck from the gallery when you ask, and for an AI assistant you connect and turn on. Some shared decks link pictures, videos or sounds from websites instead of including them. Those stay off, and the card shows a note, until you turn on **Allow pictures and sounds from the internet**. LernLab warns you first: each such card then contacts that website, which sees your IP address, and the content comes from the deck's author, not from LernLab.
 
 ## Keyboard
 

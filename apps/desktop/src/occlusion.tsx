@@ -5,10 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { imageAltOf } from '@lernlab/core/cards';
 import { occlusionOf, type Box } from '@lernlab/core/occlusion';
 import type { Item } from '@lernlab/core/types';
-import { mediaUrl } from './bridge';
+import { BlockedMedia, mediaSrc } from './remote-media-view';
 import { dragBox, MIN_DRAWN, NEW_BOX, nudge, spanBox, type Point, type Shape } from './occlusion-logic';
 
-const src = (f: string) => (/^https?:\/\//.test(f) ? f : mediaUrl(f));
 const place = (b: Box): CSSProperties => ({
   left: `${b.x * 100}%`, // rtl-ignore: a box is placed on the picture, which never flips
   top: `${b.y * 100}%`,
@@ -21,10 +20,12 @@ export function OccludedImage({ item }: { item: Item }) {
   const { t } = useTranslation();
   const view = occlusionOf(item);
   if (!view || !item.image) return null;
+  const url = mediaSrc(item.image);
+  if (!url) return <BlockedMedia kind="image" />;
   return (
     <figure className="occl">
       <div className="occl-frame">
-        <img src={src(item.image)} alt={imageAltOf(item)} draggable={false} />
+        <img src={url} alt={imageAltOf(item)} draggable={false} />
         {view.boxes.map((b, i) => {
           const asked = i === view.asked;
           const hidden = !asked && view.mode === 'all';
@@ -74,6 +75,7 @@ export function OcclusionEditor({
   onChange: (shapes: Shape[]) => void;
 }) {
   const { t } = useTranslation();
+  const url = mediaSrc(image);
   const uid = useId();
   const frame = useRef<HTMLDivElement>(null);
   const boxRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -132,7 +134,7 @@ export function OcclusionEditor({
         onPointerUp={up}
         onPointerCancel={up}
       >
-        <img src={src(image)} alt={alt} draggable={false} />
+        {url ? <img src={url} alt={alt} draggable={false} /> : <BlockedMedia kind="image" />}
         {shapes.map((s, i) => (
           <button
             key={i}

@@ -690,6 +690,7 @@ export const handlers = {
     next.reminderTime = cleanReminderTime(next.reminderTime);
     next.launchAtLogin = next.launchAtLogin === true;
     next.aiAssistant = next.aiAssistant === true;
+    next.remoteMedia = next.remoteMedia === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),
