@@ -1,6 +1,7 @@
 // ProgressBar: a bar with role="progressbar", so screen readers hear the value, not just see a colour.
 import type { CSSProperties } from 'react';
 import { cx, progressFraction } from './logic';
+import styles from './ProgressBar.module.css';
 
 export type ProgressBarProps = {
   value: number;
@@ -32,7 +33,7 @@ export function ProgressBar({
   const fill: CSSProperties = { width: `${progressFraction(value, max, min) * 100}%` };
   return (
     <div
-      className={cx(VARIANT_CLASS[variant], className)}
+      className={cx(styles[VARIANT_CLASS[variant]], className)}
       role="progressbar"
       aria-label={labelledBy ? undefined : label}
       aria-labelledby={labelledBy}

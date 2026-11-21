@@ -3,6 +3,7 @@
 import type { KeyboardEvent, ReactNode } from 'react';
 import { rovingIndex } from '../keys-logic';
 import { cx } from './logic';
+import styles from './SegmentedControl.module.css';
 
 export type SegmentedOption<T extends string> = { value: T; label: ReactNode };
 
@@ -45,7 +46,7 @@ export function SegmentedControl<T extends string>({
   const stop = tabStop(options, value);
   return (
     <div
-      className={cx('segmented', className)}
+      className={cx(styles.segmented, className)}
       role="radiogroup"
       aria-labelledby={labelledBy}
       aria-label={labelledBy ? undefined : label}

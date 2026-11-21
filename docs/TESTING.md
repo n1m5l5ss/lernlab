@@ -35,6 +35,14 @@ LernLab is built test-first. For every ticket, write the failing test first, the
    - Changing a baseline needs a pull request with the `visual-change` label and the before/after images.
 4. **Token contrast test.** A unit test computes the contrast of every text and background token pair. It fails below 4.5:1 for text, or 3:1 for icons and borders.
 
+How this runs today (issue #55):
+
+- **Stories** sit next to each component: `apps/desktop/src/components/*.stories.tsx`. `npm run storybook` opens them at http://localhost:6006 with Theme and Direction switches in the toolbar. A story covers one variant, a disabled state, or long Telugu or CJK text; theme, direction, hover and focus are added by the visual check.
+- **`npm run test:visual`** builds Storybook and, for every story in light and dark, left to right and right to left, runs axe-core (fails on serious or critical) and screenshots the default, hover and keyboard-focus states. It is separate from `npm test`, which stays fast. On a laptop it only runs axe and saves the screenshots to `apps/desktop/visual-results/`; it compares them only in CI.
+- **CI** (`.github/workflows/visual.yml`) runs it in `mcr.microsoft.com/playwright:v1.65.1-noble`, pinned by digest, against `apps/desktop/visual/baselines/`. Diffs are in the run's `visual-results` artifact. The `visual-change` label makes the job commit new baselines to the pull request, where the Files tab shows each image before and after.
+- **Scoped styles:** Sidebar, SegmentedControl, ProgressBar and the field label, hint and error use CSS Modules (`*.module.css`). Button, Card, Feedback and the `.input` control still share global classes in `styles.css`, because screens not yet converted use those classes directly; they move into modules as those screens move to the components.
+- **No raw colours:** ESLint fails on hex, `rgb()` and `hsl()` colours in TypeScript, and `packages/ui/src/raw-colours.test.ts` does the same for every stylesheet. Only `packages/ui/tokens.css`, generated from `docs/design/tokens.json`, holds colours, plus a short, shrinking allow-list of old game styles.
+
 ## Performance budgets
 
 Users judge a desktop app by how fast it reacts to them, not by server throughput. A 300 ms stutter between cards breaks concentration.

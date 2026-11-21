@@ -30,6 +30,8 @@
     "bench": "npm run bench --workspace bench",
     "bench:startup": "npm run startup --workspace bench --",
     "bench:budgets": "npm run budgets --workspace bench --",
+    "test:visual": "npm run --workspace apps/desktop visual",
+    "storybook": "npm run --workspace apps/desktop storybook",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",

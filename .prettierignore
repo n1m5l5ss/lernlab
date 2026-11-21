@@ -2,6 +2,8 @@ node_modules/
 dist/
 dist-electron/
 apps/desktop/e2e-results/
+apps/desktop/storybook-static/
+apps/desktop/visual-results/
 release/
 data/
 examples/

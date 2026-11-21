@@ -117,5 +117,5 @@ test('Sidebar is a named navigation landmark that marks the current page', () =>
   assert.match(out, /^<nav class="sidebar" aria-label="Main"><div class="sidebar-name">LernLab<\/div>/);
   assert.match(out, /<a class="nav-link" href="#\/home" aria-current="page"><svg aria-hidden="true"/);
   assert.match(out, /<a class="nav-link" href="#\/decks"><svg/);
-  assert.match(out, /<div class="grow"><\/div><a class="nav-link" href="#\/settings">/);
+  assert.match(out, /<div class="grow"><\/div><a class="nav-link footer" href="#\/settings">/);
 });

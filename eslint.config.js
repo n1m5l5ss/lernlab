@@ -3,8 +3,22 @@ import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
+/** A hex, rgb() or hsl() colour inside a string (an esquery regex). */
+const RAW_COLOUR = '/#[0-9a-fA-F]{3,8}\\b|rgba?\\(|hsla?\\(/';
+const NO_RAW_COLOUR = 'No raw colours: use a design token, e.g. var(--color-accent).';
+
 export default tseslint.config(
-  { ignores: ['**/node_modules/', '**/dist/', '**/dist-electron/', 'release/', 'data/', 'examples/'] },
+  {
+    ignores: [
+      '**/node_modules/',
+      '**/dist/',
+      '**/dist-electron/',
+      'release/',
+      'data/',
+      'examples/',
+      '**/storybook-static/',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -31,6 +45,19 @@ export default tseslint.config(
             { group: ['@lernlab/*'], message: 'Core imports nothing internal.' },
           ],
         },
+      ],
+    },
+  },
+  {
+    // Colours come only from the design tokens (docs/design/tokens.json → packages/ui/tokens.css), so a
+    // theme change reaches every screen. CSS files have the same check in packages/ui/src/raw-colours.test.ts.
+    files: ['apps/**/*.{ts,tsx}', 'packages/**/*.{ts,tsx}'],
+    ignores: ['**/*.test.ts', 'packages/ui/src/tokens.ts', 'packages/ui/src/build-tokens.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        { selector: `Literal[value=${RAW_COLOUR}]`, message: NO_RAW_COLOUR },
+        { selector: `TemplateElement[value.raw=${RAW_COLOUR}]`, message: NO_RAW_COLOUR },
       ],
     },
   },
