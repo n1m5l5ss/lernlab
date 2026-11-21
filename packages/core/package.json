@@ -17,7 +17,7 @@
   "dependencies": {
     "fflate": "^0.8.3",
     "fzstd": "^0.1.1",
-    "ts-fsrs": "5.4.2"
+    "ts-fsrs": "6.0.0"
   },
   "devDependencies": {
     "@lernlab/storage-sqlite": "*",
