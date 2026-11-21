@@ -12,7 +12,7 @@ const SITE = join(import.meta.dirname, '..');
 const ROOT = join(SITE, '..', '..');
 const OUT = join(SITE, 'dist');
 /** The TypeScript files that run in the browser. */
-const BROWSER = ['detect.ts', 'main.ts'];
+const BROWSER = ['detect.ts', 'mac-guide.ts', 'main.ts'];
 
 const readJson = <T>(path: string): T => JSON.parse(readFileSync(path, 'utf8')) as T;
 

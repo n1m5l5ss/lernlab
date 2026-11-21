@@ -45,8 +45,10 @@ jobs:
     needs: tag
     permissions:
       contents: write
+      # Windows signing (SignPath) reads the build's artifacts.
+      actions: read
     uses: ./.github/workflows/release.yml
     with:
       tag: ${{ needs.tag.outputs.tag }}
-    # Signing secrets (#39), when set; without them the installers are unsigned.
+    # SignPath secret and variables (#39, docs/CODE_SIGNING.md); without them Windows builds unsigned.
     secrets: inherit

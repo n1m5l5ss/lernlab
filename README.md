@@ -4,7 +4,7 @@
 
 **Free, open-source flashcards that feel like a game, for any subject.**
 
-> **Status:** Working prototype (v0.3). We are building version 1.0 now: see [docs/PLAN.md](docs/PLAN.md) and the [issues](https://github.com/n1m5l5ss/lernlab/issues). Installers are not signed yet, so your system will warn you the first time you open LernLab (see [Install](#install)).
+> **Status:** Working prototype (v0.3). We are building version 1.0 now: see [docs/PLAN.md](docs/PLAN.md) and the [issues](https://github.com/n1m5l5ss/lernlab/issues). Installers are not signed yet, so your system will warn you the first time you open LernLab (see [Install](#install) and the [code signing policy](docs/CODE_SIGNING.md)).
 
 ![The Home screen: reviews due, new cards, what to study, session length and one Start button](docs/screenshots/home.png)
 
@@ -49,7 +49,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 
 ## Install
 
-Download the file for your system from the [LernLab website](https://n1m5l5ss.github.io/lernlab/), which picks the right one for you, or from the [Releases page](https://github.com/n1m5l5ss/lernlab/releases). The installers are not signed yet, so Windows and macOS show a warning the first time. Everything LernLab needs is inside the installer: you don't need Node.js or anything else.
+Download the file for your system from the [LernLab website](https://n1m5l5ss.github.io/lernlab/), which picks the right one for you, or from the [Releases page](https://github.com/n1m5l5ss/lernlab/releases). Until the Windows installer is signed through SignPath, Windows warns you the first time; macOS always does, because the Mac app isn't signed with a paid Apple certificate (see the [code signing policy](docs/CODE_SIGNING.md)). Everything LernLab needs is inside the installer: you don't need Node.js or anything else.
 
 ### Windows 10 and 11
 
@@ -60,16 +60,36 @@ Download the file for your system from the [LernLab website](https://n1m5l5ss.gi
 
 ### macOS (Apple silicon and Intel)
 
+#### Opening LernLab on a Mac for the first time
+
+**Why macOS warns you.** LernLab isn't signed with a paid Apple developer certificate (99 dollars a year). It is free and open source, and the file on the website is the same file published on the [Releases page](https://github.com/n1m5l5ss/lernlab/releases), built in public from this repository. If you want to be sure, [check the download](docs/CODE_SIGNING.md#check-a-download-yourself) against the checksum GitHub shows for it.
+
+**Your choice.** Opening it takes one extra step the first time, about a minute. If you'd rather not, that's fine: nothing is installed until you drag LernLab into Applications, and you can drag the downloaded `.dmg` file from Downloads to the Bin.
+
+**The steps (macOS 15 Sequoia and later):**
+
 1. Download the `.dmg` for your Mac. The file with `arm64` in its name is for Apple silicon (M1 and newer); the other one is for Intel Macs.
-2. Open it and drag **LernLab** into **Applications**.
-3. Open LernLab. The first time, macOS says it can't check the app. Close the message, go to **System Settings → Privacy & Security**, scroll down and press **Open Anyway**. On macOS 14 and older you can instead right-click the app and choose **Open**.
-4. If macOS says the app "is damaged", it is only the download warning. Run this once in Terminal, then open it again:
+2. Open it and drag **LernLab** into **Applications**. Open LernLab. macOS says *"LernLab" Not Opened*. Press **Done** (not Move to Trash).
 
-   ```bash
-   xattr -dr com.apple.quarantine /Applications/LernLab.app
-   ```
+   <img src="apps/site/public/media/mac-open-1-warning.svg" width="480" alt="The message “LernLab” Not Opened: Apple could not verify LernLab is free of malware. It has two buttons, Done and Move to Trash; Done is marked.">
+3. Open the Apple menu → **System Settings** → **Privacy & Security**. Scroll down to Security. Next to *"LernLab" was blocked to protect your Mac*, press **Open Anyway**. The button stays there for about an hour after you tried to open the app.
 
-Automatic updates on a Mac need a signed app, so for now download each new version yourself.
+   <img src="apps/site/public/media/mac-open-2-settings.svg" width="480" alt="System Settings with Privacy & Security chosen in the sidebar. Under Security it says LernLab was blocked to protect your Mac, and the Open Anyway button next to it is marked.">
+4. macOS asks once more: press **Open Anyway**, then type your Mac's password (or use Touch ID). LernLab opens, and from now on it opens like any other app.
+
+   <img src="apps/site/public/media/mac-open-3-confirm.svg" width="480" alt="The question Open LernLab? with the Open Anyway button marked, followed by a box asking for your password to allow it.">
+
+**macOS 14 Sonoma and earlier:** the steps above work too, or use the shortcut: in **Applications**, Control-click (or right-click) LernLab, choose **Open**, then press **Open** in the message. On macOS 15 and later this shortcut no longer works.
+
+<img src="apps/site/public/media/mac-open-older.svg" width="480" alt="The Applications folder with LernLab Control-clicked. In the menu that appears, Open is marked.">
+
+**If macOS says the app "is damaged"** (older LernLab versions on Apple silicon), it is only the download warning. Run this once in Terminal, then open it again:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/LernLab.app
+```
+
+The Mac app can't update itself without a paid Apple certificate, so download each new version from the website. See the [code signing policy](docs/CODE_SIGNING.md) for details.
 
 ### Linux
 
@@ -175,6 +195,7 @@ To move the folder, use **File → Use a different data folder…**, for example
 - [Deck formats](docs/FORMAT.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
+- [Code signing policy](docs/CODE_SIGNING.md)
 
 ## Contributing
 

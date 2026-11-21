@@ -38,10 +38,12 @@ jobs:
     if: needs.release-please.outputs.released == 'true'
     permissions:
       contents: write
+      # Windows signing (SignPath) reads the build's artifacts.
+      actions: read
     uses: ./.github/workflows/release.yml
     with:
       tag: ${{ needs.release-please.outputs.tag }}
-    # Signing secrets (#39), when set; without them the installers are unsigned.
+    # SignPath secret and variables (#39, docs/CODE_SIGNING.md); without them Windows builds unsigned.
     secrets: inherit
   sync-dev:
     # Keep dev up to date with version bumps, changelog and hotfixes on main.

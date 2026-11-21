@@ -1,6 +1,8 @@
 // The website's only script: highlight the download for this computer and point the main button at it.
 // Without JavaScript the page still works: the main button jumps to the list of all downloads.
+// A Mac download first explains the one-time macOS warning (mac-guide.ts).
 import { detectSystem, recommendedDownloads, type BrowserInfo } from './detect.js';
+import { setupMacGuide } from './mac-guide.js';
 
 interface UserAgentData {
   platform?: string;
@@ -41,6 +43,7 @@ async function highlightDownload() {
   const first = keys[0] && document.querySelector<HTMLAnchorElement>(`a[data-download="${keys[0]}"]`);
   if (primary && first) {
     primary.href = first.href;
+    primary.dataset.downloadKey = keys[0];
     const label = primary.dataset[`label${keys[0].replace(/(^|-)(\w)/g, (_, _d, c: string) => c.toUpperCase())}`];
     if (label) primary.querySelector('.label')!.textContent = label;
   }
@@ -58,3 +61,4 @@ function startDemo() {
 
 highlightDownload();
 startDemo();
+setupMacGuide(document);

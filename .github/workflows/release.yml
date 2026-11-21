@@ -65,6 +65,13 @@ jobs:
           - os: ubuntu-latest
             script: dist:linux
     runs-on: ${{ matrix.os }}
+    env:
+      # 'true' once the owner has added SignPath's token and organisation (docs/CODE_SIGNING.md).
+      SIGN_WINDOWS: ${{ secrets.SIGNPATH_API_TOKEN != '' && vars.SIGNPATH_ORGANIZATION_ID != '' }}
+    permissions:
+      contents: read
+      # The SignPath action reads this job's details and its uploaded artifacts.
+      actions: read
     steps:
       - uses: actions/checkout@v4
         with: { ref: '${{ env.REF }}' }
@@ -78,20 +85,73 @@ jobs:
         run: |
           version=$(npx tsx apps/desktop/electron/release-version.ts "$TAG")
           npm pkg set "version=$version" --workspace apps/desktop
-      - run: npm run ${{ matrix.script }}
-        env:
-          # Signing (#39) is optional: with no secrets set, the builds are unsigned.
-          # macOS: MAC_CSC_LINK (base64 .p12) + MAC_CSC_KEY_PASSWORD sign; APPLE_ID,
-          # APPLE_APP_SPECIFIC_PASSWORD and APPLE_TEAM_ID also notarise.
-          CSC_IDENTITY_AUTO_DISCOVERY: ${{ runner.os == 'macOS' && secrets.MAC_CSC_LINK != '' }}
-          CSC_LINK: ${{ runner.os == 'macOS' && secrets.MAC_CSC_LINK || '' }}
-          CSC_KEY_PASSWORD: ${{ runner.os == 'macOS' && secrets.MAC_CSC_KEY_PASSWORD || '' }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          # Windows: WIN_CSC_LINK (base64 .pfx) + WIN_CSC_KEY_PASSWORD. (#39 may use SignPath instead.)
-          WIN_CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          WIN_CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
+      # Code signing (#39, docs/CODE_SIGNING.md). macOS is ad-hoc signed by electron-builder (free, no
+      # Apple certificate). Windows is signed by SignPath Foundation, only once the SIGNPATH_API_TOKEN
+      # secret and the SIGNPATH_ORGANIZATION_ID variable exist; until then it builds unsigned as before.
+      - if: runner.os != 'Windows' || env.SIGN_WINDOWS != 'true'
+        run: npm run ${{ matrix.script }}
+
+      # ── Windows, signed: build the app folder, sign LernLab.exe, build the installer from the signed
+      #    folder, sign the installer, then point latest.yml at the signed file (auto-update checks its sha512).
+      - name: Build the Windows app folder to sign
+        if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
+        working-directory: apps/desktop
+        run: |
+          npm run build:electron
+          npx electron-builder --win --dir --publish never
+      - id: unsigned-app
+        if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
+        uses: actions/upload-artifact@v4
+        with: { name: unsigned-app-windows, path: release/win-unpacked/, if-no-files-found: error, retention-days: 1 }
+      - name: Sign LernLab.exe (SignPath)
+        if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
+        uses: signpath/github-action-submit-signing-request@a2c5b60d9c75f073142b653c354b632eedce097b # v3.2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'lernlab' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: app
+          github-artifact-id: ${{ steps.unsigned-app.outputs.artifact-id }}
+          # Release signing waits for an approver to accept the request in SignPath.
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: release/win-signed
+      - name: Build the installer from the signed app
+        if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
+        working-directory: apps/desktop
+        shell: bash
+        run: npx electron-builder --win --prepackaged "$GITHUB_WORKSPACE/release/win-signed" --publish never
+      - id: unsigned-installer
+        if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          { name: unsigned-installer-windows, path: release/*-Setup-*.exe, if-no-files-found: error, retention-days: 1 }
+      - name: Sign the installer (SignPath)
+        if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
+        uses: signpath/github-action-submit-signing-request@a2c5b60d9c75f073142b653c354b632eedce097b # v3.2
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: ${{ vars.SIGNPATH_PROJECT_SLUG || 'lernlab' }}
+          signing-policy-slug: ${{ vars.SIGNPATH_SIGNING_POLICY_SLUG || 'release-signing' }}
+          artifact-configuration-slug: installer
+          github-artifact-id: ${{ steps.unsigned-installer.outputs.artifact-id }}
+          wait-for-completion-timeout-in-seconds: 3600
+          output-artifact-directory: release/installer-signed
+      - name: Put the signed installer in place and update latest.yml
+        if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
+        shell: bash
+        run: npx tsx apps/desktop/electron/signed-installer.ts release/installer-signed release
+      - name: Check the signatures
+        if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          foreach ($f in @((Get-ChildItem release/*-Setup-*.exe), (Get-Item release/win-signed/LernLab.exe))) {
+            $s = Get-AuthenticodeSignature $f.FullName
+            Write-Host "$($f.Name): $($s.Status) $($s.SignerCertificate.Subject)"
+            if ($s.Status -ne 'Valid') { throw "$($f.Name) is not validly signed" }
+          }
 
       # ── Smoke tests: install each installer the way a user would, start it, wait for Home. ──
       - name: Smoke test (Linux AppImage and deb)
@@ -119,6 +179,9 @@ jobs:
           for arch in arm64 x64; do
             dmg=$(ls release/*-"$arch".dmg)
             hdiutil attach -nobrowse -readonly -mountpoint "/Volumes/lernlab-$arch" "$dmg"
+            # Ad-hoc signed as a whole (docs/CODE_SIGNING.md); a broken signature reads as "damaged".
+            codesign --verify --deep --strict "/Volumes/lernlab-$arch/LernLab.app"
+            codesign -dv "/Volumes/lernlab-$arch/LernLab.app" 2>&1 | grep -q 'Signature=adhoc'
             "/Volumes/lernlab-$arch/LernLab.app/Contents/MacOS/LernLab" --smoke-test | tee smoke.log
             grep -q LERNLAB_SMOKE_OK smoke.log
             hdiutil detach "/Volumes/lernlab-$arch"

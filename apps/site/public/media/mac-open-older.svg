@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-labelledby="t">
+  <title id="t">Drawing of the Applications folder on macOS 14 or earlier: LernLab Control-clicked, with Open marked in the menu</title>
+  <style>
+    .desk{fill:#F1EDE7}.panel{fill:#FFFFFF;stroke:#E4DED6}.side{fill:#F1EDE7}.ink{fill:#1F1D1A}.muted{fill:#5C574F}
+    .line{stroke:#E4DED6}.dot{fill:#E4DED6}.row{fill:#F1EDE7}.menu{fill:#FFFFFF;stroke:#8A847B}.sel{fill:#2F5BB7}
+    .mark{fill:none;stroke:#2F5BB7;stroke-width:3}.badge{fill:#2F5BB7}.on{fill:#FFFFFF}.icon{fill:#2F5BB7}
+    text{font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+    @media (prefers-color-scheme: dark){
+      .desk{fill:#1A1917}.panel{fill:#24221F;stroke:#3A3732}.side{fill:#2D2B27}.ink{fill:#ECE9E4}.muted{fill:#A8A39B}
+      .line{stroke:#3A3732}.dot{fill:#3A3732}.row{fill:#2D2B27}.menu{fill:#24221F;stroke:#807B73}.sel{fill:#8FA8F0}
+      .mark{stroke:#8FA8F0}.badge{fill:#8FA8F0}.on{fill:#1A1917}.icon{fill:#8FA8F0}
+    }
+  </style>
+  <rect class="desk" width="480" height="300" rx="12"/>
+  <rect class="panel" x="16" y="16" width="448" height="268" rx="12"/>
+  <path class="side" d="M17 28a11 11 0 0 1 11-11h92v266H28a11 11 0 0 1-11-11z"/>
+  <circle class="dot" cx="32" cy="32" r="5"/><circle class="dot" cx="48" cy="32" r="5"/><circle class="dot" cx="64" cy="32" r="5"/>
+  <text class="muted" x="28" y="70" font-size="12">Favourites</text>
+  <text class="ink" x="28" y="94" font-size="12" font-weight="700">Applications</text>
+  <text class="muted" x="28" y="118" font-size="12">Desktop</text>
+  <text class="muted" x="28" y="142" font-size="12">Downloads</text>
+  <text class="ink" x="136" y="44" font-size="15" font-weight="700">Applications</text>
+  <path class="line" d="M136 58h312"/>
+  <text class="muted" x="164" y="82" font-size="12">Calculator</text>
+  <rect class="row" x="136" y="94" width="312" height="26" rx="6"/>
+  <rect class="icon" x="142" y="98" width="18" height="18" rx="4"/>
+  <text class="ink" x="166" y="112" font-size="12" font-weight="700">LernLab</text>
+  <text class="muted" x="164" y="142" font-size="12">Maps</text>
+  <rect class="menu" x="236" y="108" width="176" height="150" rx="8"/>
+  <rect class="sel" x="242" y="114" width="164" height="26" rx="5"/>
+  <text class="on" x="252" y="132" font-size="13" font-weight="700">Open</text>
+  <text class="ink" x="252" y="160" font-size="12">Show Package Contents</text>
+  <path class="line" d="M244 172h160"/>
+  <text class="ink" x="252" y="194" font-size="12">Move to Trash</text>
+  <path class="line" d="M244 206h160"/>
+  <text class="ink" x="252" y="228" font-size="12">Get Info</text>
+  <text class="ink" x="252" y="248" font-size="12">Rename</text>
+  <rect class="mark" x="236" y="108" width="176" height="38" rx="8"/>
+  <circle class="badge" cx="436" cy="127" r="14"/>
+  <text class="on" x="436" y="132" font-size="14" font-weight="700" text-anchor="middle">1</text>
+  <text class="muted" x="136" y="272" font-size="11">Then press Open in the message that follows.</text>
+</svg>
