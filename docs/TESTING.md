@@ -47,7 +47,7 @@ How this runs today (issue #55):
 
 Users judge a desktop app by how fast it reacts to them, not by server throughput. A 300 ms stutter between cards breaks concentration.
 
-Reference machine: a 4-core laptop with an SSD and 8 GB of RAM. Budgets are calibrated in the first two weeks, then locked.
+Reference machines: GitHub's free hosted runners for Windows, macOS and Linux (owner decision, 2026-11-21: no paid or personal hardware). The budgets below are locked; the measurements behind them are under [Calibration](#calibration).
 
 | Metric | P50 | P95 |
 |---|---|---|
@@ -85,18 +85,22 @@ Everything lives in `bench/` (an npm workspace) and `.github/workflows/perf.yml`
 
 ### Calibration
 
-**Provisional.** The budgets above were not yet measured on the reference machine. The numbers below come from a 4-core Linux container (Node 22, under `xvfb-run`) on 2026-11-21 and are the locked baseline until the reference machine run replaces them.
+**Locked on 2026-11-21** from the first budgets run on GitHub's hosted runners (perf.yml, run 44879831850, `dev` at c3e5e40). The budget table above stays as it is: every number below is inside it except one. GitHub's runners are shared virtual machines, usually slower than a recent laptop, so a budget met there is met on most users' machines.
 
-| Metric | P50 | P95 |
-|---|---|---|
-| Start → Home on screen (warm, 10 launches) | 390 ms | 421 ms |
-| Key press → next frame (460 inputs) | 13 ms | 15 ms |
-| Long tasks per block | 0 | 0 |
-| Due queue, 100k | 0.07 ms | 0.10 ms |
-| Save a review, 100k | 0.31 ms | 0.50 ms |
-| Deck list / stats (`state.get`), 100k | 1 ms (after a change: 81 ms) | 3 ms (after a change: 95 ms) |
-| Import 10k (no media) | 402 ms | 508 ms |
-| Import 100k (no media) | 4.8 s | 4.9 s |
+| Metric (P50 / P95) | Windows | macOS | Linux |
+|---|---|---|---|
+| Start → Home on screen | 345 / 381 ms | 765 / 1,123 ms (first run: 1,058 / 1,655 ms) | 412 / 434 ms |
+| Key press → next frame | 13 / 15 ms | 14 / 29 ms | 14 / 15 ms |
+| Long tasks per block | 0 / 1 | **0 / 3 (over: P95 ≤ 1)** | 0 / 0 |
+| Due queue, 100k | 0.07 / 0.11 ms | 0.06 / 0.13 ms | 0.06 / 0.08 ms |
+| Save a review, 100k | 0.37 / 0.56 ms | 0.22 / 0.51 ms | 0.24 / 0.40 ms |
+| Deck list / stats, 100k | 0.69 / 0.75 ms | 0.60 / 0.71 ms | 0.66 / 0.75 ms |
+| Import 10k (no media) | 1,783 / 2,888 ms | 367 / 517 ms | 532 / 635 ms |
+| Import 100k (no media) | 12.6 / 14.2 s | 5.2 / 6.2 s | 5.5 / 7.0 s |
+
+- **macOS long tasks** are over budget in both runs (the job was re-run once with the same result), so the nightly macOS job is red until #137 finds the cause. The budget was not loosened.
+- **Windows import** is the closest to its budget (10k: 89% of P50, 72% of P95; 100k: 84% of P50). It is the first thing to speed up if the budget is ever tightened.
+- The macOS start-up time varies a lot between runner machines, but both runs are inside the budget.
 
 Deck list / stats was 955 / 1,129 ms at 100k cards before #130: `appState` ran the due and new-card queries once per deck. It now counts every deck in one grouped query over the `items(deck_id, suspended, kind)` index and keeps the counts until the data changes, so `deck-stats` measures a repeat call and `deck-stats-changed` the first call after a write.
 
