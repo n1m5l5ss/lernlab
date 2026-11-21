@@ -228,6 +228,8 @@ To move the folder, use **File → Use a different data folder…**, for example
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Code signing policy](docs/CODE_SIGNING.md)
+- [Security policy](SECURITY.md): how to report a vulnerability privately
+- [Security practices](docs/SECURITY-PRACTICES.md) and [testing](docs/TESTING.md)
 
 ## Contributing
 
