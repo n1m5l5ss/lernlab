@@ -58,7 +58,7 @@ Only the owner can do this. Check the current terms at <https://signpath.org/ter
    - [x] An OSI-approved licence (MIT) and no proprietary parts.
    - [x] Already released and working (v0.3.0 and earlier on GitHub Releases).
    - [x] Built in public on GitHub-hosted runners from this repository.
-   - [x] This page: what is signed, roles, privacy statement, and the SignPath credit line above. It must be reachable from the project's home page (it is linked from the README and the website).
+   - [x] This page: what is signed, roles, privacy statement, and the SignPath credit line above. It must be reachable from the project's home page (it is linked from the README and the website footer, which also carries the credit line; SignPath requires the download page to mention it).
    - [ ] Multi-factor authentication switched on for your GitHub account.
 2. **Apply** with the form at <https://signpath.org/apply>. You'll need: the repository URL (`https://github.com/n1m5l5ss/lernlab`), the website (`https://n1m5l5ss.github.io/lernlab/`), a short description ("Free, open-source desktop flashcard app with spaced repetition for Windows, macOS and Linux"), the link to this page, and the files to sign (`LernLab.exe` and the NSIS installer `LernLab-Setup-X.Y.Z.exe`, built with electron-builder on GitHub Actions).
 3. **Wait for approval.** SignPath Foundation reviews the project and invites you to a SignPath organisation. Switch on multi-factor authentication there too.
