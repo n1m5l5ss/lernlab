@@ -312,7 +312,7 @@ export const handlers = {
     else setMeta(getDb(), 'studySource', source);
     return { ok: true };
   }),
-  'decks.export': h(v.object({ id: v.id, format: v.oneOf('csv', 'lernpack') }), ({ id, format }) =>
+  'decks.export': h(v.object({ id: v.id, format: v.oneOf('csv', 'lernpack', 'apkg') }), ({ id, format }) =>
     exportDeck(id, format),
   ),
 

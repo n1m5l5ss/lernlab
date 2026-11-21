@@ -9,10 +9,10 @@ LernLab imports and exports decks in open formats, so your cards never get locke
 | Pasted text | ✅ | — | Copying a list from anywhere, with custom separators |
 | JSON | ✅ | — | Scripts and generators |
 | `.zip` with a CSV plus media files | ✅ | — | CSV decks with images, audio or video |
-| Anki `.apkg` / `.colpkg` | ✅ | (planned) | Moving from Anki: old (`collection.anki2/anki21`) and new (`anki21b`, zstd) packages |
+| Anki `.apkg` / `.colpkg` | ✅ | ✅ `.apkg` | Moving between LernLab and Anki: old (`collection.anki2/anki21`) and new (`anki21b`, zstd) packages |
 | Live Anki (AnkiConnect) | ✅ | — | Pulling a deck straight from a running Anki |
 
-Re-importing a deck **updates** cards instead of duplicating them, and keeps your progress. Cards are matched by their `id`, or, if there is none, by deck name plus front and back. Exports (CSV and `.lernpack`) write each card's own id, so importing an export back into the same deck updates it in place; importing it into another deck makes a copy.
+Re-importing a deck **updates** cards instead of duplicating them, and keeps your progress. Cards are matched by their `id`, or, if there is none, by deck name plus front and back. Exports (CSV, `.lernpack` and Anki `.apkg`) write each card's own id, so importing an export back into the same deck updates it in place; importing it into another deck makes a copy.
 
 ## Deck package: `.lernpack` format version 1
 
@@ -188,6 +188,26 @@ To include media with a CSV, zip the CSV together with the files it references a
   - A LernLab card is one Anki note: the history of the note's first card (usually front → back) is used; reviews of its other cards, such as the reverse card, are left out.
   - Cards you have already studied in LernLab keep their own progress; importing the same package again brings nothing over twice.
 - Packages exported by current Anki (`collection.anki21b`, zstd-compressed) and older ones both work.
+
+## Export to Anki (`.apkg`)
+
+Decks → a deck's options → **Export for Anki** saves `<deck>.apkg`, which Anki (2.1 and current versions) opens with File → Import.
+
+- **The package.** A zip with `collection.anki2` (Anki's legacy collection, schema version 11, which every Anki version imports), a `media` file (JSON: zip entry `"0"`, `"1"`… → file name) and the media files the cards use. LernLab writes it in `packages/core/src/formats/apkgwrite.ts`.
+- **Note types.** `Basic (LernLab)` with the fields `Front`, `Back`, `Example`, `Example translation`, `Explanation`, `Notes`, `Image`, `Audio`, `Video`, and `Cloze (LernLab)` with `Text`, `Back` and the same extra fields. Their ids are fixed, so exporting again reuses them in Anki.
+- **Cards.** A plain card is one Basic note. A cloze card is one Cloze note, with one Anki card per gap number (`{{c1::…}}`, `{{c2::…}}`). Multiple-choice and ordering cards become Basic notes whose back shows the right choices or the steps in order. Plain text is HTML-escaped; formatted fields keep their HTML. Tags keep their names, with spaces turned into `_` (Anki tags have no spaces).
+- **Media.** The image goes in as `<img src="…">` (with its description as `alt`), audio and video as `[sound:…]`.
+- **Decks.** The deck keeps its name; sub-decks (`Deck::Sub`) become Anki sub-decks.
+- **Schedule.** Cards arrive in Anki as new cards. LernLab's FSRS progress and review history are not exported.
+- **Back to LernLab.** Each note's guid is `lernlab-<card id>`. Importing the package (or an Anki export of the same notes) back into the same deck updates those cards in place; into another deck it makes a copy. A deck's language is not stored in Anki, so pick it on the import screen.
+
+**Manual check in Anki** (done before a release that changes the exporter):
+
+1. Export a deck that has a plain card with an image and audio, a cloze card with two gaps and a sub-deck.
+2. In Anki (current version and 2.1.x), File → Import → the `.apkg`. Anki reports the notes added, with no errors.
+3. Browse: the deck and sub-deck exist; the cloze note has two cards; the note types are `Basic (LernLab)` and `Cloze (LernLab)`.
+4. Study one card of each kind: the image shows, the audio plays, the cloze gaps hide and reveal.
+5. Tools → Check Database reports no problems. Import the same file again: nothing is duplicated.
 
 ## Live import from Anki (AnkiConnect)
 

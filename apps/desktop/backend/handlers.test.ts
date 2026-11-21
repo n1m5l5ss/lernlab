@@ -52,6 +52,10 @@ test('create a deck, add and edit a card, import a file, plan a session', async 
   assert.equal(!notBool.ok && notBool.error.code, 'invalid_input');
   const exp = await ok('decks.export', { id: deck.id, format: 'csv' });
   assert.ok(exp.data instanceof Uint8Array && new TextDecoder().decode(exp.data).includes('Berlin'));
+  const anki = await ok('decks.export', { id: deck.id, format: 'apkg' });
+  assert.equal(anki.name.endsWith('.apkg') && anki.data[0], 0x50, 'an Anki package is a zip');
+  const badFormat = await handle('decks.export', { id: deck.id, format: 'docx' });
+  assert.equal(!badFormat.ok && badFormat.error.code, 'invalid_input');
   const plan = await ok('session.plan', { length: 'mini' });
   assert.ok(plan.blocks.length > 0);
   const state = await ok('state.get');

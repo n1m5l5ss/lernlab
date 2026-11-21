@@ -34,6 +34,8 @@ export interface Host {
   db(): DB;
   /** Open a read-only copy of another SQLite file (an Anki collection). Close it when done. */
   openSqliteBytes(bytes: Uint8Array): DB;
+  /** Create an empty SQLite file, let `build` fill it, and return the file's bytes (an Anki export). */
+  buildSqliteBytes(build: (db: DB) => void): Uint8Array;
   media: MediaStore;
   /** Write a readable copy of the day's summary next to the database. Best-effort. */
   saveProgressSnapshot(day: string, json: string): void;

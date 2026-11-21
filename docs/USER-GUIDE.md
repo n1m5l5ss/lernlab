@@ -140,7 +140,7 @@ Studying on a day keeps your streak going. The day starts at 4 a.m., so a late-n
 - Tick several cards to add or remove a tag, move them to another deck, suspend them or delete them. A backup is saved before a delete.
 - **☆ Star** marks a card, so you can study your starred cards from Home. **Suspend** keeps a card out of your sessions.
 
-The **…** button on a deck in **Decks** opens the deck settings: its name, the language of the cards, new cards per day, a goal and an exam date, the voice that reads cards aloud, **Export .lernpack**, **Export CSV** and **Delete**.
+The **…** button on a deck in **Decks** opens the deck settings: its name, the language of the cards, new cards per day, a goal and an exam date, the voice that reads cards aloud, **Export .lernpack**, **Export CSV**, **Export for Anki** and **Delete**.
 
 ## Follow your progress
 
@@ -191,6 +191,10 @@ Your data as it is now is backed up first, so you can change your mind.
 2. On the new computer, press **Import a zip…** in the same place and choose that file. It replaces the data there, after a backup.
 
 To share one deck instead, use **Export .lernpack** in the deck settings.
+
+### Go back to Anki
+
+**Export for Anki** in the deck settings saves the deck as an `.apkg` file. In Anki, choose **File → Import** and pick it. Basic and cloze cards come over with their pictures, sounds and sub-decks; they start as new cards in Anki, because your LernLab progress can't be carried over. Multiple-choice and ordering cards become basic cards that show the answer on the back.
 
 ### Use a synced folder
 

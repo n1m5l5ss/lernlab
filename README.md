@@ -14,6 +14,7 @@ Languages, AWS, medicine, physics, law, history: if you can put it on a card, Le
 - **Local and private:** no account, no cloud. Your decks and progress stay on your computer.
 - **Runs on Mac, Windows and Linux.**
 - **Opens your existing decks:** imports Anki `.apkg` packages, Quizlet-style CSV, pasted lists and live Anki.
+- **No lock-in:** export any deck as a `.lernpack`, a CSV or an Anki `.apkg` with its media.
 - **Safe with your data:** a daily backup, restore with a preview, and export everything as a zip.
 - **For everyone:** works fully by keyboard and with screen readers, in light and dark themes, and lays out right to left for Arabic, Hebrew and Urdu.
 - **Stays up to date:** Windows and Linux update themselves; Mac users download each new version from the website.
@@ -189,7 +190,7 @@ There are more small decks (German, AWS, biology) and a template in [`examples/R
 
 ### The `.lernpack` format
 
-A zip containing `manifest.json`, a `cards.jsonl` file with one JSON card per line, and a `media/` folder. It is plain JSON, so it is easy to generate with a script or an AI, easy to diff, and media travel with the deck. Export any deck from **Decks → Export**.
+A zip containing `manifest.json`, a `cards.jsonl` file with one JSON card per line, and a `media/` folder. It is plain JSON, so it is easy to generate with a script or an AI, easy to diff, and media travel with the deck. Export any deck from **Decks → Export**. To go back to Anki, **Export for Anki** saves the deck as an `.apkg` with its media.
 
 ## Your data
 

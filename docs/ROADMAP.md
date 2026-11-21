@@ -46,7 +46,7 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 - [ ] **Math cards:** LaTeX rendering and answers (#45).
 - [ ] **Code cards:** syntax highlighting, predict the output (#46).
 - [x] **Record your own audio** on a card (#47).
-- [ ] **Anki `.apkg` export** (#49).
+- [x] **Anki `.apkg` export** (#49).
 - [ ] **Deck gallery:** browse and install community decks (#50).
 - [ ] **Translations through Weblate** (#51).
 - [ ] **Connect your own AI assistant (MCP):** Claude, ChatGPT, Hermes Agent or any MCP client can read your decks, stats and hard cards, and suggest new decks and cards (from your PDFs or links) that you review before they are saved. Off by default (#148).

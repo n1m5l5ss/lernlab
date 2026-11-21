@@ -41,7 +41,7 @@ export const api = {
   chooseSource: (source: StudySource) => call('study.choose', { source }),
   /** Save the CSV template (column names and three example cards). */
   downloadTemplate: () => saveFile(CSV_TEMPLATE_NAME, CSV_TEMPLATE, 'text/csv'),
-  exportDeck: async (id: number, format: 'csv' | 'lernpack') => {
+  exportDeck: async (id: number, format: 'csv' | 'lernpack' | 'apkg') => {
     const f = await call('decks.export', { id, format });
     saveFile(f.name, f.data, f.type);
   },
