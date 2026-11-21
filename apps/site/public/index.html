@@ -32,6 +32,7 @@
         <nav aria-label="Sections">
           <ul class="nav-list">
             <li><a href="#features">Features</a></li>
+            <li><a href="#assistant">AI assistant</a></li>
             <li><a href="#privacy">Privacy</a></li>
             <li><a href="#download">Download</a></li>
             <li><a href="https://github.com/n1m5l5ss/lernlab">Source code</a></li>
@@ -134,8 +135,23 @@
             <li class="feature">
               <h3>Brings your decks along</h3>
               <p>
-                Import Anki <code>.apkg</code> packages, Quizlet-style CSV, pasted lists or live Anki. Export to CSV and
-                <code>.lernpack</code> at any time.
+                Import Anki <code>.apkg</code> packages with their review history, Quizlet-style CSV, pasted lists or
+                live Anki, or install a free deck from the gallery. Export to CSV, <code>.lernpack</code> or back to
+                Anki at any time.
+              </p>
+            </li>
+            <li class="feature">
+              <h3>Cards for every subject</h3>
+              <p>
+                Math in LaTeX, number answers with units and a tolerance, code with syntax highlighting, image occlusion
+                for diagrams, and your own recorded audio.
+              </p>
+            </li>
+            <li class="feature">
+              <h3>Mock exams</h3>
+              <p>
+                A tutor mode that explains each answer, and a timed mode like the real thing, with flags, a pass mark
+                and a score by topic.
               </p>
             </li>
             <li class="feature">
@@ -246,6 +262,78 @@
         </ul>
       </section>
 
+      <section class="wrap" id="assistant" aria-labelledby="assistant-title">
+        <h2 id="assistant-title">Bring your own AI assistant</h2>
+        <p class="section-lead">
+          LernLab has no AI of its own. If you already use an AI assistant, you can let it talk to LernLab. It works
+          with any assistant app that can connect to local MCP servers (the Model Context Protocol), such as Claude
+          Desktop, the ChatGPT desktop app and Hermes Agent.
+        </p>
+        <div class="assistant">
+          <div class="asks">
+            <h3>Ask it things like</h3>
+            <ul class="ask-list">
+              <li>“How did my studying go this month? Which cards do I keep forgetting?”</li>
+              <li>“Quiz me on ten of my hardest Spanish cards.”</li>
+              <li>“Make cards from this PDF chapter.”</li>
+              <li>“Find duplicates in my biology deck and fix the typos.”</li>
+              <li>“Plan my German deck for an exam on 1 March.”</li>
+            </ul>
+          </div>
+          <ul class="checks">
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span
+                ><strong>Off until you turn it on,</strong> in Settings → AI assistant. Turn it off at any time.</span
+              >
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span>
+                <strong>LernLab itself stays offline.</strong> The assistant starts LernLab on your computer and talks
+                to it directly; nothing listens on the network.
+              </span>
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span>
+                <strong>You accept every change.</strong> New cards, fixes, goals and plans wait in LernLab for you to
+                edit, accept or decline. It can't delete anything.
+              </span>
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span>
+                <strong>Quizzes in the chat never count.</strong> Only real study sessions change when a card comes
+                back.
+              </span>
+            </li>
+            <li>
+              <svg class="icon" aria-hidden="true" viewBox="0 0 24 24" width="24" height="24">
+                <path d="m5 12 5 5 9-10" />
+              </svg>
+              <span>
+                <strong>Your choice of company.</strong> What the assistant reads is sent to the company that runs it,
+                under its terms, never to us.
+              </span>
+            </li>
+          </ul>
+        </div>
+        <p class="assistant-guide">
+          <a class="btn" href="https://github.com/n1m5l5ss/lernlab/blob/main/docs/AI-ASSISTANTS.md"
+            >Set it up: the AI assistant guide</a
+          >
+        </p>
+      </section>
+
       <section class="band" id="privacy" aria-labelledby="privacy-title">
         <div class="wrap privacy">
           <div>
@@ -279,7 +367,7 @@
               </svg>
               <span>
                 <strong>Online only when it must be:</strong> to check for updates, to open the deck gallery when you
-                ask, and to use your own AI key if you add one.
+                ask, and for an AI assistant you connect and turn on.
               </span>
             </li>
           </ul>
@@ -581,6 +669,7 @@
           <li><a href="https://github.com/n1m5l5ss/lernlab/blob/main/CHANGELOG.md">What's new</a></li>
           <li><a href="https://github.com/n1m5l5ss/lernlab/blob/main/docs/CODE_SIGNING.md">Code signing policy</a></li>
           <li><a href="https://github.com/n1m5l5ss/lernlab/issues">Report a problem</a></li>
+          <li><a href="https://github.com/n1m5l5ss/lernlab/issues/new?template=join_team.yml">Join the team</a></li>
         </ul>
       </div>
     </footer>

@@ -1,6 +1,8 @@
 // Exercise generators: turn one card into many kinds of exercises (works for any subject).
 import { acceptedAnswers, shuffle, splitBold, stripHtml, tokenize } from './text';
 import { clozeText, mcqOf, parseCloze, qa, stepsOf } from './cards';
+import { hasMath, splitMath } from './math';
+import { codeTask, GAP } from './code';
 import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
@@ -23,7 +25,10 @@ function pickDistractors(item: Item, pool: Item[], n: number, key: (i: Item) => 
   const candidates = pool
     .filter(
       (p) =>
-        p.id !== item.id && !['grammar', 'mcq', 'order'].includes(p.kind) && key(p) && !seen.has(key(p).toLowerCase()),
+        p.id !== item.id &&
+        !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(p.kind) &&
+        key(p) &&
+        !seen.has(key(p).toLowerCase()),
     )
     .map((p) => ({ p, s: score(p) }))
     .sort((a, b) => b.s - a.s)
@@ -70,10 +75,21 @@ export function mc(item: Item, pool: Item[], direction: 'de2en' | 'en2de'): Exer
   };
 }
 
+/** What a typed hint is built from: a formula without its \( \) delimiters. */
+export const hintSource = (answer: string) =>
+  hasMath(answer)
+    ? splitMath(answer)
+        .map((p) => ('tex' in p ? p.tex : p.text))
+        .join('')
+        .trim()
+    : answer;
+
+/** "S___ (4)": the first character, then a blank for every other one that is not a space. */
+const hintOf = (core: string) => `${core[0]}${core.slice(1).replace(/[^\s]/g, '_')} (${core.length})`;
+
 export function typed(item: Item): Exercise {
   const q = qa(item);
-  const core = q.requireArticle ? item.word : q.accepted[0];
-  const hint = `${core[0]}${core.slice(1).replace(/[^\s]/g, '_')} (${core.length})`;
+  const hint = hintOf(hintSource(q.requireArticle ? item.word : q.accepted[0]));
   const kindLabel = item.lang
     ? item.kind === 'noun'
       ? ' · noun + article'
@@ -110,18 +126,56 @@ export function mcq(item: Item): Exercise | null {
   };
 }
 
-export function order(item: Item): Exercise | null {
-  const steps = stepsOf(item);
+export function order(item: Item, steps = stepsOf(item), codeLang?: string): Exercise | null {
   if (steps.length < 2) return null;
+  // Not already in order (compared by text: two lines of code can be the same, like two closing braces).
+  const solved = (s: number[]) => s.every((v, i) => steps[v] === steps[i]);
   let shuffled = shuffle(steps.map((_, i) => i));
-  for (let k = 0; k < 5 && shuffled.every((v, i) => v === i); k++) shuffled = shuffle(shuffled);
-  return { type: 'order', itemId: item.id, prompt: item.target, steps, shuffled };
+  for (let k = 0; k < 5 && solved(shuffled); k++) shuffled = shuffle(shuffled);
+  return {
+    type: 'order',
+    itemId: item.id,
+    prompt: item.target,
+    steps,
+    shuffled,
+    ...(codeLang !== undefined && { codeLang }),
+  };
+}
+
+/** A code card's exercise (see codeTask): fill the token, predict the output or order the lines. */
+export function codeExercise(item: Item): Exercise | null {
+  const task = codeTask(item);
+  if (!task) return null;
+  const accepted = (answer: string) => [...new Set([answer, ...qa(item).accepted])].filter(Boolean);
+  if (task.mode === 'order') return order(item, task.lines, task.lang);
+  if (task.mode === 'output') {
+    const ex = { prompt: item.target, accepted: accepted(task.answer), requireArticle: false };
+    return { type: 'typed', itemId: item.id, ...ex, hint: hintOf(task.answer), code: task.code, codeLang: task.lang };
+  }
+  const [before, after] = task.code.split(GAP);
+  return {
+    type: 'cloze',
+    itemId: item.id,
+    before,
+    after,
+    accepted: accepted(task.answer),
+    translation: item.target,
+    hint: task.hint || `${task.answer[0]}…`,
+    codeLang: task.lang,
+  };
 }
 
 /** Recall exercise for any card: question cards ask their question; short answers are typed; long ones flip. */
 export const recall = (item: Item): Exercise =>
-  (item.kind === 'mcq' ? mcq(item) : item.kind === 'order' ? order(item) : null) ??
-  (qa(item).typeable ? typed(item) : flip(item));
+  (item.kind === 'mcq'
+    ? mcq(item)
+    : item.kind === 'order'
+      ? order(item)
+      : item.kind === 'code'
+        ? codeExercise(item)
+        : item.kind === 'occlusion'
+          ? typed(item)
+          : null) ?? (qa(item).typeable ? typed(item) : flip(item));
 
 export function cloze(item: Item): Exercise | null {
   if (item.kind === 'cloze') {
@@ -164,7 +218,8 @@ export function truefalse(item: Item, pool: Item[]): Exercise {
 }
 
 export function imagemc(item: Item, pool: Item[]): Exercise | null {
-  if (!item.image) return null;
+  // An occlusion picture is asked box by box (recall), never as a picture quiz.
+  if (!item.image || item.kind === 'occlusion') return null;
   const ds = pickDistractors(item, pool, 3, frontText);
   if (ds.length < 2) return null;
   const options = shuffle([frontText(item), ...ds.map(frontText)]);
@@ -180,7 +235,7 @@ export function unscramble(item: Item): Exercise | null {
 }
 
 /** Can the app play this card aloud: its own recording, or the system voice for a language deck. */
-export const hearable = (item: Item) => !!item.audio || !!item.lang;
+export const hearable = (item: Item) => item.kind !== 'occlusion' && (!!item.audio || !!item.lang);
 
 export function listen(item: Item, pool: Item[]): Exercise | null {
   if (!hearable(item)) return null;

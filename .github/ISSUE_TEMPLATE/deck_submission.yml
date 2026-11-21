@@ -1,18 +1,55 @@
 name: Deck submission
-description: Share a deck for the example decks or the future deck gallery
+description: Share a deck in the LernLab deck gallery (see docs/GALLERY.md)
+title: 'Deck: '
 labels: ['deck']
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for sharing! Export your deck from LernLab (Decks → a deck's ··· → Export .lernpack) and attach the file below.
+        A maintainer checks it and adds it to the gallery repo with its licence, so everyone can install it from Decks → Deck gallery.
   - type: input
     id: name
     attributes:
-      label: Deck name and subject
+      label: Deck title
+      description: The name people see in the gallery.
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Short description
+      description: What the deck covers, its level and who it is for (one or two sentences).
+    validations:
+      required: true
+  - type: input
+    id: language
+    attributes:
+      label: Language of the cards' front side
+      description: A language code such as de, fr or ja for a language deck. Leave empty for any other subject.
+  - type: input
+    id: author
+    attributes:
+      label: Author
+      description: The name to show as the deck's author (your name, nickname or group).
+    validations:
+      required: true
+  - type: dropdown
+    id: licence
+    attributes:
+      label: Licence
+      description: Every gallery deck has an open licence, shown to people before they install it.
+      options:
+        - CC-BY-4.0 (others may reuse it if they credit you)
+        - CC-BY-SA-4.0 (credit you and share changes alike)
+        - CC0-1.0 (no rights reserved)
     validations:
       required: true
   - type: textarea
     id: file
     attributes:
       label: Deck file
-      description: Attach a .lernpack, CSV or zip.
+      description: Attach the .lernpack file (a CSV or a zip of a CSV with media works too).
     validations:
       required: true
   - type: checkboxes
@@ -20,7 +57,7 @@ body:
     attributes:
       label: Rights
       options:
-        - label: I wrote these cards myself or they are openly licensed, and I agree to share them under CC BY 4.0 or CC0.
+        - label: I wrote these cards myself, or they and their pictures and sounds are openly licensed under a licence that allows the one chosen above.
           required: true
         - label: The deck contains no copyrighted exam questions.
           required: true

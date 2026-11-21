@@ -17,11 +17,16 @@ export const api = {
   startImport: () => call('import.anki', {}),
   session: (length: SessionLength, practice = false) => call('session.plan', { length, practice }),
   finish: (body: Parameters<typeof call<'session.finish'>>[1]) => call('session.finish', body),
+  examStart: (deckId: number) => call('exam.start', { deckId }),
+  examSubmit: (body: InputOf<'exam.submit'>) => call('exam.submit', body),
   stats: () => call('stats.get'),
   summary: () => call('summary.today'),
   progress: () => call('progress.get'),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),
   appInfo: () => call('app.info'),
+  aiRequests: () => call('aiRequests.list'),
+  acceptAiRequest: (id: string, request: Record<string, unknown>) => call('aiRequests.accept', { id, request }),
+  declineAiRequest: (id: string) => call('aiRequests.decline', { id }),
   backupNow: () => call('backup.create', {}),
   backups: () => call('backup.list'),
   restoreBackup: (file: string) => call('backup.restore', { file }),
@@ -39,7 +44,7 @@ export const api = {
   chooseSource: (source: StudySource) => call('study.choose', { source }),
   /** Save the CSV template (column names and three example cards). */
   downloadTemplate: () => saveFile(CSV_TEMPLATE_NAME, CSV_TEMPLATE, 'text/csv'),
-  exportDeck: async (id: number, format: 'csv' | 'lernpack') => {
+  exportDeck: async (id: number, format: 'csv' | 'lernpack' | 'apkg') => {
     const f = await call('decks.export', { id, format });
     saveFile(f.name, f.data, f.type);
   },
@@ -69,8 +74,12 @@ export const api = {
   importText: (b: Parameters<typeof call<'import.text'>>[1]) => call('import.text', b),
   ankiInfo: () => call('import.ankiInfo'),
   ankiImport: (b: { sources?: string[]; deckName?: string }) => call('import.anki', b),
+  /** Goes online: call it only when the user opens the deck gallery. */
+  gallery: () => call('gallery.list'),
+  installFromGallery: (id: string) => call('gallery.install', { id }),
   uploadMedia: async (file: File) =>
     call('media.upload', { name: file.name, data: new Uint8Array(await file.arrayBuffer()) }),
+  saveRecording: async (audio: Blob) => call('media.record', { data: new Uint8Array(await audio.arrayBuffer()) }),
   downloadSummary: async () => {
     const s = await call('summary.today');
     saveFile(`lernlab-${s.date}.json`, JSON.stringify(s, null, 2), 'application/json');

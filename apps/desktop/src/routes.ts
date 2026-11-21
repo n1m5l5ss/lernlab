@@ -1,5 +1,5 @@
 // The screens behind the sidebar. The address is the hash (#/decks), so Back/Forward and reloads keep the screen.
-export const ROUTES = ['home', 'decks', 'cards', 'progress', 'settings'] as const;
+export const ROUTES = ['home', 'decks', 'cards', 'progress', 'requests', 'settings'] as const;
 export type Route = (typeof ROUTES)[number];
 
 /** The screen for a location hash. Unknown or empty hashes open Home. */

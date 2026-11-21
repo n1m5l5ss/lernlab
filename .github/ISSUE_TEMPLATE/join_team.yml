@@ -1,0 +1,46 @@
+name: Join the team
+description: Become a reviewer, a maintainer or the lead of LernLab (app and deck gallery)
+title: 'Join the team: '
+labels: ['team']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you! The roles and what happens next are in [GOVERNANCE.md](https://github.com/n1m5l5ss/lernlab/blob/dev/GOVERNANCE.md). A maintainer answers here. If nobody answers within 7 days, the team gets a reminder. After 30 days with no answer, your request counts as accepted.
+  - type: dropdown
+    id: role
+    attributes:
+      label: Which role?
+      options:
+        - Reviewer (review pull requests and deck submissions)
+        - Maintainer (review, merge and release)
+        - Lead (take over running the project)
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where would you like to help?
+      multiple: true
+      options:
+        - The deck gallery (lernlab-decks)
+        - The app's code
+        - Translations
+        - Docs and the website
+        - Anywhere
+    validations:
+      required: true
+  - type: textarea
+    id: about
+    attributes:
+      label: About you
+      description: A few lines on who you are and why you'd like to help. Link to anything you've done for LernLab or elsewhere, if you like.
+    validations:
+      required: true
+  - type: checkboxes
+    id: agree
+    attributes:
+      label: Agreement
+      options:
+        - label: I'll follow the Code of Conduct and the principles in CLAUDE.md.
+          required: true

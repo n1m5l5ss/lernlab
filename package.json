@@ -26,6 +26,8 @@
     "dist:linux": "npm run --workspace apps/desktop dist:linux",
     "import": "tsx --no-warnings apps/desktop/server/cli-import.ts",
     "test": "npm run test --workspaces --if-present",
+    "coverage": "npm run coverage --workspace packages/core",
+    "fuzz": "npm run fuzz --workspace packages/core",
     "test:e2e": "npm run build:electron && npm run --workspace apps/desktop e2e",
     "bench": "npm run bench --workspace bench",
     "bench:startup": "npm run startup --workspace bench --",
@@ -46,7 +48,7 @@
     "tsx": "4.23.15",
     "typescript": "5.9.3",
     "typescript-eslint": "8.73.0",
-    "vitest": "5.0.5"
+    "vitest": "5.1.1"
   },
   "repository": {
     "type": "git",

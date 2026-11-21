@@ -11,9 +11,9 @@
       "type": ["string", "number"]
     },
     "type": {
-      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). Readers treat an unknown type as if it were missing.",
+      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit; code: a code snippet in `code`; occlusion: a box hidden on the image (all added after v1 was published). Readers treat an unknown type as if it were missing.",
       "type": "string",
-      "enum": ["basic", "cloze", "mcq", "order"]
+      "enum": ["basic", "cloze", "mcq", "order", "numeric", "code", "occlusion"]
     },
     "front": {
       "description": "Term, question or prompt. Cloze: text with {{c1::answer}} or {{c1::answer::hint}} (Anki syntax). A card with an empty front is skipped.",
@@ -47,6 +47,32 @@
     "steps": {
       "description": "Ordering card: the steps in the correct order, separated by |.",
       "type": "string"
+    },
+    "tolerance": {
+      "description": "Numeric card: how far a typed number may be off and still count, as a number in the card's unit (\"0.05\") or a percentage (\"1%\"). Added after v1 was published; older readers ignore it.",
+      "type": "string"
+    },
+    "code": {
+      "description": "Code card: the code snippet as plain text (never HTML), with its line breaks and indentation. A {{c1::token}} gap makes a fill-the-token card; a back makes predict-the-output; otherwise the lines are put in order. Added after v1 was published; older readers ignore it.",
+      "type": "string"
+    },
+    "codeLang": {
+      "description": "Code card: the snippet's programming language, e.g. python, javascript, sql (optional; used for highlighting and read out to screen readers).",
+      "type": "string"
+    },
+    "occlusion": {
+      "description": "Occlusion card: the box hidden on the image, \"x,y,w,h\" as fractions (0 to 1) of the image's width and height. The back is the box's label. Added after v1 was published; older readers ignore it and study a basic card with the whole image.",
+      "type": "string",
+      "pattern": "^\\s*[0-9.eE+-]+\\s*(,\\s*[0-9.eE+-]+\\s*){3}$"
+    },
+    "occlusionGroup": {
+      "description": "Occlusion card: the same text on every box of one picture (default: the image's file name). Added after v1 was published.",
+      "type": "string"
+    },
+    "occlusionMode": {
+      "description": "Occlusion card: one (only the asked box hidden, the others labelled; the default) or all (every box hidden, the asked one marked). Added after v1 was published.",
+      "type": "string",
+      "enum": ["one", "all"]
     },
     "image": {
       "description": "Image file name inside media/ (any subfolder; matched by file name), or an https:// URL. GIFs are images.",

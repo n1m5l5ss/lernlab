@@ -2,12 +2,17 @@
 import { mcqOf, qa, stepsOf } from '@lernlab/core/cards';
 import { cloze, typed } from '@lernlab/core/exercises';
 import { cardToItem, mediaKind, type NormalizedCard } from '@lernlab/core/library';
+import { parseTolerance } from '@lernlab/core/numeric';
+import { codeTask, type CodeTask } from '@lernlab/core/code';
+import { formatBox } from '@lernlab/core/occlusion';
+import type { Shape } from './occlusion-logic';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
 
 type FullCard = OutputOf<'cards.get'>;
-export type CardType = 'basic' | 'cloze' | 'mcq' | 'order';
-export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order'];
+export type CardType = 'basic' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code' | 'occlusion';
+export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order', 'numeric', 'code', 'occlusion'];
+const STORED_TYPES = new Set<string>(CARD_TYPES);
 export type MediaSlot = 'image' | 'audio' | 'video';
 
 export const EMPTY = {
@@ -28,6 +33,12 @@ export const EMPTY = {
   choices: '',
   correct: '',
   steps: '',
+  tolerance: '',
+  code: '',
+  codeLang: '',
+  occlusion: '',
+  occlusionGroup: '',
+  occlusionMode: 'one',
 };
 export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
 
@@ -46,10 +57,16 @@ export const formFor = (c: FullCard): Form => ({
   audio: c.audio ?? '',
   video: c.video ?? '',
   alt: c.extra.alt ?? '',
-  type: c.kind === 'mcq' || c.kind === 'order' || c.kind === 'cloze' ? c.kind : 'basic',
+  type: STORED_TYPES.has(c.kind) ? (c.kind as CardType) : 'basic',
   choices: c.extra.choices ?? '',
   correct: c.extra.correct ?? '',
   steps: c.extra.steps ?? '',
+  tolerance: c.extra.tolerance ?? '',
+  code: c.extra.code ?? '',
+  codeLang: c.extra.codeLang ?? '',
+  occlusion: c.extra.occlusion ?? '',
+  occlusionGroup: c.extra.occlusionGroup ?? '',
+  occlusionMode: c.extra.occlusionMode ?? 'one',
   suspended: c.suspended,
   starred: c.starred,
   item: c,
@@ -66,6 +83,12 @@ export function fieldsToSave(f: Form) {
     choices: f.type === 'mcq' ? f.choices : '',
     correct: f.type === 'mcq' ? f.correct : '',
     steps: f.type === 'order' ? f.steps : '',
+    tolerance: f.type === 'numeric' ? f.tolerance : '',
+    code: f.type === 'code' ? f.code : '',
+    codeLang: f.type === 'code' ? f.codeLang : '',
+    occlusion: f.type === 'occlusion' ? f.occlusion : '',
+    occlusionGroup: f.type === 'occlusion' ? f.occlusionGroup : '',
+    occlusionMode: f.type === 'occlusion' ? f.occlusionMode : '',
   };
 }
 
@@ -88,16 +111,28 @@ export type PreviewView =
   | { type: 'cloze'; before: string; after: string; answer: string; hint: string; extra: string }
   | { type: 'mcq'; stem: string; choices: string[]; correct: number[] }
   | { type: 'order'; prompt: string; steps: string[] }
+  | { type: 'code'; prompt: string; task: CodeTask }
+  /** The asked box hidden on the picture (the item carries its group's boxes). */
+  | { type: 'occlusion'; prompt: string; answer: string }
   /** The card would not study as the chosen type: say what is missing. */
-  | { type: 'problem'; problem: 'noGap' | 'choices' | 'steps' };
+  | { type: 'problem'; problem: 'noGap' | 'choices' | 'steps' | 'number' | 'tolerance' | 'code' | 'occlusion' };
 export type Preview = { item: Item; view: PreviewView; explanation: string };
 
 /**
  * The live preview: the card cleaned exactly as it will be saved, then asked the way a recall round asks it
  * (choices in the order written; a session shuffles them). Null while the front is empty.
  */
-export function previewOf(f: Form, deck: { id: number; language: string | null }): Preview | null {
-  const item = cardToItem({ ...deck, name: '' }, toCard(f), f.id ?? 0);
+export function previewOf(
+  f: Form,
+  deck: { id: number; language: string | null },
+  shapes: Shape[] = [],
+  selected = 0,
+): Preview | null {
+  // An occlusion preview asks the selected box (ids stand in for the boxes not saved yet).
+  const idOf = (i: number) => shapes[i]?.id ?? -1 - i;
+  const ask = shapes[selected];
+  const form = f.type === 'occlusion' && ask ? { ...f, back: ask.label, occlusion: formatBox(ask.box) } : f;
+  const item = cardToItem({ ...deck, name: '' }, toCard(form), f.type === 'occlusion' ? idOf(selected) : (f.id ?? 0));
   if (!item) return null;
   const explanation = item.grammar || item.notes;
   const out = (view: PreviewView): Preview => ({ item, view, explanation });
@@ -117,6 +152,18 @@ export function previewOf(f: Form, deck: { id: number; language: string | null }
       steps.length >= 2 ? { type: 'order', prompt: item.target, steps } : { type: 'problem', problem: 'steps' },
     );
   }
+  if (f.type === 'code') {
+    const task = codeTask(item);
+    return out(task ? { type: 'code', prompt: item.target, task } : { type: 'problem', problem: 'code' });
+  }
+  if (f.type === 'occlusion') {
+    if (item.kind !== 'occlusion' || !item.meaning) return out({ type: 'problem', problem: 'occlusion' });
+    item.occlusionBoxes = shapes.map((s, i) => ({ id: idOf(i), box: s.box, label: s.label }));
+    return out({ type: 'occlusion', prompt: item.target, answer: item.meaning });
+  }
+  if (f.type === 'numeric' && item.kind !== 'numeric') return out({ type: 'problem', problem: 'number' });
+  if (f.type === 'numeric' && f.tolerance.trim() && !parseTolerance(f.tolerance))
+    return out({ type: 'problem', problem: 'tolerance' });
   const q = qa(item);
   if (q.typeable) {
     const ex = typed(item);

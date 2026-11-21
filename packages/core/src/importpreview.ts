@@ -52,6 +52,8 @@ export type ImportPreview = {
   skipped: { reason: SkipReason; count: number }[];
   /** Columns of delimited text, for mapping. Null for formats with named fields (deck files, JSON, Anki). */
   table: { header: boolean; columns: { name: string; sample: string }[]; fields: ColumnMapping['fields'] } | null;
+  /** Anki packages: past reviews that can be replayed into the schedule (one per card per day). */
+  ankiReviews?: number;
 };
 
 export const PREVIEW_LIMIT = 10;
@@ -171,7 +173,9 @@ export function previewFile(
     }
     if (listing.some((n) => /collection\.anki/.test(n))) {
       const apkg = readApkg(data);
-      return summarize('apkg', apkg.decks[0]?.split('::')[0] || base, apkg.cards, null, limit);
+      let ankiReviews = 0;
+      for (const list of apkg.history.values()) ankiReviews += list.length;
+      return { ...summarize('apkg', apkg.decks[0]?.split('::')[0] || base, apkg.cards, null, limit), ankiReviews };
     }
     const all = unzipSync(data, { filter: (f) => /\.(csv|tsv|txt)$/i.test(f.name) && !f.name.startsWith('__MACOSX') });
     const csvName = Object.keys(all)[0];

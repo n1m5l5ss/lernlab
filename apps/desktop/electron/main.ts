@@ -32,7 +32,9 @@ import { reminderPrefsOf, startedAtLogin } from './reminder-policy';
 import { MIN_SIZE, restoreWindow, type WindowState } from './window-state';
 import { HOME_SELECTOR, isSmokeTest, SMOKE_FAIL, SMOKE_OK, waitFor } from './smoke';
 import { planRestart } from './data-restart';
+import { allowPermission } from './media-permission';
 import { startupMarks } from './perf';
+import { isMcpMode, mcpCommand, relayMcp } from './mcp-relay';
 import {
   parseDataMessage,
   type ConnectMessage,
@@ -47,6 +49,8 @@ const perfMark = startupMarks();
 // Installer smoke test (see smoke.ts): a fresh, throw-away profile, so it never touches real data.
 const smoke = isSmokeTest(process.argv);
 if (smoke) app.setPath('userData', mkdtempSync(join(tmpdir(), 'lernlab-smoke-')));
+// Started by an AI assistant as its MCP server (#148): no window, no single-instance lock (see mcp-relay.ts).
+const mcpMode = isMcpMode(process.argv);
 
 const configFile = () => join(app.getPath('userData'), 'config.json');
 type Config = {
@@ -105,7 +109,15 @@ function setDataStatus(status: DataStatus) {
 function startDataProcess() {
   const child: UtilityProcess = utilityProcess.fork(join(__dirname, 'data.cjs'), [], {
     serviceName: 'LernLab data',
-    env: { ...process.env, LERNLAB_DATA: dataDir(), LERNLAB_AUTO_ANKI: '0' },
+    env: {
+      ...process.env,
+      LERNLAB_DATA: dataDir(),
+      LERNLAB_AUTO_ANKI: '0',
+      // An AppImage runs from a new temporary mount each time: the assistant must start the .AppImage file itself.
+      LERNLAB_MCP_COMMAND: JSON.stringify(
+        mcpCommand(process.env.APPIMAGE || process.execPath, app.isPackaged, app.getAppPath()),
+      ),
+    },
   });
   const startedAt = Date.now();
   const { port1: port, port2 } = new MessageChannelMain();
@@ -183,21 +195,31 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'lernlab-media', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
 ]);
 
-if (!app.requestSingleInstanceLock()) app.quit();
+if (!mcpMode && !app.requestSingleInstanceLock()) app.quit();
 
-app.on('second-instance', (_e, argv) => {
-  argv.filter(isDeckFile).forEach(importDeckFile);
-  if (win) {
-    if (win.isMinimized()) win.restore();
-    win.show();
-    win.focus();
-  }
-});
-app.on('open-file', (e, path) => {
-  e.preventDefault();
-  if (ready) importDeckFile(path);
-  else pendingFiles.push(path);
-});
+/**
+ * Opening deck files and bringing the window back. Never in `--mcp` mode: that copy has no window and only
+ * serves the assistant, so a deck double-clicked while it runs must not land in it.
+ */
+function registerWindowEvents() {
+  app.on('second-instance', (_e, argv) => {
+    argv.filter(isDeckFile).forEach(importDeckFile);
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.show();
+      win.focus();
+    }
+  });
+  app.on('open-file', (e, path) => {
+    e.preventDefault();
+    if (ready) importDeckFile(path);
+    else pendingFiles.push(path);
+  });
+  app.on('activate', () => {
+    if (win) win.show();
+  });
+}
+if (!mcpMode) registerWindowEvents();
 
 function isDeckFile(p: string) {
   return /\.(lernpack|apkg|colpkg|csv|tsv)$/i.test(p) && existsSync(p);
@@ -329,8 +351,10 @@ async function main() {
     return net.fetch(pathToFileURL(join(mediaDir, name)).href);
   });
 
-  // Microphone for speaking rounds; nothing else.
-  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'media'));
+  // The microphone (recording audio on a card, speaking rounds) for the app's own page; never the camera.
+  session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) =>
+    cb(allowPermission(permission, { ...details, requestingUrl: details.requestingUrl || wc.getURL() }, isAppUrl)),
+  );
 
   buildMenu();
   const place = restoreWindow(
@@ -420,9 +444,6 @@ async function main() {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
-app.on('activate', () => {
-  if (win) win.show();
-});
 app.on('will-quit', () => globalShortcut.unregisterAll());
 
 /** Skip the welcome (it adds the sample deck), reload, and pass once Home is on screen. */
@@ -439,7 +460,31 @@ async function runSmokeTest(w: BrowserWindow) {
   app.exit(shown ? 0 : 1);
 }
 
-main().catch((e) => {
+/** `LernLab --mcp`: relay stdin/stdout to the MCP server process until the assistant closes stdin. */
+async function runMcp() {
+  await app.whenReady();
+  app.dock?.hide();
+  const child = utilityProcess.fork(join(__dirname, 'mcp.cjs'), [], {
+    serviceName: 'LernLab AI assistant',
+    env: { ...process.env, LERNLAB_DATA: dataDir() },
+    // Only protocol messages may reach stdout: the child's own output goes to stderr.
+    stdio: ['ignore', 'pipe', 'inherit'],
+  });
+  child.stdout?.on('data', (chunk) => process.stderr.write(chunk));
+  relayMcp({
+    child,
+    stdin: process.stdin,
+    stdout: process.stdout,
+    stderr: process.stderr,
+    exit: (code) => app.exit(code),
+  });
+}
+
+(mcpMode ? runMcp() : main()).catch((e) => {
+  if (mcpMode) {
+    console.error(String(e?.stack ?? e));
+    return app.exit(1);
+  }
   if (smoke) {
     console.error(`${SMOKE_FAIL} ${String(e?.stack ?? e)}`);
     return app.exit(1);

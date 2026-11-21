@@ -1,0 +1,51 @@
+# Once a day: a pull request nobody has approved for 7 days, or a deck submission or "Join the team"
+# request nobody has answered for 7 days, gets the label "waiting-for-review" and one comment that
+# mentions everyone in MAINTAINERS.md. Nothing is merged or accepted automatically. See GOVERNANCE.md.
+name: reminder
+on:
+  schedule:
+    - cron: '23 8 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DAYS: 7
+          LABEL: waiting-for-review
+        run: |
+          cutoff=$(date -u -d "$DAYS days ago" +%Y-%m-%dT%H:%M:%SZ)
+          people=$(grep -oE '^- @[A-Za-z0-9-]+' MAINTAINERS.md | cut -c3- | sort -u | tr '\n' ' ')
+          body="This has been waiting for a maintainer for $DAYS days. $people, could one of you take a look? See GOVERNANCE.md for what happens next.
+
+          _Sent automatically once._"
+          gh label create "$LABEL" --color FBCA04 --description "Nobody has answered this for $DAYS days" 2>/dev/null || true
+          gh label create team --color 0E8A16 --description "Join the team requests" 2>/dev/null || true
+          gh pr list --state open --limit 200 --json number,createdAt,reviewDecision,labels,isDraft,author \
+            --jq ".[] | select(.isDraft | not) | select(.createdAt < \"$cutoff\")
+                  | select(.author.is_bot | not)
+                  | select(.reviewDecision != \"APPROVED\")
+                  | select([.labels[].name] | index(\"$LABEL\") | not) | .number" |
+          while read -r n; do
+            gh pr edit "$n" --add-label "$LABEL"
+            gh pr comment "$n" --body "$body"
+          done
+          for kind in team deck; do
+            gh issue list --state open --label "$kind" --limit 200 --json number,createdAt,comments,labels \
+              --jq ".[] | select(.createdAt < \"$cutoff\") | select(.comments | length == 0)
+                    | select([.labels[].name] | index(\"$LABEL\") | not) | .number" |
+            while read -r n; do
+              gh issue edit "$n" --add-label "$LABEL"
+              gh issue comment "$n" --body "$body"
+            done
+          done

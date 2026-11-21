@@ -7,8 +7,12 @@ import { basename, extname } from './paths';
 import { sha1Hex } from './sha1';
 import { stripHtml, splitArticle } from './text';
 import { markdownLite, sanitizeHtml } from './cards';
+import { parseQuantity, parseTolerance } from './numeric';
+import { normalizeCode } from './code';
+import { formatBox, modeOf, parseBox } from './occlusion';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
+import { cleanExamSettings, type ExamSettings } from './exam';
 
 export type DeckSettings = {
   newPerDay?: number;
@@ -20,6 +24,8 @@ export type DeckSettings = {
   voice?: string;
   /** Reading-aloud speed, 0.5–1.5 (1 is normal). */
   rate?: number;
+  /** Exam simulator: question count, minutes and pass mark (defaults fill in what is missing). */
+  exam?: Partial<ExamSettings>;
 };
 
 /**
@@ -53,6 +59,7 @@ export function cleanDeckSettings(input: Record<string, unknown>): Partial<Recor
     const n = input.rate === null || input.rate === '' ? NaN : Number(input.rate);
     out.rate = Number.isFinite(n) ? Math.round(Math.max(0.5, Math.min(1.5, n)) * 20) / 20 : undefined;
   }
+  if ('exam' in input) out.exam = cleanExamSettings(input.exam);
   return out;
 }
 
@@ -85,12 +92,18 @@ export type NormalizedCard = {
   group?: string; // lesson group, e.g. "G01" (taught together as a mini-lesson)
   rank?: number; // frequency rank / introduction order
   extra?: Record<string, string>;
-  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps). */
+  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image). */
   type?: string;
   choices?: string; // "A|B|C|D"
   correct?: string; // "2|4" (1-based) or the correct choice texts
   steps?: string; // "first|second|third"
   altAnswers?: string; // "colour|color"
+  tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
+  code?: string; // code cards: the snippet, as plain text (never HTML)
+  codeLang?: string; // code cards: its language, e.g. "python"
+  occlusion?: string; // occlusion cards: the box hidden on the image, "x,y,w,h" as fractions of its size
+  occlusionGroup?: string; // occlusion cards: shared by the boxes of one image
+  occlusionMode?: string; // occlusion cards: "one" (only the asked box hidden) or "all"
 };
 
 export const LANGUAGES: Record<string, string> = {
@@ -202,6 +215,9 @@ export function detectKind(
   const t = (c?.type ?? '').toLowerCase();
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
+  if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
+  if ((c?.code ?? c?.extra?.code ?? '').trim() && (t === 'code' || !t)) return 'code';
+  if (c?.image && parseBox(c.occlusion ?? c.extra?.occlusion) && (t === 'occlusion' || !t)) return 'occlusion';
   if (/\{\{c\d+::/.test(front)) return 'cloze';
   if (tags.includes('grammar')) return 'grammar';
   if (!language) return 'card';
@@ -232,7 +248,7 @@ export function storeMedia(name: string, data: Uint8Array): string {
 
 export const MEDIA_TYPES = {
   image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'],
-  audio: ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.opus', '.flac'],
+  audio: ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.opus', '.flac', '.weba'],
   video: ['.mp4', '.webm', '.mov', '.m4v'],
 };
 export const mediaKind = (f: string) => {
@@ -267,6 +283,25 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   const imageAlt = stripHtml(c.imageAlt ?? extra.imageAlt ?? '');
   if (imageAlt && c.image) extra.imageAlt = imageAlt;
   else delete extra.imageAlt;
+  // Same for a numeric card's tolerance: kept only when the card is numeric and the value reads.
+  const tolerance = (c.tolerance ?? extra.tolerance ?? '').trim();
+  if (kind === 'numeric' && parseTolerance(tolerance)) extra.tolerance = tolerance;
+  else delete extra.tolerance;
+  // A code card's snippet and language: plain text with its indentation, kept only on a code card.
+  const code = normalizeCode(c.code ?? extra.code ?? '');
+  const codeLang = stripHtml(c.codeLang ?? extra.codeLang ?? '').toLowerCase();
+  delete extra.code;
+  delete extra.codeLang;
+  if (kind === 'code') Object.assign(extra, { code }, codeLang && { codeLang });
+  // An occlusion card's box, group (the image's name when none is given) and mode, kept only on such a card.
+  const box = parseBox(c.occlusion ?? extra.occlusion);
+  const group = stripHtml(c.occlusionGroup ?? extra.occlusionGroup ?? '') || c.image || '';
+  const mode = modeOf(c.occlusionMode ?? extra.occlusionMode);
+  delete extra.occlusion;
+  delete extra.occlusionGroup;
+  delete extra.occlusionMode;
+  if (kind === 'occlusion' && box)
+    Object.assign(extra, { occlusion: formatBox(box), occlusionGroup: group, occlusionMode: mode });
   const { article, word } = splitArticle(stripHtml(front));
   const example = clean(c.example);
   const isNoun = kind === 'noun';
@@ -279,7 +314,13 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
     target: kind === 'cloze' ? front : stripHtml(front),
     article: isNoun ? article : null,
     word: isNoun ? word : stripHtml(front),
-    meaning: ['cloze', 'mcq', 'order'].includes(kind) ? back : stripHtml(back),
+    // A code card's back is its expected output: plain text with its line breaks (shown as text, never as HTML).
+    meaning:
+      kind === 'code'
+        ? normalizeCode(String(c.back ?? ''))
+        : ['cloze', 'mcq', 'order'].includes(kind)
+          ? back
+          : stripHtml(back),
     sentenceHtml: example,
     sentence: stripHtml(example),
     sentenceMeaning: stripHtml(c.exampleTranslation ?? ''),

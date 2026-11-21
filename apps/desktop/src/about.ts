@@ -11,12 +11,15 @@ export const LIBRARIES = [
   { name: 'fzstd', pkg: 'fzstd', licence: 'MIT' },
   { name: 'canvas-confetti', pkg: 'canvas-confetti', licence: 'ISC' },
   { name: 'electron-updater', pkg: 'electron-updater', licence: 'MIT' },
+  { name: 'MCP TypeScript SDK', pkg: '@modelcontextprotocol/sdk', licence: 'MIT' },
 ] as const;
 
-/** The only times the app goes online (CLAUDE.md principle 4); text in locales: settings.online.<case>. */
-export const ONLINE_CASES = ['updates', 'gallery', 'aiKey'] as const;
+/** The only times the app goes online, or data leaves it (CLAUDE.md principle 4); text in locales: settings.online.<case>. */
+export const ONLINE_CASES = ['updates', 'gallery', 'aiAssistant'] as const;
 
 export const REPO_URL = 'https://github.com/n1m5l5ss/lernlab';
 export const LICENSE_URL = `${REPO_URL}/blob/main/LICENSE`;
 /** Every release's notes ("Full changelog" on What's new). Opens in the browser only when clicked. */
 export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
+/** How to connect an AI assistant over MCP (#148). Opens in the browser only when clicked. */
+export const ASSISTANT_GUIDE_URL = `${REPO_URL}/blob/main/docs/AI-ASSISTANTS.md`;

@@ -10,10 +10,12 @@ import { Summary } from './Summary';
 import { Settings } from './Settings';
 import { Progress } from './Progress';
 import { Decks } from './Decks';
+import { Exam } from './Exam';
 import { Browse } from './Browse';
 import { Badges } from './Badges';
 import { StreakPanel } from './Motivation';
 import { Shell } from './Shell';
+import { AiRequests } from './AiRequests';
 import { Welcome } from './Welcome';
 import { WhatsNew } from './WhatsNew';
 import { formatDate, setLanguage } from './i18n';
@@ -26,6 +28,7 @@ type AppState = OutputOf<'state.get'>;
 /** The study session and its summary fill the window; everything else sits in the shell. */
 type FullScreen =
   | { name: 'play'; plan: SessionPlan }
+  | { name: 'exam'; deckId: number }
   | {
       name: 'summary';
       result: SessionResult;
@@ -168,6 +171,16 @@ export function App() {
         }}
       />
     );
+  if (full?.name === 'exam')
+    return (
+      <Exam
+        deckId={full.deckId}
+        onDone={() => {
+          go('decks');
+          refresh();
+        }}
+      />
+    );
   if (full?.name === 'summary')
     return (
       <Summary
@@ -184,6 +197,7 @@ export function App() {
     <Shell
       route={route}
       kicker={route === 'home' ? formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }) : undefined}
+      requests={state.settings.aiAssistant || state.aiRequests > 0 ? state.aiRequests : undefined}
     >
       {route === 'home' && <Home state={state} onStart={start} refresh={refresh} goDecks={() => go('decks')} />}
       {route === 'decks' && (
@@ -193,6 +207,7 @@ export function App() {
           onStudy={() => go('home')}
           onPractice={() => start(state.settings.sessionLength, true)}
           onBrowse={() => go('cards')}
+          onExam={(deckId) => setFull({ name: 'exam', deckId })}
         />
       )}
       {route === 'cards' && <Browse state={state} refresh={refresh} />}
@@ -203,6 +218,7 @@ export function App() {
           <Badges got={state.achievements} />
         </div>
       )}
+      {route === 'requests' && <AiRequests assistantOn={state.settings.aiAssistant} refresh={refresh} />}
       {route === 'settings' && <Settings state={state} onSaved={refresh} />}
     </Shell>
   );

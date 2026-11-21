@@ -5,7 +5,8 @@ import { shuffle, splitArticle, normalize, stripHtml } from '@lernlab/core/text'
 import { qa } from '@lernlab/core/cards';
 import { say, sfx } from '../audio';
 import { useKeys, type Ctx, type BlockResult } from '../ctx';
-import { Flip, TypedEngine } from './Exercises';
+import { Cloze, Flip, Order, TypedEngine } from './Exercises';
+import { CodeBlock } from '../code-block';
 import { Media, Rich } from '../rich';
 import { recallFor } from '../plan';
 import { Feedback } from '../components';
@@ -386,6 +387,8 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
   const [hit, setHit] = useState(false);
   const [over, setOver] = useState<null | boolean>(null);
   const correct = useRef(0);
+  // One exercise per round, kept across renders (an order-the-lines round must not reshuffle).
+  const rounds = useRef(new Map<number, ReturnType<typeof recallFor>>());
 
   useEffect(() => {
     if (!ids.length) onDone({ correct: 0, total: 0, bossWon: null });
@@ -421,7 +424,8 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
   };
 
   const item = ctx.item(ids[i % ids.length]);
-  const ex = recallFor(item);
+  if (!rounds.current.has(i)) rounds.current.set(i, recallFor(item));
+  const ex = rounds.current.get(i)!;
   return (
     <div>
       <div className="round-head">
@@ -455,12 +459,17 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
                 <div className="prompt">
                   <Rich html={ex.prompt} />
                 </div>
+                {ex.code !== undefined && <CodeBlock code={ex.code} lang={ex.codeLang ?? ''} />}
                 {input}
               </>
             )}
           />
         ) : ex.type === 'flip' ? (
           <Flip key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
+        ) : ex.type === 'cloze' ? (
+          <Cloze key={i} ex={ex} ctx={ctx} onNext={after} />
+        ) : ex.type === 'order' ? (
+          <Order key={i} ex={ex} ctx={ctx} onNext={after} />
         ) : null
       ) : (
         <div className="round-end">

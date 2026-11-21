@@ -31,7 +31,8 @@
     "@lernlab/core": "*",
     "@lernlab/storage-sqlite": "*",
     "@lernlab/ui": "*",
-    "@storybook/react-vite": "10.6.6",
+    "@modelcontextprotocol/sdk": "1.32.2",
+    "@storybook/react-vite": "10.6.7",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -43,11 +44,12 @@
     "esbuild": "^0.28.2",
     "hono": "4.13.19",
     "i18next": "26.7.2",
+    "katex": "0.19.1",
     "playwright-core": "1.65.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-i18next": "17.1.13",
-    "storybook": "10.6.6",
+    "storybook": "10.6.7",
     "vite": "8.3.8"
   },
   "build": {
@@ -75,6 +77,14 @@
         "role": "Viewer"
       }
     ],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableCookieEncryption": true,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
     "mac": {
       "category": "public.app-category.education",
       "target": [

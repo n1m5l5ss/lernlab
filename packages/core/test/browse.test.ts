@@ -107,3 +107,18 @@ test('10,000 cards list quickly', () => {
   assert.equal(res.rows.length, 10_000);
   assert.ok(ms < 1500, `took ${ms.toFixed(0)} ms`);
 });
+
+test('a page is read with LIMIT/OFFSET, so pages past the first 20,000 cards still come back', () => {
+  const rows = Array.from({ length: 10_500 }, (_, i) => `Extra ${i},more ${i},bulk`).join('\n');
+  importFile('Bigger.csv', strToU8(`front,back,tags\n${rows}\n`));
+  assert.equal(findCards({ tag: 'bulk' }).total, 20_500);
+  const last = findCards({ tag: 'bulk' }, getDb(), { limit: 50, offset: 20_490 });
+  assert.equal(last.total, 20_500);
+  assert.equal(last.rows.length, 10);
+  assert.equal(last.rows.at(-1)!.front, 'Extra 10499');
+  const page = findCards({ tag: 'bulk' }, getDb(), { limit: 2, offset: 1 });
+  assert.deepEqual(
+    page.rows.map((r) => r.front),
+    ['Word 1', 'Word 2'],
+  );
+});

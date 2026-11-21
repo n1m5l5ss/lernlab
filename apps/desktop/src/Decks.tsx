@@ -4,9 +4,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import { deckTree, type DeckNode } from '@lernlab/core/decktree';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
+import { Gallery } from './Gallery';
 import { ImportPanel } from './ImportPanel';
 import { onVoicesChanged, systemVoices, tryVoice } from './audio';
 import { formatDate, formatLanguage, formatNumber } from './i18n';
+import { examSettings, type ExamSettings } from '@lernlab/core/exam';
 import { MAX_RATE, MIN_RATE, clampRate, voicesFor } from './voice-logic';
 
 type AppState = OutputOf<'state.get'>;
@@ -18,6 +20,7 @@ type Props = {
   onStudy: () => void;
   onPractice: () => void;
   onBrowse: (deckId: number) => void;
+  onExam: (deckId: number) => void;
 };
 type Form = {
   id?: number;
@@ -29,6 +32,9 @@ type Form = {
   examDate: string;
   voice: string;
   rate: string;
+  examQuestions: string;
+  examMinutes: string;
+  examPassMark: string;
 };
 
 const formFor = (d?: DeckRow): Form => ({
@@ -41,12 +47,20 @@ const formFor = (d?: DeckRow): Form => ({
   goalLabel: d?.settings.goal?.label ?? '',
   goalWords: d?.settings.goal?.words ? String(d.settings.goal.words) : '',
   examDate: d?.settings.examDate ?? '',
+  ...examForm(examSettings(d?.settings.exam)),
+});
+const examForm = (e: ExamSettings) => ({
+  examQuestions: String(e.questions),
+  examMinutes: String(e.minutes),
+  examPassMark: String(e.passMark),
 });
 
-export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) {
+export function Decks({ state, refresh, onStudy, onPractice, onBrowse, onExam }: Props) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState<Form | null>(null);
   const [showImport, setShowImport] = useState(!state.decks.length);
+  // The gallery goes online only once the user opens it (principle 4).
+  const [showGallery, setShowGallery] = useState(false);
   const [dropped, setDropped] = useState<File | undefined>();
   const [removing, setRemoving] = useState<DeckRow | null>(null);
   const [notice, setNotice] = useState('');
@@ -120,6 +134,15 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
               {t('decks.browse')}
             </button>
           )}
+          {d && d.cards > 0 && (
+            <button
+              className="btn ghost"
+              aria-label={t('decks.examNamed', { name: d.name })}
+              onClick={() => onExam(d.id)}
+            >
+              {t('decks.exam')}
+            </button>
+          )}
         </div>
         {node.children.length > 0 && (
           <SubDecks nodes={node.children} onStudy={(c) => study(c, onStudy)} onEdit={(x) => setEditing(formFor(x))} />
@@ -131,6 +154,9 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
   return (
     <div className="decks">
       <div className="decks-head">
+        <button className="btn" onClick={() => setShowGallery((v) => !v)} aria-expanded={showGallery}>
+          {t('decks.gallery.open')}
+        </button>
         <button className="btn" onClick={() => setShowImport((v) => !v)} aria-expanded={showImport}>
           {t('decks.import')}
         </button>
@@ -143,6 +169,7 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
           {notice}
         </p>
       )}
+      {showGallery && <Gallery decks={state.decks} refresh={refresh} onClose={() => setShowGallery(false)} />}
       {showImport && (
         <ImportPanel
           state={state}
@@ -302,6 +329,7 @@ function DeckEditor({
       examDate: f.examDate,
       voice: f.voice,
       rate: Number(f.rate),
+      exam: { questions: f.examQuestions, minutes: f.examMinutes, passMark: f.examPassMark },
     };
     try {
       if (f.id) await api.updateDeck(f.id, { name: f.name, language: f.language || null, settings });
@@ -311,7 +339,7 @@ function DeckEditor({
       setErr(e instanceof Error ? e.message : String(e));
     }
   };
-  const exportAs = (format: 'csv' | 'lernpack') =>
+  const exportAs = (format: 'csv' | 'lernpack' | 'apkg') =>
     f.id && api.exportDeck(f.id, format).catch((x: Error) => setErr(x.message));
   const field = (k: keyof Form, label: string, props: React.InputHTMLAttributes<HTMLInputElement> = {}) => (
     <label className="deck-field">
@@ -346,6 +374,15 @@ function DeckEditor({
         })}
         {field('examDate', t('decks.editor.examDate'), { type: 'date' })}
       </div>
+      <fieldset className="deck-voice">
+        <legend>{t('decks.editor.examTitle')}</legend>
+        <p className="small muted">{t('decks.editor.examHint')}</p>
+        <div className="deck-editor-row">
+          {field('examQuestions', t('decks.editor.examQuestions'), { type: 'number', min: 1, max: 200 })}
+          {field('examMinutes', t('decks.editor.examMinutes'), { type: 'number', min: 1, max: 300 })}
+          {field('examPassMark', t('decks.editor.examPassMark'), { type: 'number', min: 1, max: 100 })}
+        </div>
+      </fieldset>
       <VoicePicker
         language={f.language}
         voice={f.voice}
@@ -373,6 +410,9 @@ function DeckEditor({
             </button>
             <button className="btn ghost" onClick={() => exportAs('csv')}>
               {t('decks.editor.exportCsv')}
+            </button>
+            <button className="btn ghost" onClick={() => exportAs('apkg')}>
+              {t('decks.editor.exportAnki')}
             </button>
             <button className="btn danger" onClick={onDelete}>
               {t('common.delete')}

@@ -10,6 +10,8 @@
   },
   "scripts": {
     "test": "tsx --no-warnings --test \"src/*.test.ts\" \"test/*.test.ts\"",
+    "coverage": "tsx --no-warnings --test --experimental-test-coverage --test-coverage-include=\"src/**\" --test-coverage-exclude=\"src/**/*.test.ts\" --test-coverage-lines=88 --test-coverage-branches=85 --test-coverage-functions=90 \"src/*.test.ts\" \"test/*.test.ts\"",
+    "fuzz": "tsx --no-warnings --test test/fuzz.test.ts",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json"
   },
   "dependencies": {
@@ -18,6 +20,7 @@
     "ts-fsrs": "5.4.2"
   },
   "devDependencies": {
-    "@lernlab/storage-sqlite": "*"
+    "@lernlab/storage-sqlite": "*",
+    "fast-check": "4.10.3"
   }
 }

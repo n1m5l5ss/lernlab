@@ -87,7 +87,7 @@ export function planSession(
   const has = (id: number) => byId.has(id);
   const notGrammar = (id: number) => get(id).kind !== 'grammar';
   /** Plain front/back cards (question cards with their own format are excluded from pair games). */
-  const plain = (id: number) => !['grammar', 'mcq', 'order'].includes(get(id).kind);
+  const plain = (id: number) => !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(get(id).kind);
 
   // Practice (cramming) draws on every card in the source, due or not, and teaches nothing new.
   const due = practice
@@ -290,7 +290,9 @@ export function planSession(
 
   // 11. Speak aloud (language decks): production effect on a subset.
   if (lang) {
-    const speakIds = shuffle([...fresh, ...due, ...leftovers].filter(notGrammar)).slice(0, size.speak);
+    const speakIds = shuffle(
+      [...fresh, ...due, ...leftovers].filter((id) => notGrammar(id) && get(id).kind !== 'occlusion'),
+    ).slice(0, size.speak);
     if (speakIds.length)
       blocks.push({
         id: bid(),

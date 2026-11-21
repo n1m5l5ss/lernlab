@@ -50,8 +50,15 @@ const STATE_SQL: Record<CardState, string> = {
   starred: 'i.starred = 1',
 };
 
-/** Cards matching every given filter, in deck order. Text is plain and shortened. */
-export function findCards(f: CardFilter, d: DB = getDb()): { total: number; rows: CardRow[] } {
+/**
+ * Cards matching every given filter, in deck order. Text is plain and shortened. `page` reads only those rows
+ * (LIMIT/OFFSET in SQL), so any offset works however many cards there are; without it, the first MAX_ROWS.
+ */
+export function findCards(
+  f: CardFilter,
+  d: DB = getDb(),
+  page: { limit: number; offset: number } = { limit: MAX_ROWS, offset: 0 },
+): { total: number; rows: CardRow[] } {
   const where: string[] = [];
   const args: (string | number)[] = [];
   if (f.deckId) {
@@ -75,9 +82,9 @@ export function findCards(f: CardFilter, d: DB = getDb()): { total: number; rows
   const rows = d
     .prepare(
       `SELECT i.id, i.deck_id, i.target, i.meaning, i.tags, i.suspended, i.starred, i.image, i.audio, i.video,
-        s.item_id AS scheduled, st.mastery ${from} ORDER BY i.deck_id, i.ord LIMIT ${MAX_ROWS}`,
+        s.item_id AS scheduled, st.mastery ${from} ORDER BY i.deck_id, i.ord, i.id LIMIT ? OFFSET ?`,
     )
-    .all(...args)
+    .all(...args, Math.max(0, Math.min(MAX_ROWS, Math.floor(page.limit))), Math.max(0, Math.floor(page.offset)))
     .map(toRow);
   return { total, rows };
 }

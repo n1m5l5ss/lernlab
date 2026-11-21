@@ -1,6 +1,8 @@
 # User guide
 
-This guide shows how to use LernLab: get cards in, study, follow your progress and keep your data safe. It describes the app as it is now (version 0.3). Names in **bold** are the words you see on screen.
+This guide shows how to use LernLab: get cards in, study, follow your progress and keep your data safe. Names in **bold** are the words you see on screen.
+
+This guide describes version 1.0.0 of the app. <!-- x-release-please-version -->
 
 LernLab has five places, in the sidebar on the left: **Home**, **Decks**, **Cards**, **Progress** and **Settings**.
 
@@ -41,6 +43,8 @@ Drop a file or press **Choose file**. LernLab reads:
 
 Before anything is saved, you see the first cards and how many were found. If LernLab can't tell what each column holds, it asks you: choose **Front**, **Back** or another field for each column, or **Ignore this column**. Under **Import into**, pick an existing deck or **A new deck**. Then press **Import**.
 
+An Anki `.apkg` with past reviews shows **Keep my Anki progress**. Leave it ticked and cards you already know in Anki come up when they are due, instead of starting from zero.
+
 You can leave **Deck name** empty: the name comes from the file. Set **Language** for a language deck. Language decks get listening, speaking and sentence rounds.
 
 ### Paste text
@@ -50,6 +54,10 @@ Paste one card per line, for example a list copied from Quizlet or a document. C
 ### From Anki
 
 With Anki open and the AnkiConnect add-on installed, LernLab lists your Anki decks. Tick the ones you want and import them. A ticked deck brings its subdecks along. If LernLab can't reach Anki, the panel shows the steps to fix it. No add-on? Export the deck from Anki as `.apkg` and use the **File** tab.
+
+### From the deck gallery
+
+On the Decks screen, choose **Deck gallery** to browse free decks made by the community. Search by name, language or topic. Every deck shows its licence next to its **Install** button. Installing a deck adds it like any other import, and installing it again later brings in its fixes and keeps your progress. LernLab goes online only while the gallery is open. To share your own deck, choose **Share your deck** and fill in the form.
 
 ### After the import
 
@@ -111,6 +119,17 @@ At the end you see how many answers you recalled, how many new cards you started
 
 Tick **Practice** on Home, then press **Start practice**. A practice session lets you cram any cards, for example before a test. Your review schedule stays the same. On the Decks screen, a deck with nothing due shows **Practice** instead of **Study**.
 
+### Take a mock exam
+
+On the **Decks** screen, press **Exam** on a deck. The questions come from that deck's cards, and the deck's tags become the topics in your score. In the deck's settings you can set the number of **Questions**, the **Minutes (timed mode)** and the **Pass mark (%)**.
+
+Choose how to take it:
+
+- **Tutor:** no clock. You check each answer and see the explanation straight away. When you hand it in, it counts like normal study: your first answer of the day to a question card decides when that card comes back. Questions made from flashcards, and new cards past today's limit, are practice only.
+- **Timed:** one clock for the whole exam, like the real thing. You see your answers at the end, and the exam is handed in when time runs out. Timed mode is practice: it never changes when your cards come back.
+
+During the exam you can **Flag for review**, go back with **Previous**, and see unanswered and flagged questions under **Review** before you **Hand in**. The result shows your score, whether you passed, the **Score by topic** and your **Weak areas**.
+
 ### Streaks
 
 Studying on a day keeps your streak going. The day starts at 4 a.m., so a late-night session still counts for the day before.
@@ -122,12 +141,16 @@ Studying on a day keeps your streak going. The day starts at 4 a.m., so a late-n
 
 **Cards** lists every card. Search with the box at the top, or filter by **Deck**, **Tag** and **State** (**New**, **Learning**, **Known**, **Suspended**, **Starred**).
 
-- Select a card to edit it, or press **+ Add card**. A card can be **Basic** (front and back), **Cloze** (a gap in the front, like `{{c1::word}}`), **Multiple choice** or **Put steps in order**.
+- Select a card to edit it, or press **+ Add card**. A card can be **Basic** (front and back), **Cloze** (a gap in the front, like `{{c1::word}}`), **Multiple choice**, **Put steps in order** or **Number answer** (a number with an optional unit, like `9.81 m/s^2`, and an optional tolerance, like `0.05` or `1%`). You may leave the unit out when you answer; `1500 m` counts for `1.5 km`.
+- A **Code** card holds a snippet and its language (Python, JavaScript, SQL and more are coloured). Add the output and you predict what the code prints; put a gap like `{{c1::range}}` in the code and you type the missing token; leave both out and you put the lines in order. Code is never run. Typed code answers must match exactly, but spacing around punctuation and line breaks doesn't matter, so `0 1 2` counts for three lines of output. The rules are in [FORMAT.md](FORMAT.md#code-cards).
+- An **Image occlusion** card hides parts of a picture. Add an image, then drag on it to draw a box over each part (or press **Add box**), and give each box a label. Tab to a box to move it with the arrow keys, resize it with Shift + arrow keys or remove it with Delete. Choose **Hide one** (the other boxes show their labels) or **Hide all** (every box is hidden). Each box becomes its own card: you type the hidden label. The rules are in [FORMAT.md](FORMAT.md#image-occlusion-cards).
+- Write math in LaTeX between `\( … \)` in a line, or `\[ … \]` on its own line: `\( \frac{1}{2} mv^2 \)`. When the answer is a formula, type its LaTeX; spaces and braces around one symbol don't matter. The rules are in [FORMAT.md](FORMAT.md#math-and-numeric-cards).
 - Drop an image, GIF, audio or video file on the editor to add it to the card.
+- Press **Record** to record your own voice on a card (up to a minute), **Play** to hear it and **Record again** to redo it. Cards with a recording play it instead of the computer voice. The first time, your system asks whether LernLab may use the microphone.
 - Tick several cards to add or remove a tag, move them to another deck, suspend them or delete them. A backup is saved before a delete.
 - **☆ Star** marks a card, so you can study your starred cards from Home. **Suspend** keeps a card out of your sessions.
 
-The **…** button on a deck in **Decks** opens the deck settings: its name, the language of the cards, new cards per day, a goal and an exam date, the voice that reads cards aloud, **Export .lernpack**, **Export CSV** and **Delete**.
+The **…** button on a deck in **Decks** opens the deck settings: its name, the language of the cards, new cards per day, a goal and an exam date, the voice that reads cards aloud, **Export .lernpack**, **Export CSV**, **Export for Anki** and **Delete**.
 
 ## Follow your progress
 
@@ -179,6 +202,10 @@ Your data as it is now is backed up first, so you can change your mind.
 
 To share one deck instead, use **Export .lernpack** in the deck settings.
 
+### Go back to Anki
+
+**Export for Anki** in the deck settings saves the deck as an `.apkg` file. In Anki, choose **File → Import** and pick it. Basic and cloze cards come over with their pictures, sounds and sub-decks; they start as new cards in Anki, because your LernLab progress can't be carried over. Multiple-choice and ordering cards become basic cards that show the answer on the back.
+
 ### Use a synced folder
 
 In the desktop app, **File → Use a different data folder…** moves LernLab to another folder, for example one that Dropbox or Syncthing keeps in sync. LernLab restarts and uses the new folder. Use the app on one computer at a time. **File → Open data folder** shows the folder in your file manager.
@@ -187,13 +214,30 @@ In the desktop app, **File → Use a different data folder…** moves LernLab to
 
 **Settings → Your data → Delete all my data** removes every deck, card, answer, setting and media file. Type `DELETE` to confirm. One last backup stays in the `backups` folder; delete that folder too to remove everything.
 
+## Your AI assistant
+
+LernLab has no AI of its own, but you can connect one you already use (Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other app that supports MCP). Turn it on in **Settings → AI assistant**, then follow [AI-ASSISTANTS.md](AI-ASSISTANTS.md). Ask it how your month went, which cards you keep forgetting, or to quiz you in the chat (a chat quiz is never recorded and never changes when cards come back).
+
+### AI requests
+
+When you ask the assistant for cards (for example from a PDF or a web page), to fix or merge cards, to tag, star, suspend or move them, to change your goals, to plan a deck toward an exam, or to export a deck, it cannot do it itself. Its proposals appear under **AI requests** in the sidebar, one card each, with the assistant's note on where they come from:
+
+- Edit the deck name and any card, untick the cards you don't want, then click **Add N cards**. The cards start as new cards.
+- A fix shows each field as it is now above the proposed text. Change the text if you like, then click **Save the fix**. The card keeps its progress.
+- A merge shows the card to keep and its duplicates. The duplicates you leave ticked are suspended and tagged `merged`, never deleted; find them in the card browser by that tag.
+- Tagging, starring, suspending or moving cards lists the cards it touches. Untick any you want left alone.
+- New goals or a study plan show what you have now next to the proposed values. Change any value, then click **Use these goals** or **Save the plan**.
+- An export asks you where to save the file when you click **Export…**. The assistant never gets the file.
+- **Decline** removes the request. Nothing is changed.
+
 ## Settings
 
 - **Language and display**: interface language, theme (**Match my computer**, **Light** or **Dark**), text size and **Reduce motion**.
 - **Studying**: daily goal, default session length, timers (**Off**, **Relaxed**, **Normal**, **Challenge**), new cards per day, target memory retention, sound effects, and the teacher's voice for language decks.
 - **Reminders** (desktop app): a daily reminder at a time you choose, and opening LernLab when you log in.
 - **Your data**: the data folder, backups, restore, export, import and delete.
-- **Updates and privacy**: automatic updates and beta updates. LernLab goes online only to check for updates, to load a deck from the gallery when you ask, and to use your own AI key if you add one.
+- **AI assistant**: let an AI assistant you use (Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other app that supports MCP) read your decks, cards and study history. Off until you turn it on. LernLab itself stays offline, but whatever the assistant reads is sent to that assistant's AI company. When it is on, Settings shows the snippet to paste into the assistant's MCP settings; see [AI-ASSISTANTS.md](AI-ASSISTANTS.md). Turn it off and every request from the assistant is refused.
+- **Updates and privacy**: automatic updates and beta updates. LernLab goes online only to check for updates, to load a deck from the gallery when you ask, and for an AI assistant you connect and turn on.
 
 ## Keyboard
 

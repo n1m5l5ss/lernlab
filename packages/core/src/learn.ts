@@ -7,6 +7,7 @@ import { gradeFor, dayKey } from './game';
 import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from './types';
 import { qa } from './cards';
 import { DEFAULT_REMINDER_TIME } from './reminder';
+import { withOcclusionBoxes } from './occlusion';
 
 export type Settings = {
   deck: string;
@@ -38,6 +39,8 @@ export type Settings = {
   reminderTime: string;
   /** Start LernLab, minimised, when you log in to the computer (desktop app only). */
   launchAtLogin: boolean;
+  /** Let an AI assistant the user connects (MCP, #148) read their data and propose changes. Off by default. */
+  aiAssistant: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -59,6 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reminder: false,
   reminderTime: DEFAULT_REMINDER_TIME,
   launchAtLogin: false,
+  aiAssistant: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
@@ -246,7 +250,12 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     d.prepare(`INSERT OR IGNORE INTO item_state(item_id) VALUES (?)`).run(a.itemId);
 
     // Intro introduces a card; so does a first attempt on a question card (a pretest – guessing first helps).
-    if (a.format === 'intro' || (['mcq', 'order', 'flip'].includes(a.format) && !a.genderOnly))
+    // Code and occlusion cards are question cards in every format they are asked in.
+    if (
+      a.format === 'intro' ||
+      ((['mcq', 'order', 'flip'].includes(a.format) || ['code', 'occlusion'].includes(String(item.kind))) &&
+        !a.genderOnly)
+    )
       introduce(a.itemId, d, now);
 
     // Mastery ladder and counters
@@ -334,10 +343,13 @@ function reviveCard(c: Omit<Card, 'due' | 'last_review'> & { due: string; last_r
 }
 
 export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
-  return d
-    .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
-    .all()
-    .map(rowToItem);
+  return withOcclusionBoxes(
+    d
+      .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
+      .all()
+      .map(rowToItem),
+    d,
+  );
 }
 
 /** End of the current learning day (4 a.m. next morning), used as the "due" cutoff. */
@@ -439,7 +451,7 @@ export function grammarItemIds(group: string, d: DB = getDb(), scope?: Scope): n
 export function itemsByIds(ids: number[], d: DB = getDb()): Record<number, Item> {
   if (!ids.length) return {};
   const rows = d.prepare(`${ITEM_SELECT} WHERE i.id IN (${ids.map(() => '?').join(',')})`).all(...ids);
-  return Object.fromEntries(rows.map((r: Row) => [Number(r.id), rowToItem(r)]));
+  return Object.fromEntries(withOcclusionBoxes(rows.map(rowToItem), d).map((i) => [i.id, i]));
 }
 
 export function srsInfo(ids: number[], d: DB = getDb()): Record<number, { reps: number; mastery: number }> {

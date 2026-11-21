@@ -3,18 +3,20 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+  contents: read
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
     outputs:
       released: ${{ steps.rp.outputs.release_created }}
       tag: ${{ steps.rp.outputs.tag_name }}
     steps:
       - id: rp
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         with:
           target-branch: main
           config-file: release-please-config.json
@@ -22,13 +24,15 @@ jobs:
       # A PR opened with GITHUB_TOKEN doesn't trigger pull_request workflows, so start the required
       # checks on it by hand (workflow_dispatch is the exception GITHUB_TOKEN may trigger).
       # Not after a release: then `pr` is the merged release PR, whose branch is already gone.
-      # Never fail the job over it, or the installers would be skipped.
+      # Never fail the job over it, or the installers would be skipped. Step `env` is evaluated even
+      # when `if` is false, so fromJSON needs a fallback: after a release `pr` is empty, and
+      # fromJSON('') fails the whole job (that skipped the 1.0.0 installers).
       - if: steps.rp.outputs.pr && steps.rp.outputs.release_created != 'true'
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ fromJSON(steps.rp.outputs.pr).headBranchName }}
-          PR: ${{ fromJSON(steps.rp.outputs.pr).number }}
+          BRANCH: ${{ fromJSON(steps.rp.outputs.pr || '{}').headBranchName }}
+          PR: ${{ fromJSON(steps.rp.outputs.pr || '{}').number }}
         run: |
           gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
           gh workflow run pr-title.yml --repo "$GITHUB_REPOSITORY" --ref "$BRANCH" -f pr="$PR"
@@ -40,6 +44,9 @@ jobs:
       contents: write
       # Windows signing (SignPath) reads the build's artifacts.
       actions: read
+      # Build provenance for the installers (release.yml).
+      id-token: write
+      attestations: write
     uses: ./.github/workflows/release.yml
     with:
       tag: ${{ needs.release-please.outputs.tag }}

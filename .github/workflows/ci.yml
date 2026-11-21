@@ -22,14 +22,17 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run format:check
       - run: npm test
+      # Coverage of the engine (packages/core); fails below the floor in docs/TESTING.md. Once is enough.
+      - if: runner.os == 'Linux'
+        run: npm run coverage
       - run: npm run build:electron
       # End-to-end (#40) with axe (#35): Playwright clicks through the app just built (apps/desktop/e2e).
       # Linux runners have no screen, so xvfb lends one.
@@ -44,9 +47,9 @@ jobs:
           fi
       - name: Keep the end-to-end screenshots
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: e2e-screenshots-${{ matrix.os }}
           path: apps/desktop/e2e-results/
           if-no-files-found: ignore
-      # Added by later tickets: coverage gate (#6), visual (#2/#11). The performance check (#54) is perf.yml.
+      # Visual checks are visual.yml, performance perf.yml, nightly fuzzing fuzz.yml.

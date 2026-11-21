@@ -21,6 +21,12 @@ const TEXT_FIELDS = [
   'correct',
   'steps',
   'altAnswers',
+  'tolerance',
+  'code',
+  'codeLang',
+  'occlusion',
+  'occlusionGroup',
+  'occlusionMode',
 ] as const;
 
 const text = (v: unknown) =>

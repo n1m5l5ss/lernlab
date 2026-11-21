@@ -81,6 +81,12 @@ const COLUMNS: Record<string, string[]> = {
   correct: ['correct', 'correct answer', 'correct answers'],
   steps: ['steps', 'sequence'],
   altAnswers: ['alt_answers', 'alt answers', 'alternatives', 'also accept'],
+  tolerance: ['tolerance', 'tol'],
+  code: ['code', 'snippet', 'source code'],
+  codeLang: ['code_lang', 'code language', 'programming language'],
+  occlusion: ['occlusion', 'occlusion box'],
+  occlusionGroup: ['occlusion_group', 'occlusion group'],
+  occlusionMode: ['occlusion_mode', 'occlusion mode'],
   extra: [],
 };
 
@@ -94,11 +100,17 @@ export function csvToCards(text: string): {
   const clean = text.replace(/^﻿/, '');
   const delim = detectDelimiter(clean);
   const starts: number[] = [];
+  let quoted = false;
   // Comment lines become empty lines, so line numbers still match the file.
   const rows = parseDelimited(
     clean
       .split(/\r?\n/)
-      .map((l) => (l.startsWith('#') ? '' : l))
+      .map((l) => {
+        // Not inside a quoted cell: a line of code there may start with # (a Python comment).
+        const comment = !quoted && l.startsWith('#');
+        if (!comment && (l.match(/"/g)?.length ?? 0) % 2) quoted = !quoted;
+        return comment ? '' : l;
+      })
       .join('\n'),
     delim,
     starts,
@@ -147,6 +159,12 @@ export function csvToCards(text: string): {
       correct: get(r, 'correct') || undefined,
       steps: get(r, 'steps') || undefined,
       altAnswers: get(r, 'altAnswers') || undefined,
+      tolerance: get(r, 'tolerance') || undefined,
+      code: 'code' in columns ? r[columns.code] || undefined : undefined, // untrimmed: indentation matters
+      codeLang: get(r, 'codeLang') || undefined,
+      occlusion: get(r, 'occlusion') || undefined,
+      occlusionGroup: get(r, 'occlusionGroup') || undefined,
+      occlusionMode: get(r, 'occlusionMode') || undefined,
     } as NormalizedCard;
   });
   const keep = all.map((c) => !!(c.front || c.back));
@@ -168,6 +186,12 @@ const CSV_COLUMNS: [string, (c: NormalizedCard) => string | number | undefined][
   ['choices', (c) => c.choices],
   ['correct', (c) => c.correct],
   ['steps', (c) => c.steps],
+  ['tolerance', (c) => c.tolerance],
+  ['code', (c) => c.code],
+  ['code_lang', (c) => c.codeLang],
+  ['occlusion', (c) => c.occlusion],
+  ['occlusion_group', (c) => c.occlusionGroup],
+  ['occlusion_mode', (c) => c.occlusionMode],
   ['image', (c) => c.image],
   ['image_alt', (c) => c.imageAlt],
   ['audio', (c) => c.audio],

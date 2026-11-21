@@ -16,23 +16,23 @@ LernLab is a free, open-source desktop flashcard app for any subject. It makes s
 1. **Recall over recognition.** Only real recall attempts change the FSRS schedule, once per card per day. Games never mark a card as known.
 2. **Short and varied.** Blocks of 60–90 s, rotating formats. Sessions are 5, 10 or 20 min.
 3. **Forgiving.** Streak freezes, no guilt messages, nothing that blocks studying.
-4. **Local and private.** No telemetry. The app may go online in only three cases: update checks, the deck gallery when the user asks, and the user's own AI key.
+4. **Local and private.** No telemetry. The app may go online in only three cases: update checks, the deck gallery when the user asks, and an AI assistant the user connects (MCP), only when turned on.
 5. **Open formats.** CSV and `.lernpack` in and out.
 6. **Translatable and accessible.** No visible string in code; all text comes from `locales/*.json` through i18next. WCAG 2.2 AA.
 7. **One obvious action.** The home screen leads with a single Start button.
 
 ## Current state
-The repo is an npm workspace. It holds the **v0.2 prototype**, which is a working reference. Its layout:
+The repo is an npm workspace. It holds **LernLab 1.0** (released November 21, 2026); 1.x features (#43–#52) are being built. Its layout:
 - `packages/core/`: the engine. Answer checking, grading, XP and streaks, card logic, FSRS, session planner, importers and exporters, and the SQLite schema. Pure TypeScript: no Node, DOM, Electron, React or HTTP imports (ESLint enforces it). Platform services (database connection, media files, ids) come in through the `Host` port in `src/host.ts`. Import modules by path, e.g. `@lernlab/core/text`.
 - `packages/storage-sqlite/`: the Node/Electron host: `node:sqlite` plus media and progress files in the data folder. Call `installNodeHost()` once at startup.
-- `apps/desktop/`: the v0.2 prototype app.
+- `apps/desktop/`: the desktop app.
   - `backend/`: the request table (`handlers.ts`: one validated handler per channel), the data process entry (`process.ts`, an Electron utilityProcess and the only place that opens the database), the AnkiConnect client.
   - `electron/`: main process (windows, menu, routes IPC to the data process, serves media on `lernlab-media://`) and `preload.ts` (exposes only `window.lernlab.invoke`).
   - `src/`: React screens. They reach the app only through `src/api.ts` → `src/bridge.ts`.
   - `server/`: web dev mode only (`npm start`): the same handlers over HTTP on localhost. The desktop app never starts it.
 - `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`: one shared config for every package.
 
-The rest of the Foundation epic (#8–#11) adds migrations and backups, CI, the translation system and the app shell. **The mockups in `docs/design/` are approved (issue #1); build screens to match them.**
+**The mockups in `docs/design/` are approved (issue #1); build screens to match them.**
 
 ## Commands
 ```bash
@@ -72,5 +72,5 @@ Node 22.13+ is required (`node:sqlite`).
 ## Definition of done
 - Every acceptance box in the issue is ticked.
 - CI is green on Windows, macOS and Linux.
-- Docs are updated where behaviour changed.
+- Docs are updated where behaviour changed: the user guide for anything a user sees, the README feature list for new features.
 - Screenshots are attached for UI changes.

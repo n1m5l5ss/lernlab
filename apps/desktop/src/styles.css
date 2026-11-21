@@ -2602,3 +2602,639 @@ h1.session-title:focus,
 .settings-row > .input {
   width: auto;
 }
+
+/* ---- Anki review history (#48): the "Keep my Anki progress" choice in the import preview. ---- */
+.import-history {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.import-history input {
+  margin-block-start: var(--space-1);
+}
+.import-history-hint {
+  display: block;
+}
+
+/* ---- Record your own audio on a card (#47): the audio slot in the card editor. ---- */
+.editor-audio {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.editor-audio .editor-recording {
+  color: var(--color-incorrect);
+  box-shadow: inset 0 0 0 2px var(--color-incorrect);
+}
+.editor-audio .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* ---- Exam simulator (#43): no mockup yet, so it follows Session (question) and Summary (intro, result). ---- */
+.exam-modes h2,
+.exam-topics h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+}
+.exam-modes p {
+  margin: var(--space-3) 0 0;
+}
+.exam-clock {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: var(--color-text);
+}
+.exam-clock.low {
+  color: var(--color-incorrect);
+}
+.exam-stage {
+  display: grid;
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+.exam-stem {
+  font-size: var(--text-title);
+}
+.exam-explanation {
+  display: block;
+  margin-top: var(--space-2);
+  font-weight: 500;
+}
+.exam-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+.exam-actions .grow {
+  flex: 1;
+}
+.exam-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.exam-nav > button:not(.btn) {
+  min-width: var(--size-min-target);
+  min-height: var(--size-min-target);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-variant-numeric: tabular-nums;
+}
+.exam-nav > .done {
+  background: var(--color-accent-tint);
+}
+.exam-nav > .on {
+  border: 2px solid var(--color-accent);
+}
+/* Flagged is shown by a mark as well as a colour. */
+.exam-nav > .flagged {
+  border-color: var(--color-incorrect);
+  box-shadow: inset 0 -3px 0 var(--color-incorrect);
+}
+.exam-review {
+  max-width: var(--size-card-max-width);
+  margin: var(--space-5) auto 0;
+  display: grid;
+  gap: var(--space-4);
+}
+.exam-review-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.exam-review-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--color-border);
+}
+.exam-review-list .btn {
+  min-width: 11em;
+}
+.exam-topics li > span {
+  justify-self: end;
+}
+.exam-open {
+  font-weight: 700;
+}
+.exam-flag {
+  margin-inline-start: auto;
+  color: var(--color-incorrect);
+  font-weight: 700;
+}
+.exam-topics ul {
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+.exam-topics li {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) 2fr minmax(9em, max-content);
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+.exam-topics li.weak .meter > i {
+  background: var(--color-incorrect-fill);
+}
+.summary-missed li.exam-missed {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+/* ── Math on cards (#45): KaTeX formulas inside card text ── */
+.katex {
+  font-size: 1.1em;
+}
+.katex-display {
+  margin: var(--space-2) 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+/* ── Code cards (#46): highlighted snippets, fill-the-token and order-the-lines ── */
+.code-block {
+  margin: var(--space-3) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-subtle);
+  overflow: hidden;
+}
+.code-lang {
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.code,
+.code-input {
+  font-family: var(--font-mono);
+  tab-size: 4;
+}
+.code {
+  color: var(--color-text);
+  font-weight: 400;
+  font-size: var(--text-body);
+  line-height: var(--line-body);
+  white-space: pre;
+  text-align: start;
+  direction: ltr; /* code reads left to right in every interface language */
+  unicode-bidi: isolate;
+  user-select: text;
+}
+pre.code {
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+}
+pre.code:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+.code code,
+code.code-line {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+}
+code.code-line {
+  display: block;
+  overflow-x: auto;
+}
+.tok-keyword {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.tok-string {
+  color: var(--color-correct);
+}
+.tok-comment {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+.tok-number {
+  color: var(--color-incorrect);
+}
+.code-gap {
+  display: inline-block;
+}
+.code-gap input {
+  width: 100%;
+  padding: 0 var(--space-1);
+  border: none;
+  border-bottom: 2px solid var(--color-accent);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+.code-gap input:focus-visible {
+  outline: 2px solid var(--color-accent);
+}
+.code-answer .ans,
+.code-answer .compare-given,
+.code-answer .compare-answer {
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+}
+textarea.input.code-input {
+  font-family: var(--font-mono);
+  white-space: pre;
+  direction: ltr;
+}
+/* ---- Deck gallery (#50): community decks from GitHub, opened from Decks. Online only while open. ---- */
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.gallery-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.gallery-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-subhead);
+}
+.gallery-head a.btn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
+.gallery p {
+  margin: 0;
+}
+.gallery-offline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-card);
+}
+.gallery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.gallery-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3) var(--space-5);
+  padding-block: var(--space-4);
+  border-block-start: 1px solid var(--color-border);
+}
+.gallery-text {
+  display: flex;
+  flex: 1 1 20rem;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.gallery-text h3 {
+  margin: 0;
+  font-size: var(--text-body);
+}
+.gallery-licence {
+  color: var(--color-text-muted);
+}
+.gallery-licence a,
+.gallery-licence b {
+  color: var(--color-text);
+  font-weight: 600;
+}
+.gallery-actions {
+  display: flex;
+  flex: 0 1 16rem;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  text-align: end;
+}
+.gallery-done {
+  color: var(--color-correct);
+  font-weight: 600;
+}
+
+/* Image occlusion (#44): the masked picture in a card, and the box editor. Masks use tokens only. */
+.occl {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-2) 0 var(--space-4);
+}
+.occl-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  touch-action: none;
+}
+.occl-frame.drawable {
+  cursor: crosshair;
+}
+.occl-frame img {
+  display: block;
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+  background: var(--color-subtle);
+  user-select: none;
+}
+.occl-box {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  border: 2px dashed var(--color-accent);
+  border-radius: var(--radius-control);
+  font: inherit;
+  line-height: var(--line-heading);
+}
+.occl-label {
+  max-width: 100%;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.occl-box.hidden {
+  border: 2px solid var(--color-surface);
+  background: var(--color-border-strong);
+}
+.occl-box.asked {
+  border: 2px solid var(--color-surface);
+  outline: 3px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 700;
+  font-size: var(--text-subhead);
+}
+.occl-box.edit {
+  border-style: solid;
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  cursor: move;
+}
+.occl-box.edit:disabled {
+  border: 2px dashed var(--color-border-strong);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: default;
+}
+.occl-box.edit.selected,
+.occl-box.edit:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.occl-num {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  padding: 0 var(--space-1);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.occl-box.edit:disabled .occl-num {
+  background: var(--color-border-strong);
+}
+.occl-handle {
+  position: absolute;
+  right: 0; /* rtl-ignore: the picture never flips, so resizing is always from its bottom-right corner */
+  bottom: 0;
+  width: var(--space-3);
+  height: var(--space-3);
+  background: var(--color-accent);
+  cursor: nwse-resize;
+}
+.occl-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.occl-section .occl-frame {
+  align-self: flex-start;
+}
+.occl-mode {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.occl-mode legend {
+  margin: var(--space-3) 0 var(--space-1);
+  padding: 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.occl-mode label {
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin: var(--space-1) 0;
+}
+.occl-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.occl-labels {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.occl-labels li.selected .lbl {
+  color: var(--color-accent);
+}
+/* ---- AI assistant (#148): Settings switch, privacy notice and the MCP setup snippet. ---- */
+.assistant-privacy {
+  display: block;
+  margin: var(--space-2) 0 var(--space-3);
+  font-size: var(--text-body);
+}
+.settings-path.assistant-config {
+  align-self: stretch;
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+  overflow-wrap: normal;
+  white-space: pre;
+  font-family: var(--font-mono);
+  font-size: var(--text-caption);
+  background: var(--color-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+
+/* AI requests (#148): one card per proposal, its cards as editable rows, Decline and Accept at the end. */
+.requests {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  max-width: var(--size-card-max-width);
+}
+.requests-lead {
+  margin: calc(-1 * var(--space-3)) 0 0;
+  color: var(--color-text-muted);
+}
+.requests-empty p {
+  margin: 0;
+}
+.request {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.request-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-4);
+}
+.request-head h2 {
+  margin: 0;
+  font-size: var(--text-subhead);
+}
+.request-when {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.request-note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-inline-start: 3px solid var(--color-accent);
+  border-radius: var(--radius-control);
+  background: var(--color-subtle);
+}
+.request-deck {
+  flex-direction: column;
+  align-items: stretch;
+  border: none;
+  padding: 0;
+}
+.request-cards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.request-cards li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(0, 1.4fr);
+  align-items: center;
+  gap: var(--space-2);
+}
+.request-cards li.off .input {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+.request-cards input[type='checkbox'] {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--color-accent);
+}
+.request-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+@media (max-width: 640px) {
+  .request-cards li {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+  .request-cards li .input + .input {
+    grid-column: 2;
+  }
+}
+/* AI requests (#148): fixes, merges and tidy-ups. Each changed field shows the card as it is now above the
+   proposal; the cards a merge or tidy-up touches are a checklist. */
+.request-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.request-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.request-field label,
+.request-sub {
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.request-now {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+.request-kept {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.request-kept span,
+.request-checklist label span {
+  color: var(--color-text-muted);
+}
+.request-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.request-checklist li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+}
+.request-checklist input[type='checkbox'] {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--color-accent);
+}
+.request-checklist label {
+  overflow-wrap: anywhere;
+}
+.request-checklist li.off label {
+  opacity: 0.5;
+  text-decoration: line-through;
+}

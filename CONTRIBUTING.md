@@ -4,9 +4,11 @@ Thanks for helping! LernLab is a free, local-first flashcard app for any subject
 
 ## Ways to help
 - **Report a bug or suggest a feature** using the issue templates.
+- **Report a security problem privately** with the [vulnerability form](https://github.com/n1m5l5ss/lernlab/security/advisories/new), never in a public issue. See [SECURITY.md](SECURITY.md).
 - **Share a deck** through the "Deck submission" template. Decks must be your own work or openly licensed. No copyrighted exam questions.
 - **Translate the interface.** Use the "Translation" template. A translation platform is coming in 1.x.
 - **Write code.** Pick an issue labelled `good first issue` or `help wanted`.
+- **Join the team** as a reviewer, a maintainer or the lead, with the [Join the team form](https://github.com/n1m5l5ss/lernlab/issues/new?template=join_team.yml). See [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Set up
 ```bash
@@ -36,6 +38,8 @@ The repo is an npm workspace. Run every command from the repo root.
 - **Games never mark a card as known.** Only real recall changes the schedule.
 - **No new dependencies** without asking in the issue first.
 - **Changing the data model** needs a numbered migration in `packages/core/src/migrations/`.
+- **Deck files are untrusted.** Sanitise HTML, never run scripts, check paths inside zip files. A new importer gets a fuzz test (see [docs/TESTING.md](docs/TESTING.md)).
+- **CI actions are pinned** to a commit SHA. [docs/SECURITY-PRACTICES.md](docs/SECURITY-PRACTICES.md) explains the security checks.
 
 [CLAUDE.md](CLAUDE.md) has the full list.
 

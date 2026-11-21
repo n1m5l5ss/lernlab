@@ -47,6 +47,7 @@ export function ImportPanel({
   const [deckName, setDeckName] = useState('');
   const [language, setLanguage] = useState('');
   const [report, setReport] = useState<Report | null>(null);
+  const [ankiHistory, setAnkiHistory] = useState(true);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const source: Source | null = tab === 'file' && file ? { file } : tab === 'paste' && text.trim() ? { text } : null;
@@ -87,6 +88,7 @@ export function ImportPanel({
     if (!files?.length) return;
     setFile(files[0]);
     setMapping(undefined);
+    setAnkiHistory(true);
     setReport(null);
     setError('');
   };
@@ -106,7 +108,7 @@ export function ImportPanel({
     try {
       const result =
         'file' in source
-          ? await api.importFile(source.file, { ...deck, language: language || undefined, mapping })
+          ? await api.importFile(source.file, { ...deck, language: language || undefined, mapping, ankiHistory })
           : await api.importText({ text: source.text, fieldSep, cardSep, ...deck, language: language || null });
       setReport(result);
       await refresh();
@@ -248,6 +250,15 @@ export function ImportPanel({
                 />
               )}
               <PreviewTable cards={preview.cards} />
+              {!!preview.ankiReviews && (
+                <label className="import-history">
+                  <input type="checkbox" checked={ankiHistory} onChange={(e) => setAnkiHistory(e.target.checked)} />
+                  <span>
+                    {t('decks.importPanel.ankiHistory', { count: preview.ankiReviews })}
+                    <span className="small muted import-history-hint">{t('decks.importPanel.ankiHistoryHint')}</span>
+                  </span>
+                </label>
+              )}
               <fieldset className="import-target">
                 <legend>{t('decks.importPanel.target')}</legend>
                 <div className="row import-target-row">
@@ -414,6 +425,7 @@ export function ImportReport({ result, onAgain, onDone }: { result: Report; onAg
           <li className="muted">{t('decks.importReport.moreSkipped', { count: r.moreSkipped })}</li>
         )}
         {result.media > 0 && <li>{t('decks.importPanel.reportMedia', { count: result.media })}</li>}
+        {r.reviews > 0 && <li>{t('decks.importReport.reviews', { count: r.reviews })}</li>}
         {r.warnings.map((w, i) => (
           <li key={i} className="muted">
             {t(`errors.${w.code}`, { file: w.file ?? '' })}

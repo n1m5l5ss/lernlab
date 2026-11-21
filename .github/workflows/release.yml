@@ -39,9 +39,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { ref: '${{ env.REF }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: 24, cache: npm }
       - run: npm ci
       # Fail fast on a tag that doesn't match package.json (see apps/desktop/electron/release-version.ts).
@@ -73,9 +73,9 @@ jobs:
       # The SignPath action reads this job's details and its uploaded artifacts.
       actions: read
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: { ref: '${{ env.REF }}' }
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with: { node-version: 24, cache: npm }
       - run: npm ci
       # Installer names and the in-app version come from package.json; match the tag being built
@@ -101,7 +101,7 @@ jobs:
           npx electron-builder --win --dir --publish never
       - id: unsigned-app
         if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with: { name: unsigned-app-windows, path: release/win-unpacked/, if-no-files-found: error, retention-days: 1 }
       - name: Sign LernLab.exe (SignPath)
         if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
@@ -123,7 +123,7 @@ jobs:
         run: npx electron-builder --win --prepackaged "$GITHUB_WORKSPACE/release/win-signed" --publish never
       - id: unsigned-installer
         if: runner.os == 'Windows' && env.SIGN_WINDOWS == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           { name: unsigned-installer-windows, path: release/*-Setup-*.exe, if-no-files-found: error, retention-days: 1 }
       - name: Sign the installer (SignPath)
@@ -202,7 +202,7 @@ jobs:
           Get-Content smoke.log, smoke.err
           if ($p.ExitCode -ne 0 -or -not (Select-String -Quiet LERNLAB_SMOKE_OK smoke.log)) { throw 'Smoke test failed' }
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: lernlab-${{ matrix.os }}
           path: |
@@ -218,10 +218,31 @@ jobs:
     needs: build
     if: inputs.tag != '' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
-    permissions: { contents: write }
+    permissions:
+      contents: write
+      # Build provenance: GitHub signs a statement that these files were built by this workflow.
+      id-token: write
+      attestations: write
     steps:
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with: { path: artifacts, merge-multiple: true }
+      # SBOM: the list of every library inside this release (CycloneDX, from the lockfile), so anyone
+      # can check it against a new vulnerability without asking us.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: { ref: '${{ env.REF }}', path: src, persist-credentials: false }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: { node-version: 24 }
+      - working-directory: src
+        run: npm sbom --sbom-format cyclonedx --package-lock-only > "../artifacts/LernLab-${TAG#v}-sbom.cdx.json"
+      # Anyone can check a download with: gh attestation verify <file> --repo n1m5l5ss/lernlab
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: |
+            artifacts/*.dmg
+            artifacts/*.exe
+            artifacts/*.AppImage
+            artifacts/*.deb
+            artifacts/*-sbom.cdx.json
       # Called by release-please or the beta workflow: the GitHub Release already exists, so attach to it.
       - if: inputs.tag != ''
         env:
@@ -229,7 +250,7 @@ jobs:
         run: gh release upload "$TAG" artifacts/* --clobber --repo "$GITHUB_REPOSITORY"
       # A tag pushed by a person: make a draft release to review before publishing.
       - if: inputs.tag == ''
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
         with:
           files: artifacts/*
           draft: true

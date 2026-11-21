@@ -45,10 +45,17 @@ test('create a deck, add and edit a card, import a file, plan a session', async 
   const card = await ok('cards.get', { id });
   assert.equal(card.meaning, 'Paris');
   const csv = new TextEncoder().encode('front,back\nGermany,Berlin\nItaly,Rome\n');
-  const imp = await ok('import.file', { name: 'more.csv', data: csv, deckId: deck.id });
+  const imp = await ok('import.file', { name: 'more.csv', data: csv, deckId: deck.id, ankiHistory: false });
   assert.equal(imp.added, 2);
+  assert.equal(imp.reviews, 0);
+  const notBool = await handle('import.file', { name: 'more.csv', data: csv, ankiHistory: 'yes' });
+  assert.equal(!notBool.ok && notBool.error.code, 'invalid_input');
   const exp = await ok('decks.export', { id: deck.id, format: 'csv' });
   assert.ok(exp.data instanceof Uint8Array && new TextDecoder().decode(exp.data).includes('Berlin'));
+  const anki = await ok('decks.export', { id: deck.id, format: 'apkg' });
+  assert.equal(anki.name.endsWith('.apkg') && anki.data[0], 0x50, 'an Anki package is a zip');
+  const badFormat = await handle('decks.export', { id: deck.id, format: 'docx' });
+  assert.equal(!badFormat.ok && badFormat.error.code, 'invalid_input');
   const plan = await ok('session.plan', { length: 'mini' });
   assert.ok(plan.blocks.length > 0);
   const state = await ok('state.get');
@@ -66,6 +73,60 @@ test('the card editor saves, changes and clears an image description', async () 
   assert.equal((await ok('cards.get', { id })).extra.imageAlt, 'A beating heart', 'plain text');
   await ok('cards.update', { id, card: { ...card, imageAlt: '' } });
   assert.ok(!('imageAlt' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
+test('the card editor saves a numeric card with its tolerance, and turning it basic drops the tolerance', async () => {
+  const deck = await ok('decks.create', { name: 'Physics', language: null });
+  const card = { front: 'g on Earth?', back: '9.81 m/s^2', type: 'numeric', tolerance: '0.05' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card });
+  const saved = await ok('cards.get', { id });
+  assert.equal(saved.kind, 'numeric');
+  assert.equal(saved.extra.tolerance, '0.05');
+  await ok('cards.update', { id, card: { ...card, tolerance: '1%' } });
+  assert.equal((await ok('cards.get', { id })).extra.tolerance, '1%');
+  await ok('cards.update', { id, card: { ...card, type: 'basic', tolerance: '' } });
+  const basic = await ok('cards.get', { id });
+  assert.equal(basic.kind, 'card');
+  assert.ok(!('tolerance' in basic.extra));
+});
+
+test('the card editor saves a code card with its code and language, and turning it basic drops them', async () => {
+  const deck = await ok('decks.create', { name: 'Python', language: null });
+  const card = { front: 'Output?', back: '3', type: 'code', code: 'print(1 + 2)\n', codeLang: 'python' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card });
+  const saved = await ok('cards.get', { id });
+  assert.equal(saved.kind, 'code');
+  assert.deepEqual([saved.extra.code, saved.extra.codeLang, saved.meaning], ['print(1 + 2)', 'python', '3']);
+  await ok('cards.update', { id, card: { ...card, type: 'basic', code: '', codeLang: '' } });
+  const basic = await ok('cards.get', { id });
+  assert.equal(basic.kind, 'card');
+  assert.ok(!('code' in basic.extra) && !('codeLang' in basic.extra));
+});
+
+test('the card editor saves one occlusion card per box; editing one keeps its siblings, the mode is shared', async () => {
+  const deck = await ok('decks.create', { name: 'Anatomy', language: null });
+  const base = { front: 'Label the heart', type: 'occlusion', image: 'heart.png', occlusionGroup: 'g1' };
+  const boxes = [
+    ['Aorta', '0.4,0.05,0.2,0.1'],
+    ['Left ventricle', '0.55,0.6,0.25,0.2'],
+  ];
+  const ids: number[] = [];
+  for (const [back, occlusion] of boxes)
+    ids.push((await ok('cards.add', { deckId: deck.id, card: { ...base, back, occlusion, occlusionMode: 'one' } })).id);
+  const first = await ok('cards.get', { id: ids[0] });
+  assert.equal(first.kind, 'occlusion');
+  assert.deepEqual(
+    first.occlusionBoxes.map((b: { label: string }) => b.label),
+    ['Aorta', 'Left ventricle'],
+  );
+  await ok('cards.update', {
+    id: ids[0],
+    card: { ...base, back: 'Aortic arch', occlusion: '0.3,0.05,0.3,0.1', occlusionMode: 'all' },
+  });
+  const second = await ok('cards.get', { id: ids[1] });
+  assert.deepEqual([second.meaning, second.extra.occlusion], ['Left ventricle', '0.55,0.6,0.25,0.2'], 'untouched');
+  assert.equal(second.extra.occlusionMode, 'all', 'the mode is set for the whole group');
+  assert.equal(second.occlusionBoxes[0].label, 'Aortic arch');
 });
 
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
@@ -230,6 +291,64 @@ test('a practice session is planned as practice, and its answers are accepted as
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
 });
 
+test('an exam is drawn from a deck with its settings, handed in once, and scored by topic', async () => {
+  const deck = await ok('decks.create', { name: 'Exam deck', language: null });
+  for (const [front, back] of [
+    ['Object storage', 'S3'],
+    ['Block storage', 'EBS'],
+    ['Users', 'IAM'],
+    ['Functions', 'Lambda'],
+  ])
+    await ok('cards.add', { deckId: deck.id, card: { front, back, tags: front === 'Users' ? 'security' : 'storage' } });
+  const saved = await ok('decks.update', {
+    id: deck.id,
+    patch: { settings: { exam: { questions: 3, minutes: 0, passMark: '60', junk: 1 } } },
+  });
+  assert.deepEqual(saved.settings.exam, { questions: 3, minutes: 1, passMark: 60 }, 'checked and clamped');
+  const exam = await ok('exam.start', { deckId: deck.id });
+  assert.equal(exam.questions.length, 3);
+  assert.equal(exam.settings.passMark, 60);
+  const answers = exam.questions.map((q: { itemId: number; correct: number[] }) => ({
+    itemId: q.itemId,
+    chosen: q.correct,
+    ms: 2000,
+  }));
+  const score = await ok('exam.submit', { examId: exam.id, mode: 'timed', answers });
+  assert.equal(score.correct, 3);
+  assert.equal(score.passed, true);
+  assert.equal(score.reviewed, 0, 'timed mode is practice');
+  assert.ok(score.topics.length >= 1);
+  const twice = await handle('exam.submit', { examId: exam.id, mode: 'timed', answers });
+  assert.equal(!twice.ok && twice.error.code, 'exam_not_found', 'an exam is handed in once');
+  const missing = await handle('exam.start', { deckId: 9999 });
+  assert.equal(!missing.ok && missing.error.code, 'deck_not_found');
+  const bad = await handle('exam.submit', {
+    examId: 'x',
+    mode: 'timed',
+    answers: [{ itemId: 1, chosen: ['a'], ms: 1 }],
+  });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  const noMode = await handle('exam.submit', { examId: 'x', mode: 'cram', answers: [] });
+  assert.equal(!noMode.ok && noMode.error.code, 'invalid_input');
+});
+
+test('a tutor-mode exam counts toward your reviews; question cards are graded like a session', async () => {
+  const deck = await ok('decks.create', { name: 'Tutor deck', language: null });
+  await ok('cards.add', {
+    deckId: deck.id,
+    card: { type: 'mcq', front: 'Which is object storage?', choices: 'S3|EBS|EFS', correct: '1' },
+  });
+  const exam = await ok('exam.start', { deckId: deck.id });
+  assert.equal(exam.questions.length, 1);
+  const [q] = exam.questions;
+  const score = await ok('exam.submit', {
+    examId: exam.id,
+    mode: 'tutor',
+    answers: [{ itemId: q.itemId, chosen: q.correct, ms: 3000 }],
+  });
+  assert.equal(score.reviewed, 1, 'the answer scheduled the card');
+});
+
 test('deck settings are checked, and deleting a deck takes a backup first', async () => {
   const deck = await ok('decks.create', {
     name: 'Medicine::Cardio',
@@ -311,4 +430,27 @@ test('the card editor warns about a card with the same front in the deck, and sa
   const bad = await handle('cards.duplicates', { deckId: 'x', front: 'a' });
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
   assert.equal((await ok('cards.get', { id })).grammar, 'see <b>this</b>');
+});
+
+test('a recording made in the card editor is kept in media/ and plays from the card', async () => {
+  const deck = await ok('decks.create', { name: 'Voice', language: 'de' });
+  const opus = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81, 0x01]);
+  const { file } = await ok('media.record', { data: opus });
+  assert.match(file, /^recording-.+\.weba$/);
+  assert.ok(existsSync(join(dir, 'media', file)));
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'der Hund', back: 'dog', audio: file } });
+  assert.equal((await ok('cards.get', { id })).audio, file);
+  await ok('cards.update', { id, card: { front: 'der Hund', back: 'dog', audio: '' } });
+  assert.equal((await ok('cards.get', { id })).audio, null, 'deleting the recording takes it off the card');
+
+  const notAudio = await handle('media.record', { data: new TextEncoder().encode('<script>alert(1)</script>') });
+  assert.equal(!notAudio.ok && notAudio.error.code, 'unsupported_media');
+  const big = new Uint8Array(3 * 1024 * 1024);
+  big.set(opus);
+  const tooLong = await handle('media.record', { data: big });
+  assert.equal(!tooLong.ok && tooLong.error.code, 'recording_too_long');
+  const huge = await handle('media.record', { data: new Uint8Array(5 * 1024 * 1024) });
+  assert.equal(!huge.ok && huge.error.code, 'invalid_input');
+  const noBytes = await handle('media.record', { data: 'GkXfow==' });
+  assert.equal(!noBytes.ok && noBytes.error.code, 'invalid_input');
 });

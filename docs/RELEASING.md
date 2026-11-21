@@ -32,12 +32,22 @@ There is no separate staging branch. A **beta release** cut from `dev` plays tha
 ## Making a release
 
 1. **Beta (optional).** Run the "Beta release" workflow on `dev`. It tags `vX.Y.Z-beta.N` and publishes a GitHub pre-release with installers for all three systems. `X.Y.Z` defaults to the next patch after the last release; type another version when running it if the next release is a minor or major one. Testers on the beta channel get it.
-2. **Stable.** Open a pull request `dev → main` titled `release: X.Y.Z` and merge it with a merge commit (not squash).
+2. **Stable.** Update the docs (see [Docs for every release](#docs-for-every-release)), then open a pull request `dev → main` titled `release: X.Y.Z` and merge it with a merge commit (not squash).
 3. **release-please** sees the new commits on `main`, opens a release PR that bumps the version in `package.json` and adds the section to `CHANGELOG.md`, and updates that PR as more commits arrive.
 4. Merging the release PR creates the tag `vX.Y.Z` and the GitHub Release. The release-please workflow then calls the "Build installers" workflow directly (a tag made with `GITHUB_TOKEN` can't trigger other workflows), which builds, smoke-tests and publishes the installers (see [Installers](#installers)), and `latest*.yml` lets installed apps auto-update.
 5. A workflow opens a pull request `main → dev`, so the version bump and changelog reach `dev` too. Merge it with a merge commit.
 
 **By hand.** Pushing a tag `vX.Y.Z` (admins only) runs "Build installers" too and attaches everything to a **draft** GitHub Release, to review and publish yourself. A stable tag must equal the version in `package.json`, and a pre-release tag (`vX.Y.Z-beta.N`) must lead up to a newer version; otherwise the run stops before building (`apps/desktop/electron/release-version.ts`). "Run workflow" on "Build installers" with a tag rebuilds that release's installers and re-attaches them, e.g. after a failed run; without a tag it only builds artifacts.
+
+## Docs for every release
+
+Every release, major, minor or patch, leaves the docs matching what shipped:
+
+- **Automatic:** the release PR bumps the version in `package.json`, `apps/desktop/package.json`, `CHANGELOG.md`, and the lines marked `x-release-please-version` in `README.md` and `docs/USER-GUIDE.md` (release-please `extra-files`). `apps/site/src/docs-version.test.ts` fails if those lines and `package.json` disagree.
+- **By hand, before merging the `dev → main` pull request:**
+  - `README.md`: the feature bullets cover what this release adds;
+  - `docs/USER-GUIDE.md`: every new screen or option is explained;
+  - `docs/ROADMAP.md`: shipped items move from **Next** to **Done**.
 
 ## Installers
 

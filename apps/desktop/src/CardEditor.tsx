@@ -1,10 +1,12 @@
-// Card editor: four card types, a live preview drawn like the real exercise, media by drag and drop,
+// Card editor: seven card types, a live preview drawn like the real exercise, media by drag and drop,
 // and a gentle warning when the deck already has a card with the same front.
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SAFE_TAGS } from '@lernlab/core/cards';
+import { CODE_LANGS } from '@lernlab/core/code';
 import type { Duplicate } from '@lernlab/core/browse';
 import { api } from './api';
+import { AudioSlot } from './AudioSlot';
 import { mediaUrl } from './bridge';
 import {
   CARD_TYPES,
@@ -18,6 +20,9 @@ import {
   type Preview,
 } from './card-editor-logic';
 import { Media, Rich } from './rich';
+import { CodeBlock } from './code-block';
+import { OcclusionEditor } from './occlusion';
+import { newGroupId, occlusionCards, shapesFor, shapesReady } from './occlusion-logic';
 
 /** Cloze gap markers are card syntax, not text. */
 const CLOZE = { open: '{{c1::', close: '}}' };
@@ -52,15 +57,28 @@ export function CardEditor({
   const [uploading, setUploading] = useState(0);
   const confirm = useRef<HTMLDialogElement>(null);
   const frontField = useRef<HTMLTextAreaElement>(null);
+  // Occlusion: the boxes on the picture (a saved card's whole group) and the one being edited and previewed.
+  const [shapes, setShapes] = useState(() => shapesFor(card.item));
+  const [selected, setSelected] = useState(() =>
+    Math.max(
+      0,
+      shapes.findIndex((s) => s.id === card.id),
+    ),
+  );
+  const occlusion = c.type === 'occlusion';
+  // A saved occlusion card edits only its own box; a card turned into one becomes its first box.
+  const ownBox = card.item?.kind === 'occlusion' ? card.id : undefined;
+  const ready = !occlusion || shapesReady(c.image, shapes);
   const deck = useMemo<Deck>(() => {
     const id = card.item?.deckId ?? deckId;
     return { id, language: card.item?.lang ?? decks.find((d) => d.id === id)?.language ?? null };
   }, [card.item, deckId, decks]);
-  const preview = useMemo(() => previewOf(c, deck), [c, deck]);
+  const preview = useMemo(() => previewOf(c, deck, shapes, selected), [c, deck, shapes, selected]);
 
   // Look for a card with the same front while typing; it only warns, saving stays possible.
   useEffect(() => {
-    if (!c.front.trim()) {
+    // The boxes of one picture share their front on purpose.
+    if (!c.front.trim() || occlusion) {
       setDups([]);
       return;
     }
@@ -77,7 +95,7 @@ export function CardEditor({
       live = false;
       clearTimeout(timer);
     };
-  }, [c.front, c.id, deck.id]);
+  }, [c.front, c.id, deck.id, occlusion]);
 
   const set = <K extends keyof Form>(k: K, value: Form[K]) => {
     setMsg('');
@@ -105,13 +123,18 @@ export function CardEditor({
     if (rejected.length) setMsg(t('browse.editor.dropRejected', { names: rejected.join(', ') }));
   };
   const save = async () => {
-    if (!c.front.trim() || uploading) return;
+    if (!c.front.trim() || uploading || !ready) return;
     try {
-      if (c.id) await api.saveCard(c.id, fieldsToSave(c));
-      else await api.addCard(deck.id, fieldsToSave(c));
+      // An occlusion picture saves one card per box (a saved one saves only itself).
+      const cards = occlusion ? occlusionCards(fieldsToSave(c), shapes, ownBox, newGroupId()) : [fieldsToSave(c)];
+      for (const [k, card] of cards.entries()) {
+        if (c.id && k === 0) await api.saveCard(c.id, card);
+        else await api.addCard(deck.id, card);
+      }
       onSaved();
       if (!c.id) {
         setC({ ...EMPTY, type: c.type, tags: c.tags, category: c.category });
+        setShapes([]);
         frontField.current?.focus();
       }
       setMsg(t('common.saved'));
@@ -198,8 +221,18 @@ export function CardEditor({
           ? t('browse.editor.question')
           : c.type === 'order'
             ? t('browse.editor.prompt')
-            : t('browse.editor.front'),
-        c.type === 'cloze' ? t('browse.editor.clozePlaceholder', CLOZE) : t('browse.editor.frontPlaceholder'),
+            : c.type === 'code'
+              ? t('browse.editor.codeTask')
+              : occlusion
+                ? t('browse.editor.occlusion.title')
+                : t('browse.editor.front'),
+        c.type === 'cloze'
+          ? t('browse.editor.clozePlaceholder', CLOZE)
+          : c.type === 'code'
+            ? t('browse.editor.codeTaskPlaceholder')
+            : occlusion
+              ? t('browse.editor.occlusion.titlePlaceholder')
+              : t('browse.editor.frontPlaceholder'),
         true,
       )}
       {dups.length > 0 && (
@@ -214,6 +247,51 @@ export function CardEditor({
         </>
       ) : c.type === 'order' ? (
         f('steps', t('browse.editor.steps'), t('browse.editor.stepsPlaceholder'))
+      ) : c.type === 'code' ? (
+        <>
+          <label className="lbl" htmlFor={`${uid}-codeLang`}>
+            {t('browse.editor.codeLang')}
+          </label>
+          <select
+            id={`${uid}-codeLang`}
+            className="input"
+            value={c.codeLang}
+            onChange={(e) => set('codeLang', e.target.value)}
+          >
+            <option value="">{t('browse.editor.codeLangNone')}</option>
+            {[
+              ...CODE_LANGS,
+              ...(CODE_LANGS.some((l) => l.id === c.codeLang) || !c.codeLang
+                ? []
+                : [{ id: c.codeLang, name: c.codeLang }]),
+            ].map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+          <label className="lbl" htmlFor={`${uid}-code`}>
+            {t('browse.editor.code')}
+          </label>
+          <textarea
+            id={`${uid}-code`}
+            className="input code-input"
+            rows={6}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            value={c.code}
+            onChange={(e) => set('code', e.target.value)}
+            placeholder={t('browse.editor.codePlaceholder', CLOZE)}
+          />
+          {f('back', t('browse.editor.codeOutput'), t('browse.editor.codeOutputPlaceholder'), true)}
+          <p className="small muted">{t('browse.editor.codeHelp', CLOZE)}</p>
+        </>
+      ) : occlusion ? null : c.type === 'numeric' ? (
+        <>
+          {f('back', t('browse.editor.number'), t('browse.editor.numberPlaceholder'))}
+          {f('tolerance', t('browse.editor.tolerance'), t('browse.editor.tolerancePlaceholder'))}
+        </>
       ) : (
         f(
           'back',
@@ -230,7 +308,16 @@ export function CardEditor({
         <p className="small muted">{uploading ? t('browse.editor.uploading') : t('browse.editor.dropHint')}</p>
         <div className="editor-slots">
           {SLOTS.map((k) =>
-            c[k] ? (
+            k === 'audio' ? (
+              <AudioSlot
+                key={k}
+                file={c.audio}
+                onChange={(file) => set('audio', file)}
+                onUpload={(file) => upload('audio', file)}
+                onBusy={(d) => setUploading((n) => n + d)}
+                onError={fail}
+              />
+            ) : c[k] ? (
               <span key={k} className="editor-slot">
                 {t(`browse.editor.mediaSet.${k}`)}
                 <button
@@ -251,6 +338,41 @@ export function CardEditor({
         </div>
       </div>
       {showImageAlt(c) && f('imageAlt', t('browse.editor.imageAlt'), t('browse.editor.imageAltPlaceholder'))}
+      {occlusion && (
+        <section className="occl-section" aria-label={t('browse.editor.types.occlusion')}>
+          <fieldset className="occl-mode">
+            <legend>{t('browse.editor.occlusion.mode')}</legend>
+            {(['one', 'all'] as const).map((m) => (
+              <label key={m} className="row">
+                <input
+                  type="radio"
+                  name={`${uid}-mode`}
+                  value={m}
+                  checked={(c.occlusionMode === 'all' ? 'all' : 'one') === m}
+                  onChange={() => set('occlusionMode', m)}
+                />
+                {t(`browse.editor.occlusion.modes.${m}`)}
+              </label>
+            ))}
+          </fieldset>
+          {c.image ? (
+            <OcclusionEditor
+              image={c.image}
+              alt={c.imageAlt}
+              shapes={shapes}
+              own={ownBox}
+              selected={selected}
+              onSelect={setSelected}
+              onChange={(next) => {
+                setMsg('');
+                setShapes(next);
+              }}
+            />
+          ) : (
+            <p className="small muted">{t('browse.editor.occlusion.needsImage')}</p>
+          )}
+        </section>
+      )}
       <CardPreview preview={preview} lang={deck.language} />
       <details className="editor-more" open={hasMore(card)}>
         <summary>{t('browse.editor.moreFields')}</summary>
@@ -269,7 +391,7 @@ export function CardEditor({
         <button
           className="btn primary"
           onClick={save}
-          disabled={!c.front.trim() || uploading > 0}
+          disabled={!c.front.trim() || uploading > 0 || !ready}
           aria-keyshortcuts="Control+Enter"
         >
           {c.id ? t('common.save') : t('browse.editor.add')}
@@ -435,6 +557,53 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
           ))}
         </ol>
       );
+      break;
+    case 'code': {
+      const { task } = view;
+      question = (
+        <>
+          <div className="blocktitle">
+            {task.mode === 'fill'
+              ? t('ex.code.fillTitle')
+              : task.mode === 'output'
+                ? t('ex.code.outputTitle')
+                : t('ex.code.orderTitle')}
+          </div>
+          {media}
+          <div className="prompt">
+            <Rich html={view.prompt} />
+          </div>
+          {task.mode === 'order' ? (
+            <div className="small muted">{t('browse.editor.previewShuffled')}</div>
+          ) : (
+            <CodeBlock code={task.code} lang={task.lang} gap={<span className="editor-gap">…</span>} />
+          )}
+        </>
+      );
+      answer =
+        task.mode === 'order' ? (
+          <CodeBlock code={task.lines.join('\n')} lang={task.lang} />
+        ) : (
+          <div className="code-answer">
+            <div className="ans">{task.answer}</div>
+          </div>
+        );
+      break;
+    }
+    case 'occlusion':
+      question = (
+        <>
+          <div className="blocktitle">{t('ex.occlusion.title')}</div>
+          {media}
+          <div className="prompt">
+            <Rich html={view.prompt} />
+          </div>
+          <div className="typed editor-fake-input" aria-hidden="true">
+            {t('ex.typed.placeholder')}
+          </div>
+        </>
+      );
+      answer = <div className="ans">{view.answer}</div>;
       break;
     case 'problem':
       return (

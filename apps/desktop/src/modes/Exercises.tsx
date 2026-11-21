@@ -2,13 +2,18 @@ import { Trans, useTranslation } from 'react-i18next';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Exercise, Item } from '@lernlab/core/types';
-import { checkAnswer, similarity, normalize, stripHtml, type CheckResult } from '@lernlab/core/text';
+import { similarity, normalize, stripHtml, type CheckResult } from '@lernlab/core/text';
+import { hasMath } from '@lernlab/core/math';
+import { GAP } from '@lernlab/core/code';
+import { replaceClozes } from '@lernlab/core/cards';
 import { hear, playMedia, say, recognizer, sfx } from '../audio';
 import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
 import { textPx } from '../display';
 import { Feedback } from '../components';
+import { checkTyped, plainAnswer } from '../typed-logic';
+import { CodeBlock, CodeLine } from '../code-block';
 
 type P<E> = { ex: E; ctx: Ctx; onNext: (r: { correct: boolean }) => void };
 const now = () => performance.now();
@@ -50,9 +55,7 @@ const MicIcon = () => (
 export function Article({ item }: { item: Item }) {
   if (!item.article || item.kind !== 'noun')
     return (
-      <Rich
-        html={item.kind === 'cloze' ? item.target.replace(/\{\{c\d+::(.*?)(?:::.*?)?\}\}/g, '<b>$1</b>') : item.target}
-      />
+      <Rich html={item.kind === 'cloze' ? replaceClozes(item.target, (c) => `<b>${c.answer}</b>`) : item.target} />
     );
   return (
     <>
@@ -557,7 +560,7 @@ export function TypedEngine({
   const submit = () => {
     if (phase === 'done') return onNext({ correct: finalCorrect.current });
     if (!value.trim()) return;
-    const r = checkAnswer(value, accepted, { requireArticle });
+    const r = checkTyped(item, format, value, accepted, requireArticle);
     if (phase === 'copy') {
       if (r.correct && !r.nearMiss) {
         sfx.tap();
@@ -668,7 +671,7 @@ export function TypedEngine({
       autoCorrect="off"
       autoCapitalize="off"
       spellCheck={false}
-      placeholder={phase === 'copy' ? accepted[0] : format === 'cloze' ? '…' : t('ex.typed.placeholder')}
+      placeholder={phase === 'copy' ? plainAnswer(accepted[0]) : format === 'cloze' ? '…' : t('ex.typed.placeholder')}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
@@ -709,13 +712,22 @@ export function TypedEngine({
         >
           {msg}
           {(phase === 'copy' || (phase === 'done' && !finalCorrect.current) || res?.nearMiss) && (
-            <>
-              {given && !overridden ? (
+            // Code answers are plain text in the code font, line breaks kept.
+            <div className={item.kind === 'code' ? 'code-answer' : undefined}>
+              {given && !overridden && !hasMath(accepted[0]) && !(item.kind === 'code' && res?.correct) ? (
                 <Compare given={given} answer={accepted[0]} />
               ) : (
-                <div className="ans">{requireArticle && item.article ? <Article item={item} /> : accepted[0]}</div>
+                <div className="ans">
+                  {requireArticle && item.article ? (
+                    <Article item={item} />
+                  ) : item.kind === 'code' ? (
+                    accepted[0]
+                  ) : (
+                    <Rich html={accepted[0]} />
+                  )}
+                </div>
               )}
-            </>
+            </div>
           )}
           {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
         </Feedback>
@@ -761,11 +773,20 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
       onNext={onNext}
       render={(input) => (
         <>
-          <div className="blocktitle">{ctx.lang ? t('ex.typed.titleLanguage') : t('ex.typed.title')}</div>
+          <div className="blocktitle">
+            {ex.code !== undefined
+              ? t('ex.code.outputTitle')
+              : item.kind === 'occlusion'
+                ? t('ex.occlusion.title')
+                : ctx.lang
+                  ? t('ex.typed.titleLanguage')
+                  : t('ex.typed.title')}
+          </div>
           {ex.prompt === item.target && <Media item={item} size="sm" />}
           <div className="prompt" style={{ fontSize: ex.prompt.length > 70 ? textPx(22) : undefined }}>
             <Rich html={ex.prompt} />
           </div>
+          {ex.code !== undefined && <CodeBlock code={ex.code} lang={ex.codeLang ?? ''} />}
           {input}
         </>
       )}
@@ -788,12 +809,29 @@ export function Cloze({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'cloze' }
       revealAudio
       render={(input) => (
         <>
-          <div className="blocktitle">{t('ex.cloze.title')}</div>
+          <div className="blocktitle">{ex.codeLang !== undefined ? t('ex.code.fillTitle') : t('ex.cloze.title')}</div>
           <Media item={item} size="sm" />
-          <div className="cloze">
-            {ex.before} {input} {ex.after}
-          </div>
-          {ex.translation && (
+          {ex.codeLang !== undefined ? (
+            <>
+              <div className="prompt">
+                <Rich html={ex.translation} />
+              </div>
+              <CodeBlock
+                code={ex.before + GAP + ex.after}
+                lang={ex.codeLang}
+                gap={
+                  <span className="code-gap" style={{ width: `${Math.max(4, ex.accepted[0].length + 2)}ch` }}>
+                    {input}
+                  </span>
+                }
+              />
+            </>
+          ) : (
+            <div className="cloze">
+              {ex.before} {input} {ex.after}
+            </div>
+          )}
+          {ex.translation && ex.codeLang === undefined && (
             <div className="muted" style={{ marginTop: 10 }}>
               {ex.translation}
             </div>
@@ -1241,13 +1279,16 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
   const [placed, setPlaced] = useState<number[]>([]);
   const [result, setResult] = useState<boolean | null>(null);
   const shown = useRef(now());
+  const step = (s: string) =>
+    ex.codeLang !== undefined ? <CodeLine code={s} lang={ex.codeLang} /> : <Rich html={s} />;
   const add = (stepIdx: number) => {
     if (result !== null || placed.includes(stepIdx)) return;
     sfx.tap();
     const p = [...placed, stepIdx];
     setPlaced(p);
     if (p.length === ex.steps.length) {
-      const ok = p.every((v, i) => v === i);
+      // By text: two identical lines of code (two closing braces) may go either way round.
+      const ok = p.every((v, i) => ex.steps[v] === ex.steps[i]);
       setResult(ok);
       ctx.answer({
         itemId: ex.itemId,
@@ -1269,7 +1310,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
   });
   return (
     <div>
-      <div className="blocktitle">{t('ex.order.title')}</div>
+      <div className="blocktitle">{ex.codeLang !== undefined ? t('ex.code.orderTitle') : t('ex.order.title')}</div>
       <div className="prompt" style={{ fontSize: textPx(24) }}>
         <Rich html={ex.prompt} />
       </div>
@@ -1277,11 +1318,11 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
         {placed.map((s, k) => (
           <li key={k}>
             <button
-              className={`opt ${result === null ? '' : s === k ? 'right' : 'wrong'}`}
+              className={`opt ${result === null ? '' : ex.steps[s] === ex.steps[k] ? 'right' : 'wrong'}`}
               style={{ width: '100%' }}
               onClick={() => result === null && setPlaced(placed.filter((x) => x !== s))}
             >
-              <Rich html={ex.steps[s]} />
+              {step(ex.steps[s])}
             </button>
           </li>
         ))}
@@ -1292,7 +1333,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
           .map((i, k) => (
             <button key={i} className="opt" onClick={() => add(i)}>
               <span className="k">{k + 1}</span>
-              <Rich html={ex.steps[i]} />
+              {step(ex.steps[i])}
             </button>
           ))}
       </div>
@@ -1301,9 +1342,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
           {t('common.correctOrder')}
           <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
             {ex.steps.map((s, i) => (
-              <li key={i}>
-                <Rich html={s} />
-              </li>
+              <li key={i}>{step(s)}</li>
             ))}
           </ol>
         </Feedback>

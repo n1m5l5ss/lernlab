@@ -1,0 +1,38 @@
+# OpenSSF Scorecard: an independent, automatic check of how safely this project is run (pinned
+# CI actions, branch protection, code review, signed releases, ...). The score is public at
+# https://scorecard.dev/viewer/?uri=github.com/n1m5l5ss/lernlab and shown as a badge in the README.
+# Findings also appear under Security → Code scanning.
+name: scorecard
+on:
+  push:
+    branches: [dev]
+  branch_protection_rule:
+  schedule:
+    - cron: '17 4 * * 1'
+  workflow_dispatch:
+permissions: read-all
+jobs:
+  analysis:
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write # upload the results to code scanning
+      id-token: write # publish the results so the badge works
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: ossf/scorecard-action@23f22cd43608bae7a1f1fa2603d7314dee9538a5 # v2.6.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: scorecard-results
+          path: results.sarif
+          retention-days: 5
+      - uses: github/codeql-action/upload-sarif@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+        with:
+          sarif_file: results.sarif

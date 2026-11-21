@@ -34,6 +34,7 @@ import {
   deleteDeck,
   getDeck,
   LANGUAGES,
+  listDecks,
   mediaKind,
   stableId,
   storeMedia,
@@ -56,6 +57,10 @@ import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
+import { setOcclusionMode, withOcclusionBoxes } from '@lernlab/core/occlusion';
+import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
+import { buildExam, recordExam, type Exam } from '@lernlab/core/examplan';
+import { EXAM_MODES } from '@lernlab/core/exam';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
 import { lastSeenVersion, markVersionSeen, whatsNewToShow, type ReleaseNotes } from '@lernlab/core/whatsnew';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
@@ -68,6 +73,7 @@ import {
   topLevelDecks,
   type AnkiDeck,
 } from './anki';
+import { downloadGalleryDeck, loadGallery } from './gallery';
 import { getDb } from './storage';
 import { backupAppDb, dataDir } from '@lernlab/storage-sqlite';
 import {
@@ -83,6 +89,9 @@ import pkg from '../package.json';
 import bundledNotes from './whats-new.json';
 import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
+import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
+import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
+import { asRequest, checkBody } from './ai-requests';
 
 /** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
 export { UserError as AppError } from '@lernlab/core/errors';
@@ -110,6 +119,12 @@ const cardInput = v.object({
   choices: text,
   correct: text,
   steps: text,
+  tolerance: text,
+  code: text,
+  codeLang: text,
+  occlusion: text,
+  occlusionGroup: text,
+  occlusionMode: text,
   alt: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
@@ -129,6 +144,9 @@ const columnMapping: Check<ColumnMapping> = (value, path = 'mapping') => {
   }
   return { header: m.header, fields };
 };
+
+/** Exams being taken, by id, until they are handed in. Only the last few are kept. */
+const exams = new Map<string, Exam>();
 
 /* ── Anki import runs in the background; the window polls its status ── */
 
@@ -212,6 +230,17 @@ export async function runAnkiImport(sources?: string[], deckName?: string) {
   importStatus.current = null;
 }
 
+/** The command an AI assistant runs to start LernLab's MCP server (#148). Main (desktop) or the web dev server sets it. */
+export type AssistantCommand = { command: string; args: string[]; env?: Record<string, string> };
+function assistantCommand(): AssistantCommand | null {
+  try {
+    const c = JSON.parse(process.env.LERNLAB_MCP_COMMAND ?? 'null') as AssistantCommand | null;
+    return c && typeof c.command === 'string' && Array.isArray(c.args) ? c : null;
+  } catch {
+    return null;
+  }
+}
+
 /** A handler: a validator for its input and the function that does the work. */
 type Handler<I, O> = { input: Check<I>; run: (input: I) => O | Promise<O> };
 const h = <I, O>(input: Check<I>, run: (input: I) => O | Promise<O>): Handler<I, O> => ({ input, run });
@@ -220,6 +249,8 @@ export const handlers = {
   'state.get': h(v.none, () => ({
     ...appState(),
     importing: importStatus.running,
+    /** Changes an AI assistant proposed, waiting for the user (#148). */
+    aiRequests: countAiRequests(),
     languages: LANGUAGES,
     welcome: needsWelcome(getDb()),
     /** "What's new in X.Y.Z" on the first launch after an update, or null (issue #58). */
@@ -306,7 +337,7 @@ export const handlers = {
     else setMeta(getDb(), 'studySource', source);
     return { ok: true };
   }),
-  'decks.export': h(v.object({ id: v.id, format: v.oneOf('csv', 'lernpack') }), ({ id, format }) =>
+  'decks.export': h(v.object({ id: v.id, format: v.oneOf('csv', 'lernpack', 'apkg') }), ({ id, format }) =>
     exportDeck(id, format),
   ),
 
@@ -326,7 +357,7 @@ export const handlers = {
     const r = getDb().prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(id);
     if (!r) throw new AppError('card_not_found', 'Card not found');
     return {
-      ...rowToItem(r),
+      ...withOcclusionBoxes([rowToItem(r)], getDb())[0],
       suspended: !!r.suspended,
       starred: !!r.starred,
       extra: JSON.parse((r.extra as string | null) ?? '{}') as Record<string, string>,
@@ -395,13 +426,51 @@ export const handlers = {
           choices: opt(b.choices),
           correct: opt(b.correct),
           steps: opt(b.steps),
+          tolerance: opt(b.tolerance),
+          code: opt(b.code),
+          codeLang: opt(b.codeLang),
+          occlusion: opt(b.occlusion),
+          occlusionGroup: opt(b.occlusionGroup),
+          occlusionMode: opt(b.occlusionMode),
           altAnswers: opt(b.alt),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);
+      // The hide-one / hide-all mode belongs to the whole picture.
+      if (b.occlusionMode) setOcclusionMode(id, b.occlusionMode);
     }
     return { ok: true };
   }),
+
+  /* ── AI requests (#148): changes an AI assistant proposed; nothing changes until the user accepts one ── */
+  /** Waiting requests, with what they would change as it is now: the decks and their plans, the goals, the cards. */
+  'aiRequests.list': h(v.none, () => {
+    const requests = listAiRequests()
+      .map(asRequest)
+      .filter((r) => r !== null);
+    return {
+      requests,
+      decks: listDecks().map(({ id, name, settings: { examDate, goal, newPerDay } }) => ({
+        id,
+        name,
+        plan: { examDate, goal: goal && { label: goal.label, words: goal.words }, newPerDay },
+      })),
+      goals: currentGoals(),
+      cards: cardSnapshots([...new Set(requests.flatMap((r) => requestCardIds(r).slice(0, SNAPSHOT_MAX)))]),
+    };
+  }),
+  /** Accept one request, as the user may have edited it (`request`: the same shape, checked again). */
+  'aiRequests.accept': h(v.object({ id: v.string(40), request: v.optional(v.record) }), ({ id, request }) => {
+    const stored = asRequest(getAiRequest(id));
+    if (!stored) throw new AppError('request_not_found', 'This request is no longer waiting.');
+    const edited = request
+      ? { ...checkBody(stored.kind, request), id: stored.id, createdAt: stored.createdAt }
+      : stored;
+    const result = applyAiRequest(edited);
+    removeAiRequest(id);
+    return result;
+  }),
+  'aiRequests.decline': h(v.object({ id: v.string(40) }), ({ id }) => ({ ok: removeAiRequest(id) })),
 
   /* ── Import / media ── */
   'import.preview': h(
@@ -423,9 +492,15 @@ export const handlers = {
       deckName: v.optional(v.string(200)),
       language: v.optional(v.nullable(v.string(20))),
       mapping: v.optional(columnMapping),
+      ankiHistory: v.optional(v.boolean),
     }),
-    ({ name, data, deckId, deckName, language, mapping }) => {
-      const res = importFile(name, mapFile(name, data, mapping), { deckId, deckName: deckName || undefined, language });
+    ({ name, data, deckId, deckName, language, mapping, ankiHistory }) => {
+      const res = importFile(name, mapFile(name, data, mapping), {
+        deckId,
+        deckName: deckName || undefined,
+        language,
+        ankiHistory,
+      });
       chooseDeck(res.deck.id);
       return res;
     },
@@ -475,10 +550,23 @@ export const handlers = {
     },
   ),
   'import.status': h(v.none, async () => ({ ...importStatus, anki: await ankiAvailable() })),
+  /** The deck gallery: goes online only when the user opens it (principle 4). */
+  'gallery.list': h(v.none, () => loadGallery()),
+  /** Install a deck from the last gallery list: checked against its SHA-256, then imported as an untrusted file. */
+  'gallery.install': h(v.object({ id: v.string(80) }), async ({ id }) => {
+    const { deck, data } = await downloadGalleryDeck(id);
+    const res = importFile(`${deck.id}.lernpack`, data, { deckName: deck.title, language: deck.language });
+    chooseDeck(res.deck.id);
+    return res;
+  }),
   'media.upload': h(v.object({ name: v.string(500), data: v.bytes(50 * MB) }), ({ name, data }) => {
     if (!mediaKind(name)) throw new AppError('unsupported_media', 'Unsupported media type');
     return { file: storeMedia(name, data), kind: mediaKind(name) };
   }),
+  /** A recording made in the card editor (Opus in WebM or Ogg). The engine checks the bytes and the length. */
+  'media.record': h(v.object({ data: v.bytes(2 * RECORDING_MAX_BYTES) }), ({ data }) => ({
+    file: saveRecording(data),
+  })),
 
   /* ── Study ── */
   'session.plan': h(
@@ -525,6 +613,28 @@ export const handlers = {
     }),
     (f) => finishSession(f),
   ),
+  /** Exam simulator: questions from one deck, with the deck's exam settings. */
+  'exam.start': h(v.object({ deckId: v.id }), ({ deckId }) => {
+    if (!getDeck(deckId)) throw new AppError('deck_not_found', 'Deck not found');
+    const exam = buildExam(deckId, getDb());
+    exams.set(exam.id, exam);
+    for (const id of [...exams.keys()].slice(0, -5)) exams.delete(id);
+    return exam;
+  }),
+  /** Hand an exam in: scored by topic. Tutor answers count toward reviews; timed ones are practice. */
+  'exam.submit': h(
+    v.object({
+      examId: v.string(100),
+      mode: v.oneOf(...EXAM_MODES),
+      answers: v.array(v.object({ itemId: v.id, chosen: v.array(v.number, 20), ms: v.number }), 200),
+    }),
+    ({ examId, mode, answers }) => {
+      const exam = exams.get(examId);
+      if (!exam) throw new AppError('exam_not_found', 'Exam not found');
+      exams.delete(examId);
+      return recordExam(exam.id, exam.questions, answers, exam.settings.passMark, mode, getDb());
+    },
+  ),
 
   /* ── Progress ── */
   'stats.get': h(v.none, () => ({ ...stats(), achievements: [...ACHIEVEMENTS] })),
@@ -563,6 +673,7 @@ export const handlers = {
     licence: pkg.license,
     dataDir: dataDir(),
     backupsDir: join(dataDir(), 'backups'),
+    assistant: assistantCommand(),
   })),
   'settings.save': h(v.record, (body) => {
     const next: Settings = { ...getSettings(), ...(body as Partial<Settings>) };
@@ -578,6 +689,7 @@ export const handlers = {
     next.reminder = next.reminder === true;
     next.reminderTime = cleanReminderTime(next.reminderTime);
     next.launchAtLogin = next.launchAtLogin === true;
+    next.aiAssistant = next.aiAssistant === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

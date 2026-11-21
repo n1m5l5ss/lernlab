@@ -1,7 +1,26 @@
 name: Bug report
-description: Something doesn't work as expected
+description: Something doesn't work, crashes, is slow or is hard to use
 labels: ['bug']
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping! **Found a security problem?** Please don't post it here: use the
+        [private form](https://github.com/n1m5l5ss/lernlab/security/advisories/new) instead.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of problem is it?
+      options:
+        - Something doesn't work
+        - The app crashed or froze
+        - It's slow
+        - Something looks wrong
+        - Hard to use with a keyboard, screen reader or zoom
+        - A deck file didn't import or export correctly
+        - Something else
+    validations:
+      required: true
   - type: textarea
     id: what
     attributes:
@@ -26,8 +45,14 @@ body:
     attributes:
       label: App version
       description: Shown in Settings → About
+  - type: input
+    id: size
+    attributes:
+      label: How big is your collection?
+      description: Helps with crashes and slowness. Roughly how many cards and decks?
+      placeholder: e.g. 5,000 cards in 12 decks
   - type: textarea
     id: extra
     attributes:
       label: Screenshots or deck file
-      description: Attach a screenshot or a small deck file that shows the problem.
+      description: Attach a screenshot or a small deck file that shows the problem. Remove anything private first.

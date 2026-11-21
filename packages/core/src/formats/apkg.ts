@@ -6,6 +6,9 @@ import { stripHtml } from '../text';
 import type { NormalizedCard } from '../library';
 import { UserError } from '../errors';
 import { IMPORT_LIMITS, isZstd, readZip, unzstd } from './zip';
+import { reviewsFromRevlog, type PastReview, type RevlogRow } from '../ankihistory';
+import { mediaKind } from '../library';
+import { GUID_PREFIX } from './apkgwrite';
 
 const MEDIA_MAP_BYTES = 64 * 1024 * 1024;
 
@@ -70,6 +73,8 @@ export type ApkgResult = {
   decks: string[];
   /** Media the package lists but does not contain. */
   mediaMissing: string[];
+  /** Past answers that count, per note id (the note's first card), from the revlog when the package has one. */
+  history: Map<number, PastReview[]>;
 };
 
 const safeDecode = (s: string) => {
@@ -80,7 +85,41 @@ const safeDecode = (s: string) => {
   }
 };
 
+/** The LernLab card id in a guid LernLab wrote, as text (the same rule as a .lernpack's own ids). */
+const ownId = (guid: unknown): string | undefined =>
+  typeof guid === 'string' && guid.startsWith(GUID_PREFIX) && /^\d{1,16}$/.test(guid.slice(GUID_PREFIX.length))
+    ? guid.slice(GUID_PREFIX.length)
+    : undefined;
+
 const damaged = () => new UserError('anki_damaged', 'This Anki package is damaged and could not be read');
+
+/**
+ * A LernLab card is one Anki note, so the note's first card (lowest `ord`, usually front → back) gives the
+ * history; reviews of its other cards (e.g. the reverse card) are left out.
+ */
+function history(db: DB, firstCard: Map<number, number>, ownIds: Map<number, number>): Map<number, PastReview[]> {
+  const rows = new Map<number, RevlogRow[]>();
+  const all = db.prepare('SELECT id, cid, ease, ivl, factor, type FROM revlog ORDER BY cid, id').all();
+  for (const r of all) {
+    const nid = firstCard.get(Number(r.cid));
+    if (nid === undefined) continue;
+    const list = rows.get(nid) ?? [];
+    list.push({
+      time: Number(r.id),
+      ease: Number(r.ease),
+      type: Number(r.type),
+      ivl: Number(r.ivl),
+      factor: Number(r.factor),
+    });
+    rows.set(nid, list);
+  }
+  const out = new Map<number, PastReview[]>();
+  for (const [nid, list] of rows) {
+    const reviews = reviewsFromRevlog(list);
+    if (reviews.length) out.set(ownIds.get(nid) ?? nid, reviews);
+  }
+  return out;
+}
 
 export function readApkg(buf: Uint8Array): ApkgResult {
   const files = readZip(buf, (n) => /^(collection\.anki2|collection\.anki21b?|media)$/.test(n));
@@ -94,6 +133,15 @@ export function readApkg(buf: Uint8Array): ApkgResult {
     throw damaged();
   }
   try {
+    // The collection is a database someone else wrote. A view (say an endless WITH RECURSIVE named `notes`),
+    // a trigger or a virtual table could make a plain SELECT run forever, so only real tables are read.
+    db.exec('PRAGMA trusted_schema = OFF');
+    const odd = db
+      .prepare(
+        "SELECT 1 FROM sqlite_master WHERE type IN ('view', 'trigger') OR upper(sql) LIKE 'CREATE VIRTUAL%' LIMIT 1",
+      )
+      .get();
+    if (odd) throw damaged();
     // Note types → ordered field names. Newer collections keep them in tables, older ones in col.models JSON.
     const fieldNames = new Map<number, string[]>();
     const deckNames = new Map<number, string>();
@@ -122,12 +170,19 @@ export function readApkg(buf: Uint8Array): ApkgResult {
     }
 
     const noteDeck = new Map<number, number>();
-    for (const r of db.prepare('SELECT nid, did FROM cards ORDER BY ord').all() as Row[])
-      if (!noteDeck.has(Number(r.nid))) noteDeck.set(Number(r.nid), Number(r.did));
+    const firstCard = new Map<number, number>();
+    for (const r of db.prepare('SELECT id, nid, did FROM cards ORDER BY ord').all() as Row[])
+      if (!noteDeck.has(Number(r.nid))) {
+        noteDeck.set(Number(r.nid), Number(r.did));
+        firstCard.set(Number(r.id), Number(r.nid));
+      }
 
     const cards: NormalizedCard[] = [];
     const usedDecks = new Set<string>();
-    for (const n of db.prepare('SELECT id, mid, flds, tags FROM notes').all() as Row[]) {
+    // A note LernLab exported carries the card's own id in its guid: imported back, it updates that card.
+    const hasGuid = !!db.prepare("SELECT 1 FROM pragma_table_info('notes') WHERE name = 'guid'").get();
+    const ownIds = new Map<number, number>();
+    for (const n of db.prepare(`SELECT id, mid, flds, tags${hasGuid ? ', guid' : ''} FROM notes`).all() as Row[]) {
       const values: string[] = String(n.flds).split('\x1f');
       if (values.length === 1 && /please update to the latest anki/i.test(values[0])) continue; // placeholder in new exports
       const names =
@@ -137,14 +192,17 @@ export function readApkg(buf: Uint8Array): ApkgResult {
       const card: NormalizedCard & { extra: Record<string, string> } & Record<string, unknown> = {
         front: '',
         back: '',
-        sourceId: Number(n.id),
+        sourceId: ownId(n.guid) ?? Number(n.id),
         tags: String(n.tags).trim().split(/\s+/).filter(Boolean),
         extra: {},
       };
       const all = values.join(' ');
-      const sound = all.match(/\[sound:([^\]]+)\]/)?.[1];
+      const sounds = [...all.matchAll(/\[sound:([^\]]+)\]/g)].map((m) => m[1]);
       const img = all.match(/<img[^>]+src=["']?([^"' >]+)/i)?.[1];
+      const video = sounds.find((f) => mediaKind(f) === 'video');
+      const sound = sounds.find((f) => f !== video);
       if (sound) card.audio = sound;
+      if (video) card.video = video;
       if (img) card.image = safeDecode(img);
       names.forEach((name, i) => {
         const raw = (values[i] ?? '')
@@ -174,6 +232,7 @@ export function readApkg(buf: Uint8Array): ApkgResult {
         card.subdeck = deckName;
         usedDecks.add(deckName);
       }
+      if (typeof card.sourceId === 'string') ownIds.set(Number(n.id), Number(card.sourceId));
       cards.push(card);
     }
 
@@ -189,15 +248,34 @@ export function readApkg(buf: Uint8Array): ApkgResult {
           names[String(i)] = n;
         });
       else names = JSON.parse(strFromU8(mediaMap)) as Record<string, string>;
-      const used = new Set(cards.flatMap((c) => [c.audio, c.image]).filter(Boolean));
+      const used = new Set(cards.flatMap((c) => [c.audio, c.image, c.video]).filter(Boolean));
       const wanted = new Map(Object.entries(names).filter(([, name]) => used.has(name)));
       const entries = readZip(buf, (n) => wanted.has(n));
+      // zstd inside the zip hides the real size from the zip checks, so cap each file by its kind and all
+      // of them together: a 2 KB package must not unpack to gigabytes.
+      let total = 0;
       for (const [k, name] of wanted) {
-        if (entries[k]) media[name] = unzstd(entries[k], IMPORT_LIMITS.video);
-        else mediaMissing.push(name);
+        if (!entries[k]) {
+          mediaMissing.push(name);
+          continue;
+        }
+        const kind = mediaKind(name);
+        const data = unzstd(entries[k], kind ? IMPORT_LIMITS[kind] : IMPORT_LIMITS.image);
+        total += data.length;
+        if (total > IMPORT_LIMITS.unpackedBytes)
+          throw new UserError('zip_too_big', 'The file unpacks to too much data', {
+            mb: Math.round(IMPORT_LIMITS.unpackedBytes / 1024 / 1024),
+          });
+        media[name] = data;
       }
     }
-    return { cards, media, decks: [...usedDecks], mediaMissing };
+    return {
+      cards,
+      media,
+      decks: [...usedDecks],
+      mediaMissing,
+      history: hasTable('revlog') ? history(db, firstCard, ownIds) : new Map(),
+    };
   } catch (e) {
     if (e instanceof UserError) throw e;
     throw damaged();

@@ -1,10 +1,11 @@
 # LernLab
 
-[![CI](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml)
+[![CI](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/n1m5l5ss/lernlab/badge)](https://scorecard.dev/viewer/?uri=github.com/n1m5l5ss/lernlab)
 
 **Free, open-source flashcards that feel like a game, for any subject.**
 
-> **Status:** Working prototype (v0.3). We are building version 1.0 now: see [docs/PLAN.md](docs/PLAN.md) and the [issues](https://github.com/n1m5l5ss/lernlab/issues). Installers are not signed yet, so your system will warn you the first time you open LernLab (see [Install](#install) and the [code signing policy](docs/CODE_SIGNING.md)).
+> **Status:** Version 1.0.0 is out. <!-- x-release-please-version -->
+> Get it from the [LernLab website](https://n1m5l5ss.github.io/lernlab/) or the [Releases page](https://github.com/n1m5l5ss/lernlab/releases/latest); what changed is in the [changelog](CHANGELOG.md) and what comes next in the [roadmap](docs/ROADMAP.md). Installers are not signed yet, so your system will warn you the first time you open LernLab (see [Install](#install) and the [code signing policy](docs/CODE_SIGNING.md)).
 
 ![The Home screen: reviews due, new cards, what to study, session length and one Start button](docs/screenshots/home.png)
 
@@ -12,7 +13,13 @@ Languages, AWS, medicine, physics, law, history: if you can put it on a card, Le
 
 - **Local and private:** no account, no cloud. Your decks and progress stay on your computer.
 - **Runs on Mac, Windows and Linux.**
-- **Opens your existing decks:** imports Anki `.apkg` packages, Quizlet-style CSV, pasted lists and live Anki.
+- **Opens your existing decks:** imports Anki `.apkg` packages with their review history, Quizlet-style CSV, pasted lists and live Anki.
+- **Deck gallery:** browse free community decks and install one with a click.
+- **No lock-in:** export any deck as a `.lernpack`, a CSV or an Anki `.apkg` with its media.
+- **Safe with your data:** a daily backup, restore with a preview, and export everything as a zip.
+- **For everyone:** works fully by keyboard and with screen readers, in light and dark themes, and lays out right to left for Arabic, Hebrew and Urdu.
+- **Stays up to date:** Windows and Linux update themselves; Mac users download each new version from the website.
+- **Bring your own AI assistant (optional):** connect Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other assistant that supports MCP, to ask about your progress, be quizzed in the chat, turn a PDF into cards, fix, merge and tidy up cards, or plan a deck toward an exam. Every change waits for you to review and accept it in the app. Off until you turn it on, and LernLab itself stays offline. See [AI assistants](docs/AI-ASSISTANTS.md).
 
 New here? The [user guide](docs/USER-GUIDE.md) shows how to import, study, follow your progress and back up.
 
@@ -23,9 +30,13 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **Varied formats:** each session is a run of 60–90-second blocks, and the format changes from block to block:
   - multiple choice, typed recall, cloze;
   - sorting sprints, match pairs, word rain;
-  - picture quizzes, listening, dictation, speaking;
+  - picture quizzes, listening, dictation, speaking, with your own recorded audio on any card;
   - exam-style multi-select questions, ordering;
+  - math in LaTeX, and number answers with a tolerance and units;
+  - code cards with syntax highlighting: predict the output, fill in the missing token, put the lines in order;
+  - image occlusion: draw boxes over a picture and name each hidden part, one card per box;
   - a timed Blitz, and a boss fight over everything you missed.
+- **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark and a score by topic.
 - **Honest grading:**
   - you type or say the answer, and LernLab grades it;
   - it forgives capitals, small typos and German umlauts typed as `ae`, `oe`, `ue`;
@@ -144,7 +155,7 @@ npm run dist:win     # → release/*.exe   (run on Windows)
 npm run dist:linux   # → release/*.AppImage, *.deb
 ```
 
-Pushing a tag such as `v0.2.0` makes GitHub Actions build all three and attach them to a draft release (`.github/workflows/release.yml`).
+Pushing a tag such as `v1.2.3` makes GitHub Actions build all three and attach them to a draft release (`.github/workflows/release.yml`).
 
 ## Getting cards in
 
@@ -184,7 +195,7 @@ There are more small decks (German, AWS, biology) and a template in [`examples/R
 
 ### The `.lernpack` format
 
-A zip containing `manifest.json`, a `cards.jsonl` file with one JSON card per line, and a `media/` folder. It is plain JSON, so it is easy to generate with a script or an AI, easy to diff, and media travel with the deck. Export any deck from **Decks → Export**.
+A zip containing `manifest.json`, a `cards.jsonl` file with one JSON card per line, and a `media/` folder. It is plain JSON, so it is easy to generate with a script or an AI, easy to diff, and media travel with the deck. Export any deck from **Decks → Export**. To go back to Anki, **Export for Anki** saves the deck as an `.apkg` with its media.
 
 ## Your data
 
@@ -213,9 +224,12 @@ To move the folder, use **File → Use a different data folder…**, for example
 
 - [User guide](docs/USER-GUIDE.md)
 - [Deck formats](docs/FORMAT.md)
+- [Connect your own AI assistant (MCP)](docs/AI-ASSISTANTS.md)
 - [Architecture](docs/ARCHITECTURE.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Code signing policy](docs/CODE_SIGNING.md)
+- [Security policy](SECURITY.md): how to report a vulnerability privately
+- [Security practices](docs/SECURITY-PRACTICES.md), [testing](docs/TESTING.md) and our [OpenSSF Best Practices answers](docs/OPENSSF-BEST-PRACTICES.md)
 
 ## Contributing
 
@@ -227,6 +241,12 @@ The repo is an npm workspace: the engine lives in `packages/core` and the app in
 
 Issues and pull requests are welcome, especially new importers, card types, translations of the interface, and shared decks for `examples/`. Shared decks must be your own work or openly licensed. No copyrighted exam questions, please. [CONTRIBUTING.md](CONTRIBUTING.md) explains how to set up, test and open a pull request.
 
+## Help run LernLab
+
+LernLab is run by volunteers and is built to outlive any one of them, including its founder. Anyone can become a reviewer or a maintainer, or take over as lead. Use the [Join the team form](https://github.com/n1m5l5ss/lernlab/issues/new?template=join_team.yml). [GOVERNANCE.md](GOVERNANCE.md) explains how decisions are made and how a handover works, and the team is listed in [MAINTAINERS.md](MAINTAINERS.md).
+
 ## License
+
+LernLab was originally created by kandru (aka [@n1m5l5ss](https://github.com/n1m5l5ss)); see [AUTHORS.md](AUTHORS.md).
 
 MIT for the code. The example decks are CC0.
