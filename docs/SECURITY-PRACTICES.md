@@ -61,3 +61,19 @@ built app: `npx @electron/fuses read --app <path to the app>`.
 
 Deck media may also be an `https://` link, which the CSP allows for images and sound. Studying such a card
 contacts that server.
+
+## Releases
+
+Every release built by `.github/workflows/release.yml` carries:
+
+- **An SBOM** (`LernLab-<version>-sbom.cdx.json`, CycloneDX): every library in the release, from the lockfile.
+  Check it against a new advisory without building anything.
+- **Build provenance:** GitHub signs a statement that each installer and the SBOM were built from this
+  repository by this workflow, at a given commit. To check a download, with the [GitHub CLI](https://cli.github.com):
+
+  ```bash
+  gh attestation verify LernLab-Setup-1.2.0.exe --repo n1m5l5ss/lernlab
+  ```
+
+  This works even though the installers aren't code-signed yet ([CODE_SIGNING.md](CODE_SIGNING.md)).
+- **Smoke tests:** each installer is installed and started on its own system before it is attached.
