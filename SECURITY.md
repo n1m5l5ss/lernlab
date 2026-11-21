@@ -49,10 +49,11 @@ In scope, for example:
 - a deck file (`.lernpack`, Anki `.apkg`, CSV, JSON) that runs code, reads or writes files outside
   LernLab's data folder, or crashes or freezes the app in a way a user can't recover from;
 - HTML or script in a card that runs inside the app;
-- the AI assistant connection (the MCP plugin) changing your data without your approval, working
-  while it's turned off, or being reachable by another program or website;
+- the AI assistant connection ([docs/AI-ASSISTANTS.md](docs/AI-ASSISTANTS.md)) changing your data
+  without your approval in the AI requests list, working while it's turned off, or being reachable by
+  another program or website;
 - anything that sends your data off your computer without you asking (LernLab only goes online to
-  check for updates and to open the deck gallery when you ask);
+  check for updates, to open the deck gallery when you ask, and for an AI assistant you connect yourself);
 - the update check or installers being tampered with, or our CI leaking a secret or publishing
   something nobody approved.
 
