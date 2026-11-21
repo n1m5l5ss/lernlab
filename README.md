@@ -13,7 +13,7 @@ Languages, AWS, medicine, physics, law, history: if you can put it on a card, Le
 
 - **Local and private:** no account, no cloud. Your decks and progress stay on your computer.
 - **Runs on Mac, Windows and Linux.**
-- **Opens your existing decks:** imports Anki `.apkg` packages, Quizlet-style CSV, pasted lists and live Anki.
+- **Opens your existing decks:** imports Anki `.apkg` packages with their review history, Quizlet-style CSV, pasted lists and live Anki.
 - **Deck gallery:** browse free community decks and install one with a click.
 - **No lock-in:** export any deck as a `.lernpack`, a CSV or an Anki `.apkg` with its media.
 - **Safe with your data:** a daily backup, restore with a preview, and export everything as a zip.
@@ -30,7 +30,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **Varied formats:** each session is a run of 60–90-second blocks, and the format changes from block to block:
   - multiple choice, typed recall, cloze;
   - sorting sprints, match pairs, word rain;
-  - picture quizzes, listening, dictation, speaking;
+  - picture quizzes, listening, dictation, speaking, with your own recorded audio on any card;
   - exam-style multi-select questions, ordering;
   - math in LaTeX, and number answers with a tolerance and units;
   - code cards with syntax highlighting: predict the output, fill in the missing token, put the lines in order;

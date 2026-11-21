@@ -36,20 +36,24 @@ Priorities come from a review of Quizlet, Anki, Duolingo, Memrise, Brainscape, K
   - Off / relaxed / normal / challenge.
   - Timers apply only to known cards (WCAG 2.2.1).
 
+## Done (1.1, November 2026)
+
+- **Anki import with scheduling history:** replay the review log into FSRS (#48).
+- **Exam simulator:** timed and tutor modes, flag and review, score by tag (#43). Tutor answers count toward the schedule; timed answers are practice.
+- **Image occlusion:** hide labels on a diagram, for medicine and anatomy (#44).
+- **Math cards:** LaTeX rendering and answers (#45).
+- **Code cards:** syntax highlighting, predict the output (#46).
+- **Record your own audio** on a card (#47).
+- **Anki `.apkg` export** (#49).
+- **Deck gallery:** browse and install community decks (#50).
+- **Connect your own AI assistant (MCP):** an assistant that can connect to local MCP servers (such as Claude Desktop, the ChatGPT desktop app or Hermes Agent) reads your decks, stats, hard cards and mock exams, quizzes you in the chat without changing your schedule, and proposes new decks and cards, fixes, merges, tidy-ups, goals, an exam study plan or an export. Each proposal waits for you to edit, accept or decline it; nothing is deleted. Off by default, and LernLab itself stays offline (#148).
+- **STEM:** numeric answers with tolerance and units (with #45).
+
 ## Next (1.x)
 
 Each item is a GitHub issue; finished ones ship in the next minor release.
 
-- [x] **Anki import with scheduling history:** replay the review log into FSRS (#48).
-- [x] **Exam simulator:** timed and tutor modes, flag and review, score by tag (#43). Tutor answers count toward the schedule; timed answers are practice.
-- [x] **Image occlusion:** hide labels on a diagram, for medicine and anatomy (#44).
-- [x] **Math cards:** LaTeX rendering and answers (#45).
-- [x] **Code cards:** syntax highlighting, predict the output (#46).
-- [x] **Record your own audio** on a card (#47).
-- [x] **Anki `.apkg` export** (#49).
-- [x] **Deck gallery:** browse and install community decks (#50).
 - [ ] **Translations through Weblate** (#51).
-- [x] **Connect your own AI assistant (MCP):** an assistant that can connect to local MCP servers (such as Claude Desktop, the ChatGPT desktop app or Hermes Agent) reads your decks, stats, hard cards and mock exams, quizzes you in the chat without changing your schedule, and proposes new decks and cards, fixes, merges, tidy-ups, goals, an exam study plan or an export. Each proposal waits for you to edit, accept or decline it; nothing is deleted. Off by default, and LernLab itself stays offline (#148).
 
 ## Later
 
@@ -58,7 +62,6 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 - [ ] **Cloze with a word bank** (scaffolded), then typed.
 - [ ] **Slow audio replay** for listening and dictation.
 - [ ] **Hotspot / click-on-image; labelled diagrams.**
-- [x] **STEM:** numeric answers with tolerance and units (with #45).
 - [ ] **Parsons problems** (order the lines), timed list recall ("name all 7 …").
 - [ ] **Hands-free audio mode;** mastery by tag; exam-readiness view.
 - [ ] **Mochi, Brainscape, Kahoot and Blooket importers;** deep links and QR codes.
