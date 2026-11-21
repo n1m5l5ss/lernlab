@@ -167,6 +167,7 @@
     "about": {
       "version": "Version {{version}}",
       "licence": "LernLab is free and open source under the {{licence}} licence.",
+      "createdBy": "Originally created by kandru (aka n1m5l5ss), and improved by the LernLab community.",
       "licenceLink": "Read the licence",
       "source": "Source code on GitHub",
       "libraries": "Open-source libraries inside LernLab",

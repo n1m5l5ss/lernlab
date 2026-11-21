@@ -55,7 +55,11 @@ After a handover, the new lead updates MAINTAINERS.md, the update and gallery ad
 If the lead and every maintainer have been silent for **60 days** after a request and its reminders, and nobody can be given rights on these repositories, the community doesn't have to wait:
 
 - Everything here is open: the app is MIT, and the gallery decks are open licences. Anyone may copy the repositories (a fork) and carry on in a new GitHub organisation.
-- The founder agrees in advance that such a continuation may keep the **LernLab** name, as long as it stays free, open source and true to the principles in `CLAUDE.md`.
+- The founder agrees in advance that such a continuation may keep the **LernLab** name, as long as it:
+  - stays free, open source and true to the principles in `CLAUDE.md`;
+  - keeps the copyright line in `LICENSE` (the MIT licence requires this of every copy anyway);
+  - keeps the credit **"Originally created by kandru (aka n1m5l5ss)"** visible in its README and on the app's About screen (see [AUTHORS.md](AUTHORS.md)).
+- A copy that drops the credit may still use the code under the MIT licence, but not the LernLab name.
 - Anyone who still has access is asked to point this README to the new home.
 
 ## Changing this page

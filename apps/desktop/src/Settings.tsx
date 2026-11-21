@@ -317,6 +317,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
         <div className="settings-block">
           {info && <span className="settings-label">{t('settings.about.version', { version: info.version })}</span>}
           {info && <span>{t('settings.about.licence', { licence: info.licence })}</span>}
+          <span>{t('settings.about.createdBy')}</span>
           <div className="settings-actions">
             <a href={LICENSE_URL} target="_blank" rel="noreferrer">
               {t('settings.about.licenceLink')}

@@ -242,4 +242,6 @@ LernLab is run by volunteers and is built to outlive any one of them, including 
 
 ## License
 
+LernLab was originally created by kandru (aka [@n1m5l5ss](https://github.com/n1m5l5ss)); see [AUTHORS.md](AUTHORS.md).
+
 MIT for the code. The example decks are CC0.
