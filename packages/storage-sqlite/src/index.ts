@@ -15,7 +15,8 @@ import {
 import { tmpdir } from 'node:os';
 import { basename, dirname, join, resolve } from 'node:path';
 import { setHost, type DB, type Host } from '@lernlab/core/host';
-import { migrate, schemaVersion, type Migration } from '@lernlab/core/migrate';
+import { LATEST_VERSION, migrate, schemaVersion, type Migration } from '@lernlab/core/migrate';
+import { UserError } from '@lernlab/core/errors';
 
 // Node 22–25 call the class DatabaseSync; newer releases may call it Database.
 type SqliteCtor = new (file: string, options?: { readOnly?: boolean }) => DB;
@@ -108,6 +109,32 @@ export function getAppDb(file = resolve(dataDir(), 'lernlab.db')): DB {
   mkdirSync(mediaDir(), { recursive: true });
   db = openDb(file);
   return db;
+}
+
+/**
+ * The app database opened read-only, for the AI assistant's process (#148, docs/ARCHITECTURE.md §1). It
+ * never migrates or writes: SQLite refuses any write on it. A database another version made (older: open
+ * LernLab once to update it; newer: update this app) is refused, so the assistant never reads a shape it
+ * does not know. The caller closes it.
+ */
+export function openAppDbReadonly(file = resolve(dataDir(), 'lernlab.db')): DB {
+  if (!existsSync(file)) throw new UserError('assistant_no_data', 'Open LernLab once first: there is no data yet.');
+  const d = openReadonly(file);
+  try {
+    d.exec('PRAGMA busy_timeout = 5000');
+    const version = schemaVersion(d);
+    if (version !== LATEST_VERSION)
+      throw new UserError(
+        'assistant_version',
+        version < LATEST_VERSION
+          ? 'Open LernLab once so it can update your data, then try again.'
+          : 'Your data is from a newer LernLab. Update LernLab, then try again.',
+      );
+    return d;
+  } catch (e) {
+    d.close();
+    throw e;
+  }
 }
 
 /** Close the app database (to swap its file); the next getAppDb() opens it again. */

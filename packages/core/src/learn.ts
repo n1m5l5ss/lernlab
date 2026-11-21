@@ -39,6 +39,8 @@ export type Settings = {
   reminderTime: string;
   /** Start LernLab, minimised, when you log in to the computer (desktop app only). */
   launchAtLogin: boolean;
+  /** Let an AI assistant the user connects (MCP, #148) read their data and propose changes. Off by default. */
+  aiAssistant: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -60,6 +62,7 @@ export const DEFAULT_SETTINGS: Settings = {
   reminder: false,
   reminderTime: DEFAULT_REMINDER_TIME,
   launchAtLogin: false,
+  aiAssistant: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });

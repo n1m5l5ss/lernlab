@@ -47,7 +47,7 @@ The principles that decide every feature:
 1. **Recall over recognition.** Only a real attempt to remember moves the schedule. Games keep you engaged, but they never mark a card as known.
 2. **Short and varied.** Blocks last 60 to 90 seconds, the format changes every block, and sessions are 5, 10 or 20 minutes.
 3. **Forgiving motivation.** Streak freezes and no guilt messages. Nothing ever blocks you from studying, like running out of "lives".
-4. **Local and private.** No account, no tracking. All data sits in one folder the user owns.
+4. **Local and private.** No account, no tracking. All data sits in one folder the user owns. The app goes online only for update checks, the deck gallery when the user asks, and an AI assistant the user connects (MCP), only when turned on (#148).
 5. **Open formats.** Decks go in and out freely. Users are never locked in.
 6. **Translatable and accessible from day one.** Never added afterwards.
 7. **One obvious action.** The home screen leads with a single Start button.
@@ -96,7 +96,7 @@ The first public release, 1.0, has 29 features. The prototype already has 12 of 
 | App | Choose the data folder (lets people sync with Dropbox or iCloud themselves) | 1.0 | Done |
 | App | Installers: Windows .exe, Mac .dmg, Linux .AppImage and .deb | 1.0 | Partial: only Linux tested |
 | App | "Delete all my data" and full export | 1.0 | New |
-| AI | Generate cards from notes or a PDF with your own AI key (cards reviewed before adding) | 1.x | New |
+| AI | Connect your own AI assistant (MCP, off by default): it reads your decks and stats and proposes cards and changes that you accept in the app (#148; replaces the in-app AI key, #52) | 1.x | New |
 | Later | Sync between devices; phone app | 2.0 | New |
 
 ## Screens and UX
@@ -216,7 +216,7 @@ The app connects to the internet in exactly three cases, all listed in Settings:
 
 1. Checking for updates on GitHub (can be turned off).
 2. Loading a deck from the gallery, when the user asks.
-3. Using an AI key the user adds (1.x).
+3. An AI assistant the user connects (MCP), only when turned on in Settings (1.x). LernLab itself stays offline; what the assistant reads goes to its AI company.
 
 Uninstalling the app leaves the data folder in place, so a reinstall picks up where the user left off.
 
@@ -275,7 +275,7 @@ How the parts connect:
 - **Electron main process:** window, menu, shortcuts, opening deck files, auto-update, daily backups, reminders. ⇣ runs
 - **Core engine (`packages/core`, pure TypeScript):** FSRS scheduler, grading, session planner, XP and streaks, importers and exporters. It has no screen code and is tested on its own. ⇣ reads and writes
 - **Data folder:** `lernlab.db` (SQLite, built into the app), `media/`, `backups/`, `progress/`.
-- **Optional online services** (only when the user allows): GitHub Releases for updates, the deck gallery, a running Anki for import, and an AI provider with the user's own key (1.x).
+- **Optional online services** (only when the user allows): GitHub Releases for updates, the deck gallery, a running Anki for import, and an AI assistant the user connects over MCP, only when turned on (1.x).
 - **Phone app (2.0):** reuses the core engine.
 
 | Layer | Choice | Notes |
@@ -384,7 +384,7 @@ The backlog has 13 epics and 52 tickets: 42 for release 1.0 and 10 for 1.x. Each
 | T49 | Export to Anki `.apkg` | E11 Sharing | 1.x | M |
 | T50 | Deck gallery from a GitHub repo, one-click install | E11 Sharing | 1.x | L |
 | T51 | Weblate set up; first volunteer languages | E7 Languages & a11y | 1.x | S |
-| T52 | Generate cards from notes or PDF with the user's own AI key | E12 AI | 1.x | L |
+| T52 | ~~Generate cards from notes or PDF with the user's own AI key~~ Dropped: replaced by #148 (connect your own AI assistant over MCP) | E12 AI | 1.x | L |
 
 ## Name options
 

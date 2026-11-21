@@ -5,11 +5,12 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 
-/** main: windows, menu, IPC routing. preload: the bridge. data: the database process. */
+/** main: windows, menu, IPC routing. preload: the bridge. data: the database process. mcp: `--mcp` (#148). */
 export const entries = {
   main: 'electron/main.ts',
   preload: 'electron/preload.ts',
   data: 'backend/process.ts',
+  mcp: 'backend/mcp-process.ts',
 } as const;
 
 export const options = (entry: keyof typeof entries): BuildOptions => ({

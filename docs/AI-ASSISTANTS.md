@@ -1,0 +1,121 @@
+# Connect your own AI assistant
+
+LernLab has no built-in AI. Instead, you can let an AI assistant you already use talk to LernLab through the **Model Context Protocol (MCP)**, an open standard many AI apps support. The assistant uses your own subscription and your own instructions; LernLab keeps no prompts and sends nothing anywhere.
+
+Ask it things like:
+
+- "How did my studying go this month? Which cards do I keep forgetting?"
+- "Quiz me on ten of my hardest Spanish cards." (A quiz in the chat is never recorded and never changes when cards come back.)
+- "What was my retention in October compared with September?"
+
+## Before you start: privacy
+
+- **It is off until you turn it on.** In LernLab, open **Settings → AI assistant** and turn on **Let an AI assistant use LernLab**. While it is off, LernLab refuses every request from an assistant.
+- **LernLab itself stays offline.** The assistant starts LernLab on your computer and talks to it directly (over "stdio"); nothing listens on the network.
+- **What the assistant reads goes to its AI company.** Your decks, cards, answers and study history that the assistant reads are sent to the company that runs the assistant (for example Anthropic for Claude), under that company's privacy terms. Turn the switch off when you don't want that.
+- **It cannot delete anything.** It opens your data read-only.
+
+## Claude Desktop (verified setup)
+
+Claude Desktop supports local MCP servers on macOS, Windows and Linux. The steps follow the official guide, [Connect to local MCP servers](https://modelcontextprotocol.io/docs/develop/connect-local-servers).
+
+1. In LernLab, turn on **Settings → AI assistant**. Settings now shows the exact text for your computer; click **Copy**.
+2. In Claude Desktop, open **Settings → Developer → Edit Config**. This opens `claude_desktop_config.json`:
+   - macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - Linux: `~/.config/Claude/claude_desktop_config.json`
+3. Paste the text. If the file already has an `"mcpServers"` section, add only the `"lernlab"` entry inside it.
+4. Quit Claude Desktop completely and open it again. LernLab appears under **Connectors**.
+
+What the text looks like, by system (use the one Settings shows; your install folder may differ):
+
+**macOS**
+
+```json
+{
+  "mcpServers": {
+    "lernlab": {
+      "command": "/Applications/LernLab.app/Contents/MacOS/LernLab",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+**Windows** (the installer puts LernLab in your user folder)
+
+```json
+{
+  "mcpServers": {
+    "lernlab": {
+      "command": "C:\\Users\\YOU\\AppData\\Local\\Programs\\LernLab\\LernLab.exe",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+**Linux** (the `.deb` package; for the AppImage, use the full path of your `.AppImage` file)
+
+```json
+{
+  "mcpServers": {
+    "lernlab": {
+      "command": "/opt/LernLab/lernlab",
+      "args": ["--mcp"]
+    }
+  }
+}
+```
+
+LernLab does not need to be open: the assistant starts its own copy in the background (no window), which reads the same data. If something goes wrong, Claude Desktop writes LernLab's messages to `mcp-server-lernlab.log` in its logs folder (`~/Library/Logs/Claude` on macOS, `%APPDATA%\Claude\logs` on Windows, `~/.config/Claude/logs` on Linux).
+
+## Other MCP apps
+
+Any app that can start a local ("stdio") MCP server works the same way: the command is the LernLab program, the argument is `--mcp`. Use the command Settings shows.
+
+### Hermes Agent
+
+Hermes Agent's [MCP guide](https://hermes-agent.nousresearch.com/docs/user-guide/features/mcp) documents local stdio servers in `~/.hermes/config.yaml`, under `mcp_servers`:
+
+```yaml
+mcp_servers:
+  lernlab:
+    command: "/opt/LernLab/lernlab"
+    args: ["--mcp"]
+```
+
+Hermes names the tools `mcp_lernlab_<tool>`; `tools.include` / `tools.exclude` limit which ones it may use.
+
+### ChatGPT
+
+- **ChatGPT desktop app:** OpenAI's [MCP page](https://learn.chatgpt.com/docs/extend/mcp) says the desktop app can connect to MCP servers directly: **Settings → MCP servers → add a server**, choose **STDIO**, and enter the command and the argument `--mcp`. Restart, then type `/mcp` to see it.
+- **ChatGPT on the web** only uses remote MCP servers through plugins, so it cannot reach LernLab on your computer.
+
+## What was checked, and what was not
+
+Checked on 21 November 2026:
+
+- LernLab's server, started with `--mcp` from the desktop app (not yet a packaged installer) on Linux, answered a real MCP client: it listed its tools and returned data. The automated tests start the server from the source code and talk to it the same way.
+- The setup steps for Claude Desktop, Hermes Agent and the ChatGPT desktop app were read in each app's official documentation (linked above). They were **not** tried with those apps.
+
+Not checked yet:
+
+- The packaged installers (`.exe`, `.dmg`, `.deb`, `.AppImage`) started by an assistant, in particular on Windows and on macOS (where the system may ask for permission the first time).
+- ChatGPT desktop: which plans and systems offer the **MCP servers** setting.
+
+## The tools
+
+| Tool | What it gives the assistant |
+|---|---|
+| `get_overview` | Streak and freezes, today's sessions against your daily goal, total XP, the languages you study, your settings, and your last 10 mock exams (score, pass mark, score by topic) |
+| `list_decks` | Every deck with its language, card counts, due and new cards today, goal and exam date |
+| `get_due` | Cards due and new cards left today, in total and per deck |
+| `search_cards` | Cards matching a text, tag or state (new, learning, known, suspended, starred) |
+| `get_card` | One card in full: fields, tags, star, media, next due date and the chance you remember it now, and the exact wrong answers you gave |
+| `get_stats` | Reviews, retention, answers and accuracy, minutes, sessions, cards learned, for today, a day, a week, a month, a year or all time |
+| `get_session_history` | Your sessions: when, how long, and which modes and games |
+| `get_weak_cards` | The cards you forget most, with accuracy and leech flags |
+| `quiz_cards` | Cards for a quiz in the chat (nothing is recorded) |
+
+Mock exam results are worked out from the answers each exam recorded. LernLab does not save an exam's mode or the pass mark it had, so the assistant sees the deck's pass mark as it is now.
