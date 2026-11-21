@@ -23,7 +23,19 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
-      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+      # Dependency review needs Settings → Code security → Dependency graph. Until an owner turns it on,
+      # say so in the run summary instead of failing every pull request.
+      - id: graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/dependency-graph/sbom" --silent 2>/dev/null; then
+            echo "on=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::Dependency graph is off, so dependency review was skipped. An owner can turn it on in Settings → Code security."
+          fi
+      - if: steps.graph.outputs.on == 'true'
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
         with:
           fail-on-severity: high
           # Copyleft licences that would conflict with shipping LernLab under MIT.
