@@ -33,6 +33,8 @@ import {
 import { getDeck, listDecks, LANGUAGES } from './library';
 import { KNOWN_MASTERY } from './browse';
 import { stripHtml } from './text';
+import { LEVELS, type Level } from './variants';
+import { RECALL_FORMATS } from './types';
 
 /** Badge ids, in display order. Their names and descriptions live in locales/<code>.json under badges.<id>. */
 export const ACHIEVEMENTS = [
@@ -536,6 +538,23 @@ export function journey(d: DB = getDb(), now = new Date()) {
       .all(paceSince)
       .map((r: Row) => [Number(r.deck_id), Number(r.n)]),
   );
+  // The mix of question levels answered per deck (#198), over the retention window. Only recall answers and
+  // variant questions count (games are not questions); a deck shows it once one of its variants was asked.
+  const levelRows = d
+    .prepare(
+      `SELECT i.deck_id, COALESCE(a.level, 'recall') AS level, COUNT(*) AS n FROM attempts a
+       JOIN items i ON i.id = a.item_id
+       WHERE a.day >= ? AND (a.level IS NOT NULL OR a.format IN (${RECALL_FORMATS.map((f) => `'${f}'`).join(',')}))
+       GROUP BY i.deck_id, COALESCE(a.level, 'recall')`,
+    )
+    .all(addDays(thisWeek, -7 * (JOURNEY.retentionWeeks - 1)));
+  const levelsOf = (deckId: number): Record<Level, number> | null => {
+    const rows = levelRows.filter((r: Row) => Number(r.deck_id) === deckId);
+    if (!rows.some((r: Row) => r.level !== 'recall')) return null;
+    const out: Record<Level, number> = { recall: 0, apply: 0, analyse: 0 };
+    for (const r of rows) if (LEVELS.includes(r.level as Level)) out[r.level as Level] = Number(r.n);
+    return out;
+  };
   const perWeekOf = (n: number) => Math.round((n / JOURNEY.paceWeeks) * 10) / 10;
   const decks = listDecks(d).map((dk) => {
     const { cards, learned } = counts.get(dk.id) ?? { cards: 0, learned: 0 };
@@ -552,6 +571,8 @@ export function journey(d: DB = getDb(), now = new Date()) {
       goal,
       examDate: dk.settings.examDate ?? null,
       reached: cards > 0 && left === 0,
+      /** Answers per question level over the last weeks, or null while none of the deck's variants was asked. */
+      levels: levelsOf(dk.id),
       /** The day the goal (or the whole deck) is reached at this pace; null without a pace. */
       forecast: left > 0 && perWeek > 0 ? addDays(today, Math.ceil((left / perWeek) * 7)) : null,
     };

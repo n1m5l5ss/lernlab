@@ -120,6 +120,7 @@ Some things to know:
 
 - **Type the answer.** LernLab forgives capitals and a one-letter typo in longer words. It also accepts German umlauts written as `ae`, `oe` and `ue`. If it marks you wrong when you were right, press **I was right**.
 - **Hint** (`Tab`) shows the first letter and the length of the answer. Press it again to **Show answer**; then type the answer once to fix it in memory.
+- **Other ways to ask.** A card with extra questions (see [Edit cards](#edit-cards)) is asked in a new way at each review, with its level shown next to the block title: **Recall**, **Apply** or **Analyse**. The answer is the same, and it still counts once a day.
 - **Show answer** on a flip card turns it over. Then say how you did: **Didn't know**, **Partly** or **Knew it**.
 - **New cards are never timed.** Timers only appear on cards you already know.
 - **Missed cards come back.** A card you miss comes back after 4 to 6 other cards, until you get it right once. A new card comes back until you have recalled it twice in the session. Once a card has done that, it doesn't come back again in this session, and no card comes back more than 3 times, so a hard card never holds you up. These extra tries are practice: they never change when the card is next due. If the session ends first, that's fine: the card comes back on another day.
@@ -143,7 +144,7 @@ Choose how to take it:
 - **Tutor:** no clock. You check each answer and see the explanation straight away. When you hand it in, it counts like normal study: your first answer of the day to a question card decides when that card comes back. Questions made from flashcards, and new cards past today's limit, are practice only.
 - **Timed:** one clock for the whole exam, like the real thing. You see your answers at the end, and the exam is handed in when time runs out. Timed mode is practice: it never changes when your cards come back.
 
-During the exam you can **Flag for review**, go back with **Previous**, and see unanswered and flagged questions under **Review** before you **Hand in**. The result shows your score, whether you passed, the **Score by topic** and your **Weak areas**.
+During the exam you can **Flag for review**, go back with **Previous**, and see unanswered and flagged questions under **Review** before you **Hand in**. The result shows your score, whether you passed, the **Score by topic** and your **Weak areas**. Cards with other ways to ask are asked in one of them at random, with its level on the question; the result then also shows the **Score by question level**.
 
 ### Streaks
 
@@ -175,7 +176,7 @@ The **…** button on a deck in **Decks** opens the deck settings: its name, the
 
 - how many cards you have learned and how many are left;
 - how many cards you learn a week, and the share of reviews you recalled;
-- **Your decks**: for each deck, cards learned and left, your pace, and when you will finish at that pace;
+- **Your decks**: for each deck, cards learned and left, your pace, and when you will finish at that pace. A deck whose cards have other ways to ask also shows **Questions answered**: the share of recall, apply and analyse questions over the last 12 weeks. When nearly all of it is recall, it suggests a mock exam, which mixes in the other questions;
 - **Study days**: a calendar of the last year;
 - **Memory**: the share of reviews you recalled, week by week, against your target;
 - your hardest cards, with **Study these** to start a session with them;

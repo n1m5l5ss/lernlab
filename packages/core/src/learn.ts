@@ -9,6 +9,7 @@ import { DEFAULT_REMINDER_TIME } from './reminder';
 import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
+import { LEVELS } from './variants';
 
 export type Settings = {
   deck: string;
@@ -226,7 +227,7 @@ function logAttempt(d: DB, a: Attempt, now: Date, grade: number | null, practice
   const day = dayKey(now);
   d.prepare(
     `INSERT INTO attempts(ts, day, session_id, item_id, format, correct, near_miss, article_error, used_hint,
-       response_ms, given, xp, grade, practice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       response_ms, given, xp, grade, practice, level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     now.toISOString(),
     day,
@@ -242,6 +243,7 @@ function logAttempt(d: DB, a: Attempt, now: Date, grade: number | null, practice
     a.xp,
     grade,
     practice ? 1 : 0,
+    a.level && LEVELS.includes(a.level) ? a.level : null,
   );
   d.prepare(`INSERT INTO days(day, xp) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET xp = xp + excluded.xp`).run(
     day,

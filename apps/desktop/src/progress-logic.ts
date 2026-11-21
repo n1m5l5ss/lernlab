@@ -1,5 +1,6 @@
 // Pure layout for the Progress screen's charts: the study-day calendar and the weekly retention bars.
 import { addDays } from '@lernlab/core/game';
+import { LEVELS, type Level } from '@lernlab/core/variants';
 
 /** 0 = no study; 1–3 = more minutes. Sessions are 5, 10 or 20 minutes, so the steps follow them. */
 export type HeatLevel = 0 | 1 | 2 | 3;
@@ -47,3 +48,18 @@ export const recallRate = (w: { reviews: number; recalled: number }) => (w.revie
 
 /** Where week `x` of `count` is drawn: oldest first in reading order, so right to left mirrors the calendar. */
 export const heatColumn = (x: number, count: number, dir: 'ltr' | 'rtl') => (dir === 'rtl' ? count - 1 - x : x);
+
+/** At least this many answers before Progress says the mix leans on recall. */
+export const LEVEL_HINT_MIN = 10;
+
+/**
+ * A deck's question levels as shares of its answers (#198), and whether nearly all were recall (80 % or more),
+ * so Progress can suggest, once and gently, the apply and analyse questions a mock exam mixes in.
+ */
+export function levelMix(levels: Record<Level, number>) {
+  const total = LEVELS.reduce((s, l) => s + levels[l], 0);
+  return {
+    shares: LEVELS.map((level) => ({ level, share: total ? levels[level] / total : 0 })),
+    mostlyRecall: total >= LEVEL_HINT_MIN && levels.recall / total >= 0.8,
+  };
+}

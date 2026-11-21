@@ -1,5 +1,6 @@
 import type { Line } from '@lernlab/core/teacher';
 import type { Format, Item, SessionPlan } from '@lernlab/core/types';
+import type { Level } from '@lernlab/core/variants';
 import type { TextTeacher } from './lines';
 
 export type AnswerInput = {
@@ -16,6 +17,8 @@ export type AnswerInput = {
   silent?: boolean; // no sound/XP float (e.g. intro)
   /** A card brought back for relearning: logged as practice, never a second grade. */
   practice?: boolean;
+  /** Asked with one of the card's question variants: its level. */
+  level?: Level;
 };
 
 export type Ctx = {

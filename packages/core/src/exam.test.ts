@@ -60,6 +60,25 @@ test('the score is split by topic (tag) and weak areas are the topics under the 
   assert.deepEqual(s.weak, ['', 's3']);
   assert.equal(scoreExam(questions, { 1: [0], 2: [1], 3: [2] }, 70).passed, true);
   assert.equal(scoreExam([], {}, 70).percent, 0);
+  assert.deepEqual(s.levels, [], 'no score by level when no question was asked in another way');
+});
+
+test('the score is split by question level when the exam asks variants; the card itself is recall', () => {
+  const questions = [
+    q(1, [0], []),
+    { ...q(2, [1], []), level: 'apply' as const },
+    { ...q(3, [2], []), level: 'apply' as const },
+    { ...q(4, [3], []), level: 'analyse' as const },
+  ];
+  const s = scoreExam(questions, { 1: [0], 2: [1], 3: [0] }, 70);
+  assert.deepEqual(
+    s.levels.map((l) => [l.level, l.correct, l.total, l.percent]),
+    [
+      ['recall', 1, 1, 100],
+      ['apply', 1, 2, 50],
+      ['analyse', 0, 1, 0],
+    ],
+  );
 });
 
 test('timed answers are practice; tutor answers count like a normal session would count them', () => {

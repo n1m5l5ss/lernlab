@@ -518,3 +518,12 @@ test('a recording made in the card editor is kept in media/ and plays from the c
   const noBytes = await handle('media.record', { data: 'GkXfow==' });
   assert.equal(!noBytes.ok && noBytes.error.code, 'invalid_input');
 });
+
+test('an answer carries the level of the question asked, and only a known level', async () => {
+  const deck = await ok('decks.create', { name: 'Levels', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Statin', back: 'atorvastatin' } });
+  const answer = { sessionId: 'lv', itemId: id, format: 'typed', correct: true, responseMs: 900, xp: 1 };
+  await ok('attempt.record', { ...answer, level: 'apply' });
+  const bad = await handle('attempt.record', { ...answer, level: 'synthesis' });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+});

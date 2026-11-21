@@ -96,6 +96,7 @@ import pkg from '../package.json';
 import bundledNotes from './whats-new.json';
 import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
+import { LEVELS } from '@lernlab/core/variants';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
 import { asRequest, checkBody } from './ai-requests';
@@ -604,6 +605,7 @@ export const handlers = {
       xp: v.number,
       genderOnly: v.optional(v.boolean),
       practice: v.optional(v.boolean),
+      level: v.optional(v.oneOf(...LEVELS)),
     }),
     (a) => recordAttempt(a as Attempt),
   ),

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement as h, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Button, Card, Feedback, Input, ProgressBar, SegmentedControl, Select, Sidebar } from './index';
+import { Button, Card, Feedback, Input, LevelTag, ProgressBar, SegmentedControl, Select, Sidebar } from './index';
 
 const html = (el: ReactElement) => renderToStaticMarkup(el);
 
@@ -118,4 +118,11 @@ test('Sidebar is a named navigation landmark that marks the current page', () =>
   assert.match(out, /<a class="nav-link" href="#\/home" aria-current="page"><svg aria-hidden="true"/);
   assert.match(out, /<a class="nav-link" href="#\/decks"><svg/);
   assert.match(out, /<div class="grow"><\/div><a class="nav-link footer" href="#\/settings">/);
+});
+
+test('LevelTag shows the level word with a class per level', () => {
+  assert.equal(
+    html(h(LevelTag, { level: 'apply', children: 'Apply' })),
+    '<span class="level-tag level-apply">Apply</span>',
+  );
 });

@@ -358,6 +358,7 @@ export function Session({
         xp: gained,
         genderOnly: a.genderOnly,
         practice: plan.practice || !!a.practice,
+        level: a.level,
       });
       return gained;
     },

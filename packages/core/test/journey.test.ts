@@ -109,3 +109,18 @@ test('hardest cards: the ones you lapse on most, at most 20, with readable text'
   assert.equal(j.hardest[0].lapses, 1);
   assert.ok(JOURNEY.hardest === 20);
 });
+
+test('question levels: the mix of recall, apply and analyse answers per deck, only once a variant was asked', () => {
+  const p0 = journey(getDb(), now);
+  assert.equal(p0.decks.find((d) => d.id === exam.id)!.levels, null, 'no variants asked: nothing to show');
+  const at = new Date(2026, 10, 24, 10);
+  const ask = (itemId: number, format: 'typed' | 'flip' | 'match', level?: 'apply' | 'analyse') =>
+    recordAttempt({ sessionId: 'lv', itemId, format, correct: true, responseMs: 1, xp: 0, level }, getDb(), at);
+  ask(alpha[0], 'typed', 'apply');
+  ask(alpha[1], 'flip', 'analyse');
+  ask(alpha[2], 'match'); // a game: not a question at any level
+  const p = journey(getDb(), now);
+  // Monday's five typed reviews and the practice answer are recall: practising a question is still practice at its level.
+  assert.deepEqual(p.decks.find((d) => d.id === exam.id)!.levels, { recall: 6, apply: 1, analyse: 1 });
+  assert.equal(p.decks.find((d) => d.id === plain.id)!.levels, null);
+});

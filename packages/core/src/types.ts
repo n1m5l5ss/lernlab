@@ -1,6 +1,7 @@
 import type { Line } from './teacher';
 import type { Article } from './text';
 import type { OcclusionBox } from './occlusion';
+import type { Level } from './variants';
 
 export type ItemKind =
   | 'noun'
@@ -103,6 +104,8 @@ export type Exercise =
       /** Code cards: the snippet to read (predict its output) and its language. */
       code?: string;
       codeLang?: string;
+      /** Asked with one of the card's question variants (variants.ts): its level. */
+      level?: Level;
     }
   | {
       type: 'cloze';
@@ -120,7 +123,7 @@ export type Exercise =
   | { type: 'dictation'; itemId: number; sentence: string; translation: string }
   | { type: 'speak'; itemId: number; prompt: string; expected: string }
   | { type: 'lesson'; group: string; title: string; text: string; examples: { de: string; en: string }[] }
-  | { type: 'flip'; itemId: number; prompt: string; answer: string; reverse: boolean }
+  | { type: 'flip'; itemId: number; prompt: string; answer: string; reverse: boolean; level?: Level }
   | { type: 'truefalse'; itemId: number; front: string; shown: string; isTrue: boolean }
   | { type: 'imagemc'; itemId: number; options: string[]; answerIndex: number }
   | { type: 'mcq'; itemId: number; stem: string; choices: string[]; correct: number[]; explanation: string }
@@ -174,6 +177,8 @@ export type Attempt = {
   genderOnly?: boolean;
   /** Practice mode: recorded for history and XP, but never touches the schedule. */
   practice?: boolean;
+  /** The level of the question variant that was asked (variants.ts); none for the card's own question. */
+  level?: Level;
 };
 
 export type DaySummary = {

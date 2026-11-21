@@ -11,11 +11,27 @@ import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
 import { textPx } from '../display';
-import { Feedback } from '../components';
+import { Feedback, LevelTag } from '../components';
+import type { Level } from '@lernlab/core/variants';
 import { checkTyped, plainAnswer } from '../typed-logic';
 import { CodeBlock, CodeLine } from '../code-block';
 
 type P<E> = { ex: E; ctx: Ctx; onNext: (r: { correct: boolean }) => void };
+
+/** A question asked with one of the card's variants: every answer to it carries the variant's level. */
+const withLevel = (ctx: Ctx, level: Level | undefined): Ctx =>
+  level ? { ...ctx, answer: (a) => ctx.answer({ ...a, level }) } : ctx;
+
+/** The level of a variant question, next to the block title. */
+function QuestionLevel({ level }: { level?: Level }) {
+  const { t } = useTranslation();
+  return level ? (
+    <>
+      {' '}
+      <LevelTag level={level}>{t(`levels.${level}`)}</LevelTag>
+    </>
+  ) : null;
+}
 const now = () => performance.now();
 
 /** Speaker and microphone icons (outline, like the sidebar's), coloured by the button. */
@@ -377,6 +393,7 @@ export function Flip({
   format = 'flip',
 }: P<Extract<Exercise, { type: 'flip' }>> & { format?: 'flip' | 'boss' }) {
   const { t } = useTranslation();
+  ctx = withLevel(ctx, ex.level);
   const item = ctx.item(ex.itemId);
   const [shownAns, setShown] = useState(false);
   const shown = useRef(now());
@@ -403,7 +420,10 @@ export function Flip({
   });
   return (
     <div>
-      <div className="blocktitle">{t('ex.flip.title')}</div>
+      <div className="blocktitle">
+        {t('ex.flip.title')}
+        <QuestionLevel level={ex.level} />
+      </div>
       <div className="card flipcard">
         {!ex.reverse && <Media item={item} size="md" />}
         <div className="prompt" style={{ fontSize: ex.prompt.length > 80 ? textPx(22) : textPx(28) }}>
@@ -764,7 +784,7 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
   const item = ctx.item(ex.itemId);
   return (
     <TypedEngine
-      ctx={ctx}
+      ctx={withLevel(ctx, ex.level)}
       itemId={ex.itemId}
       format={boss ? 'boss' : 'typed'}
       accepted={ex.accepted}
@@ -781,6 +801,7 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
                 : ctx.lang
                   ? t('ex.typed.titleLanguage')
                   : t('ex.typed.title')}
+            <QuestionLevel level={ex.level} />
           </div>
           {ex.prompt === item.target && <Media item={item} size="sm" />}
           <div className="prompt" style={{ fontSize: ex.prompt.length > 70 ? textPx(22) : undefined }}>
