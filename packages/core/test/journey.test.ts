@@ -89,6 +89,15 @@ test('study days: only days with a session, inside the heatmap window', () => {
   assert.equal(j.heatmapSince, addDays(weekStart(today), -7 * (JOURNEY.heatmapWeeks - 1)));
 });
 
+test('calibration: every rating 1 to 5, empty until answers are rated (#205)', () => {
+  const j = journey(getDb(), now);
+  assert.deepEqual(
+    j.calibration.levels.map((l) => [l.confidence, l.rated, l.rate]),
+    [1, 2, 3, 4, 5].map((c) => [c, 0, null]),
+  );
+  assert.deepEqual(j.calibration.lead, []);
+});
+
 test('retention: share of real reviews recalled, by week, practice left out', () => {
   const j = journey(getDb(), now);
   assert.equal(j.retention.weeks.length, JOURNEY.retentionWeeks);

@@ -10,7 +10,9 @@ import {
   Relearn,
   answerKind,
   asRepeat,
+  asksConfidence,
   blockKey,
+  confidenceKey,
   blockProgress,
   needsRescue,
   playableOnly,
@@ -289,4 +291,24 @@ test('a card brought back is practice only: no second grade, no override of the 
   assert.deepEqual(sent, [{ itemId: 7, practice: true }]);
   assert.deepEqual(overrides, [[7, true]]);
   assert.equal(ctx.timer, 8, 'the normal context is unchanged');
+});
+
+test('a card brought back never asks how sure you were (#205)', () => {
+  const ctx = { timer: 0, answer: () => 0, override: () => {}, confidence: () => {} };
+  assert.equal(asRepeat(ctx).confidence, undefined);
+  assert.equal(typeof ctx.confidence, 'function');
+});
+
+test('"How sure were you?" is asked on real answers only, and only when it is turned on (#205)', () => {
+  assert.equal(asksConfidence({ on: true, practice: false, kind: 'drill' }), true);
+  assert.equal(asksConfidence({ on: true, practice: false, kind: 'learn' }), true);
+  assert.equal(asksConfidence({ on: undefined, practice: false, kind: 'drill' }), true, 'on by default');
+  assert.equal(asksConfidence({ on: false, practice: false, kind: 'drill' }), false);
+  assert.equal(asksConfidence({ on: true, practice: true, kind: 'drill' }), false, 'practice mode');
+  assert.equal(asksConfidence({ on: true, practice: false, kind: 'blitz' }), false, 'timed rounds');
+});
+
+test('the keys 1 to 5 rate how sure you were; other keys do not', () => {
+  assert.deepEqual(['1', '2', '3', '4', '5'].map(confidenceKey), [1, 2, 3, 4, 5]);
+  for (const k of ['0', '6', 'Enter', ' ', 'a', '12']) assert.equal(confidenceKey(k), null);
 });

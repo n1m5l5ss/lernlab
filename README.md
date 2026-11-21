@@ -39,6 +39,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - "Guess first": before you meet the cards of a new topic, guess a few of its questions, then see the answers (practice only, no timer).
 - **Ask each card in several ways:** add apply and analyse questions to a card ("A patient has X. Which drug?", "What if the dose doubles?"). Sessions take turns asking them, so you learn the idea and not just the wording, and the card keeps one schedule.
 - **Learn from common mix-ups:** a multiple-choice card can explain why a wrong choice is wrong ("Many people think X. In fact Y."). Pick it and you see that note with the right answer, not just "wrong". Myth cards ask "True or myth?", then why.
+- **How sure were you?** After a recall answer, one optional tap from 1 to 5. Progress shows how often each rating was right at the next review. It never changes the schedule.
 - **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark, a score by topic and by question level.
 - **Honest grading:**
   - you type or say the answer, and LernLab grades it;

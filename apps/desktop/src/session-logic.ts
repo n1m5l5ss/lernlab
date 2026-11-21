@@ -1,4 +1,5 @@
 // Pure rules of the session runner, kept apart from React so they can be tested.
+import type { Confidence } from '@lernlab/core/confidence';
 
 /** How many other exercises come between a missed card and its next try (picked at random in this range). */
 export const RETRY_GAP = { min: 4, max: 6 };
@@ -118,10 +119,11 @@ type RepeatCtx<A> = {
   timer: number;
   answer: (a: A) => number;
   override: (itemId: number, practice?: boolean) => void;
+  confidence?: unknown;
 };
 /**
  * The context for a card brought back: its answers are practice (they never grade the card a second time
- * today, and "I was right" leaves the real grade alone), and it is never timed.
+ * today, and "I was right" leaves the real grade alone), it is never timed, and it never asks how sure you were.
  */
 export function asRepeat<A extends { practice?: boolean }, C extends RepeatCtx<A>>(ctx: C): C {
   return {
@@ -129,5 +131,17 @@ export function asRepeat<A extends { practice?: boolean }, C extends RepeatCtx<A
     timer: 0,
     answer: (a: A) => ctx.answer({ ...a, practice: true }),
     override: (itemId: number) => ctx.override(itemId, true),
+    confidence: undefined,
   };
 }
+
+/**
+ * Whether recall answers in this block ask "How sure were you?" (#205): when the setting is on (it is by
+ * default), never in practice mode (nothing there is a real attempt) and never in timed rounds.
+ */
+export const asksConfidence = (b: { on: boolean | undefined; practice: boolean; kind: string }) =>
+  b.on !== false && !b.practice && b.kind !== 'blitz';
+
+/** The keys 1 to 5 as a confidence rating. */
+export const confidenceKey = (key: string): Confidence | null =>
+  /^[1-5]$/.test(key) ? (Number(key) as Confidence) : null;

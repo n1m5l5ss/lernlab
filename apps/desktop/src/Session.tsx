@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
 import { xpFor } from '@lernlab/core/game';
+import type { Confidence } from '@lernlab/core/confidence';
 import { teacherFor, type Line } from '@lernlab/core/teacher';
-import { api, sendAttempt, sendOverride } from './api';
+import { api, sendAttempt, sendConfidence, sendOverride } from './api';
 import { hasVoice, onNoVoice, say, setSound, setSpeechPrefs, sfx } from './audio';
 import { formatLanguage } from './i18n';
 import { useKeys, type AnswerInput, type BlockResult, type Ctx } from './ctx';
@@ -26,7 +27,16 @@ import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { GuessBlock } from './modes/Guess';
 import { mcFor, recallFor } from './plan';
 import { agendaText, bubbleFor, textTeacher, type Bubble } from './lines';
-import { Relearn, answerKind, asRepeat, blockKey, needsRescue, plannedRecalls, playableOnly } from './session-logic';
+import {
+  Relearn,
+  answerKind,
+  asRepeat,
+  asksConfidence,
+  blockKey,
+  needsRescue,
+  plannedRecalls,
+  playableOnly,
+} from './session-logic';
 import { Button, ProgressBar } from './components';
 
 /** Where the learner is inside the current block, for the progress bar and "5 of 12". */
@@ -62,12 +72,15 @@ function ExerciseBlock({
   relearn,
   plannedLater,
   last,
+  confidence,
   onDone,
   onStep,
 }: {
   block: Extract<Block, { exercises: Exercise[] }>;
   ctx: Ctx;
   relearn: Relearn;
+  /** Saves "How sure were you?" when this block asks it (#205); undefined when it doesn't. */
+  confidence?: Ctx['confidence'];
   /** Recalls of each card planned in later blocks. */
   plannedLater: Map<number, number>;
   /** No later block can bring cards back: a card still missed gets its last tries here. */
@@ -116,6 +129,7 @@ function ExerciseBlock({
   const k = `${block.id}-${i}`;
   // Timers only on review blocks: time pressure while first learning a card hurts memory.
   if (block.kind !== 'drill') ctx = { ...ctx, timer: 0 };
+  if (confidence) ctx = { ...ctx, confidence };
   if (repeats.current.has(ex)) ctx = asRepeat<AnswerInput, Ctx>(ctx);
   switch (ex.type) {
     case 'intro':
@@ -195,7 +209,13 @@ export function Session({
   onQuit,
 }: {
   plan: SessionPlan;
-  settings: { sound: boolean; teacherVoice: boolean; questionTimer?: number; blitzSeconds?: number };
+  settings: {
+    sound: boolean;
+    teacherVoice: boolean;
+    questionTimer?: number;
+    blitzSeconds?: number;
+    confidence?: boolean;
+  };
   onFinish: (r: SessionResult) => void;
   onQuit: () => void;
 }) {
@@ -365,6 +385,16 @@ export function Session({
         level: a.level,
       });
       return gained;
+    },
+    [plan.id],
+  );
+
+  // How sure the learner was of each card's real answer this session (#205); saved with the answer.
+  const confidences = useRef(new Map<number, Confidence>());
+  const rateConfidence = useCallback(
+    (itemId: number, value: Confidence) => {
+      confidences.current.set(itemId, value);
+      sendConfidence({ sessionId: plan.id, itemId, confidence: value });
     },
     [plan.id],
   );
@@ -613,6 +643,11 @@ export function Session({
               relearn={relearn.current}
               plannedLater={plannedLater}
               last={!later.some(hostsRepeats)}
+              confidence={
+                asksConfidence({ on: settings.confidence, practice: plan.practice, kind: b.kind })
+                  ? rateConfidence
+                  : undefined
+              }
               onDone={blockDone}
               onStep={setStep}
             />

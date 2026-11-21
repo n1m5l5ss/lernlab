@@ -8,6 +8,7 @@ import { migration as m003 } from './migrations/003-study-indexes';
 import { migration as m004 } from './migrations/004-deck-stats-indexes';
 import { migration as m005 } from './migrations/005-anki-history';
 import { migration as m006 } from './migrations/006-attempt-level';
+import { migration as m007 } from './migrations/007-attempt-confidence';
 
 export type Migration = {
   /** 1, 2, 3… in the order they run. Never reuse or renumber one that has shipped. */
@@ -18,7 +19,7 @@ export type Migration = {
 };
 
 /** Every migration, oldest first. Add new ones at the end as migrations/NNN-name.ts. */
-export const MIGRATIONS: Migration[] = [m001, m002, m003, m004, m005, m006];
+export const MIGRATIONS: Migration[] = [m001, m002, m003, m004, m005, m006, m007];
 
 export const LATEST_VERSION = MIGRATIONS[MIGRATIONS.length - 1].version;
 

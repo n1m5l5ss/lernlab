@@ -1,6 +1,6 @@
 import { Trans, useTranslation } from 'react-i18next';
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Exercise, Item } from '@lernlab/core/types';
 import { similarity, normalize, stripHtml, type CheckResult } from '@lernlab/core/text';
 import { hasMath } from '@lernlab/core/math';
@@ -11,8 +11,9 @@ import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
 import { textPx } from '../display';
-import { Feedback, LevelTag, Misconception } from '../components';
+import { ConfidenceRow, Feedback, LevelTag, Misconception, type ConfidencePick } from '../components';
 import { pickedCorrections } from '@lernlab/core/misconceptions';
+import { CONFIDENCE_LEVELS, type Confidence } from '@lernlab/core/confidence';
 import type { Level } from '@lernlab/core/variants';
 import { checkTyped, plainAnswer } from '../typed-logic';
 import { CodeBlock, CodeLine } from '../code-block';
@@ -34,6 +35,38 @@ function QuestionLevel({ level }: { level?: Level }) {
   ) : null;
 }
 const now = () => performance.now();
+
+/**
+ * "How sure were you?" under a checked recall answer (#205), when the session asks it (ctx.confidence).
+ * Optional: Continue never waits for it. `keys`: the keys 1 to 5 rate too (only where nothing else uses them).
+ */
+function Sure({
+  ctx,
+  value,
+  onPick,
+  keys,
+}: {
+  ctx: Ctx;
+  value: Confidence | null;
+  onPick: (value: Confidence, how: ConfidencePick) => void;
+  keys: boolean;
+}) {
+  const { t } = useTranslation();
+  const id = useId();
+  if (!ctx.confidence) return null;
+  return (
+    <ConfidenceRow
+      id={id}
+      label={t('ex.confidence.label')}
+      low={t('ex.confidence.low')}
+      high={t('ex.confidence.high')}
+      names={CONFIDENCE_LEVELS.map((n) => t(`ex.confidence.level${n}`))}
+      value={value}
+      onPick={onPick}
+      keys={keys}
+    />
+  );
+}
 
 /** Speaker and microphone icons (outline, like the sidebar's), coloured by the button. */
 const SpeakerIcon = () => (
@@ -397,6 +430,7 @@ export function Flip({
   ctx = withLevel(ctx, ex.level);
   const item = ctx.item(ex.itemId);
   const [shownAns, setShown] = useState(false);
+  const [sure, setSure] = useState<Confidence | null>(null);
   const shown = useRef(now());
   const rate = (r: 0 | 1 | 2) => {
     if (!shownAns) return;
@@ -409,6 +443,7 @@ export function Flip({
       shownAt: shown.current,
       given: ['no', 'partly', 'yes'][r],
     });
+    if (sure && format === 'flip') ctx.confidence?.(item.id, sure); // after the answer it belongs to
     if (!correct) ctx.missed.add(item.id);
     onNext({ correct });
   };
@@ -458,17 +493,21 @@ export function Flip({
           <span className="small muted">{t('ex.flip.hint')}</span>
         </div>
       ) : (
-        <div className="grade3">
-          <button className="btn rate-no" onClick={() => rate(0)}>
-            {t('ex.flip.no')} <span className="kbd">1</span>
-          </button>
-          <button className="btn rate-partly" onClick={() => rate(1)}>
-            {t('ex.flip.partly')} <span className="kbd">2</span>
-          </button>
-          <button className="btn rate-yes" onClick={() => rate(2)}>
-            {t('ex.flip.yes')} <span className="kbd">3</span>
-          </button>
-        </div>
+        <>
+          {/* The keys 1 to 3 rate the answer here, so how sure you were is a click (or Tab and arrows). */}
+          {format === 'flip' && <Sure ctx={ctx} value={sure} onPick={setSure} keys={false} />}
+          <div className="grade3">
+            <button className="btn rate-no" onClick={() => rate(0)}>
+              {t('ex.flip.no')} <span className="kbd">1</span>
+            </button>
+            <button className="btn rate-partly" onClick={() => rate(1)}>
+              {t('ex.flip.partly')} <span className="kbd">2</span>
+            </button>
+            <button className="btn rate-yes" onClick={() => rate(2)}>
+              {t('ex.flip.yes')} <span className="kbd">3</span>
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
@@ -659,6 +698,10 @@ export function TypedEngine({
   const input = useRef<HTMLInputElement>(null);
   const finalCorrect = useRef(false);
   const coach = ctx.t;
+  // "How sure were you?" (#205): asked once the answer is checked. Then the card waits for a tap (1–5, which
+  // also goes on) or Continue, instead of moving on by itself.
+  const asksSure = !!ctx.confidence && format !== 'boss';
+  const [sure, setSure] = useState<Confidence | null>(null);
   useEffect(() => {
     input.current?.focus();
   }, [phase]);
@@ -667,7 +710,12 @@ export function TypedEngine({
     finalCorrect.current = correct;
     setPhase('done');
     if (ctx.lang) say(accepted[0], 0.95, ctx.lang, item.deckId);
-    if (delay > 0) setTimeout(() => onNext({ correct }), delay);
+    if (delay > 0 && !asksSure) setTimeout(() => onNext({ correct }), delay);
+  };
+  const rateSure = (n: Confidence, how: ConfidencePick) => {
+    setSure(n);
+    ctx.confidence?.(itemId, n);
+    if (how === 'tap') onNext({ correct: finalCorrect.current });
   };
 
   const submit = () => {
@@ -845,6 +893,7 @@ export function TypedEngine({
           {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
         </Feedback>
       )}
+      {phase === 'done' && asksSure && <Sure ctx={ctx} value={sure} onPick={rateSure} keys />}
       <div className="actions">
         {phase !== 'done' && (
           <button className="btn primary" onClick={submit}>
@@ -1415,7 +1464,13 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
   const { t } = useTranslation();
   const [placed, setPlaced] = useState<number[]>([]);
   const [result, setResult] = useState<boolean | null>(null);
+  const [sure, setSure] = useState<Confidence | null>(null);
   const shown = useRef(now());
+  const rateSure = (n: Confidence, how: ConfidencePick) => {
+    setSure(n);
+    ctx.confidence?.(ex.itemId, n);
+    if (how === 'tap') onNext({ correct: !!result });
+  };
   const step = (s: string) =>
     ex.codeLang !== undefined ? <CodeLine code={s} lang={ex.codeLang} /> : <Rich html={s} />;
   const add = (stepIdx: number) => {
@@ -1435,7 +1490,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
         given: p.map((i) => ex.steps[i]).join(' → '),
       });
       if (!ok) ctx.missed.add(ex.itemId);
-      if (ok) setTimeout(() => onNext({ correct: true }), 1000);
+      if (ok && !ctx.confidence) setTimeout(() => onNext({ correct: true }), 1000);
     }
   };
   useKeys((e) => {
@@ -1485,10 +1540,11 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
         </Feedback>
       )}
       {result === true && <Feedback tone="right">{ctx.t.right(ctx.combo)}</Feedback>}
+      {result !== null && <Sure ctx={ctx} value={sure} onPick={rateSure} keys />}
       <div className="actions">
         {result === null && <span className="small muted">{t('ex.order.help')}</span>}
-        {result === false && (
-          <button className="btn primary" onClick={() => onNext({ correct: false })}>
+        {(result === false || (result === true && !!ctx.confidence)) && (
+          <button className="btn primary" onClick={() => onNext({ correct: !!result })}>
             {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}

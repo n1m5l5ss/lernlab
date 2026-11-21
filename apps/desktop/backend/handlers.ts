@@ -97,6 +97,7 @@ import bundledNotes from './whats-new.json';
 import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
 import { LEVELS } from '@lernlab/core/variants';
+import { rateConfidence } from '@lernlab/core/confidence';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
 import { asRequest, checkBody } from './ai-requests';
@@ -612,6 +613,11 @@ export const handlers = {
     (a) => recordAttempt(a as Attempt),
   ),
   'attempt.override': h(v.object({ itemId: v.id }), ({ itemId }) => overrideToCorrect(itemId)),
+  /** How sure the learner was of their last answer to a card (#205). Stored only; never changes the schedule. */
+  'attempt.confidence': h(
+    v.object({ sessionId: v.string(100), itemId: v.id, confidence: v.int(1, 5) }),
+    ({ sessionId, itemId, confidence }) => rateConfidence(sessionId, itemId, confidence),
+  ),
   'session.finish': h(
     v.object({
       sessionId: v.string(100),
@@ -711,6 +717,7 @@ export const handlers = {
     next.launchAtLogin = next.launchAtLogin === true;
     next.aiAssistant = next.aiAssistant === true;
     next.remoteMedia = next.remoteMedia === true;
+    next.confidence = next.confidence !== false;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

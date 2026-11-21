@@ -1,6 +1,7 @@
 import type { Line } from '@lernlab/core/teacher';
 import type { Format, Item, SessionPlan } from '@lernlab/core/types';
 import type { Level } from '@lernlab/core/variants';
+import type { Confidence } from '@lernlab/core/confidence';
 import type { TextTeacher } from './lines';
 
 export type AnswerInput = {
@@ -37,6 +38,11 @@ export type Ctx = {
   override: (itemId: number, practice?: boolean) => void;
   combo: number;
   missed: Set<number>;
+  /**
+   * "How sure were you?" (#205): save the learner's 1–5 rating of their last answer to this card. Only set
+   * where the session asks it (a real recall answer, the setting on); never changes the schedule.
+   */
+  confidence?: (itemId: number, value: Confidence) => void;
   /** Show a line in the speech bubble (a core Line, or text already translated). */
   teacher: (line: Line | string) => void;
   settings: { sound: boolean; teacherVoice: boolean; questionTimer?: number; blitzSeconds?: number };

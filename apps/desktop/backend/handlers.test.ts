@@ -538,3 +538,17 @@ test('an answer carries the level of the question asked, and only a known level'
   const bad = await handle('attempt.record', { ...answer, level: 'synthesis' });
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
 });
+
+test('how sure you were is saved with your answer, 1 to 5 only, and the rating can be turned off (#205)', async () => {
+  assert.equal((await ok('state.get')).settings.confidence, true, 'on by default');
+  assert.equal((await ok('settings.save', { confidence: false })).confidence, false);
+  assert.equal((await ok('settings.save', { confidence: 'no' })).confidence, true);
+  const deck = await ok('decks.create', { name: 'Sure', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Mitosis', back: 'cell division' } });
+  await ok('attempt.record', { sessionId: 'cf', itemId: id, format: 'typed', correct: false, responseMs: 900, xp: 1 });
+  assert.deepEqual(await ok('attempt.confidence', { sessionId: 'cf', itemId: id, confidence: 5 }), { ok: true });
+  for (const confidence of [0, 6, 2.5, '5', null]) {
+    const bad = await handle('attempt.confidence', { sessionId: 'cf', itemId: id, confidence });
+    assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  }
+});

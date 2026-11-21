@@ -282,7 +282,9 @@
       "warnBody": "Cards that link media from a website will contact that website each time you study them. That website can see your IP address and when you study. The links come from the people who made the deck, not from LernLab, so LernLab can't check what they show and isn't responsible for that content. You turn this on at your own risk, and you can turn it off at any time.",
       "accept": "I understand, turn it on",
       "cancel": "Keep it off"
-    }
+    },
+    "confidence": "Ask how sure I was",
+    "confidenceHint": "After an answer, one optional tap from 1 to 5. It never changes when a card comes back; Progress shows how well it matches what you really recall."
   },
   "home": {
     "welcomeTitle": "Welcome to LernLab",
@@ -843,6 +845,20 @@
       "missed_one": "missed {{count}} time",
       "missed_other": "missed {{count}} times",
       "empty": "No hard cards yet. Cards you forget show up here."
+    },
+    "calibration": {
+      "title": "How sure you were",
+      "lead": "Cards you rated {{high}} were right {{highPercent}} of the time at their next review; rated {{low}}, {{lowPercent}}.",
+      "leadOne": "Cards you rated {{level}} were right {{percent}} of the time at their next review.",
+      "empty": "After an answer, tap how sure you were, from 1 to 5. Once those cards come back for review, this shows how often each rating turned out right.",
+      "level_one": "Rated {{level}}: right {{percent}} of the time at the next review ({{count}} card)",
+      "level_other": "Rated {{level}}: right {{percent}} of the time at the next review ({{count}} cards)",
+      "levelFew_one": "Rated {{level}}: not enough reviews yet ({{count}} card)",
+      "levelFew_other": "Rated {{level}}: not enough reviews yet ({{count}} cards)",
+      "low": "1: guessing",
+      "axis": "Bars: share right at the next review",
+      "high": "5: certain",
+      "few": "Too few yet"
     }
   },
   "summary": {
@@ -1252,6 +1268,16 @@
       "title": "Name the hidden part",
       "askedOne": "Box {{n}} of {{count}} is hidden; the other boxes show their labels.",
       "askedAll": "All {{count}} boxes are hidden; box {{n}} is the one asked."
+    },
+    "confidence": {
+      "label": "How sure were you?",
+      "low": "Guessing",
+      "high": "Certain",
+      "level1": "1: guessing",
+      "level2": "2: unsure",
+      "level3": "3: fairly sure",
+      "level4": "4: sure",
+      "level5": "5: certain"
     }
   },
   "check": {
@@ -1345,7 +1371,8 @@
     "gallery_bad_index": "The deck gallery's list could not be read.",
     "gallery_too_big": "This deck is bigger than the gallery says, so it was not downloaded.",
     "gallery_checksum": "The download does not match the deck in the gallery, so it was not installed. Please try again.",
-    "gallery_unknown_deck": "That deck is no longer in the gallery. Open the gallery again to see the latest list."
+    "gallery_unknown_deck": "That deck is no longer in the gallery. Open the gallery again to see the latest list.",
+    "invalid_confidence": "How sure you were must be a number from 1 to 5."
   },
   "update": {
     "ready": "LernLab {{version}} is ready. Restart to update; your progress is saved and backed up.",

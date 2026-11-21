@@ -35,6 +35,7 @@ import { KNOWN_MASTERY } from './browse';
 import { stripHtml } from './text';
 import { LEVELS, type Level } from './variants';
 import { RECALL_FORMATS } from './types';
+import { calibration, calibrationCounts } from './confidence';
 
 /** Badge ids, in display order. Their names and descriptions live in locales/<code>.json under badges.<id>. */
 export const ACHIEVEMENTS = [
@@ -632,6 +633,8 @@ export function journey(d: DB = getDb(), now = new Date()) {
       recalled: weeks.reduce((s, w) => s + w.recalled, 0),
       target: getSettings(d).retention,
     },
+    /** How sure you were (1–5) against how often you were right at the next review (#205). */
+    calibration: calibration(calibrationCounts(d)),
     hardest: hard.map((h) => ({
       ...h,
       front: plain(text.get(h.id)?.target),

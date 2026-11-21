@@ -1826,6 +1826,28 @@ kbd {
     display: none;
   }
 }
+/* Calibration (#205): the retention bars' look, five ratings with their number under each bar. */
+.calib-chart {
+  height: 140px;
+}
+.calib-few {
+  width: 100%;
+  text-align: center;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.calib-axis {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-2);
+  margin: calc(-1 * var(--space-2)) 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
 .journey-hard-head {
   display: flex;
   align-items: center;

@@ -120,7 +120,8 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
     | 'reminder'
     | 'launchAtLogin'
     | 'aiAssistant'
-    | 'habitNote';
+    | 'habitNote'
+    | 'confidence';
   const check = (key: Toggle, id: string, disabled = false) => (
     <input
       id={id}
@@ -258,6 +259,9 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
             </option>
           ))}
         </Select>
+        <Row id="set-confidence" label={t('settings.confidence')} hint={t('settings.confidenceHint')}>
+          {check('confidence', 'set-confidence')}
+        </Row>
       </Section>
 
       <Section id="plan" title={t('settings.section.plan')}>
