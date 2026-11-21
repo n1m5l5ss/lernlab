@@ -82,7 +82,7 @@ export function qa(item: Item): {
 }
 
 /** Choices for a multiple-choice / multi-select question card ("A|B|C|D", correct "2|4" or by text). */
-export function mcqOf(item: Item): { choices: string[]; correct: number[] } | null {
+export function mcqOf(item: Pick<Item, 'extra' | 'meaning'>): { choices: string[]; correct: number[] } | null {
   const choices = (item.extra?.choices ?? '')
     .split('|')
     .map((c) => c.trim())

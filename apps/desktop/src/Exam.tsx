@@ -13,6 +13,8 @@ import { clock, reviewRows, secondsLeft, toggleChoice, type ReviewFilter } from 
 import { formatNumber } from './i18n';
 import { controlOwnsKey } from './keys-logic';
 import { Rich } from './rich';
+import { WrongChoice } from './modes/Exercises';
+import { pickedCorrections } from '@lernlab/core/misconceptions';
 
 type ExamData = OutputOf<'exam.start'>;
 type Score = OutputOf<'exam.submit'>;
@@ -372,9 +374,14 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
           </div>
           {locked && (
             <Feedback tone={isRight(q, chosen) ? 'right' : 'wrong'}>
-              {isRight(q, chosen)
-                ? t('exam.right')
-                : t('common.correctIs', { answer: q.correct.map((i) => q.choices[i]).join(' + ') })}
+              {isRight(q, chosen) ? (
+                t('exam.right')
+              ) : (
+                <WrongChoice
+                  corrections={pickedCorrections(q.corrections, chosen, q.correct)}
+                  answer={t('common.correctIs', { answer: q.correct.map((i) => q.choices[i]).join(' + ') })}
+                />
+              )}
               {q.explanation && <Rich className="small exam-explanation" html={q.explanation} />}
             </Feedback>
           )}

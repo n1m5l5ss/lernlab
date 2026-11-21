@@ -4,6 +4,7 @@ import { clozeText, mcqOf, parseCloze, qa, stepsOf } from './cards';
 import { hasMath, splitMath } from './math';
 import { codeTask, GAP } from './code';
 import { variantsOf } from './variants';
+import { correctionHtml, correctionsOf } from './misconceptions';
 import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
@@ -137,6 +138,7 @@ export function mcq(item: Item): Exercise | null {
   const m = mcqOf(item);
   if (!m) return null;
   const order = shuffle(m.choices.map((_, i) => i));
+  const corrections = correctionsOf(item);
   return {
     type: 'mcq',
     itemId: item.id,
@@ -144,6 +146,9 @@ export function mcq(item: Item): Exercise | null {
     choices: order.map((i) => m.choices[i]),
     correct: m.correct.map((c) => order.indexOf(c)),
     explanation: item.grammar || item.notes,
+    ...(corrections.some(Boolean) && {
+      corrections: order.map((i) => corrections[i] && correctionHtml(corrections[i])),
+    }),
   };
 }
 

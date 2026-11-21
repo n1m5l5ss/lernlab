@@ -4,7 +4,18 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement as h, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Button, Card, Feedback, Input, LevelTag, ProgressBar, SegmentedControl, Select, Sidebar } from './index';
+import {
+  Button,
+  Card,
+  Feedback,
+  Input,
+  LevelTag,
+  Misconception,
+  ProgressBar,
+  SegmentedControl,
+  Select,
+  Sidebar,
+} from './index';
 
 const html = (el: ReactElement) => renderToStaticMarkup(el);
 
@@ -124,5 +135,13 @@ test('LevelTag shows the level word with a class per level', () => {
   assert.equal(
     html(h(LevelTag, { level: 'apply', children: 'Apply' })),
     '<span class="level-tag level-apply">Apply</span>',
+  );
+});
+
+test('Misconception shows the lead, the correction and then the right answer', () => {
+  assert.equal(
+    html(h(Misconception, { lead: 'A common mix-up', answer: 'Correct: B', children: 'Many people think A.' })),
+    '<span class="misconception-lead">A common mix-up</span><div class="misconception">Many people think A.</div>' +
+      '<div class="misconception-answer">Correct: B</div>',
   );
 });

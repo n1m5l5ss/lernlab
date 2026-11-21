@@ -473,7 +473,8 @@
         "correct": "Correct choices",
         "steps": "Steps",
         "altAnswers": "Other accepted answers",
-        "variants": "Question variants"
+        "variants": "Question variants",
+        "corrections": "Corrections for wrong choices"
       },
       "previewCaption_one": "The first card",
       "previewCaption_other": "The first {{count}} cards",
@@ -673,6 +674,12 @@
         "remove": "Remove question {{n}}",
         "add": "Add a question",
         "full": "A card can hold {{count}} questions."
+      },
+      "corrections": {
+        "title": "Common mix-ups",
+        "help": "Optional: for a wrong choice people often pick, say why it is wrong. Picking it shows your note with the right answer.",
+        "choice": "If someone picks “{{choice}}”",
+        "placeholder": "Many people think … In fact …, because …"
       },
       "mediaSet": {
         "image": "✓ Image",
@@ -1210,6 +1217,7 @@
       "gotIt": "Got it – practise!"
     },
     "mcq": {
+      "mixUp": "A common mix-up",
       "title": "Question",
       "titleMulti_one": "Question · choose {{count}}",
       "titleMulti_other": "Question · choose {{count}}"

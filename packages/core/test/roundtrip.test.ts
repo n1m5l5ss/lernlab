@@ -55,6 +55,8 @@ upsertCards(deck, [
     type: 'mcq',
     choices: 'Mitochondrion|Heart|Ribosome|Lung',
     correct: '1|3',
+    corrections:
+      '|Many people think the heart is an organelle, "a big one". In fact it is an organ, made of cells.||A lung is an organ, too',
     explanation: 'Organelles live inside cells.',
     image: 'spin.gif',
     imageAlt: 'A cell, "spinning", with\nits organelles',
@@ -113,6 +115,12 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
   assert.ok(!('imageAlt' in (heart.extra ?? {})), 'not hidden in extra');
   assert.match(heart.variants, /^apply: A runner's pulse doubles/, 'question variants are a card field');
   assert.ok(!('variants' in (heart.extra ?? {})));
+  assert.match(
+    mcq.corrections,
+    /^\|Many people think the heart .*\|\|A lung is an organ, too$/,
+    'corrections are a card field',
+  );
+  assert.ok(!('corrections' in (mcq.extra ?? {})));
   const csv = strFromU8(files['cards.csv']);
   const header = csv.split('\n')[0].split(',');
   for (const col of [
@@ -126,6 +134,7 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
     'image',
     'image_alt',
     'variants',
+    'corrections',
     'audio',
     'video',
     'id',
@@ -180,12 +189,19 @@ test('question variants are stored with the cards in one canonical line (so the 
   ]);
 });
 
+test('corrections for wrong choices are stored with the cards, one slot per choice (so the round trips above carry them)', () => {
+  assert.deepEqual(original.map((c) => extraOf(c).corrections).filter(Boolean), [
+    '|Many people think the heart is an organelle, "a big one". In fact it is an organ, made of cells.||A lung is an organ, too',
+  ]);
+});
+
 test('the CSV template imports as three example cards', () => {
   const lines = CSV_TEMPLATE.trim().split('\n');
   assert.equal(lines.length, 4, 'a header and three example rows');
   assert.match(lines[0], /^front,back,/);
   assert.ok(lines[0].split(',').includes('image_alt'), 'the template shows the image description column');
   assert.ok(lines[0].split(',').includes('variants'), 'the template shows the question variants column');
+  assert.ok(lines[0].split(',').includes('corrections'), 'the template shows the corrections column');
   for (const l of lines) assert.equal(l.split(',').length, lines[0].split(',').length, l);
   const r = importFile('template.csv', strToU8(CSV_TEMPLATE));
   assert.equal(r.added, 3);
@@ -196,4 +212,6 @@ test('the CSV template imports as three example cards', () => {
   assert.ok(kinds.includes('mcq'), kinds.join());
   const s3 = getDb().prepare("SELECT extra FROM items WHERE deck_id = ? AND target = 'Amazon S3'").get(r.deck.id);
   assert.match(String(s3?.extra), /apply: Which AWS service .* \| analyse: /);
+  const quiz = getDb().prepare("SELECT extra FROM items WHERE deck_id = ? AND kind = 'mcq'").get(r.deck.id);
+  assert.match(JSON.parse(String(quiz?.extra)).corrections, /^Many people think EC2 is serverless\./);
 });

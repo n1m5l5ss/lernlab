@@ -126,7 +126,16 @@ export type Exercise =
   | { type: 'flip'; itemId: number; prompt: string; answer: string; reverse: boolean; level?: Level }
   | { type: 'truefalse'; itemId: number; front: string; shown: string; isTrue: boolean }
   | { type: 'imagemc'; itemId: number; options: string[]; answerIndex: number }
-  | { type: 'mcq'; itemId: number; stem: string; choices: string[]; correct: number[]; explanation: string }
+  /** corrections: per choice, safe HTML shown when that wrong choice is picked ('' for none; misconceptions.ts). */
+  | {
+      type: 'mcq';
+      itemId: number;
+      stem: string;
+      choices: string[];
+      correct: number[];
+      explanation: string;
+      corrections?: string[];
+    }
   /** codeLang: the steps are lines of code in this language (order the lines). */
   | { type: 'order'; itemId: number; prompt: string; steps: string[]; shuffled: number[]; codeLang?: string };
 

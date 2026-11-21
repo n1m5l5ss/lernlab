@@ -68,7 +68,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question.
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong".
 
 ### manifest.json
 
@@ -132,6 +132,7 @@ Each line is one card. Only `front` is required.
 | `category` | Group for sorting rounds (`der`/`die`/`das`, `Storage`/`Compute`, `Cardio`…) |
 | `choices` | Multiple choice / multi-select: the choices, separated by `|` |
 | `correct` | Multiple choice: the correct choices as 1-based numbers or as texts, separated by `|` |
+| `corrections` | Multiple choice: a correction per wrong choice, in the order of `choices`, separated by `|`: `Many people think EC2 is serverless. In fact you manage its servers.\|\|\|RDS is a database.` See [Corrections for wrong choices](#corrections-for-wrong-choices) (optional, added after v1 was published; older readers ignore it) |
 | `steps` | Ordering card: steps in the correct order, separated by `|` |
 | `tolerance` | Numeric card: how far off a typed number may be, `0.05` (in the card's unit) or `1%` (optional, added after v1 was published) |
 | `code` | Code card: the code as plain text, with its line breaks and indentation (optional, added after v1 was published; older readers ignore it) |
@@ -168,6 +169,21 @@ apply: A patient has X. Which mechanism? | analyse: What happens if X doubles? |
 - Plain text: formatting tags are removed. At most 8 questions of up to 500 characters each are kept; empty questions and repeats are dropped.
 - Only cards asked as a written question use them: basic, language and numeric cards. Cloze, multiple-choice, order, code and occlusion cards ask in their own way and drop the field.
 - The card is still one card with one schedule (one grade per day, whichever question was asked). A new card is learned with its own question; after that, each review asks the next question in turn, and a mock exam picks one at random. Exported to Anki, the questions are added under the notes.
+
+## Corrections for wrong choices
+
+A multiple-choice card can explain a common mistake: a short correction for any wrong choice, shown when that choice is picked, in place of a plain "wrong" ("Many people think X. In fact Y, because Z."). The right answer is still shown, and the grade is the same. `corrections` holds them in one line, one slot per choice in the order of `choices`, separated by `|` like the choices:
+
+```
+choices:     EC2|Lambda|Fargate|RDS
+correct:     2|3
+corrections: Many people think EC2 is serverless. In fact you still patch and scale its servers.|||RDS is a database, not a place to run code.
+```
+
+- An empty slot is a choice without a correction; empty slots at the end can be left out. A correction can't contain `|` (writers turn it into `/`).
+- Plain text: formatting tags are removed, but `**bold**`, `*italic*` and `` `code` `` work. At most 500 characters per correction.
+- Slots of correct choices and slots past the last choice are dropped. Other card types drop the field.
+- Exported to Anki, each correction is added under the notes, after its choice ("EC2: Many people think…").
 
 ## Math and numeric cards
 
@@ -248,6 +264,7 @@ Recognised column names (case-insensitive):
 | `steps` | sequence |
 | `alt_answers` | alternatives, also accept |
 | `variants` | question variants, variant questions, other questions: see [Question variants](#question-variants) |
+| `corrections` | misconceptions, choice feedback, wrong choice feedback: see [Corrections for wrong choices](#corrections-for-wrong-choices) |
 | `tolerance` | tol |
 | `code` | snippet, source code: a code card's code (quote it to keep line breaks; a line starting with `#` inside quotes is code, not a comment) |
 | `code_lang` | code language, programming language |
@@ -262,7 +279,7 @@ To include media with a CSV, zip the CSV together with the files it references a
 
 **Exporting a CSV** (Decks → a deck's options → Export CSV) writes every column above plus `lesson` and `reading`, so importing it gives the same cards. A CSV holds media file names, not the files: export a `.lernpack` to take pictures and sounds along.
 
-**CSV template.** Decks → "Download the CSV template" saves `lernlab-template.csv`: the main columns and three example cards (a plain card with two question variants, a multiple-choice card and a language card).
+**CSV template.** Decks → "Download the CSV template" saves `lernlab-template.csv`: the main columns and three example cards (a plain card with two question variants, a multiple-choice card with a correction for a wrong choice and a language card).
 
 ## Anki `.apkg`
 

@@ -11,7 +11,8 @@ import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
 import { textPx } from '../display';
-import { Feedback, LevelTag } from '../components';
+import { Feedback, LevelTag, Misconception } from '../components';
+import { pickedCorrections } from '@lernlab/core/misconceptions';
 import type { Level } from '@lernlab/core/variants';
 import { checkTyped, plainAnswer } from '../typed-logic';
 import { CodeBlock, CodeLine } from '../code-block';
@@ -1198,6 +1199,24 @@ export function Lesson({
   );
 }
 
+/**
+ * A wrong multiple-choice answer: the right answer, after the author's correction for each wrong choice
+ * picked (#202) when there is one. Shared with the mock exam's tutor mode.
+ */
+export function WrongChoice({ corrections, answer }: { corrections: string[]; answer: string }) {
+  const { t } = useTranslation();
+  if (!corrections.length) return <>{answer}</>;
+  return (
+    <Misconception lead={t('ex.mcq.mixUp')} answer={answer}>
+      {corrections.map((html, i) => (
+        <p key={i}>
+          <Rich html={html} />
+        </p>
+      ))}
+    </Misconception>
+  );
+}
+
 /* ───────────── Multiple choice / multi-select question (certification style) ───────────── */
 export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) {
   const { t } = useTranslation();
@@ -1268,9 +1287,14 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
       </div>
       {done !== null && (
         <Feedback tone={done ? 'right' : 'wrong'}>
-          {done
-            ? ctx.t.right(ctx.combo)
-            : t('common.correctIs', { answer: ex.correct.map((i) => ex.choices[i]).join(' + ') })}
+          {done ? (
+            ctx.t.right(ctx.combo)
+          ) : (
+            <WrongChoice
+              corrections={pickedCorrections(ex.corrections, sel, ex.correct)}
+              answer={t('common.correctIs', { answer: ex.correct.map((i) => ex.choices[i]).join(' + ') })}
+            />
+          )}
           {ex.explanation && (
             <div className="small" style={{ marginTop: 6, fontWeight: 500 }}>
               <Rich html={ex.explanation} />

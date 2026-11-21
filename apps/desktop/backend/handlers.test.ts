@@ -140,6 +140,17 @@ test('the card editor saves, keeps and clears question variants', async () => {
   assert.ok(!('variants' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
+test('the card editor saves, keeps and clears corrections for wrong choices', async () => {
+  const deck = await ok('decks.create', { name: 'Cloud quiz', language: null });
+  const card = { front: 'Serverless?', back: '', type: 'mcq', choices: 'EC2|Lambda', correct: '2' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, corrections: 'Many think <b>so</b>|x' } });
+  assert.equal((await ok('cards.get', { id })).extra.corrections, 'Many think so');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.corrections, 'Many think so', 'kept when the field is not sent');
+  await ok('cards.update', { id, card: { ...card, corrections: '' } });
+  assert.ok(!('corrections' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');

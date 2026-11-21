@@ -13,6 +13,8 @@ import {
   EMPTY,
   addVariant,
   canAddVariant,
+  choiceRows,
+  editCorrection,
   editVariant,
   fieldsToSave,
   previewOf,
@@ -25,6 +27,7 @@ import {
   type Preview,
 } from './card-editor-logic';
 import { LEVELS, VARIANTS_MAX, type Variant } from '@lernlab/core/variants';
+import { CORRECTION_MAX_LENGTH } from '@lernlab/core/misconceptions';
 import { Media, Rich } from './rich';
 import { CodeBlock } from './code-block';
 import { OcclusionEditor } from './occlusion';
@@ -154,7 +157,7 @@ export function CardEditor({
     set(k, !c[k]);
     onSaved();
   };
-  type TextKey = Exclude<keyof typeof EMPTY, 'type' | 'variants'>;
+  type TextKey = Exclude<keyof typeof EMPTY, 'type' | 'variants' | 'corrections'>;
   const f = (k: TextKey, label: string, ph = '', area = false) => (
     <>
       <label className="lbl" htmlFor={`${uid}-${k}`}>
@@ -250,6 +253,7 @@ export function CardEditor({
         <>
           {f('choices', t('browse.editor.choices'), t('browse.editor.choicesPlaceholder'))}
           {f('correct', t('browse.editor.correct'), '2|3')}
+          <CorrectionsField form={c} onChange={(v) => set('corrections', v)} />
         </>
       ) : c.type === 'order' ? (
         f('steps', t('browse.editor.steps'), t('browse.editor.stepsPlaceholder'))
@@ -709,6 +713,40 @@ function VariantsField({ variants, onChange }: { variants: Variant[]; onChange: 
       ) : (
         <p className="small muted">{t('browse.editor.variants.full', { count: VARIANTS_MAX })}</p>
       )}
+    </fieldset>
+  );
+}
+
+/** A short correction for each wrong choice, shown when a learner picks it ("Many people think X. In fact Y."). */
+function CorrectionsField({ form, onChange }: { form: Form; onChange: (v: string[]) => void }) {
+  const { t } = useTranslation();
+  const uid = useId();
+  const wrong = choiceRows(form)
+    .map((row, i) => ({ ...row, i }))
+    .filter((row) => !row.correct);
+  if (!wrong.length) return null;
+  return (
+    <fieldset className="editor-variants editor-corrections" aria-describedby={`${uid}-help`}>
+      <legend>{t('browse.editor.corrections.title')}</legend>
+      <p id={`${uid}-help`} className="small muted">
+        {t('browse.editor.corrections.help')}
+      </p>
+      {wrong.map(({ choice, i }) => (
+        <div className="editor-correction" key={i}>
+          <label className="lbl" htmlFor={`${uid}-c${i}`}>
+            {t('browse.editor.corrections.choice', { choice })}
+          </label>
+          <textarea
+            id={`${uid}-c${i}`}
+            rows={2}
+            maxLength={CORRECTION_MAX_LENGTH}
+            className="input"
+            value={form.corrections[i] ?? ''}
+            placeholder={t('browse.editor.corrections.placeholder')}
+            onChange={(e) => onChange(editCorrection(form.corrections, i, e.target.value))}
+          />
+        </div>
+      ))}
     </fieldset>
   );
 }

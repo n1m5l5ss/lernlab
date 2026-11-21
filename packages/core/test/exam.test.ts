@@ -21,13 +21,13 @@ const { dayKey } = await import('../src/game');
 after(() => cleanupTempDir(dir));
 
 const csv = [
-  'front,back,tags,type,choices,correct,explanation',
-  'Object storage?,S3,storage,,,,',
-  'Block storage?,EBS,storage,,,,',
-  'File storage?,EFS,storage,,,,',
-  'Users and roles?,IAM,security,,,,',
-  'Pick TWO serverless services,,compute,mcq,Lambda|EC2|Fargate|EBS,1|3,Both run code without servers to manage.',
-  'Which is a database?,DynamoDB,,,,,',
+  'front,back,tags,type,choices,correct,explanation,corrections',
+  'Object storage?,S3,storage,,,,,',
+  'Block storage?,EBS,storage,,,,,',
+  'File storage?,EFS,storage,,,,,',
+  'Users and roles?,IAM,security,,,,,',
+  'Pick TWO serverless services,,compute,mcq,Lambda|EC2|Fargate|EBS,1|3,Both run code without servers to manage.,|Many people think **EC2** is serverless. In fact you run its servers.',
+  'Which is a database?,DynamoDB,,,,,,',
 ].join('\n');
 const { deck } = importFile('Cloud.csv', strToU8(`${csv}\n`));
 const ids = getDb()
@@ -48,8 +48,15 @@ test('an exam asks multiple-choice questions from the deck, with tags as topics'
   assert.deepEqual(multi.correct.map((i) => multi.choices[i]).sort(), ['Fargate', 'Lambda']);
   assert.match(multi.explanation, /without servers/);
   assert.deepEqual(multi.topics, ['compute']);
+  assert.equal(
+    multi.corrections?.[multi.choices.indexOf('EC2')],
+    'Many people think <b>EC2</b> is serverless. In fact you run its servers.',
+    "a wrong choice's correction goes with it, for tutor mode",
+  );
+  assert.equal(multi.corrections?.[multi.choices.indexOf('EBS')], '');
   const basic = exam.questions.find((q) => q.stem === 'Object storage?')!;
   assert.equal(basic.choices[basic.correct[0]], 'S3');
+  assert.ok(!('corrections' in basic), 'cards without corrections have none');
 
   updateDeck(deck.id, { settings: { exam: { questions: 3, minutes: 5, passMark: 80 } } });
   const short = buildExam(deck.id, getDb());
