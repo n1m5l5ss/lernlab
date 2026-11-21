@@ -58,6 +58,8 @@ export type SessionResult = {
   practice: boolean;
   /** New cards met in this session. */
   introduced: number;
+  /** Their ids, for "Will you know this tomorrow?" on the summary (#205). */
+  newCards: number[];
 };
 
 /** Blocks of single exercises can bring cards back; games and blitz rounds can't. */
@@ -293,6 +295,7 @@ export function Session({
     bossWon: null as boolean | null,
   });
   const missed = useRef(new Set<number>());
+  const newCards = useRef(new Set<number>());
   const relearn = useRef(new Relearn());
   const responseTimes = useRef<number[]>([]);
   const slowStreak = useRef(0);
@@ -354,7 +357,10 @@ export function Session({
     (a: AnswerInput): number => {
       const ms = performance.now() - a.shownAt;
       const counts = a.format !== 'intro';
-      if (!counts) totals.current.introduced++;
+      if (!counts) {
+        totals.current.introduced++;
+        newCards.current.add(a.itemId);
+      }
       let gained = 0;
       if (counts && !a.silent) {
         const ok = a.correct && !a.articleError;
@@ -519,6 +525,7 @@ export function Session({
       missed: [...missed.current],
       practice: plan.practice,
       introduced: totals.current.introduced,
+      newCards: [...newCards.current],
     });
   };
 

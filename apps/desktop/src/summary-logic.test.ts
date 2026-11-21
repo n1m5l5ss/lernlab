@@ -1,7 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Item } from '@lernlab/core/types';
-import { MISSED_SHOWN, summaryFacts, summaryMoments } from './summary-logic';
+import {
+  MISSED_SHOWN,
+  TOMORROW_SHOWN,
+  summaryFacts,
+  summaryMoments,
+  tomorrowCards,
+  tomorrowReport,
+} from './summary-logic';
 
 const item = (id: number) => ({ id, target: `word ${id}`, meaning: `meaning ${id}` }) as Item;
 const items = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8].map((id) => [id, item(id)]));
@@ -66,4 +73,29 @@ test('moments: level-up first, then badges, then streak news; nothing for an ord
   const quiet = { ...repair, streakChange: { freezeEarned: false, repaired: false, repairDone: null } };
   assert.deepEqual(summaryMoments(summaryFacts(result, quiet, items), quiet), []);
   assert.deepEqual(summaryMoments(summaryFacts(result, null, items), null), []);
+});
+
+test('the tomorrow check asks about the new cards met, question only, never in practice (#205)', () => {
+  const qa = (i: Item) => ({ prompt: `question ${i.id}` });
+  assert.deepEqual(tomorrowCards({ practice: false, newCards: [2, 99, 4, 2] }, items, qa), [
+    { id: 2, prompt: 'question 2' },
+    { id: 4, prompt: 'question 4' },
+  ]);
+  assert.deepEqual(tomorrowCards({ practice: true, newCards: [2, 4] }, items, qa), []);
+  assert.deepEqual(tomorrowCards({ practice: false, newCards: [] }, items, qa), []);
+  const many = Array.from({ length: 30 }, (_, i) => i + 1);
+  const lots = Object.fromEntries(many.map((id) => [id, item(id)]));
+  assert.equal(tomorrowCards({ practice: false, newCards: many }, lots, qa).length, TOMORROW_SHOWN);
+});
+
+test('the report on the last check lists only answers whose cards came back', () => {
+  const groups = {
+    yes: { cards: 3, reviewed: 3, right: 2 },
+    unsure: { cards: 2, reviewed: 0, right: 0 },
+    no: { cards: 1, reviewed: 1, right: 1 },
+  };
+  assert.deepEqual(tomorrowReport(groups), [
+    { answer: 'yes', reviewed: 3, right: 2 },
+    { answer: 'no', reviewed: 1, right: 1 },
+  ]);
 });

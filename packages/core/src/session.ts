@@ -29,6 +29,7 @@ import { variantIndex, variantsOf } from './variants';
 import { isMyth } from './misconceptions';
 import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
+import { tomorrowUnsure } from './tomorrow';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
 const SIZES: Record<
@@ -115,9 +116,15 @@ export function planSession(
 
   // 1. Ignition: three near-certain wins (easiest known cards; on day one, guess common ones).
   const easy = [...learned].sort((a, b) => (info[b]?.mastery ?? 0) - (info[a]?.mastery ?? 0)).slice(0, 12);
-  const ignitionIds = shuffle(easy.length >= 3 ? easy : [...easy, ...upcoming.slice(0, 6)])
-    .filter(plain)
-    .slice(0, 3);
+  // Cards you were unsure you would know today (the tomorrow check, #205) come first. Recognition only: the warm-up
+  // never grades a card, so their first real recall later in the session still counts.
+  const unsure = practice ? [] : tomorrowUnsure(d, now).filter((id) => has(id) && plain(id));
+  const ignitionIds = [
+    ...unsure,
+    ...shuffle(easy.length >= 3 ? easy : [...easy, ...upcoming.slice(0, 6)]).filter(
+      (id) => plain(id) && !unsure.includes(id),
+    ),
+  ].slice(0, 3);
   if (ignitionIds.length && pool.length >= 4) {
     blocks.push({
       id: bid(),

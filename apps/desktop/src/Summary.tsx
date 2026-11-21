@@ -1,5 +1,5 @@
 // The end of a session: what you recalled, what you earned, and the cards that come back tomorrow.
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import { motionReduced } from './display';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,11 @@ import { formatNumber } from './i18n';
 import { Rich } from './rich';
 import type { SessionResult } from './Session';
 import { dayDate, MotivationIcon, MAX_FREEZES, type MotivationIconKind } from './Motivation';
-import { summaryFacts, summaryMoments, type Moment } from './summary-logic';
+import { summaryFacts, summaryMoments, tomorrowCards, tomorrowReport, type Moment } from './summary-logic';
+import { qa } from '@lernlab/core/cards';
+import type { TomorrowAnswer } from '@lernlab/core/tomorrow';
+import { api } from './api';
+import { SegmentedControl } from './components';
 
 export function Summary({
   result,
@@ -32,6 +36,7 @@ export function Summary({
   const { t } = useTranslation();
   const f = useMemo(() => summaryFacts(result, server, items), [result, server, items]);
   const moments = useMemo(() => summaryMoments(f, server), [f, server]);
+  const tomorrow = useMemo(() => tomorrowCards(result, items, qa), [result, items]);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus(); // screen readers announce the result first
@@ -95,6 +100,7 @@ export function Summary({
         {f.total ? t('summary.recalled', { count: f.recalled, total: f.total }) : t('summary.noAnswers')}
       </h1>
       {result.practice && <p className="summary-note">{t('summary.practice')}</p>}
+      {server?.tomorrowCheck && <TomorrowReport report={server.tomorrowCheck} />}
       <div className="summary-tiles">
         <section className="panel summary-tile">
           <b>{formatNumber(f.introduced)}</b>
@@ -168,6 +174,7 @@ export function Summary({
           </ul>
         </section>
       )}
+      <TomorrowCheck cards={tomorrow} lang={lang} />
       <div className="summary-actions">
         <button className="btn" onClick={onAgain}>
           {t('summary.again')} <span className="kbd">{t('summary.againKey')}</span>
@@ -177,5 +184,63 @@ export function Summary({
         </button>
       </div>
     </main>
+  );
+}
+
+/**
+ * "Will you know this tomorrow?" (#205): today's new cards, question only, each with yes, not sure or no. Every
+ * answer is saved at once; nothing here is required, marked or changes when a card is next due.
+ */
+function TomorrowCheck({ cards, lang }: { cards: { id: number; prompt: string }[]; lang: string | null }) {
+  const { t } = useTranslation();
+  const id = useId();
+  const [answers, setAnswers] = useState<Record<number, TomorrowAnswer>>({});
+  if (!cards.length) return null;
+  const choose = (itemId: number, answer: TomorrowAnswer) => {
+    setAnswers((a) => ({ ...a, [itemId]: answer }));
+    void api.saveTomorrow([{ itemId, answer }]).catch(() => {});
+  };
+  const options = (['yes', 'unsure', 'no'] as const).map((value) => ({ value, label: t(`summary.tomorrow.${value}`) }));
+  return (
+    <section className="panel tomorrow" aria-labelledby={`${id}-title`}>
+      <h2 id={`${id}-title`}>{t('summary.tomorrow.title')}</h2>
+      <p className="muted">{t('summary.tomorrow.lead')}</p>
+      <ul>
+        {cards.map((c) => (
+          <li key={c.id}>
+            <span id={`${id}-${c.id}`} className="tomorrow-q" lang={lang ?? undefined}>
+              <Rich html={c.prompt} />
+            </span>
+            <SegmentedControl
+              value={answers[c.id] ?? null}
+              options={options}
+              onChange={(a) => choose(c.id, a)}
+              labelledBy={`${id}-${c.id}`}
+              className="tomorrow-choice"
+            />
+          </li>
+        ))}
+      </ul>
+      <p className="small muted" role="status">
+        {Object.keys(answers).length > 0 && t('summary.tomorrow.saved')}
+      </p>
+    </section>
+  );
+}
+
+/** How the last "Will you know this tomorrow?" held up, now that its cards came back (#205). */
+function TomorrowReport({ report }: { report: NonNullable<OutputOf<'session.finish'>['tomorrowCheck']> }) {
+  const { t } = useTranslation();
+  const lines = tomorrowReport(report.groups);
+  if (!lines.length) return null;
+  return (
+    <section className="panel tomorrow-report" aria-labelledby="tomorrow-report">
+      <h2 id="tomorrow-report">{t('summary.tomorrow.reportTitle', { date: dayDate(report.day) })}</h2>
+      <ul>
+        {lines.map((l) => (
+          <li key={l.answer}>{t(`summary.tomorrow.report.${l.answer}`, { count: l.reviewed, right: l.right })}</li>
+        ))}
+      </ul>
+    </section>
   );
 }

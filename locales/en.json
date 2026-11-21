@@ -900,7 +900,24 @@
     "againKey": "Space",
     "done": "Done",
     "doneKey": "Enter",
-    "practice": "That was practice: your review schedule did not change."
+    "practice": "That was practice: your review schedule did not change.",
+    "tomorrow": {
+      "title": "Will you know these tomorrow?",
+      "lead": "Just the question, no answer: picture tomorrow and decide. Next time you will see how your guesses held up. Skip any you like.",
+      "yes": "Yes",
+      "unsure": "Not sure",
+      "no": "No",
+      "saved": "Saved. Cards you are not sure about come first in your next warm-up.",
+      "reportTitle": "How your guesses from {{date}} held up",
+      "report": {
+        "yes_one": "You said yes to {{count}} card that came back: you knew {{right}}.",
+        "yes_other": "You said yes to {{count}} cards that came back: you knew {{right}}.",
+        "unsure_one": "Not sure about {{count}} card: you knew {{right}}.",
+        "unsure_other": "Not sure about {{count}} cards: you knew {{right}}.",
+        "no_one": "You said no to {{count}} card: you knew {{right}}.",
+        "no_other": "You said no to {{count}} cards: you knew {{right}}."
+      }
+    }
   },
   "exam": {
     "kicker": "Mock exam",

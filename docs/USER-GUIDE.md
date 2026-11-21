@@ -134,6 +134,8 @@ Some things to know:
 
 At the end you see how many answers you recalled, how many new cards you started, the XP you earned, and your days this week. Cards you missed are listed: they come back tomorrow. Press **One more round** (`Space`) or **Done** (`Enter`).
 
+After a session in which you met new cards, **Will you know these tomorrow?** shows each new card's question, without the answer. Answer **Yes**, **Not sure** or **No** for any you like; each answer is saved at once, and you can skip them all. At the end of your next session on a later day, once some of those cards have come back, the summary shows how your guesses held up ("You said yes to 4 cards that came back: you knew 3"). Cards you were not sure about come first in the next warm-up. None of this changes when a card is next due; it stays on your computer.
+
 ### Practice without changing the schedule
 
 Tick **Practice** on Home, then press **Start practice**. A practice session lets you cram any cards, for example before a test. Your review schedule stays the same. On the Decks screen, a deck with nothing due shows **Practice** instead of **Study**.

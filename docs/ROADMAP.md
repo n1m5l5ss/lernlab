@@ -87,7 +87,7 @@ These come from a review of the research on remembering, understanding and stayi
 - [ ] **Misconception feedback** on wrong multiple-choice answers.
 - [ ] **Guess first** before a new topic (practice only, no timer).
 - [ ] **If-then study plan,** with the reminder in your own words.
-- [ ] **Calibration:** confidence against real recall, a "will you know this tomorrow?" check, and confident misses re-checked.
+- [x] **Calibration:** confidence against real recall, a "will you know this tomorrow?" check, and confident misses re-checked (#205).
 
 **Tier 2: good evidence, more effort or fewer subjects**
 
