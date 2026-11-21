@@ -1,6 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EMPTY, fieldsToSave, formFor, previewOf, showImageAlt, sortDrop, type Form } from './card-editor-logic';
+import {
+  EMPTY,
+  addVariant,
+  canAddVariant,
+  editVariant,
+  fieldsToSave,
+  formFor,
+  previewOf,
+  removeVariant,
+  showImageAlt,
+  showVariants,
+  sortDrop,
+  type Form,
+} from './card-editor-logic';
+import { VARIANTS_MAX } from '@lernlab/core/variants';
 
 const deck = { id: 1, language: null };
 const form = (f: Partial<Form>): Form => ({ ...EMPTY, ...f });
@@ -170,4 +184,40 @@ test('the image description is asked for only when the card has an image, and is
   const card = { ...previewOf(f, deck)!.item, suspended: false, starred: false };
   assert.equal(formFor(card).imageAlt, 'A red heart', 'an existing description fills the field');
   assert.equal(formFor({ ...card, extra: {} }).imageAlt, '');
+});
+
+test('question variants: added, changed and removed in the form, saved as one line, only on written-question cards', () => {
+  let f = form({ front: 'Beta blocker', back: 'slows the heart' });
+  assert.deepEqual(f.variants, []);
+  f = { ...f, variants: addVariant(f.variants) };
+  assert.deepEqual(f.variants, [{ prompt: '', level: 'apply' }], 'a new question starts as apply');
+  f = { ...f, variants: editVariant(f.variants, 0, { prompt: 'A patient with angina | asthma?' }) };
+  f = { ...f, variants: addVariant(f.variants) };
+  f = { ...f, variants: editVariant(f.variants, 1, { prompt: 'What if the dose doubles?', level: 'analyse' }) };
+  f = { ...f, variants: addVariant(f.variants) }; // left empty
+  assert.equal(
+    fieldsToSave(f).variants,
+    'apply: A patient with angina / asthma? | analyse: What if the dose doubles?',
+    'empty questions are not saved; a | cannot split a question',
+  );
+  assert.equal(previewOf(f, deck)!.item.extra.variants, fieldsToSave(f).variants);
+  assert.deepEqual(
+    removeVariant(f.variants, 0).map((v) => v.prompt),
+    ['What if the dose doubles?', ''],
+  );
+  const card = { ...previewOf(f, deck)!.item, suspended: false, starred: false };
+  assert.deepEqual(formFor(card).variants, [
+    { prompt: 'A patient with angina / asthma?', level: 'apply' },
+    { prompt: 'What if the dose doubles?', level: 'analyse' },
+  ]);
+  assert.equal(fieldsToSave(form({ front: 'x' })).variants, '', 'no questions clears stored ones');
+
+  assert.ok(showVariants(form({ type: 'basic' })) && showVariants(form({ type: 'numeric' })));
+  for (const type of ['cloze', 'mcq', 'order', 'code', 'occlusion'] as const) {
+    assert.equal(showVariants(form({ type })), false, type);
+    assert.equal(fieldsToSave({ ...f, type }).variants, '', `${type} cards ask in their own way`);
+  }
+  const full = Array.from({ length: VARIANTS_MAX }, () => ({ prompt: 'q', level: 'apply' as const }));
+  assert.equal(canAddVariant(full), false);
+  assert.equal(addVariant(full).length, VARIANTS_MAX);
 });

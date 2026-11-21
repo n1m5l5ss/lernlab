@@ -5,6 +5,7 @@ import { cardToItem, mediaKind, type NormalizedCard } from '@lernlab/core/librar
 import { parseTolerance } from '@lernlab/core/numeric';
 import { codeTask, type CodeTask } from '@lernlab/core/code';
 import { formatBox } from '@lernlab/core/occlusion';
+import { VARIANTS_MAX, formatVariants, parseVariants, takesVariants, type Variant } from '@lernlab/core/variants';
 import type { Shape } from './occlusion-logic';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
@@ -39,6 +40,8 @@ export const EMPTY = {
   occlusion: '',
   occlusionGroup: '',
   occlusionMode: 'one',
+  /** Other ways to ask the question (rows being edited may still be empty). */
+  variants: [] as Variant[],
 };
 export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
 
@@ -67,6 +70,7 @@ export const formFor = (c: FullCard): Form => ({
   occlusion: c.extra.occlusion ?? '',
   occlusionGroup: c.extra.occlusionGroup ?? '',
   occlusionMode: c.extra.occlusionMode ?? 'one',
+  variants: parseVariants(c.extra.variants),
   suspended: c.suspended,
   starred: c.starred,
   item: c,
@@ -74,6 +78,16 @@ export const formFor = (c: FullCard): Form => ({
 
 /** The image description field shows while the card has an image (it is the image's alt text). */
 export const showImageAlt = (f: Pick<Form, 'image'>) => !!f.image;
+
+/** Question variants are for cards asked as a written question (flip or typed). */
+export const showVariants = (f: Pick<Form, 'type'>) => takesVariants(f.type === 'basic' ? 'card' : f.type);
+export const canAddVariant = (list: Variant[]) => list.length < VARIANTS_MAX;
+/** A new question starts as apply: the card's own question already covers recall. */
+export const addVariant = (list: Variant[]): Variant[] =>
+  canAddVariant(list) ? [...list, { prompt: '', level: 'apply' }] : list;
+export const editVariant = (list: Variant[], i: number, change: Partial<Variant>): Variant[] =>
+  list.map((v, k) => (k === i ? { ...v, ...change } : v));
+export const removeVariant = (list: Variant[], i: number): Variant[] => list.filter((_, k) => k !== i);
 
 /** What the editor saves: only the fields of the chosen type, so a leftover choice list can't turn a card into a quiz. */
 export function fieldsToSave(f: Form) {
@@ -89,6 +103,7 @@ export function fieldsToSave(f: Form) {
     occlusion: f.type === 'occlusion' ? f.occlusion : '',
     occlusionGroup: f.type === 'occlusion' ? f.occlusionGroup : '',
     occlusionMode: f.type === 'occlusion' ? f.occlusionMode : '',
+    variants: showVariants(f) ? formatVariants(f.variants) : '',
   };
 }
 

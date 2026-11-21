@@ -11,14 +11,20 @@ import { mediaUrl } from './bridge';
 import {
   CARD_TYPES,
   EMPTY,
+  addVariant,
+  canAddVariant,
+  editVariant,
   fieldsToSave,
   previewOf,
+  removeVariant,
   showImageAlt,
+  showVariants,
   sortDrop,
   type Form,
   type MediaSlot,
   type Preview,
 } from './card-editor-logic';
+import { LEVELS, VARIANTS_MAX, type Variant } from '@lernlab/core/variants';
 import { Media, Rich } from './rich';
 import { CodeBlock } from './code-block';
 import { OcclusionEditor } from './occlusion';
@@ -148,7 +154,7 @@ export function CardEditor({
     set(k, !c[k]);
     onSaved();
   };
-  type TextKey = Exclude<keyof typeof EMPTY, 'type'>;
+  type TextKey = Exclude<keyof typeof EMPTY, 'type' | 'variants'>;
   const f = (k: TextKey, label: string, ph = '', area = false) => (
     <>
       <label className="lbl" htmlFor={`${uid}-${k}`}>
@@ -303,6 +309,7 @@ export function CardEditor({
       <p className="small muted editor-format">
         {t('browse.editor.formatHint', { tags: SAFE_TAGS.map((x) => `<${x}>`).join(' ') })}
       </p>
+      {showVariants(c) && <VariantsField variants={c.variants} onChange={(v) => set('variants', v)} />}
       <span className="lbl">{t('browse.editor.media')}</span>
       <div className={`editor-drop${dragging ? ' over' : ''}`}>
         <p className="small muted">{uploading ? t('browse.editor.uploading') : t('browse.editor.dropHint')}</p>
@@ -633,5 +640,75 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
         </div>
       </div>
     </section>
+  );
+}
+
+/** Other ways to ask the card's question, each with its level: add, edit and remove them. */
+function VariantsField({ variants, onChange }: { variants: Variant[]; onChange: (v: Variant[]) => void }) {
+  const { t } = useTranslation();
+  const uid = useId();
+  // The row just added takes the focus, so a keyboard user can type at once.
+  const [added, setAdded] = useState(-1);
+  return (
+    <fieldset className="editor-variants" aria-describedby={`${uid}-help`}>
+      <legend>{t('browse.editor.variants.title')}</legend>
+      <p id={`${uid}-help`} className="small muted">
+        {t('browse.editor.variants.help')}
+      </p>
+      {variants.map((v, i) => {
+        const n = i + 1;
+        return (
+          <div className="editor-variant" key={i}>
+            <label className="sr-only" htmlFor={`${uid}-q${i}`}>
+              {t('browse.editor.variants.question', { n })}
+            </label>
+            <textarea
+              id={`${uid}-q${i}`}
+              rows={2}
+              className="input"
+              value={v.prompt}
+              autoFocus={i === added}
+              placeholder={t(`browse.editor.variants.placeholder.${v.level}`)}
+              onChange={(e) => onChange(editVariant(variants, i, { prompt: e.target.value }))}
+            />
+            <label className="sr-only" htmlFor={`${uid}-l${i}`}>
+              {t('browse.editor.variants.level', { n })}
+            </label>
+            <select
+              id={`${uid}-l${i}`}
+              className="input"
+              value={v.level}
+              onChange={(e) => onChange(editVariant(variants, i, { level: e.target.value as Variant['level'] }))}
+            >
+              {LEVELS.map((l) => (
+                <option key={l} value={l}>
+                  {t(`levels.${l}`)}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn ghost"
+              onClick={() => onChange(removeVariant(variants, i))}
+              aria-label={t('browse.editor.variants.remove', { n })}
+            >
+              ✕
+            </button>
+          </div>
+        );
+      })}
+      {canAddVariant(variants) ? (
+        <button
+          className="btn ghost"
+          onClick={() => {
+            setAdded(variants.length);
+            onChange(addVariant(variants));
+          }}
+        >
+          {t('browse.editor.variants.add')}
+        </button>
+      ) : (
+        <p className="small muted">{t('browse.editor.variants.full', { count: VARIANTS_MAX })}</p>
+      )}
+    </fieldset>
   );
 }
