@@ -142,3 +142,12 @@ test('.apkg: the plain-text back of a code card is escaped, its line breaks kept
   assert.equal(back('What does this print?'), '&lt;b&gt;x&lt;/b&gt; &amp; y<br>ok');
   assert.equal(back('Order'), '1. <b>one</b><br>2. two', 'formatted steps keep their HTML');
 });
+
+test('.apkg: Anki has no question variants, so they are kept under the notes', () => {
+  const vary = createDeck('Variants', null);
+  upsertCards(vary, [{ front: 'Beta blocker', back: 'slows the heart', notes: 'n', variants: 'apply: A <b>&</b> B?' }]);
+  const db = collection(unzipSync(exportDeck(vary.id, 'apkg').data));
+  const fields = String(db.prepare('SELECT flds FROM notes').get()!.flds).split('\x1f');
+  db.close();
+  assert.equal(fields[5], 'n<br>apply: A &amp; B?');
+});

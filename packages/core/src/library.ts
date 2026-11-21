@@ -10,6 +10,7 @@ import { markdownLite, sanitizeHtml } from './cards';
 import { parseQuantity, parseTolerance } from './numeric';
 import { normalizeCode } from './code';
 import { formatBox, modeOf, parseBox } from './occlusion';
+import { cleanVariants, takesVariants } from './variants';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -98,6 +99,8 @@ export type NormalizedCard = {
   correct?: string; // "2|4" (1-based) or the correct choice texts
   steps?: string; // "first|second|third"
   altAnswers?: string; // "colour|color"
+  /** Other ways to ask the question, with a level: "apply: A patient has X. Which mechanism? | analyse: …" (variants.ts). '' clears them. */
+  variants?: string;
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
   code?: string; // code cards: the snippet, as plain text (never HTML)
   codeLang?: string; // code cards: its language, e.g. "python"
@@ -283,6 +286,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   const imageAlt = stripHtml(c.imageAlt ?? extra.imageAlt ?? '');
   if (imageAlt && c.image) extra.imageAlt = imageAlt;
   else delete extra.imageAlt;
+  // Question variants: plain text in one canonical line, kept only on cards asked as a written question.
+  const variants = cleanVariants(c.variants ?? extra.variants);
+  if (variants && takesVariants(kind)) extra.variants = variants;
+  else delete extra.variants;
   // Same for a numeric card's tolerance: kept only when the card is numeric and the value reads.
   const tolerance = (c.tolerance ?? extra.tolerance ?? '').trim();
   if (kind === 'numeric' && parseTolerance(tolerance)) extra.tolerance = tolerance;

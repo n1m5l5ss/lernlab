@@ -129,6 +129,11 @@ test('docs/FORMAT.md is marked version 1 and lists exactly the schema fields', (
     .find((l) => l.startsWith('| `imageAlt` |'));
   assert.match(added ?? '', /optional, added after v1 was published; older readers ignore it/);
   assert.ok(!cardSchema.required.includes('imageAlt'), 'the image description is optional');
+  const variants = section('### cards.jsonl')
+    .split('\n')
+    .find((l) => l.startsWith('| `variants` |'));
+  assert.match(variants ?? '', /optional, added after v1 was published; older readers ignore it/);
+  assert.ok(!cardSchema.required.includes('variants'), 'question variants are optional');
   const deckKeys = [...section('### manifest.json').matchAll(/^\| `deck\.(\w+)` \|/gm)].map((m) => m[1]);
   assert.deepEqual(deckKeys.sort(), Object.keys(manifestSchema.properties.deck.properties).sort());
 });
@@ -172,15 +177,17 @@ test('a fresh export with every kind of field matches the schemas', () => {
       { id: 'c', front: 'Order', back: '', steps: 'one|two|three', notes: 'n', subdeck: 'Spec export::Part 2' },
       { id: 'd', front: 'The {{c1::sun}} is a star', back: '', altAnswers: 'Sun', category: 'space' },
       { id: 'e', front: 'What is this?', back: 'a cat', image: 'https://example.org/cat.png', imageAlt: 'A cat' },
+      { id: 'f', front: 'Beta blocker', back: 'slows the heart', variants: 'apply: A patient with angina?' },
     ],
   };
   const { deck } = importFile('spec.json', strToU8(JSON.stringify(json)));
   const { manifest, cards } = readPack(exportDeck(deck.id, 'lernpack').data);
   assert.deepEqual(validate(manifestSchema, manifest, true), []);
   assert.deepEqual(manifest.deck.goal, { label: 'JLPT N5', words: 800 });
-  assert.equal(cards.length, 5);
+  assert.equal(cards.length, 6);
   for (const c of cards) assert.deepEqual(validate(cardSchema, c, true), [], JSON.stringify(c));
   assert.equal(cards.find((c) => c.id && c.front === 'What is this?')?.imageAlt, 'A cat');
+  assert.equal(cards.find((c) => c.front === 'Beta blocker')?.variants, 'apply: A patient with angina?');
 });
 
 test('readers ignore unknown fields in the manifest, the deck, the cards and the zip', () => {

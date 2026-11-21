@@ -467,7 +467,8 @@
         "choices": "Choices",
         "correct": "Correct choices",
         "steps": "Steps",
-        "altAnswers": "Other accepted answers"
+        "altAnswers": "Other accepted answers",
+        "variants": "Question variants"
       },
       "previewCaption_one": "The first card",
       "previewCaption_other": "The first {{count}} cards",

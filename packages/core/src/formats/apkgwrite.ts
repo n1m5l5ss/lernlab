@@ -8,6 +8,7 @@ import { stripHtml } from '../text';
 import { sha1Hex } from '../sha1';
 import { mediaKind, type NormalizedCard } from '../library';
 import { DECK_SEPARATOR } from '../decktree';
+import { parseVariants } from '../variants';
 
 /** A LernLab card id in a note's guid, so importing the package back updates the same cards. */
 export const GUID_PREFIX = 'lernlab-';
@@ -129,6 +130,11 @@ CREATE INDEX ix_notes_csum ON notes (csum);`;
 /** Plain text in an Anki field, which Anki reads as HTML. */
 const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escapeAttr = (s: string) => escapeHtml(s).replace(/"/g, '&quot;');
+/** Anki has no question variants: they go under the notes, one per line ("apply: …"), so they are not lost. */
+const notesOf = (c: NormalizedCard) =>
+  [c.notes ?? '', ...parseVariants(c.variants).map((v) => escapeHtml(`${v.level}: ${v.prompt}`))]
+    .filter(Boolean)
+    .join('<br>');
 
 /** The cloze numbers in a text: {{c1::…}} and {{c3::…}} give cards with ord 0 and 2. */
 const clozeOrds = (text: string) => {
@@ -214,7 +220,7 @@ export function writeApkg(
         c.example ?? '',
         escapeHtml(c.exampleTranslation ?? ''),
         c.explanation ?? '',
-        c.notes ?? '',
+        notesOf(c),
         ...mediaField(c),
       ];
       const sort = stripHtml(front);

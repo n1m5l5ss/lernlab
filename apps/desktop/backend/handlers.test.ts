@@ -129,6 +129,17 @@ test('the card editor saves one occlusion card per box; editing one keeps its si
   assert.equal(second.occlusionBoxes[0].label, 'Aortic arch');
 });
 
+test('the card editor saves, keeps and clears question variants', async () => {
+  const deck = await ok('decks.create', { name: 'Pharmacology', language: null });
+  const card = { front: 'Beta blocker', back: 'slows the heart' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, variants: 'apply: A <b>patient</b>?' } });
+  assert.equal((await ok('cards.get', { id })).extra.variants, 'apply: A patient?');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.variants, 'apply: A patient?', 'kept when the field is not sent');
+  await ok('cards.update', { id, card: { ...card, variants: '' } });
+  assert.ok(!('variants' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');

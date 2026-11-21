@@ -41,6 +41,7 @@ upsertCards(deck, [
     tags: ['bio', 'cardio'],
     image: 'heart.png',
     imageAlt: 'A heart cut open: four chambers',
+    variants: 'apply: A runner\'s pulse doubles, "why"? Which chambers work harder? | analyse: What if a valve leaks?',
     audio: 'heart.mp3',
     video: 'heart.mp4',
     subdeck: 'Biology::Cardio',
@@ -61,7 +62,7 @@ upsertCards(deck, [
   },
   { front: 'Order mitosis', back: '', type: 'order', steps: 'Prophase|Metaphase|Anaphase|Telophase', rank: 2 },
   { front: 'The {{c1::mitochondrion}} makes ATP', back: 'Cell biology', rank: 4 },
-  { front: '#1 rule, "quoted", with commas', back: 'line one\nline two', rank: 5 },
+  { front: '#1 rule, "quoted", with commas', back: 'line one\nline two', rank: 5, variants: 'Say it, "again"' },
 ]);
 
 /** Every stored card field except the row's own id, deck, order and timestamps; the deck's own name reads <deck>. */
@@ -110,6 +111,8 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
   );
   assert.equal(heart.imageAlt, 'A heart cut open: four chambers', 'the image description is a card field');
   assert.ok(!('imageAlt' in (heart.extra ?? {})), 'not hidden in extra');
+  assert.match(heart.variants, /^apply: A runner's pulse doubles/, 'question variants are a card field');
+  assert.ok(!('variants' in (heart.extra ?? {})));
   const csv = strFromU8(files['cards.csv']);
   const header = csv.split('\n')[0].split(',');
   for (const col of [
@@ -122,6 +125,7 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
     'alt_answers',
     'image',
     'image_alt',
+    'variants',
     'audio',
     'video',
     'id',
@@ -169,11 +173,19 @@ test('image descriptions are stored with the cards (so the round trips above car
   assert.deepEqual(alts, ['A cell, "spinning", with its organelles', 'A heart cut open: four chambers']);
 });
 
+test('question variants are stored with the cards in one canonical line (so the round trips above carry them)', () => {
+  assert.deepEqual(original.map((c) => extraOf(c).variants).filter(Boolean), [
+    'apply: A runner\'s pulse doubles, "why"? Which chambers work harder? | analyse: What if a valve leaks?',
+    'recall: Say it, "again"',
+  ]);
+});
+
 test('the CSV template imports as three example cards', () => {
   const lines = CSV_TEMPLATE.trim().split('\n');
   assert.equal(lines.length, 4, 'a header and three example rows');
   assert.match(lines[0], /^front,back,/);
   assert.ok(lines[0].split(',').includes('image_alt'), 'the template shows the image description column');
+  assert.ok(lines[0].split(',').includes('variants'), 'the template shows the question variants column');
   for (const l of lines) assert.equal(l.split(',').length, lines[0].split(',').length, l);
   const r = importFile('template.csv', strToU8(CSV_TEMPLATE));
   assert.equal(r.added, 3);
@@ -182,4 +194,6 @@ test('the CSV template imports as three example cards', () => {
     .all(r.deck.id)
     .map((x) => x.kind);
   assert.ok(kinds.includes('mcq'), kinds.join());
+  const s3 = getDb().prepare("SELECT extra FROM items WHERE deck_id = ? AND target = 'Amazon S3'").get(r.deck.id);
+  assert.match(String(s3?.extra), /apply: Which AWS service .* \| analyse: /);
 });

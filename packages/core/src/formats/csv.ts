@@ -81,6 +81,7 @@ const COLUMNS: Record<string, string[]> = {
   correct: ['correct', 'correct answer', 'correct answers'],
   steps: ['steps', 'sequence'],
   altAnswers: ['alt_answers', 'alt answers', 'alternatives', 'also accept'],
+  variants: ['variants', 'question variants', 'variant questions', 'other questions'],
   tolerance: ['tolerance', 'tol'],
   code: ['code', 'snippet', 'source code'],
   codeLang: ['code_lang', 'code language', 'programming language'],
@@ -159,6 +160,7 @@ export function csvToCards(text: string): {
       correct: get(r, 'correct') || undefined,
       steps: get(r, 'steps') || undefined,
       altAnswers: get(r, 'altAnswers') || undefined,
+      variants: get(r, 'variants') || undefined,
       tolerance: get(r, 'tolerance') || undefined,
       code: 'code' in columns ? r[columns.code] || undefined : undefined, // untrimmed: indentation matters
       codeLang: get(r, 'codeLang') || undefined,
@@ -176,6 +178,7 @@ const CSV_COLUMNS: [string, (c: NormalizedCard) => string | number | undefined][
   ['front', (c) => c.front],
   ['back', (c) => c.back],
   ['alt_answers', (c) => c.altAnswers],
+  ['variants', (c) => c.variants],
   ['example', (c) => c.example],
   ['example translation', (c) => c.exampleTranslation],
   ['explanation', (c) => c.explanation],

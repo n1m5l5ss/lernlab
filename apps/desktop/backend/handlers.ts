@@ -133,6 +133,7 @@ const cardInput = v.object({
   occlusionGroup: text,
   occlusionMode: text,
   alt: text,
+  variants: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -440,6 +441,7 @@ export const handlers = {
           occlusionGroup: opt(b.occlusionGroup),
           occlusionMode: opt(b.occlusionMode),
           altAnswers: opt(b.alt),
+          variants: opt(b.variants),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);

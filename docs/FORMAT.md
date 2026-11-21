@@ -68,7 +68,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden.
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question.
 
 ### manifest.json
 
@@ -124,6 +124,7 @@ Each line is one card. Only `front` is required.
 | `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
+| `variants` | Other ways to ask the card's question, each with a level, separated by `|`: `apply: A patient has X. Which mechanism? \| analyse: What happens if X doubles?` See [Question variants](#question-variants) (optional, added after v1 was published; older readers ignore it) |
 | `example` | Example sentence. Mark the studied word with `<b>…</b>` to get fill-the-gap rounds |
 | `exampleTranslation` | Translation of the example |
 | `explanation` | Shown after answering (rule, rationale) |
@@ -153,6 +154,20 @@ Without an `id`, a card is matched on re-import by deck name plus front and back
 Math is written in LaTeX between `\( … \)` (in a line) or `\[ … \]` / `$$ … $$` (on its own line); see [Math and numeric cards](#math-and-numeric-cards).
 
 Allowed formatting in text (the safe list): `<b> <strong> <i> <em> <u> <s> <mark> <sup> <sub> <small> <code> <pre> <br> <p> <div> <span> <ul> <ol> <li>`. They are kept without attributes; every other tag is removed when a card is saved and again when it is shown, because decks are shared files. In CSV and in the card editor you can also write `**bold**`, `*italic*` and `` `code` ``.
+
+## Question variants
+
+A card can ask its question in more than one way: the definition, a scenario ("A patient has X. Which mechanism?"), a prediction ("What happens if X doubles?") or the same fact in other words. The answer stays the card's own. `variants` holds the other questions in one line of text:
+
+```
+apply: A patient has X. Which mechanism? | analyse: What happens if X doubles? | In other words?
+```
+
+- Questions are separated by `|`, so a question can't contain one (writers turn it into `/`).
+- Each question may start with its **level** and a colon: `recall` (remember the fact), `apply` (use it in a new situation) or `analyse` (predict, compare, explain why; `analyze` is read too). A question without a level is a recall question. The card's own question (its front) is always recall.
+- Plain text: formatting tags are removed. At most 8 questions of up to 500 characters each are kept; empty questions and repeats are dropped.
+- Only cards asked as a written question use them: basic, language and numeric cards. Cloze, multiple-choice, order, code and occlusion cards ask in their own way and drop the field.
+- The card is still one card with one schedule. Exported to Anki, the questions are added under the notes.
 
 ## Math and numeric cards
 
@@ -232,6 +247,7 @@ Recognised column names (case-insensitive):
 | `choices`, `correct` | options / correct answer(s) |
 | `steps` | sequence |
 | `alt_answers` | alternatives, also accept |
+| `variants` | question variants, variant questions, other questions: see [Question variants](#question-variants) |
 | `tolerance` | tol |
 | `code` | snippet, source code: a code card's code (quote it to keep line breaks; a line starting with `#` inside quotes is code, not a comment) |
 | `code_lang` | code language, programming language |
@@ -246,7 +262,7 @@ To include media with a CSV, zip the CSV together with the files it references a
 
 **Exporting a CSV** (Decks → a deck's options → Export CSV) writes every column above plus `lesson` and `reading`, so importing it gives the same cards. A CSV holds media file names, not the files: export a `.lernpack` to take pictures and sounds along.
 
-**CSV template.** Decks → "Download the CSV template" saves `lernlab-template.csv`: the main columns and three example cards (a plain card, a multiple-choice card and a language card).
+**CSV template.** Decks → "Download the CSV template" saves `lernlab-template.csv`: the main columns and three example cards (a plain card with two question variants, a multiple-choice card and a language card).
 
 ## Anki `.apkg`
 

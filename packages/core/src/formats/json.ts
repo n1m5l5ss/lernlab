@@ -21,6 +21,7 @@ const TEXT_FIELDS = [
   'correct',
   'steps',
   'altAnswers',
+  'variants',
   'tolerance',
   'code',
   'codeLang',
