@@ -91,6 +91,8 @@ To uninstall: Settings → Apps → Installed apps → LernLab → Uninstall.
 
 ### macOS (Apple silicon and Intel)
 
+Intel Macs are supported for as long as Apple and Electron support them; after that, only Apple silicon gets new versions (see [platform support](docs/RELEASING.md#installers)).
+
 #### Opening LernLab on a Mac for the first time
 
 **Why macOS warns you.** LernLab isn't signed with a paid Apple developer certificate (99 dollars a year). It is free and open source, and the file on the website is the same file published on the [Releases page](https://github.com/n1m5l5ss/lernlab/releases), built in public from this repository. If you want to be sure, [check the download](docs/CODE_SIGNING.md#check-a-download-yourself) against the checksum GitHub shows for it.
