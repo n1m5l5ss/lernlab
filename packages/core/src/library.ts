@@ -7,6 +7,7 @@ import { basename, extname } from './paths';
 import { sha1Hex } from './sha1';
 import { stripHtml, splitArticle } from './text';
 import { markdownLite, sanitizeHtml } from './cards';
+import { parseQuantity, parseTolerance } from './numeric';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -89,12 +90,13 @@ export type NormalizedCard = {
   group?: string; // lesson group, e.g. "G01" (taught together as a mini-lesson)
   rank?: number; // frequency rank / introduction order
   extra?: Record<string, string>;
-  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps). */
+  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back). */
   type?: string;
   choices?: string; // "A|B|C|D"
   correct?: string; // "2|4" (1-based) or the correct choice texts
   steps?: string; // "first|second|third"
   altAnswers?: string; // "colour|color"
+  tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
 };
 
 export const LANGUAGES: Record<string, string> = {
@@ -206,6 +208,7 @@ export function detectKind(
   const t = (c?.type ?? '').toLowerCase();
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
+  if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
   if (/\{\{c\d+::/.test(front)) return 'cloze';
   if (tags.includes('grammar')) return 'grammar';
   if (!language) return 'card';
@@ -271,6 +274,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   const imageAlt = stripHtml(c.imageAlt ?? extra.imageAlt ?? '');
   if (imageAlt && c.image) extra.imageAlt = imageAlt;
   else delete extra.imageAlt;
+  // Same for a numeric card's tolerance: kept only when the card is numeric and the value reads.
+  const tolerance = (c.tolerance ?? extra.tolerance ?? '').trim();
+  if (kind === 'numeric' && parseTolerance(tolerance)) extra.tolerance = tolerance;
+  else delete extra.tolerance;
   const { article, word } = splitArticle(stripHtml(front));
   const example = clean(c.example);
   const isNoun = kind === 'noun';

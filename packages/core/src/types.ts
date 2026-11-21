@@ -1,7 +1,8 @@
 import type { Line } from './teacher';
 import type { Article } from './text';
 
-export type ItemKind = 'noun' | 'verb' | 'word' | 'phrase' | 'grammar' | 'number' | 'card' | 'cloze' | 'mcq' | 'order';
+export type ItemKind =
+  'noun' | 'verb' | 'word' | 'phrase' | 'grammar' | 'number' | 'card' | 'cloze' | 'mcq' | 'order' | 'numeric';
 
 /** A study item (one card/note). front = target/term/question, back = meaning/definition/answer. */
 export type Item = {

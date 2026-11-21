@@ -1,6 +1,7 @@
 // Exercise generators: turn one card into many kinds of exercises (works for any subject).
 import { acceptedAnswers, shuffle, splitBold, stripHtml, tokenize } from './text';
 import { clozeText, mcqOf, parseCloze, qa, stepsOf } from './cards';
+import { hasMath, splitMath } from './math';
 import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
@@ -70,9 +71,18 @@ export function mc(item: Item, pool: Item[], direction: 'de2en' | 'en2de'): Exer
   };
 }
 
+/** What a typed hint is built from: a formula without its \( \) delimiters. */
+export const hintSource = (answer: string) =>
+  hasMath(answer)
+    ? splitMath(answer)
+        .map((p) => ('tex' in p ? p.tex : p.text))
+        .join('')
+        .trim()
+    : answer;
+
 export function typed(item: Item): Exercise {
   const q = qa(item);
-  const core = q.requireArticle ? item.word : q.accepted[0];
+  const core = hintSource(q.requireArticle ? item.word : q.accepted[0]);
   const hint = `${core[0]}${core.slice(1).replace(/[^\s]/g, '_')} (${core.length})`;
   const kindLabel = item.lang
     ? item.kind === 'noun'

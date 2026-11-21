@@ -81,6 +81,7 @@ const COLUMNS: Record<string, string[]> = {
   correct: ['correct', 'correct answer', 'correct answers'],
   steps: ['steps', 'sequence'],
   altAnswers: ['alt_answers', 'alt answers', 'alternatives', 'also accept'],
+  tolerance: ['tolerance', 'tol'],
   extra: [],
 };
 
@@ -147,6 +148,7 @@ export function csvToCards(text: string): {
       correct: get(r, 'correct') || undefined,
       steps: get(r, 'steps') || undefined,
       altAnswers: get(r, 'altAnswers') || undefined,
+      tolerance: get(r, 'tolerance') || undefined,
     } as NormalizedCard;
   });
   const keep = all.map((c) => !!(c.front || c.back));
@@ -168,6 +170,7 @@ const CSV_COLUMNS: [string, (c: NormalizedCard) => string | number | undefined][
   ['choices', (c) => c.choices],
   ['correct', (c) => c.correct],
   ['steps', (c) => c.steps],
+  ['tolerance', (c) => c.tolerance],
   ['image', (c) => c.image],
   ['image_alt', (c) => c.imageAlt],
   ['audio', (c) => c.audio],

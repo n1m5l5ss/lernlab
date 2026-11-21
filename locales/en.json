@@ -437,7 +437,8 @@
         "basic": "Basic (front / back)",
         "cloze": "Cloze ({{open}}gap{{close}} in the front)",
         "mcq": "Multiple choice / multi-select question",
-        "order": "Put steps in order"
+        "order": "Put steps in order",
+        "numeric": "Number answer (with tolerance and unit)"
       },
       "question": "Question",
       "prompt": "Prompt",
@@ -449,6 +450,10 @@
       "correct": "Correct (numbers or texts, | separated)",
       "steps": "Steps in the right order (separate with |)",
       "stepsPlaceholder": "SYN|SYN-ACK|ACK",
+      "number": "Answer: a number, then the unit if it has one",
+      "numberPlaceholder": "9.81 m/s^2",
+      "tolerance": "Tolerance (optional): how far off still counts, or a percentage",
+      "tolerancePlaceholder": "0.05 or 1%",
       "extra": "Extra (shown after)",
       "back": "Back",
       "backPlaceholder": "Definition or answer",
@@ -500,7 +505,7 @@
       "dropRejected": "Can't put these on a card: {{names}}. Use an image, GIF, audio or video file.",
       "duplicate_one": "This deck already has a card with this front: “{{front}}” → {{back}}. You can still add it.",
       "duplicate_other": "This deck already has {{count}} cards with this front, like “{{front}}” → {{back}}. You can still add it.",
-      "formatHint": "Formatting: **bold**, *italic*, `code`, or the tags {{tags}}. Anything else is removed.",
+      "formatHint": "Formatting: **bold**, *italic*, `code`, or the tags {{tags}}. Anything else is removed. Math: \\( x^2 \\) in a line, \\[ x^2 \\] on its own line.",
       "preview": "Preview",
       "previewQuestion": "Preview · question",
       "previewAnswer": "Preview · answer",
@@ -510,7 +515,9 @@
       "problem": {
         "noGap": "Add a gap like {{open}}word{{close}} to the front, or this card is studied as a basic card.",
         "choices": "Add at least two choices and say which are correct, or this card is studied as a basic card.",
-        "steps": "Add at least two steps, or this card is studied as a basic card."
+        "steps": "Add at least two steps, or this card is studied as a basic card.",
+        "number": "Start the answer with a number, like 9.81 m/s^2, or this card is studied as a basic card.",
+        "tolerance": "Write the tolerance as a number like 0.05 or a percentage like 1%, or it is left out."
       },
       "add": "Add card",
       "starred": "★ Starred",

@@ -2,12 +2,14 @@
 import { mcqOf, qa, stepsOf } from '@lernlab/core/cards';
 import { cloze, typed } from '@lernlab/core/exercises';
 import { cardToItem, mediaKind, type NormalizedCard } from '@lernlab/core/library';
+import { parseTolerance } from '@lernlab/core/numeric';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
 
 type FullCard = OutputOf<'cards.get'>;
-export type CardType = 'basic' | 'cloze' | 'mcq' | 'order';
-export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order'];
+export type CardType = 'basic' | 'cloze' | 'mcq' | 'order' | 'numeric';
+export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order', 'numeric'];
+const STORED_TYPES = new Set<string>(CARD_TYPES);
 export type MediaSlot = 'image' | 'audio' | 'video';
 
 export const EMPTY = {
@@ -28,6 +30,7 @@ export const EMPTY = {
   choices: '',
   correct: '',
   steps: '',
+  tolerance: '',
 };
 export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
 
@@ -46,10 +49,11 @@ export const formFor = (c: FullCard): Form => ({
   audio: c.audio ?? '',
   video: c.video ?? '',
   alt: c.extra.alt ?? '',
-  type: c.kind === 'mcq' || c.kind === 'order' || c.kind === 'cloze' ? c.kind : 'basic',
+  type: STORED_TYPES.has(c.kind) ? (c.kind as CardType) : 'basic',
   choices: c.extra.choices ?? '',
   correct: c.extra.correct ?? '',
   steps: c.extra.steps ?? '',
+  tolerance: c.extra.tolerance ?? '',
   suspended: c.suspended,
   starred: c.starred,
   item: c,
@@ -66,6 +70,7 @@ export function fieldsToSave(f: Form) {
     choices: f.type === 'mcq' ? f.choices : '',
     correct: f.type === 'mcq' ? f.correct : '',
     steps: f.type === 'order' ? f.steps : '',
+    tolerance: f.type === 'numeric' ? f.tolerance : '',
   };
 }
 
@@ -89,7 +94,7 @@ export type PreviewView =
   | { type: 'mcq'; stem: string; choices: string[]; correct: number[] }
   | { type: 'order'; prompt: string; steps: string[] }
   /** The card would not study as the chosen type: say what is missing. */
-  | { type: 'problem'; problem: 'noGap' | 'choices' | 'steps' };
+  | { type: 'problem'; problem: 'noGap' | 'choices' | 'steps' | 'number' | 'tolerance' };
 export type Preview = { item: Item; view: PreviewView; explanation: string };
 
 /**
@@ -117,6 +122,9 @@ export function previewOf(f: Form, deck: { id: number; language: string | null }
       steps.length >= 2 ? { type: 'order', prompt: item.target, steps } : { type: 'problem', problem: 'steps' },
     );
   }
+  if (f.type === 'numeric' && item.kind !== 'numeric') return out({ type: 'problem', problem: 'number' });
+  if (f.type === 'numeric' && f.tolerance.trim() && !parseTolerance(f.tolerance))
+    return out({ type: 'problem', problem: 'tolerance' });
   const q = qa(item);
   if (q.typeable) {
     const ex = typed(item);

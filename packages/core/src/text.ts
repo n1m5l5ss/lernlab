@@ -1,5 +1,6 @@
 // Text helpers shared by server (exercise generation) and client (instant answer checking).
 import type { Line } from './teacher';
+import { hasMath, mathKey } from './math';
 
 export const ARTICLES = ['der', 'die', 'das'] as const;
 export type Article = (typeof ARTICLES)[number];
@@ -96,6 +97,11 @@ export function checkAnswer(input: string, accepted: string[], opts: { requireAr
   if (!given) return { correct: false, nearMiss: false, articleError: false, matched: canonical };
 
   for (const ans of accepted) {
+    // Math is compared by its source, exactly (no typo forgiveness): see mathKey.
+    if (hasMath(ans)) {
+      if (mathKey(given) === mathKey(ans)) return { correct: true, nearMiss: false, articleError: false, matched: ans };
+      continue;
+    }
     const r = compareOne(given, ans, opts.requireArticle ?? false);
     if (r) return { ...r, matched: ans };
   }
@@ -165,6 +171,7 @@ export function acceptedAnswers(target: string): string[] {
   const clean = stripHtml(target)
     .replace(/\s*\(\d+\)\s*$/, '')
     .trim();
+  if (hasMath(clean)) return [clean]; // a / or \; inside a formula is not a list of answers
   const parts = clean
     .split(/\s*[/;]\s*/)
     .map((p) => p.trim())

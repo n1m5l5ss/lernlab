@@ -1,5 +1,6 @@
 // Subject-neutral card logic shared by server and client.
 import { acceptedAnswers, stripHtml } from './text';
+import { outsideMath } from './math';
 import type { Item } from './types';
 
 /** The alt text for a card's image: its description, or '' (a decorative image) when it has none. */
@@ -26,6 +27,11 @@ export function qa(item: Item): {
     .map((x) => x.trim())
     .filter(Boolean);
   const withAlts = (a: string[]) => [...new Set([...a, ...alts])];
+  if (item.kind === 'numeric') {
+    // A number is always the answer: it is typed, and checked with its tolerance and unit (numeric.ts).
+    const back = stripHtml(item.meaning);
+    return { prompt: item.target, answer: back, accepted: withAlts([back]), requireArticle: false, typeable: true };
+  }
   if (item.kind === 'mcq' || item.kind === 'order') {
     return {
       prompt: item.target,
@@ -148,10 +154,12 @@ export function sanitizeHtml(html: string): string {
     .replace(BARE_TAG, '&lt;');
 }
 
-/** Light Markdown for CSV authors: **bold**, *italic*, `code`. */
+/** Light Markdown for CSV authors: **bold**, *italic*, `code`. Math (\( … \)) is left as written. */
 export function markdownLite(s: string): string {
-  return s
-    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
-    .replace(/(^|[^*])\*(?!\s)(.+?)\*/g, '$1<i>$2</i>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  return outsideMath(s, (text) =>
+    text
+      .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+      .replace(/(^|[^*])\*(?!\s)(.+?)\*/g, '$1<i>$2</i>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>'),
+  );
 }

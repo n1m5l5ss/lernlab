@@ -1,4 +1,4 @@
-// Card editor: four card types, a live preview drawn like the real exercise, media by drag and drop,
+// Card editor: five card types, a live preview drawn like the real exercise, media by drag and drop,
 // and a gentle warning when the deck already has a card with the same front.
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -215,6 +215,11 @@ export function CardEditor({
         </>
       ) : c.type === 'order' ? (
         f('steps', t('browse.editor.steps'), t('browse.editor.stepsPlaceholder'))
+      ) : c.type === 'numeric' ? (
+        <>
+          {f('back', t('browse.editor.number'), t('browse.editor.numberPlaceholder'))}
+          {f('tolerance', t('browse.editor.tolerance'), t('browse.editor.tolerancePlaceholder'))}
+        </>
       ) : (
         f(
           'back',

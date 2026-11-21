@@ -75,6 +75,21 @@ test('the card editor saves, changes and clears an image description', async () 
   assert.ok(!('imageAlt' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
+test('the card editor saves a numeric card with its tolerance, and turning it basic drops the tolerance', async () => {
+  const deck = await ok('decks.create', { name: 'Physics', language: null });
+  const card = { front: 'g on Earth?', back: '9.81 m/s^2', type: 'numeric', tolerance: '0.05' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card });
+  const saved = await ok('cards.get', { id });
+  assert.equal(saved.kind, 'numeric');
+  assert.equal(saved.extra.tolerance, '0.05');
+  await ok('cards.update', { id, card: { ...card, tolerance: '1%' } });
+  assert.equal((await ok('cards.get', { id })).extra.tolerance, '1%');
+  await ok('cards.update', { id, card: { ...card, type: 'basic', tolerance: '' } });
+  const basic = await ok('cards.get', { id });
+  assert.equal(basic.kind, 'card');
+  assert.ok(!('tolerance' in basic.extra));
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');
