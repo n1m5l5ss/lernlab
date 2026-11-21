@@ -10,7 +10,11 @@ import { fixtureFile, makeCsv, NOW, SIZES } from './fixtures';
 import { percentile, type Measured } from './report';
 
 process.env.LERNLAB_DATA = mkdtempSync(join(tmpdir(), 'lernlab-bench-'));
-const { installNodeHost, openDb, checkpointNow } = await import('@lernlab/storage-sqlite');
+const storage = await import('@lernlab/storage-sqlite');
+const { installNodeHost, openDb } = storage;
+// The compare job runs this file against the base branch too, whose storage may not have it yet (#140).
+const checkpointNow: () => void = (storage as { checkpointNow?: () => void }).checkpointNow ?? (() => {});
+const hasCheckpoint = 'checkpointNow' in storage;
 installNodeHost();
 const { dueItemIds, recordAttempt } = await import('@lernlab/core/learn');
 const { appState } = await import('@lernlab/core/progress');
@@ -106,7 +110,7 @@ describe('import', () => {
       checkpoint,
     );
     const [p50, p95] = [percentile(checkpoints, 50), percentile(checkpoints, 95)];
-    results.push({ name: 'import-checkpoint 10k', p50, p95, n: checkpoints.length });
+    if (hasCheckpoint) results.push({ name: 'import-checkpoint 10k', p50, p95, n: checkpoints.length });
   });
 
   // 100,000 cards take seconds each, so only the nightly run (BENCH_FULL=1) measures them.
