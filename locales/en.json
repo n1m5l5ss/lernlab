@@ -124,6 +124,11 @@
     "correctOrder": "Correct order:",
     "correctLabel": "Correct:"
   },
+  "levels": {
+    "recall": "Recall",
+    "apply": "Apply",
+    "analyse": "Analyse"
+  },
   "settings": {
     "dailyGoal": "Daily goal (sessions)",
     "sessionLength": "Default session length",
@@ -655,6 +660,20 @@
       "media": "Media",
       "imageAlt": "Image description",
       "imageAltPlaceholder": "What the picture shows, read out by screen readers",
+      "variants": {
+        "title": "Other ways to ask",
+        "help": "Same answer, new wording: a situation to apply it to, a prediction, or the fact in other words. Sessions take turns asking them, and the card keeps one schedule.",
+        "question": "Question {{n}}",
+        "level": "Level of question {{n}}",
+        "placeholder": {
+          "recall": "The same fact in other words",
+          "apply": "A situation where the answer is needed",
+          "analyse": "What happens if…? Why…? How does it compare?"
+        },
+        "remove": "Remove question {{n}}",
+        "add": "Add a question",
+        "full": "A card can hold {{count}} questions."
+      },
       "mediaSet": {
         "image": "✓ Image",
         "audio": "✓ Audio",

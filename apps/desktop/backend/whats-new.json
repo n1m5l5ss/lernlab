@@ -1,17 +1,8 @@
 {
-  "version": "1.0.0",
-  "added": [
-    "Add a practice mode that never changes your review schedule (#97)",
-    "Add a website with download buttons for each system (#126)",
-    "Add an optional daily reminder and open-at-login (#110)",
-    "Add listening, dictation and speaking exercises (#94)",
-    "Add the sidebar with keyboard focus handling and a remembered window size (#90)"
-  ],
+  "version": "1.1.1",
+  "added": [],
   "fixed": [
-    "Block two ways a shared deck could sneak HTML past the safe list (#104)",
-    "Build the installers after a release even when the check dispatch fails (#87)",
-    "Count only study time in the long-task budget and log where long tasks happen (#139)",
-    "Delete all my data now removes backups too, after a clear warning (#111)",
-    "Let Windows find its update file on GitHub (#88)"
+    "Check a backup is safe before restoring it (#186)",
+    "Show today's study day on Home right after a session (#187)"
   ]
 }
