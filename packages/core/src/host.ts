@@ -41,6 +41,11 @@ export interface Host {
   saveProgressSnapshot(day: string, json: string): void;
   /** A random unique id (UUID). */
   randomId(): string;
+  /**
+   * Optional. After a big write (an import) with automatic checkpoints turned off on `db`: copy the
+   * write-ahead log into the database file soon, outside the request, then turn them back on (#140).
+   */
+  checkpointLater?(db: DB, autoCheckpoint: number): void;
 }
 
 let current: Host | null = null;

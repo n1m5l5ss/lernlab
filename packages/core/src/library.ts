@@ -1,7 +1,7 @@
 // Decks and cards: create, update, import (any format → NormalizedCard), export.
 import type { Row } from './host';
 import type { DeckRow } from './schema';
-import { getDb, getMeta, setMeta, tx, type DB } from './db';
+import { bulkTx, getDb, getMeta, setMeta, tx, type DB } from './db';
 import { host } from './host';
 import { basename, extname } from './paths';
 import { sha1Hex } from './sha1';
@@ -357,7 +357,7 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
   const seen = new Set<number>();
   const maxOrd = Number(d.prepare('SELECT COALESCE(MAX(ord), -1) AS n FROM items WHERE deck_id = ?').get(deck.id)!.n);
   const ranked = cards.map((c, i) => ({ c, i })).sort((a, b) => (a.c.rank || 1e9) - (b.c.rank || 1e9) || a.i - b.i);
-  tx(d, () => {
+  bulkTx(d, () => {
     const exists = d.prepare('SELECT ord FROM items WHERE id = ?');
     const inDeck = d.prepare('SELECT 1 FROM items WHERE id = ? AND deck_id = ?');
     const up = d.prepare(`
