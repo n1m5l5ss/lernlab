@@ -3,6 +3,7 @@
 - **Mockups (light and dark):** https://claude.ai/artifact/6kaq72rGnUE3vvNLwnoscT. They cover Welcome, Home, Study session, a wrong answer, Block summary, Decks, and the visual style sheet. Status: **approved by the owner on 2026-11-20** (issue #1).
 - **Exported images:** `images/` (light and dark per screen, plus `Style.png`). They match the mockup source at 1280 × 800.
 - **Source of the mockups:** `canvas/project/*.dc.html`. Each is a plain HTML file; read them for exact sizes, colours and copy.
+- **Visual style:** [`style.md`](style.md), one page for contributors: colours with their measured contrast, type, spacing, radius, motion, icons, sounds, and how to change a token.
 - **Design tokens:** `tokens.json`, the single source for colours, type, spacing, radius and motion (issue #2; implemented in #59).
 - **Why it looks like this:** the design research, summarised below. The full report is in the planning chat; the key numbers are in `docs/research.md` and here.
 
@@ -31,7 +32,7 @@
    - The streak counts weekly consistency ("4 of 7 days"); a missed day is a gap, never a reset.
    - No guilt notifications and no leaderboards.
    - XP rewards effortful recall, not time spent.
-6. **Sound** is off by default: two short, soft tones when enabled.
+6. **Sound** is off by default: short, soft synthesised tones when enabled (see [`style.md`](style.md#sounds)).
 7. **Motion** lasts 120–280 ms and is replaced by fades when the system or the Reduced motion setting asks for it (`motionReduced` in `tokens.json`).
 8. **Accessibility:** WCAG 2.2 AA.
    - **Contrast:** at least 4.5:1 for text, 3:1 for icons and borders.

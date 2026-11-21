@@ -35,7 +35,8 @@ export function Summary({
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus(); // screen readers announce the result first
-    sfx.win();
+    if (f.levelUp) sfx.levelUp();
+    else sfx.win();
     // A celebration only at the end, and only for a real milestone.
     if ((server?.goalMetNow || server?.unlocked?.length || f.levelUp) && !motionReduced())
       confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 }, disableForReducedMotion: true });
