@@ -49,7 +49,7 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 - [x] **Anki `.apkg` export** (#49).
 - [x] **Deck gallery:** browse and install community decks (#50).
 - [ ] **Translations through Weblate** (#51).
-- [ ] **Connect your own AI assistant (MCP):** Claude, ChatGPT, Hermes Agent or any MCP client can read your decks, stats and hard cards, and suggest new decks and cards (from your PDFs or links) that you review before they are saved. Off by default (#148).
+- [x] **Connect your own AI assistant (MCP):** an assistant that can connect to local MCP servers (such as Claude Desktop, the ChatGPT desktop app or Hermes Agent) reads your decks, stats, hard cards and mock exams, quizzes you in the chat without changing your schedule, and proposes new decks and cards, fixes, merges, tidy-ups, goals, an exam study plan or an export. Each proposal waits for you to edit, accept or decline it; nothing is deleted. Off by default, and LernLab itself stays offline (#148).
 
 ## Later
 

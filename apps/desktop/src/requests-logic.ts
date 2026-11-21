@@ -1,5 +1,13 @@
 // The AI requests screen (#148): the user's edits to a proposal, and what is sent back when they accept it.
-import { requestCardIds, type AiRequest, type CardChanges, type ProposedCard } from '@lernlab/core/airequests';
+import {
+  GOAL_SESSIONS,
+  NEW_PER_DAY_MAX,
+  requestCardIds,
+  type AiRequest,
+  type CardChanges,
+  type ProposedCard,
+  type StudyPlan,
+} from '@lernlab/core/airequests';
 
 /** Fields of a card fix the screen can show, in this order. */
 export const CHANGE_FIELDS = [
@@ -27,7 +35,31 @@ export type Draft = {
   changes: Partial<Record<ChangeField, string>>;
   ids: number[];
   keepIds: boolean[];
+  /** Goals, a study plan or an export format as typed: only the values the assistant proposed. */
+  values: Partial<Record<ValueField, string>>;
 };
+
+/** Values of goals, study plan and export requests the screen can show, in this order. */
+export const VALUE_FIELDS = ['dailyGoalSessions', 'newPerDay', 'examDate', 'goalLabel', 'goalWords', 'format'] as const;
+export type ValueField = (typeof VALUE_FIELDS)[number];
+
+const str = (n: number | string | undefined) => (n === undefined ? undefined : String(n));
+function valuesOf(r: AiRequest): Draft['values'] {
+  const all: Draft['values'] =
+    r.kind === 'set_goals'
+      ? { dailyGoalSessions: str(r.dailyGoalSessions), newPerDay: str(r.newPerDay) }
+      : r.kind === 'study_plan'
+        ? {
+            examDate: r.plan.examDate,
+            goalLabel: r.plan.goal?.label,
+            goalWords: str(r.plan.goal?.words),
+            newPerDay: str(r.plan.newPerDay),
+          }
+        : r.kind === 'export_deck'
+          ? { format: r.format }
+          : {};
+  return Object.fromEntries(Object.entries(all).filter(([, v]) => v !== undefined));
+}
 
 export function draftOf(r: AiRequest): Draft {
   const cards = 'cards' in r ? r.cards : [];
@@ -41,6 +73,7 @@ export function draftOf(r: AiRequest): Draft {
     changes: Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, fieldText(v)])),
     ids,
     keepIds: ids.map(() => true),
+    values: valuesOf(r),
   };
 }
 
@@ -62,8 +95,58 @@ function cleanChanges(text: Draft['changes']): CardChanges | null {
   return out;
 }
 
+/** A whole number typed in a field, or null when it is not one in range. Undefined when the field is not there. */
+function wholeNumber(text: string | undefined, min: number, max: number): number | undefined | null {
+  if (text === undefined) return undefined;
+  if (!/^\s*\d+\s*$/.test(text)) return null;
+  const n = Number(text);
+  return n >= min && n <= max ? n : null;
+}
+
+/** Limits of the fields, as the app checks them. */
+export const VALUE_LIMITS = {
+  dailyGoalSessions: [GOAL_SESSIONS.min, GOAL_SESSIONS.max],
+  newPerDay: [0, NEW_PER_DAY_MAX],
+  deckNewPerDay: [0, 999],
+  goalWords: [0, 1_000_000],
+} as const;
+
+function goalsBody(v: Draft['values']) {
+  const sessions = wholeNumber(v.dailyGoalSessions, ...VALUE_LIMITS.dailyGoalSessions);
+  const newPerDay = wholeNumber(v.newPerDay, ...VALUE_LIMITS.newPerDay);
+  if (sessions === null || newPerDay === null || (sessions === undefined && newPerDay === undefined)) return null;
+  return { dailyGoalSessions: sessions, newPerDay };
+}
+
+function planBody(v: Draft['values']): StudyPlan | null {
+  const plan: StudyPlan = {};
+  if (v.examDate !== undefined) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(v.examDate)) return null;
+    plan.examDate = v.examDate;
+  }
+  if (v.goalLabel !== undefined) {
+    const words = wholeNumber(v.goalWords ?? '0', ...VALUE_LIMITS.goalWords);
+    if (!v.goalLabel.trim() || words == null) return null;
+    plan.goal = { label: v.goalLabel.trim(), words };
+  }
+  const newPerDay = wholeNumber(v.newPerDay, ...VALUE_LIMITS.deckNewPerDay);
+  if (newPerDay === null) return null;
+  if (newPerDay !== undefined) plan.newPerDay = newPerDay;
+  return Object.keys(plan).length ? plan : null;
+}
+
 /** The request body to accept, with the user's edits. Null when there is nothing to accept. */
 export function acceptedBody(r: AiRequest, d: Draft): Record<string, unknown> | null {
+  if (r.kind === 'set_goals') {
+    const goals = goalsBody(d.values);
+    return goals && { ...goals, note: r.note };
+  }
+  if (r.kind === 'study_plan') {
+    const plan = planBody(d.values);
+    return plan && { deckId: r.deckId, plan, note: r.note };
+  }
+  if (r.kind === 'export_deck')
+    return { deckId: r.deckId, format: d.values.format === 'csv' ? 'csv' : 'lernpack', note: r.note };
   if (r.kind === 'edit_card') {
     const changes = cleanChanges(d.changes);
     return changes && Object.keys(changes).length ? { cardId: r.cardId, changes, note: r.note } : null;
@@ -106,3 +189,9 @@ export const editChange = (d: Draft, field: ChangeField, text: string): Draft =>
 /** A field's value as text for an input. */
 export const fieldText = (value: string | string[] | undefined) =>
   Array.isArray(value) ? value.join(' ') : (value ?? '');
+
+/** Change one goals, plan or export value as typed. */
+export const editValue = (d: Draft, field: ValueField, text: string): Draft => ({
+  ...d,
+  values: { ...d.values, [field]: text },
+});

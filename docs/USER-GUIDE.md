@@ -217,12 +217,14 @@ LernLab has no AI of its own, but you can connect one you already use (Claude De
 
 ### AI requests
 
-When you ask the assistant for cards (for example from a PDF or a web page), to fix or merge cards, or to tag, star, suspend or move them, it cannot do it itself. Its proposals appear under **AI requests** in the sidebar, one card each, with the assistant's note on where they come from:
+When you ask the assistant for cards (for example from a PDF or a web page), to fix or merge cards, to tag, star, suspend or move them, to change your goals, to plan a deck toward an exam, or to export a deck, it cannot do it itself. Its proposals appear under **AI requests** in the sidebar, one card each, with the assistant's note on where they come from:
 
 - Edit the deck name and any card, untick the cards you don't want, then click **Add N cards**. The cards start as new cards.
 - A fix shows each field as it is now above the proposed text. Change the text if you like, then click **Save the fix**. The card keeps its progress.
 - A merge shows the card to keep and its duplicates. The duplicates you leave ticked are suspended and tagged `merged`, never deleted; find them in the card browser by that tag.
 - Tagging, starring, suspending or moving cards lists the cards it touches. Untick any you want left alone.
+- New goals or a study plan show what you have now next to the proposed values. Change any value, then click **Use these goals** or **Save the plan**.
+- An export asks you where to save the file when you click **Export…**. The assistant never gets the file.
 - **Decline** removes the request. Nothing is changed.
 
 ## Settings

@@ -78,6 +78,17 @@ function summary(r: AiRequestBody): string {
       return `Merge cards ${r.mergeIds.join(', ')} into card ${r.keepId}`;
     case 'organise_cards':
       return `${r.action.kind} ${r.cardIds.length} cards`;
+    case 'set_goals':
+      return `Goals: ${[
+        r.dailyGoalSessions !== undefined && `${r.dailyGoalSessions} sessions a day`,
+        r.newPerDay !== undefined && `${r.newPerDay} new cards a day`,
+      ]
+        .filter(Boolean)
+        .join(', ')}`;
+    case 'study_plan':
+      return `Study plan for deck ${r.deckId}: ${Object.keys(r.plan).join(', ')}`;
+    case 'export_deck':
+      return `Export deck ${r.deckId} as ${r.format}`;
   }
 }
 const needCards = (d: DB, ids: number[]) => {
@@ -205,6 +216,32 @@ export const TOOLS = {
       needCards(db, input.cardIds);
       if (input.action.kind === 'move') needDeck(db, input.action.deckId);
       return propose({ kind: 'organise_cards', ...input });
+    },
+  ),
+  propose_goals: tool(
+    'Propose a new daily goal (sessions a day) and/or new cards a day for all decks. Nothing changes until the user accepts it in LernLab → AI requests.',
+    REQUEST_BODIES.set_goals,
+    (input) => {
+      if (input.dailyGoalSessions === undefined && input.newPerDay === undefined)
+        throw new InvalidInput('give dailyGoalSessions or newPerDay');
+      return propose({ kind: 'set_goals', ...input });
+    },
+  ),
+  propose_study_plan: tool(
+    'Propose a study plan for one deck toward an exam or deadline: the exam date, a goal (how many cards to know by then) and new cards a day. Use get_due, get_stats and list_decks to make it realistic. Nothing changes until the user accepts it in LernLab → AI requests.',
+    REQUEST_BODIES.study_plan,
+    (input, { db }) => {
+      needDeck(db, input.deckId);
+      if (!Object.keys(input.plan).length) throw new InvalidInput('plan must set at least one field');
+      return propose({ kind: 'study_plan', ...input });
+    },
+  ),
+  propose_export: tool(
+    'Propose exporting a deck to a file. When the user accepts in LernLab → AI requests, LernLab asks them where to save it. You never receive the file.',
+    REQUEST_BODIES.export_deck,
+    (input, { db }) => {
+      needDeck(db, input.deckId);
+      return propose({ kind: 'export_deck', ...input });
     },
   ),
   list_requests: tool(

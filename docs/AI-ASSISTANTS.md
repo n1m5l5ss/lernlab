@@ -9,13 +9,14 @@ Ask it things like:
 - "What was my retention in October compared with September?"
 - "Make Spanish cards from this PDF chapter." (The cards wait for you in LernLab under **AI requests**.)
 - "Find duplicate cards in my biology deck and fix the typos." (Each merge and fix waits for you there too.)
+- "My German exam is on 1 March. Make me a plan." (It proposes an exam date, a goal and new cards a day for the deck.)
 
 ## Before you start: privacy
 
 - **It is off until you turn it on.** In LernLab, open **Settings → AI assistant** and turn on **Let an AI assistant use LernLab**. While it is off, LernLab refuses every request from an assistant.
 - **LernLab itself stays offline.** The assistant starts LernLab on your computer and talks to it directly (over "stdio"); nothing listens on the network.
 - **What the assistant reads goes to its AI company.** Your decks, cards, answers and study history that the assistant reads are sent to the company that runs the assistant (for example Anthropic for Claude), under that company's privacy terms. Turn the switch off when you don't want that.
-- **It cannot change or delete anything itself.** It opens your data read-only. What it proposes (new decks and cards, fixes, merges of duplicates, tags, stars, suspending or moving cards) waits in LernLab under **AI requests**; nothing changes until you accept it there, and you can edit it first.
+- **It cannot change or delete anything itself.** It opens your data read-only. What it proposes (new decks and cards, fixes, merges of duplicates, tags, stars, suspending or moving cards, goals, a study plan, an export) waits in LernLab under **AI requests**; nothing changes until you accept it there, and you can edit it first.
 
 ## Claude Desktop (verified setup)
 
@@ -105,6 +106,7 @@ Not checked yet:
 
 - The packaged installers (`.exe`, `.dmg`, `.deb`, `.AppImage`) started by an assistant, in particular on Windows and on macOS (where the system may ask for permission the first time).
 - ChatGPT desktop: which plans and systems offer the **MCP servers** setting.
+- Accepting an export in the packaged desktop app. It saves the file the same way as **Decks → Export**; the automated tests cover the request, not the save dialog.
 
 ## The tools
 
@@ -124,12 +126,15 @@ Not checked yet:
 | `propose_card_fix` | Proposes changes to one card (front, back, example, explanation, notes, category, tags). Its progress is kept |
 | `propose_merge` | Proposes merging duplicates into one card. The others are suspended and tagged `merged`, never deleted |
 | `propose_organise` | Proposes tagging, untagging, starring, unstarring, suspending, unsuspending or moving cards |
+| `propose_goals` | Proposes a new daily goal (sessions a day) and new cards a day |
+| `propose_study_plan` | Proposes a plan for one deck toward an exam: the exam date, a goal (cards to know by then) and new cards a day |
+| `propose_export` | Proposes exporting a deck (CSV or LernLab pack). When you accept, LernLab asks where to save the file; the assistant never gets it |
 | `list_requests` | The assistant's proposals that you haven't accepted or declined yet |
 
 ## AI requests
 
 Everything the assistant proposes shows up in LernLab under **AI requests** in the sidebar, with its note on where it comes from. Edit the deck name or any card, untick what you don't want, then accept; or decline. Accepted cards start as new cards, and their text is cleaned like any imported deck.
 
-A fix shows each field as it is now above the proposed text, which you can change. A merge shows the card to keep and its duplicates; the duplicates you leave ticked are suspended and tagged `merged` (find them in the card browser by that tag), never deleted. A tidy-up (tags, stars, suspending, moving) lists the cards it touches; untick any you want left alone. Fixed and merged cards keep their progress. There are no tools to delete anything. At most 100 requests wait at once.
+A fix shows each field as it is now above the proposed text, which you can change. A merge shows the card to keep and its duplicates; the duplicates you leave ticked are suspended and tagged `merged` (find them in the card browser by that tag), never deleted. A tidy-up (tags, stars, suspending, moving) lists the cards it touches; untick any you want left alone. Fixed and merged cards keep their progress. Goals and a study plan show the values you have now next to the proposed ones, which you can change. An export asks you where to save the file, like **Decks → Export**. There are no tools to delete anything. At most 100 requests wait at once.
 
 Mock exam results are worked out from the answers each exam recorded. LernLab does not save an exam's mode or the pass mark it had, so the assistant sees the deck's pass mark as it is now.

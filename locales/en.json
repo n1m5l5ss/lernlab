@@ -86,7 +86,28 @@
     "acceptOrganise_one": "Change {{count}} card",
     "acceptOrganise_other": "Change {{count}} cards",
     "changed_one": "Changed {{count}} card.",
-    "changed_other": "Changed {{count}} cards."
+    "changed_other": "Changed {{count}} cards.",
+    "goals": "New daily goals",
+    "plan": "Study plan for {{deck}}",
+    "export": "Export {{deck}}",
+    "value": {
+      "dailyGoalSessions": "Daily goal (sessions)",
+      "newPerDay": "New cards per day",
+      "examDate": "Exam date",
+      "goalLabel": "Goal",
+      "goalWords": "Cards to know by then",
+      "format": "File type"
+    },
+    "format": {
+      "lernpack": "LernLab pack (cards, pictures, sounds and settings)",
+      "csv": "CSV (cards only)"
+    },
+    "exportHint": "LernLab asks you where to save the file. The assistant never gets it.",
+    "acceptGoals": "Use these goals",
+    "acceptPlan": "Save the plan",
+    "acceptExport": "Export…",
+    "saved": "Saved.",
+    "exported": "Exported."
   },
   "common": {
     "save": "Save",

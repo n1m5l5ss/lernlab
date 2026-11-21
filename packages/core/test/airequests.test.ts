@@ -149,3 +149,45 @@ test('organising tags, stars, suspends and moves cards, but never deletes them',
   );
   assert.equal(findCards({}).total, total);
 });
+
+test('goals and a study plan change only the settings they name; an export changes nothing', async () => {
+  const { getSettings } = await import('../src/learn');
+  const { getDeck } = await import('../src/library');
+  const { currentGoals } = await import('../src/airequests');
+  const before = getSettings();
+  applyAiRequest({ id, createdAt, kind: 'set_goals', dailyGoalSessions: 3 });
+  assert.equal(getSettings().dailyGoalSessions, 3);
+  assert.equal(getSettings().newPerDay, before.newPerDay);
+  applyAiRequest({ id, createdAt, kind: 'set_goals', newPerDay: 500 });
+  assert.deepEqual(currentGoals(), { dailyGoalSessions: 3, newPerDay: 100 }, 'kept in range');
+
+  const deckId = findCards({ q: 'Golgi' }).rows[0].deckId;
+  const r = applyAiRequest({
+    id,
+    createdAt,
+    kind: 'study_plan',
+    deckId,
+    plan: { examDate: '2027-02-15', goal: { label: 'Biology exam', words: 120 } },
+  });
+  assert.equal(r.deckId, deckId);
+  let s = getDeck(deckId)!.settings;
+  assert.equal(s.examDate, '2027-02-15');
+  assert.deepEqual(s.goal, { label: 'Biology exam', words: 120 });
+  applyAiRequest({ id, createdAt, kind: 'study_plan', deckId, plan: { newPerDay: 12 } });
+  s = getDeck(deckId)!.settings;
+  assert.equal(s.newPerDay, 12);
+  assert.equal(s.examDate, '2027-02-15', 'the rest stays');
+  assert.throws(
+    () => applyAiRequest({ id, createdAt, kind: 'study_plan', deckId: 999, plan: { newPerDay: 1 } }),
+    /Deck not found/,
+  );
+
+  const total = findCards({}).total;
+  assert.deepEqual(applyAiRequest({ id, createdAt, kind: 'export_deck', deckId, format: 'csv' }), {
+    deckId,
+    added: 0,
+    updated: 0,
+    skipped: 0,
+  });
+  assert.equal(findCards({}).total, total);
+});

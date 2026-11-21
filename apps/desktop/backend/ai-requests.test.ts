@@ -108,6 +108,32 @@ test('a fix comes with the card as it is now; the user can change it and leave c
   await ok('aiRequests.decline', { id: bad.id });
 });
 
+test('goals and a study plan show the current values and change on accept; an export saves nothing', async () => {
+  const deck = await ok('decks.create', { name: 'Exam prep' });
+  const goals = store.addAiRequest({ kind: 'set_goals', dailyGoalSessions: 2, newPerDay: 20 });
+  const plan = store.addAiRequest({
+    kind: 'study_plan',
+    deckId: deck.id,
+    plan: { examDate: '2027-01-20', newPerDay: 25 },
+  });
+  const exp = store.addAiRequest({ kind: 'export_deck', deckId: deck.id, format: 'lernpack' });
+  const list = await ok('aiRequests.list');
+  assert.deepEqual(list.goals, { dailyGoalSessions: 1, newPerDay: 10 });
+  assert.equal(list.decks.find((d) => d.id === deck.id)?.plan.examDate, undefined);
+  // The user agrees to two sessions but keeps fewer new cards.
+  await ok('aiRequests.accept', { id: goals.id, request: { dailyGoalSessions: 2, newPerDay: 12 } });
+  const { settings } = await ok('state.get');
+  assert.equal(settings.dailyGoalSessions, 2);
+  assert.equal(settings.newPerDay, 12);
+  await ok('aiRequests.accept', { id: plan.id });
+  assert.equal((await ok('aiRequests.list')).decks.find((d) => d.id === deck.id)?.plan.examDate, '2027-01-20');
+  assert.equal(
+    await fails('aiRequests.accept', { id: exp.id, request: { deckId: deck.id, format: 'exe' } }),
+    'invalid_input',
+  );
+  assert.equal((await ok('aiRequests.accept', { id: exp.id })).deckId, deck.id);
+});
+
 test('malformed or foreign files in ai-requests/ are ignored, and ids cannot name other files', async () => {
   mkdirSync(store.aiRequestsDir(), { recursive: true });
   const bad = '00000000-0000-4000-8000-00000000000b';

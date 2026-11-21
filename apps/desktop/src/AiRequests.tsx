@@ -10,15 +10,19 @@ import { formatDate } from './i18n';
 import { Button, Card, Input } from './components';
 import {
   CHANGE_FIELDS,
+  VALUE_FIELDS,
+  VALUE_LIMITS,
   acceptedBody,
   draftOf,
   editCard,
   editChange,
+  editValue,
   keptCards,
   keptIds,
   toggleCard,
   toggleId,
   type Draft,
+  type ValueField,
 } from './requests-logic';
 
 type List = OutputOf<'aiRequests.list'>;
@@ -41,6 +45,12 @@ function useTitle(request: AiRequest, decks: Deck[], cards: Map<number, Snapshot
       return t('requests.fixCard', { front: front(request.cardId) });
     case 'merge_cards':
       return t('requests.mergeCards', { front: front(request.keepId) });
+    case 'set_goals':
+      return t('requests.goals');
+    case 'study_plan':
+      return t('requests.plan', { deck: deckName(request.deckId) });
+    case 'export_deck':
+      return t('requests.export', { deck: deckName(request.deckId) });
     case 'organise_cards': {
       const a = request.action;
       return t(`requests.organise.${a.kind}`, {
@@ -133,17 +143,70 @@ function CardChecklist({
   );
 }
 
+/** Goals, a study plan or an export format: each value as it is now, and the proposal, which the user can edit. */
+function Values({
+  p,
+  draft,
+  setDraft,
+  now,
+}: {
+  p: string;
+  draft: Draft;
+  setDraft: (d: Draft) => void;
+  now: Partial<Record<ValueField, string | number>>;
+}) {
+  const { t } = useTranslation();
+  const fields = VALUE_FIELDS.filter((f) => draft.values[f] !== undefined);
+  return (
+    <div className="request-fields">
+      {fields.map((field) => {
+        const before = now[field];
+        const id = `${p}-${field}`;
+        const set = (text: string) => setDraft(editValue(draft, field, text));
+        return (
+          <div key={field} className="request-field">
+            <label htmlFor={id}>{t(`requests.value.${field}`)}</label>
+            {field !== 'format' && (
+              <p className="request-now">
+                {before === undefined || before === '' ? t('requests.nowEmpty') : t('requests.now', { text: before })}
+              </p>
+            )}
+            {field === 'format' ? (
+              <select id={id} className="input" value={draft.values.format} onChange={(e) => set(e.target.value)}>
+                <option value="lernpack">{t('requests.format.lernpack')}</option>
+                <option value="csv">{t('requests.format.csv')}</option>
+              </select>
+            ) : (
+              <input
+                id={id}
+                className="input"
+                type={field === 'examDate' ? 'date' : field === 'goalLabel' ? 'text' : 'number'}
+                inputMode={field === 'examDate' || field === 'goalLabel' ? undefined : 'numeric'}
+                min={field === 'dailyGoalSessions' ? VALUE_LIMITS.dailyGoalSessions[0] : undefined}
+                value={draft.values[field]}
+                onChange={(e) => set(e.target.value)}
+              />
+            )}
+          </div>
+        );
+      })}
+      {draft.values.format !== undefined && <p className="settings-hint">{t('requests.exportHint')}</p>}
+    </div>
+  );
+}
+
 function RequestCard({
   request,
-  decks,
+  list,
   cards,
   done,
 }: {
   request: AiRequest;
-  decks: Deck[];
+  list: List;
   cards: Map<number, Snapshot>;
   done: (msg: string) => void;
 }) {
+  const decks = list.decks;
   const { t } = useTranslation();
   const [draft, setDraft] = useState(() => draftOf(request));
   const [busy, setBusy] = useState(false);
@@ -156,9 +219,20 @@ function RequestCard({
   const act = async (accept: boolean) => {
     setBusy(true);
     try {
-      if (accept && body) {
+      if (accept && body && request.kind === 'export_deck') {
+        // The file is saved where the user chooses; then the request is done.
+        await api.exportDeck(request.deckId, body.format === 'csv' ? 'csv' : 'lernpack');
+        await api.acceptAiRequest(request.id, body);
+        done(t('requests.exported'));
+      } else if (accept && body) {
         const r = await api.acceptAiRequest(request.id, body);
-        done(adds ? t('requests.accepted', { count: r.added }) : t('requests.changed', { count: r.updated }));
+        done(
+          adds
+            ? t('requests.accepted', { count: r.added })
+            : request.kind === 'set_goals' || request.kind === 'study_plan'
+              ? t('requests.saved')
+              : t('requests.changed', { count: r.updated }),
+        );
       } else {
         await api.declineAiRequest(request.id);
         done(t('requests.declined'));
@@ -169,14 +243,26 @@ function RequestCard({
     }
   };
 
-  const acceptLabel =
-    request.kind === 'edit_card'
-      ? t('requests.acceptFix')
-      : request.kind === 'merge_cards'
-        ? t('requests.acceptMerge', { count: chosen })
-        : request.kind === 'organise_cards'
-          ? t('requests.acceptOrganise', { count: chosen })
-          : t('requests.accept', { count: keptCards(draft).length });
+  const plan = request.kind === 'study_plan' ? decks.find((d) => d.id === request.deckId)?.plan : undefined;
+  const now: Partial<Record<ValueField, string | number>> =
+    request.kind === 'set_goals'
+      ? list.goals
+      : {
+          examDate: plan?.examDate ?? '',
+          goalLabel: plan?.goal?.label ?? '',
+          goalWords: plan?.goal?.words ?? '',
+          newPerDay: plan?.newPerDay ?? '',
+        };
+  const acceptLabel = {
+    create_deck: () => t('requests.accept', { count: keptCards(draft).length }),
+    add_cards: () => t('requests.accept', { count: keptCards(draft).length }),
+    edit_card: () => t('requests.acceptFix'),
+    merge_cards: () => t('requests.acceptMerge', { count: chosen }),
+    organise_cards: () => t('requests.acceptOrganise', { count: chosen }),
+    set_goals: () => t('requests.acceptGoals'),
+    study_plan: () => t('requests.acceptPlan'),
+    export_deck: () => t('requests.acceptExport'),
+  }[request.kind]();
 
   return (
     <Card as="section" className="request" aria-labelledby={`${p}-title`}>
@@ -249,6 +335,9 @@ function RequestCard({
           label={t('requests.cards', { count: draft.ids.length })}
         />
       )}
+      {(request.kind === 'set_goals' || request.kind === 'study_plan' || request.kind === 'export_deck') && (
+        <Values p={p} draft={draft} setDraft={setDraft} now={now} />
+      )}
       <div className="request-actions">
         <Button onClick={() => act(false)} disabled={busy}>
           {t('requests.decline')}
@@ -296,7 +385,7 @@ export function AiRequests({ assistantOn, refresh }: { assistantOn: boolean; ref
         </Card>
       )}
       {list?.requests.map((r) => (
-        <RequestCard key={r.id} request={r} decks={list.decks} cards={cards} done={done} />
+        <RequestCard key={r.id} request={r} list={list} cards={cards} done={done} />
       ))}
     </div>
   );

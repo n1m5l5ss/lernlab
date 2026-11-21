@@ -89,7 +89,7 @@ import pkg from '../package.json';
 import bundledNotes from './whats-new.json';
 import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
-import { applyAiRequest, cardSnapshots, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
+import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
 import { asRequest, checkBody } from './ai-requests';
 
@@ -443,14 +443,19 @@ export const handlers = {
   }),
 
   /* ── AI requests (#148): changes an AI assistant proposed; nothing changes until the user accepts one ── */
-  /** Waiting requests, the decks, and the cards they are about as they are now (to compare with the proposal). */
+  /** Waiting requests, with what they would change as it is now: the decks and their plans, the goals, the cards. */
   'aiRequests.list': h(v.none, () => {
     const requests = listAiRequests()
       .map(asRequest)
       .filter((r) => r !== null);
     return {
       requests,
-      decks: listDecks().map(({ id, name }) => ({ id, name })),
+      decks: listDecks().map(({ id, name, settings: { examDate, goal, newPerDay } }) => ({
+        id,
+        name,
+        plan: { examDate, goal: goal && { label: goal.label, words: goal.words }, newPerDay },
+      })),
+      goals: currentGoals(),
       cards: cardSnapshots([...new Set(requests.flatMap((r) => requestCardIds(r).slice(0, SNAPSHOT_MAX)))]),
     };
   }),
