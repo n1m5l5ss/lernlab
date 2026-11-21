@@ -24,7 +24,8 @@ import {
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { mcFor, recallFor } from './plan';
 import { agendaText, bubbleFor, textTeacher, type Bubble } from './lines';
-import { blockKey, blockProgress, needsRescue, playableOnly, requeue } from './session-logic';
+import { blockKey, needsRescue, playableOnly, requeue } from './session-logic';
+import { Button, ProgressBar } from './components';
 
 /** Where the learner is inside the current block, for the progress bar and "5 of 12". */
 type Step = { done: number; total: number } | null;
@@ -477,16 +478,12 @@ export function Session({
   const title = tr(`session.blocks.${blockKey(b.title)}`, { defaultValue: '' });
   return (
     <div className="session">
-      <div
-        className="session-bar"
-        role="progressbar"
-        aria-label={tr('session.blockProgress')}
-        aria-valuemin={0}
-        aria-valuemax={step?.total ?? 1}
-        aria-valuenow={step?.done ?? 0}
-      >
-        <i style={{ width: `${blockProgress(step?.done ?? 0, step?.total ?? 0) * 100}%` }} />
-      </div>
+      <ProgressBar
+        variant="session"
+        label={tr('session.blockProgress')}
+        value={step?.done ?? 0}
+        max={step?.total ?? 1}
+      />
       <header className="session-head">
         <button className="session-leave" onClick={askLeave}>
           <svg
@@ -548,9 +545,9 @@ export function Session({
       {noVoice && (
         <p className="session-novoice" role="status">
           <span>{tr('session.noVoice', { language: formatLanguage(noVoice) })}</span>
-          <button className="btn ghost" onClick={() => setNoVoice(false)}>
+          <Button variant="ghost" onClick={() => setNoVoice(false)}>
             {tr('session.noVoiceDismiss')}
-          </button>
+          </Button>
         </p>
       )}
       <main className="stage" key={b.id}>
@@ -586,12 +583,10 @@ export function Session({
         <h2 id="leave-title">{tr('session.leaveTitle')}</h2>
         <p className="muted">{tr('session.leaveBody')}</p>
         <div className="session-dialog-actions">
-          <button className="btn" onClick={leave}>
-            {tr('session.leave')}
-          </button>
-          <button ref={keepButton} className="btn primary" onClick={() => leaveDialog.current?.close()}>
+          <Button onClick={leave}>{tr('session.leave')}</Button>
+          <Button ref={keepButton} variant="primary" onClick={() => leaveDialog.current?.close()}>
             {tr('session.keepGoing')}
-          </button>
+          </Button>
         </div>
       </dialog>
     </div>

@@ -12,6 +12,7 @@ import { LENGTHS } from './lengths';
 import { cleanReminderTime } from '@lernlab/core/reminder';
 import { LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
 import { DataControls } from './DataControls';
+import { Button, Card, Input, SegmentedControl, Select } from './components';
 
 const TIMERS = [
   { key: 'off', blitz: 0, q: 0 },
@@ -44,10 +45,10 @@ function Row({ id, label, hint, children }: { id: string; label: string; hint?: 
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section className="card settings-section" aria-labelledby={`settings-${id}`}>
+    <Card as="section" className="settings-section" aria-labelledby={`settings-${id}`}>
       <h2 id={`settings-${id}`}>{title}</h2>
       {children}
-    </section>
+    </Card>
   );
 }
 
@@ -113,43 +114,48 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
       </div>
 
       <Section id="look" title={t('settings.section.look')}>
-        <Row id="set-lang" label={t('settings.language')} hint={t('settings.languageHint')}>
-          <select id="set-lang" value={s.uiLanguage ?? 'en'} onChange={(e) => update({ uiLanguage: e.target.value })}>
-            {LANGUAGES.map((l) => (
-              <option key={l.code} value={l.code}>
-                {l.name}
-              </option>
-            ))}
-            <option value={PSEUDO}>{t('settings.pseudo')}</option>
-            <option value={PSEUDO_RTL}>{t('settings.pseudoRtl')}</option>
-          </select>
-        </Row>
-        <Row id="set-theme" label={t('settings.theme')}>
-          <select
-            id="set-theme"
-            value={s.theme ?? 'system'}
-            onChange={(e) => update({ theme: e.target.value as SettingsValue['theme'] })}
-          >
-            {THEMES.map((theme) => (
-              <option key={theme} value={theme}>
-                {t(`settings.themeOption.${theme}`)}
-              </option>
-            ))}
-          </select>
-        </Row>
-        <Row id="set-text" label={t('settings.textSize')}>
-          <select
-            id="set-text"
-            value={s.textSize}
-            onChange={(e) => update({ textSize: e.target.value as SettingsValue['textSize'] })}
-          >
-            {TEXT_SIZES.map((size) => (
-              <option key={size} value={size}>
-                {t(`settings.textSizeOption.${size}`)}
-              </option>
-            ))}
-          </select>
-        </Row>
+        <Select
+          id="set-lang"
+          label={t('settings.language')}
+          hint={t('settings.languageHint')}
+          className="field settings-row"
+          value={s.uiLanguage ?? 'en'}
+          onChange={(e) => update({ uiLanguage: e.target.value })}
+        >
+          {LANGUAGES.map((l) => (
+            <option key={l.code} value={l.code}>
+              {l.name}
+            </option>
+          ))}
+          <option value={PSEUDO}>{t('settings.pseudo')}</option>
+          <option value={PSEUDO_RTL}>{t('settings.pseudoRtl')}</option>
+        </Select>
+        <Select
+          id="set-theme"
+          label={t('settings.theme')}
+          className="field settings-row"
+          value={s.theme ?? 'system'}
+          onChange={(e) => update({ theme: e.target.value as SettingsValue['theme'] })}
+        >
+          {THEMES.map((theme) => (
+            <option key={theme} value={theme}>
+              {t(`settings.themeOption.${theme}`)}
+            </option>
+          ))}
+        </Select>
+        <Select
+          id="set-text"
+          label={t('settings.textSize')}
+          className="field settings-row"
+          value={s.textSize}
+          onChange={(e) => update({ textSize: e.target.value as SettingsValue['textSize'] })}
+        >
+          {TEXT_SIZES.map((size) => (
+            <option key={size} value={size}>
+              {t(`settings.textSizeOption.${size}`)}
+            </option>
+          ))}
+        </Select>
         <Row id="set-motion" label={t('settings.reducedMotion')} hint={t('settings.reducedMotionHint')}>
           {check('reducedMotion', 'set-motion')}
         </Row>
@@ -162,72 +168,72 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
       </Section>
 
       <Section id="study" title={t('settings.section.study')}>
-        <Row id="set-length" label={t('settings.sessionLength')}>
-          <select
-            id="set-length"
-            value={s.sessionLength}
-            onChange={(e) => update({ sessionLength: e.target.value as SettingsValue['sessionLength'] })}
-          >
-            {LENGTHS.map((l) => (
-              <option key={l.key} value={l.key}>
-                {t('home.lengthMinutes', { count: l.minutes })}
-              </option>
-            ))}
-          </select>
-        </Row>
-        <Row id="set-goal" label={t('settings.dailyGoal')}>
-          <input
-            id="set-goal"
-            type="number"
-            min={1}
-            max={5}
-            value={dailyGoal}
-            onChange={(e) => setDailyGoal(e.target.value)}
-            onBlur={() => update({ dailyGoalSessions: Number(dailyGoal) })}
-          />
-        </Row>
-        <Row id="set-new" label={t('settings.newPerDay')} hint={t('settings.newPerDayHint')}>
-          <input
-            id="set-new"
-            type="number"
-            min={0}
-            max={100}
-            value={newPerDay}
-            onChange={(e) => setNewPerDay(e.target.value)}
-            onBlur={() => update({ newPerDay: Number(newPerDay) })}
-          />
-        </Row>
+        <Select
+          id="set-length"
+          label={t('settings.sessionLength')}
+          className="field settings-row"
+          value={s.sessionLength}
+          onChange={(e) => update({ sessionLength: e.target.value as SettingsValue['sessionLength'] })}
+        >
+          {LENGTHS.map((l) => (
+            <option key={l.key} value={l.key}>
+              {t('home.lengthMinutes', { count: l.minutes })}
+            </option>
+          ))}
+        </Select>
+        <Input
+          id="set-goal"
+          label={t('settings.dailyGoal')}
+          className="field settings-row"
+          type="number"
+          min={1}
+          max={5}
+          value={dailyGoal}
+          onChange={(e) => setDailyGoal(e.target.value)}
+          onBlur={() => update({ dailyGoalSessions: Number(dailyGoal) })}
+        />
+        <Input
+          id="set-new"
+          label={t('settings.newPerDay')}
+          hint={t('settings.newPerDayHint')}
+          className="field settings-row"
+          type="number"
+          min={0}
+          max={100}
+          value={newPerDay}
+          onChange={(e) => setNewPerDay(e.target.value)}
+          onBlur={() => update({ newPerDay: Number(newPerDay) })}
+        />
         <div className="field settings-row">
           <span id="set-timers">
             {t('settings.timers')}
             <span className="settings-hint">{t('settings.timersHint')}</span>
           </span>
-          <div className="lengths settings-choice" role="group" aria-labelledby="set-timers">
-            {TIMERS.map((x, i) => (
-              <button
-                key={x.key}
-                className={timer === i ? 'on' : ''}
-                aria-pressed={timer === i}
-                onClick={() => update({ blitzSeconds: x.blitz, questionTimer: x.q })}
-              >
-                {t(`settings.timer.${x.key}`)}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            className="settings-choice"
+            labelledBy="set-timers"
+            value={TIMERS[timer]?.key ?? null}
+            onChange={(key) => {
+              const x = TIMERS.find((y) => y.key === key);
+              if (x) update({ blitzSeconds: x.blitz, questionTimer: x.q });
+            }}
+            options={TIMERS.map((x) => ({ value: x.key, label: t(`settings.timer.${x.key}`) }))}
+          />
         </div>
-        <Row id="set-retention" label={t('settings.retention')} hint={t('settings.retentionHint')}>
-          <select
-            id="set-retention"
-            value={s.retention}
-            onChange={(e) => update({ retention: Number(e.target.value) })}
-          >
-            {RETENTION.map((r) => (
-              <option key={r.key} value={r.value}>
-                {t(`settings.retentionLevel.${r.key}`, { percent: formatPercent(r.value) })}
-              </option>
-            ))}
-          </select>
-        </Row>
+        <Select
+          id="set-retention"
+          label={t('settings.retention')}
+          hint={t('settings.retentionHint')}
+          className="field settings-row"
+          value={s.retention}
+          onChange={(e) => update({ retention: Number(e.target.value) })}
+        >
+          {RETENTION.map((r) => (
+            <option key={r.key} value={r.value}>
+              {t(`settings.retentionLevel.${r.key}`, { percent: formatPercent(r.value) })}
+            </option>
+          ))}
+        </Select>
       </Section>
 
       <Section id="reminders" title={t('settings.section.reminders')}>
@@ -235,17 +241,17 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
         <Row id="set-reminder" label={t('settings.reminders.daily')} hint={t('settings.reminders.dailyHint')}>
           {check('reminder', 'set-reminder', !desktop)}
         </Row>
-        <Row id="set-reminder-time" label={t('settings.reminders.time')}>
-          <input
-            id="set-reminder-time"
-            type="time"
-            value={reminderTime}
-            disabled={!desktop || !s.reminder}
-            onChange={(e) => setReminderTime(e.target.value)}
-            // The field is empty while half typed; save only a complete time.
-            onBlur={() => cleanReminderTime(reminderTime) === reminderTime && update({ reminderTime })}
-          />
-        </Row>
+        <Input
+          id="set-reminder-time"
+          label={t('settings.reminders.time')}
+          className="field settings-row"
+          type="time"
+          value={reminderTime}
+          disabled={!desktop || !s.reminder}
+          onChange={(e) => setReminderTime(e.target.value)}
+          // The field is empty while half typed; save only a complete time.
+          onBlur={() => cleanReminderTime(reminderTime) === reminderTime && update({ reminderTime })}
+        />
         <Row
           id="set-login"
           label={t('settings.reminders.launchAtLogin')}
@@ -266,9 +272,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
           <span className="settings-label">{t('settings.backups')}</span>
           {info && <span className="settings-hint">{t('settings.backupsHint', { path: info.backupsDir })}</span>}
           <div className="settings-actions">
-            <button className="btn" onClick={backup}>
-              {t('settings.backupNow')}
-            </button>
+            <Button onClick={backup}>{t('settings.backupNow')}</Button>
             <a
               className="small"
               href="#"

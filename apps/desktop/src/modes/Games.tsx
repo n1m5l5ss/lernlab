@@ -8,6 +8,7 @@ import { useKeys, type Ctx, type BlockResult } from '../ctx';
 import { Flip, TypedEngine } from './Exercises';
 import { Media, Rich } from '../rich';
 import { recallFor } from '../plan';
+import { Feedback } from '../components';
 
 type G<K extends Block['kind']> = { block: Extract<Block, { kind: K }>; ctx: Ctx; onDone: (r: BlockResult) => void };
 const now = () => performance.now();
@@ -136,9 +137,9 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
         </div>
         {isArticles && <div className="muted">{item.meaning}</div>}
         {flash && (
-          <div role="status" className={`feedback ${flash.ok ? 'right' : 'wrong'}`}>
+          <Feedback tone={flash.ok ? 'right' : 'wrong'}>
             {flash.ok ? t('games.sorted', { category: flash.cat }) : t('games.itWas', { category: flash.cat })}
-          </div>
+          </Feedback>
         )}
       </div>
       <div className="sprint-options" style={{ gridTemplateColumns: `repeat(${cats.length}, 1fr)` }}>

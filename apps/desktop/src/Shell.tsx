@@ -2,6 +2,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hashFor, type Route } from './routes';
+import { Sidebar, type SidebarItem } from './components';
 
 /** 24 × 24 outline icons from the approved mockups (docs/design/canvas/project/Main.dc.html). */
 const ICONS: Record<Route, ReactNode> = {
@@ -29,33 +30,18 @@ const ICONS: Record<Route, ReactNode> = {
 
 const MAIN_ROUTES: Route[] = ['home', 'decks', 'cards', 'progress'];
 
-function NavLink({ route, current }: { route: Route; current: Route }) {
-  const { t } = useTranslation();
-  return (
-    <a className="nav-link" href={hashFor(route)} aria-current={route === current ? 'page' : undefined}>
-      <svg
-        aria-hidden="true"
-        className={route === 'cards' ? 'icon-dir' : undefined}
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        {ICONS[route]}
-      </svg>
-      {t(`nav.${route}`)}
-    </a>
-  );
-}
-
 export function Shell({ route, kicker, children }: { route: Route; kicker?: string; children: ReactNode }) {
   const { t } = useTranslation();
   const heading = useRef<HTMLHeadingElement>(null);
   const first = useRef(true);
+  const item = (r: Route): SidebarItem => ({
+    key: r,
+    href: hashFor(r),
+    label: t(`nav.${r}`),
+    icon: ICONS[r],
+    current: r === route,
+    iconClassName: r === 'cards' ? 'icon-dir' : undefined,
+  });
 
   // The window title names the screen too (WCAG 2.4.2).
   useEffect(() => {
@@ -76,14 +62,7 @@ export function Shell({ route, kicker, children }: { route: Route; kicker?: stri
       <a className="skip-link" href="#main" onClick={(e) => (e.preventDefault(), heading.current?.focus())}>
         {t('nav.skip')}
       </a>
-      <nav className="sidebar" aria-label={t('nav.label')}>
-        <div className="sidebar-name">{t('app.name')}</div>
-        {MAIN_ROUTES.map((r) => (
-          <NavLink key={r} route={r} current={route} />
-        ))}
-        <div className="grow" />
-        <NavLink route="settings" current={route} />
-      </nav>
+      <Sidebar label={t('nav.label')} title={t('app.name')} items={MAIN_ROUTES.map(item)} footer={[item('settings')]} />
       <main id="main" className="shell-main">
         <div className="shell-content">
           {kicker && <p className="page-kicker">{kicker}</p>}

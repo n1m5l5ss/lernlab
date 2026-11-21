@@ -6,7 +6,7 @@ import { estimateMinutes } from '@lernlab/core/game';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { useKeys } from './ctx';
-import { rovingIndex } from './keys-logic';
+import { Button, ProgressBar, SegmentedControl, Select } from './components';
 import { formatDate, formatNumber } from './i18n';
 import { LENGTHS } from './lengths';
 import { dayDate, MotivationIcon } from './Motivation';
@@ -15,7 +15,6 @@ import { UpdateNote } from './UpdateNote';
 
 type AppState = OutputOf<'state.get'>;
 
-const pct = (a: number, b: number) => `${b ? Math.min(100, Math.round((a / b) * 100)) : 0}%`;
 /** Day keys are read at noon so no time zone moves them to another day. */
 const noon = (day: string) => new Date(`${day}T12:00:00`);
 
@@ -49,9 +48,9 @@ export function Home({
         <h2 id="home-empty-title">{t('home.welcomeTitle')}</h2>
         <p className="muted">{t('home.welcomeBody')}</p>
         <div>
-          <button className="btn primary" onClick={goDecks}>
+          <Button variant="primary" onClick={goDecks}>
             {t('home.welcomeAction')}
-          </button>
+          </Button>
         </div>
       </section>
     );
@@ -83,78 +82,53 @@ export function Home({
           </div>
         </div>
         <div className="home-choices">
-          <div className="home-field home-deck">
-            <label htmlFor="home-deck">{t('home.deckPicker')}</label>
-            <select
-              id="home-deck"
-              value={sourceValue(state.source)}
-              onChange={async (e) => {
-                const source = parseSourceValue(e.target.value);
-                if (!source) return;
-                await api.chooseSource(source);
-                refresh();
-              }}
-            >
-              {state.decks.map((d) => (
-                <option key={d.id} value={`deck:${d.id}`}>
-                  {d.name}
-                </option>
-              ))}
-              {state.source.kind === 'decks' && (
-                <option value={sourceValue(state.source)}>
-                  {t('home.source.decks', { count: state.source.deckIds.length })}
-                </option>
-              )}
-              <option value="all">{t('home.allDecks')}</option>
-              {state.starredCount > 0 && (
-                <option value="starred">{t('home.source.starred', { count: state.starredCount })}</option>
-              )}
-              {state.hardestCount > 0 && (
-                <option value="hardest">{t('home.source.hardest', { count: state.hardestCount })}</option>
-              )}
-              {state.tags.length > 0 && (
-                <optgroup label={t('home.source.tags')}>
-                  {state.tags.map((tag) => (
-                    <option key={tag} value={`tag:${tag}`}>
-                      {t('home.source.tag', { tag })}
-                    </option>
-                  ))}
-                </optgroup>
-              )}
-            </select>
-          </div>
+          <Select
+            id="home-deck"
+            label={t('home.deckPicker')}
+            className="home-field home-deck"
+            value={sourceValue(state.source)}
+            onChange={async (e) => {
+              const source = parseSourceValue(e.target.value);
+              if (!source) return;
+              await api.chooseSource(source);
+              refresh();
+            }}
+          >
+            {state.decks.map((d) => (
+              <option key={d.id} value={`deck:${d.id}`}>
+                {d.name}
+              </option>
+            ))}
+            {state.source.kind === 'decks' && (
+              <option value={sourceValue(state.source)}>
+                {t('home.source.decks', { count: state.source.deckIds.length })}
+              </option>
+            )}
+            <option value="all">{t('home.allDecks')}</option>
+            {state.starredCount > 0 && (
+              <option value="starred">{t('home.source.starred', { count: state.starredCount })}</option>
+            )}
+            {state.hardestCount > 0 && (
+              <option value="hardest">{t('home.source.hardest', { count: state.hardestCount })}</option>
+            )}
+            {state.tags.length > 0 && (
+              <optgroup label={t('home.source.tags')}>
+                {state.tags.map((tag) => (
+                  <option key={tag} value={`tag:${tag}`}>
+                    {t('home.source.tag', { tag })}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </Select>
           <div className="home-field">
             <span id="home-length">{t('home.sessionLength')}</span>
-            <div
-              className="segmented"
-              role="radiogroup"
-              aria-labelledby="home-length"
-              onKeyDown={(e) => {
-                const rtl = getComputedStyle(e.currentTarget).direction === 'rtl';
-                const i = rovingIndex(
-                  LENGTHS.findIndex((l) => l.key === length),
-                  LENGTHS.length,
-                  e.key,
-                  rtl,
-                );
-                if (i === null) return;
-                e.preventDefault();
-                setLength(LENGTHS[i].key);
-                (e.currentTarget.children[i] as HTMLElement | undefined)?.focus();
-              }}
-            >
-              {LENGTHS.map((l) => (
-                <button
-                  key={l.key}
-                  role="radio"
-                  aria-checked={length === l.key}
-                  tabIndex={length === l.key ? 0 : -1}
-                  onClick={() => setLength(l.key)}
-                >
-                  {t('home.lengthMinutes', { count: l.minutes })}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              labelledBy="home-length"
+              value={length}
+              onChange={setLength}
+              options={LENGTHS.map((l) => ({ value: l.key, label: t('home.lengthMinutes', { count: l.minutes }) }))}
+            />
           </div>
         </div>
         <label className="home-practice">
@@ -163,9 +137,9 @@ export function Home({
             <b>{t('home.practice')}</b> <span className="muted">{t('home.practiceHint')}</span>
           </span>
         </label>
-        <button className="btn primary home-start" onClick={() => onStart(length, practice)}>
+        <Button variant="primary" className="home-start" onClick={() => onStart(length, practice)}>
           {practice ? t('home.startPractice') : t('home.startStudying')} <kbd>{t('home.startKey')}</kbd>
-        </button>
+        </Button>
       </section>
       {s.repair && (
         <p className="panel home-repair">
@@ -205,9 +179,7 @@ export function Home({
         <section className="panel home-tile" aria-labelledby="home-level">
           <h2 id="home-level">{t('home.levelTitle', { level: lvl.level })}</h2>
           <p className="home-tile-value">{t('home.xpOf', { xp: lvl.into, next: lvl.span })}</p>
-          <div className="meter" aria-hidden="true">
-            <i style={{ width: pct(lvl.into, lvl.span) }} />
-          </div>
+          <ProgressBar labelledBy="home-level" value={lvl.into} max={lvl.span} />
         </section>
         <section className="panel home-tile" aria-labelledby="home-goal">
           <h2 id="home-goal">{goal ? t('home.goalTitle', { goal: goal.label }) : t('home.knownTitle')}</h2>
@@ -216,9 +188,11 @@ export function Home({
               ? t('home.knownOf', { known: goal.known, total: goal.total })
               : t('home.knownOf', { known: state.wordsProducible, total: state.itemCount })}
           </p>
-          <div className="meter" aria-hidden="true">
-            <i style={{ width: goal ? pct(goal.known, goal.total) : pct(state.wordsProducible, state.itemCount) }} />
-          </div>
+          <ProgressBar
+            labelledBy="home-goal"
+            value={goal ? goal.known : state.wordsProducible}
+            max={goal ? goal.total : state.itemCount}
+          />
         </section>
       </div>
     </div>
