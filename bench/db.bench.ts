@@ -68,6 +68,19 @@ for (const size of SIZES) {
 
     test('deck list and stats (state.get)', (ctx) =>
       measure(ctx, `deck-stats ${label(size)}`, () => appState(d, NOW), SLOW));
+
+    // appState keeps the per-deck counts until the data changes; this is the first call after a change.
+    let changes = 0;
+    test('deck list and stats after a change', (ctx) =>
+      measure(
+        ctx,
+        `deck-stats-changed ${label(size)}`,
+        () => {
+          d.prepare("INSERT OR REPLACE INTO meta(key, value) VALUES ('bench', ?)").run(String(changes++));
+          appState(d, NOW);
+        },
+        SLOW,
+      ));
   });
 }
 

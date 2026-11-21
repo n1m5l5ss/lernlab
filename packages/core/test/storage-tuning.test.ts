@@ -41,12 +41,39 @@ test('the due queue and the daily attempt lookups use an index', () => {
       .prepare("SELECT name FROM sqlite_master WHERE type = 'index'")
       .all()
       .map((r) => r.name);
-    for (const name of ['srs_due', 'attempts_day_item', 'items_deck']) assert.ok(names.includes(name), name);
+    for (const name of ['srs_due', 'attempts_day_item', 'items_deck_state']) assert.ok(names.includes(name), name);
     assert.match(plan(d, 'SELECT item_id FROM srs WHERE due <= ? ORDER BY due', '2026-01-01'), /srs_due/);
     assert.match(
       plan(d, 'SELECT COUNT(*) FROM attempts WHERE day = ? AND item_id = ?', '2026-01-01', 1),
       /attempts_day_item/,
     );
+  } finally {
+    d.close();
+  }
+});
+
+test('the deck list and stats queries use an index (#130)', () => {
+  const d = openDb(join(dir, 'deck-stats', 'lernlab.db'));
+  try {
+    // The per-deck counts read the narrow index in its own order: no full table scan, no sort.
+    const counts = plan(
+      d,
+      `SELECT i.deck_id, i.suspended, i.kind, COUNT(*), COUNT(s.item_id), COUNT(st.item_id) FROM items i
+       LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
+       GROUP BY i.deck_id, i.suspended, i.kind`,
+    );
+    assert.match(counts, /COVERING INDEX items_deck_state/);
+    assert.doesNotMatch(counts, /TEMP B-TREE/);
+    assert.match(plan(d, 'SELECT COUNT(*) FROM srs WHERE introduced_day = ?', '2026-01-01'), /srs_introduced/);
+    const fresh = plan(
+      d,
+      `SELECT i.id FROM items i LEFT JOIN srs s ON s.item_id = i.id
+       WHERE s.item_id IS NULL AND i.suspended = 0 AND i.kind != 'grammar' ORDER BY i.ord LIMIT 1000`,
+    );
+    assert.match(fresh, /items_ord/);
+    assert.doesNotMatch(fresh, /TEMP B-TREE/);
+    assert.match(plan(d, "SELECT DISTINCT tags FROM items WHERE tags != '[]'"), /COVERING INDEX items_tags/);
+    assert.match(plan(d, 'SELECT COUNT(*) FROM items WHERE starred = 1 AND suspended = 0'), /items_starred/);
   } finally {
     d.close();
   }

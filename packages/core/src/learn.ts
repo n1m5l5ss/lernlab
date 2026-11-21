@@ -463,21 +463,23 @@ export function currentSource(d: DB = getDb()): StudySource {
 }
 
 /** New cards for a session: up to `cap`, and never more than each deck's own new-card limit for today. */
-export function freshPerDeck(
-  d: DB,
-  now: Date,
-  scope: Scope,
-  cap: number,
-  deckOf: (id: number) => number = (id) => Number(d.prepare('SELECT deck_id FROM items WHERE id = ?').get(id)!.deck_id),
-): number[] {
+export function freshPerDeck(d: DB, now: Date, scope: Scope, cap: number, deckOf?: (id: number) => number): number[] {
   const left = new Map<number, number>();
   const budget = (deck: number) => {
     if (!left.has(deck)) left.set(deck, Math.max(0, deckNewPerDay(deck, d) - introducedTodayCount(d, now, deck)));
     return left.get(deck)!;
   };
   const out: number[] = [];
-  if (!cap) return out;
-  for (const id of newItemIds(d, 1000, undefined, scope)) {
+  const ids = cap ? newItemIds(d, 1000, undefined, scope) : [];
+  if (!ids.length) return out;
+  if (!deckOf) {
+    // One query for every card's deck, not one per card.
+    const decks = new Map<number, number>();
+    for (const r of d.prepare(`SELECT id, deck_id FROM items WHERE id IN (${ids.map(Number).join(',')})`).all())
+      decks.set(Number(r.id), Number(r.deck_id));
+    deckOf = (id) => decks.get(id)!;
+  }
+  for (const id of ids) {
     const deck = deckOf(id);
     if (budget(deck) <= 0) continue;
     left.set(deck, budget(deck) - 1);
@@ -485,4 +487,81 @@ export function freshPerDeck(
     if (out.length >= cap) break;
   }
   return out;
+}
+
+/** Counts for one deck: the deck list, and the totals on Home when a deck (or every deck) is chosen. */
+export type DeckStats = {
+  /** Cards that are not suspended, of them never studied, and of them known (mastery 3 or more). */
+  cards: number;
+  fresh: number;
+  learned: number;
+  /** All the cards dueItemIds would give: due by the end of today and not graded today. */
+  due: number;
+  /** Never-studied, non-grammar cards that are not suspended (what newItemIds can pick). */
+  freshWords: number;
+  /** Cards introduced today, suspended or not (they count against the deck's new-card limit). */
+  introducedToday: number;
+  /** Cards ever introduced, and known words (not grammar), suspended or not. */
+  introduced: number;
+  words: number;
+};
+
+/**
+ * The counts for every deck in one pass over the cards, instead of a due query and a new-card query per
+ * deck. It groups by deck, suspended and kind, the order of the items_deck_state index, so SQLite reads
+ * that index without sorting. The conditions are those of dueItemIds, freshPerDeck, introducedTodayCount
+ * and wordsProducible; test/deck-stats.test.ts checks that both give the same numbers.
+ */
+export function deckStats(d: DB = getDb(), now = new Date()): Map<number, DeckStats> {
+  const today = dayKey(now);
+  const rows = d
+    .prepare(
+      `SELECT i.deck_id AS deck, i.suspended, i.kind, COUNT(*) AS n, COUNT(s.item_id) AS introduced,
+         COUNT(CASE WHEN st.mastery >= 3 THEN 1 END) AS known,
+         COUNT(CASE WHEN s.reps > 0 AND s.due <= ? AND (s.last_graded_day IS NULL OR s.last_graded_day != ?)
+           THEN 1 END) AS due,
+         COUNT(CASE WHEN s.introduced_day = ? THEN 1 END) AS introducedToday
+       FROM items i LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
+       GROUP BY i.deck_id, i.suspended, i.kind`,
+    )
+    .all(endOfDay(now).toISOString(), today, today);
+  const out = new Map<number, DeckStats>();
+  for (const r of rows) {
+    const deck = Number(r.deck);
+    let s = out.get(deck);
+    if (!s) {
+      s = { cards: 0, fresh: 0, learned: 0, due: 0, freshWords: 0, introducedToday: 0, introduced: 0, words: 0 };
+      out.set(deck, s);
+    }
+    const [n, introduced, known] = [Number(r.n), Number(r.introduced), Number(r.known)];
+    const grammar = r.kind === 'grammar';
+    s.introduced += introduced;
+    s.introducedToday += Number(r.introducedToday);
+    if (!grammar) s.words += known;
+    if (Number(r.suspended) !== 0) continue;
+    s.cards += n;
+    s.fresh += n - introduced;
+    s.learned += known;
+    s.due += Number(r.due);
+    if (!grammar) s.freshWords += n - introduced;
+  }
+  return out;
+}
+
+/** New cards left today in one deck: what freshPerDeck(d, now, deckId, cap) would give, counted. */
+export function newTodayFor(s: DeckStats | undefined, newPerDay: number, cap = 1000): number {
+  return s ? Math.min(Math.max(0, newPerDay - s.introducedToday), s.freshWords, cap, 1000) : 0;
+}
+
+/** How many cards a "hardest" session draws from: the size of the hardest scope, without sorting. */
+export function hardestCount(d: DB = getDb()): number {
+  return Number(
+    d
+      .prepare(
+        `SELECT COUNT(*) AS n FROM (SELECT 1 FROM srs s JOIN items i ON i.id = s.item_id
+           LEFT JOIN item_state st ON st.item_id = s.item_id
+           WHERE i.suspended = 0 AND s.reps > 0 AND (s.lapses > 0 OR COALESCE(st.wrong, 0) > 0) LIMIT ?)`,
+      )
+      .get(HARDEST_LIMIT)!.n,
+  );
 }
