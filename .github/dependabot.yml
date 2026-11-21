@@ -1,0 +1,33 @@
+# Dependabot opens pull requests when a library or CI action we use has a newer version or a
+# security fix. Security fixes come as soon as GitHub knows about them; routine updates once a week,
+# grouped so maintainers get a few pull requests instead of dozens. All of them target `dev` and
+# go through the same CI as any other change. See docs/SECURITY-PRACTICES.md.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: 'chore(deps)'
+    groups:
+      # Patch and minor updates of everything in one PR a week; majors come one by one.
+      minor-and-patch:
+        update-types: [minor, patch]
+      security:
+        applies-to: security-updates
+        patterns: ['*']
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: dev
+    schedule:
+      interval: weekly
+      day: monday
+    commit-message:
+      prefix: 'ci'
+    groups:
+      actions:
+        patterns: ['*']
