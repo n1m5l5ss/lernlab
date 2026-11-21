@@ -1,10 +1,14 @@
 // Safe rendering of card text (decks are shared files: only a few formatting tags survive) and media.
-import { imageAltOf, sanitizeHtml } from '@lernlab/core/cards';
+// Math (\( … \) and \[ … \]) is typeset with KaTeX after sanitising (math-render.ts).
+import { useMemo } from 'react';
+import { imageAltOf } from '@lernlab/core/cards';
 import type { Item } from '@lernlab/core/types';
 import { mediaUrl } from './bridge';
+import { renderCardHtml } from './math-render';
 
 export function Rich({ html, className }: { html: string; className?: string }) {
-  return <span className={className} dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }} />;
+  const __html = useMemo(() => renderCardHtml(html), [html]);
+  return <span className={className} dangerouslySetInnerHTML={{ __html }} />;
 }
 
 const src = (f: string) => (/^https?:\/\//.test(f) ? f : mediaUrl(f));

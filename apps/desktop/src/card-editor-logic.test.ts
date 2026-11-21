@@ -77,6 +77,28 @@ test('only the fields of the chosen type are saved', () => {
   assert.equal(fieldsToSave({ ...f, type: 'mcq' }).choices, 'x|y');
 });
 
+test('a numeric card previews as typing; a back that is not a number or a bad tolerance is named', () => {
+  const n = previewOf(form({ type: 'numeric', front: 'g on Earth?', back: '9.81 m/s^2', tolerance: '1%' }), deck)!;
+  assert.equal(n.item.kind, 'numeric');
+  assert.equal(n.item.extra.tolerance, '1%');
+  assert.deepEqual(n.view.type === 'typed' && [n.view.prompt, n.view.answer], ['g on Earth?', '9.81 m/s^2']);
+  const bad = (f: Partial<Form>) => previewOf(form({ type: 'numeric', front: 'Q', ...f }), deck)!.view;
+  assert.deepEqual(bad({ back: 'about ten' }), { type: 'problem', problem: 'number' });
+  assert.deepEqual(bad({ back: '10', tolerance: 'some' }), { type: 'problem', problem: 'tolerance' });
+  assert.equal(fieldsToSave(form({ type: 'basic', tolerance: '1%' })).tolerance, '', 'only numeric cards keep it');
+  assert.equal(fieldsToSave(form({ type: 'numeric', tolerance: '1%' })).tolerance, '1%');
+});
+
+test('a stored numeric card opens as a numeric card with its tolerance', () => {
+  const f = formFor({
+    ...previewOf(form({ type: 'numeric', front: 'Q', back: '42', tolerance: '0.5' }), deck)!.item,
+    suspended: false,
+    starred: false,
+  });
+  assert.equal(f.type, 'numeric');
+  assert.equal(f.tolerance, '0.5');
+});
+
 test('dropped files go to the image, audio or video slot; GIFs are images; others are named', () => {
   const r = sortDrop([
     { name: 'cell.png' },

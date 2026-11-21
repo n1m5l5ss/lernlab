@@ -2,13 +2,15 @@ import { Trans, useTranslation } from 'react-i18next';
 import type React from 'react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Exercise, Item } from '@lernlab/core/types';
-import { checkAnswer, similarity, normalize, stripHtml, type CheckResult } from '@lernlab/core/text';
+import { similarity, normalize, stripHtml, type CheckResult } from '@lernlab/core/text';
+import { hasMath } from '@lernlab/core/math';
 import { hear, playMedia, say, recognizer, sfx } from '../audio';
 import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
 import { textPx } from '../display';
 import { Feedback } from '../components';
+import { checkTyped, plainAnswer } from '../typed-logic';
 
 type P<E> = { ex: E; ctx: Ctx; onNext: (r: { correct: boolean }) => void };
 const now = () => performance.now();
@@ -557,7 +559,7 @@ export function TypedEngine({
   const submit = () => {
     if (phase === 'done') return onNext({ correct: finalCorrect.current });
     if (!value.trim()) return;
-    const r = checkAnswer(value, accepted, { requireArticle });
+    const r = checkTyped(item, format, value, accepted, requireArticle);
     if (phase === 'copy') {
       if (r.correct && !r.nearMiss) {
         sfx.tap();
@@ -668,7 +670,7 @@ export function TypedEngine({
       autoCorrect="off"
       autoCapitalize="off"
       spellCheck={false}
-      placeholder={phase === 'copy' ? accepted[0] : format === 'cloze' ? '…' : t('ex.typed.placeholder')}
+      placeholder={phase === 'copy' ? plainAnswer(accepted[0]) : format === 'cloze' ? '…' : t('ex.typed.placeholder')}
       onChange={(e) => setValue(e.target.value)}
       onKeyDown={(e) => {
         if (e.key === 'Enter') {
@@ -710,10 +712,12 @@ export function TypedEngine({
           {msg}
           {(phase === 'copy' || (phase === 'done' && !finalCorrect.current) || res?.nearMiss) && (
             <>
-              {given && !overridden ? (
+              {given && !overridden && !hasMath(accepted[0]) ? (
                 <Compare given={given} answer={accepted[0]} />
               ) : (
-                <div className="ans">{requireArticle && item.article ? <Article item={item} /> : accepted[0]}</div>
+                <div className="ans">
+                  {requireArticle && item.article ? <Article item={item} /> : <Rich html={accepted[0]} />}
+                </div>
               )}
             </>
           )}

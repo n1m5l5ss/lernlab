@@ -135,7 +135,8 @@ Studying on a day keeps your streak going. The day starts at 4 a.m., so a late-n
 
 **Cards** lists every card. Search with the box at the top, or filter by **Deck**, **Tag** and **State** (**New**, **Learning**, **Known**, **Suspended**, **Starred**).
 
-- Select a card to edit it, or press **+ Add card**. A card can be **Basic** (front and back), **Cloze** (a gap in the front, like `{{c1::word}}`), **Multiple choice** or **Put steps in order**.
+- Select a card to edit it, or press **+ Add card**. A card can be **Basic** (front and back), **Cloze** (a gap in the front, like `{{c1::word}}`), **Multiple choice**, **Put steps in order** or **Number answer** (a number with an optional unit, like `9.81 m/s^2`, and an optional tolerance, like `0.05` or `1%`). You may leave the unit out when you answer; `1500 m` counts for `1.5 km`.
+- Write math in LaTeX between `\( … \)` in a line, or `\[ … \]` on its own line: `\( \frac{1}{2} mv^2 \)`. When the answer is a formula, type its LaTeX; spaces and braces around one symbol don't matter. The rules are in [FORMAT.md](FORMAT.md#math-and-numeric-cards).
 - Drop an image, GIF, audio or video file on the editor to add it to the card.
 - Tick several cards to add or remove a tag, move them to another deck, suspend them or delete them. A backup is saved before a delete.
 - **☆ Star** marks a card, so you can study your starred cards from Home. **Suspend** keeps a card out of your sessions.

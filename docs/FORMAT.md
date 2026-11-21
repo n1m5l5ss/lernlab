@@ -66,7 +66,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV).
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026). An older reader studies a numeric card as a basic card.
 
 ### manifest.json
 
@@ -116,7 +116,7 @@ Each line is one card. Only `front` is required.
 | Field | Meaning |
 |---|---|
 | `id` | Stable id so updates keep progress. Write a string; readers also accept a number |
-| `type` | `basic` (default), `cloze`, `mcq`, `order`. Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card |
+| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card |
 | `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
@@ -128,6 +128,7 @@ Each line is one card. Only `front` is required.
 | `choices` | Multiple choice / multi-select: the choices, separated by `|` |
 | `correct` | Multiple choice: the correct choices as 1-based numbers or as texts, separated by `|` |
 | `steps` | Ordering card: steps in the correct order, separated by `|` |
+| `tolerance` | Numeric card: how far off a typed number may be, `0.05` (in the card's unit) or `1%` (optional, added after v1 was published) |
 | `image` | Image file name inside `media/` (or an `https://` URL). GIFs work as images |
 | `imageAlt` | Description of the image, in plain text, read out by screen readers (its alt text). Write what a picture question needs to be answered (optional, added after v1 was published; older readers ignore it) |
 | `audio` | Audio file name inside `media/` (or an `https://` URL) |
@@ -140,7 +141,34 @@ Each line is one card. Only `front` is required.
 
 Without an `id`, a card is matched on re-import by deck name plus front and back.
 
+Math is written in LaTeX between `\( … \)` (in a line) or `\[ … \]` / `$$ … $$` (on its own line); see [Math and numeric cards](#math-and-numeric-cards).
+
 Allowed formatting in text (the safe list): `<b> <strong> <i> <em> <u> <s> <mark> <sup> <sub> <small> <code> <pre> <br> <p> <div> <span> <ul> <ol> <li>`. They are kept without attributes; every other tag is removed when a card is saved and again when it is shown, because decks are shared files. In CSV and in the card editor you can also write `**bold**`, `*italic*` and `` `code` ``.
+
+## Math and numeric cards
+
+**Math.** Any card text can hold LaTeX formulas, written like Anki writes them: `\( \frac{1}{2} mv^2 \)` inside a line, `\[ … \]` or `$$ … $$` on a line of their own. A single `$` is never math, so prices stay prices. The app draws formulas with KaTeX (bundled, works offline) and keeps its MathML, so screen readers read the formula.
+
+- The safe list still applies first: tags are removed even inside a formula. Write `<` as `\lt` or with a space after it (`a < b`).
+- Formulas run untrusted: `\href`, `\url`, `\includegraphics` and the `\html…` commands do nothing. A formula with a mistake shows its source in the error colour instead of breaking the card.
+- `**bold**` and `*italic*` are not applied inside a formula, so `z^*` stays as written.
+
+**Typed answers with math.** When the answer is a formula, what you type is compared with its LaTeX source, exactly (no typo forgiveness, because one character changes the meaning). These differences don't matter:
+
+- the delimiters (`2x` matches `\(2x\)`) and all spaces;
+- braces around a single symbol: `x^{2}` = `x^2`, `\frac{1}{2}` = `\frac12`;
+- layout-only commands: `\left`, `\right`, `\displaystyle`, `\,` `\;` `\quad` and the like; `\dfrac` and `\tfrac` are `\frac`;
+- the multiplication sign: `\cdot`, `\times`, `*`, `·` and `×` are the same sign (but a written sign is not the same as none: `2*x` ≠ `2x`);
+- Unicode: `x²` = `x^2`, `−` = `-`.
+
+Case always matters (`X` ≠ `x`). An answer with a math part is never split into alternatives on `/` or `;`; use `altAnswers` for other accepted forms.
+
+**Numeric cards** (`type: numeric`). The back is a number, then optionally `± tolerance` and a unit: `9.81 m/s^2`, `9.81 ± 0.05 m/s^2`, `300 000 km/s`. If the back does not start with a number, the card is a basic card. The `tolerance` field (`0.05` or `1%`) overrides a `±` in the back. A typed answer is right when:
+
+- its number is within the tolerance. Without a tolerance it must be the same number (only rounding noise in the computer's arithmetic is forgiven).
+- Numbers can be typed as `9.81` or `9,81` (a single comma is a decimal comma; with both, the last one is the decimal mark), with digit groups (`300 000`, `1,234.5`, `1.234,5`), in scientific notation (`6.02e23`, `6.02 × 10^23`, `6.02·10⁻³`) and with `−` as minus.
+- The unit may be left out. A typed unit must be the card's unit, written with any spacing or `²`/`^2`, or the same unit with another SI prefix (`1500 m` for `1.5 km`, `20000 µA` for `20 mA`; prefixes T to p on the base and derived SI units, litres, bar, eV, B). Units are case-sensitive (`mA` ≠ `MA`); compound units (`m/s`) must match as written.
+- There are no near misses: a number is right or wrong. `altAnswers` are still accepted as text.
 
 ## CSV / TSV
 
@@ -164,6 +192,7 @@ Recognised column names (case-insensitive):
 | `choices`, `correct` | options / correct answer(s) |
 | `steps` | sequence |
 | `alt_answers` | alternatives, also accept |
+| `tolerance` | tol |
 | `image`, `audio`, `video` | picture, sound, gif |
 | `image_alt` | image alt, image description, alt text: the image's description for screen readers |
 | `deck` | subdeck, chapter, section, topic |
