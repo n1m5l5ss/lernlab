@@ -52,6 +52,8 @@ export type Settings = {
   aiAssistant: boolean;
   /** Load pictures, video and sound that decks link from the internet (#177). Off by default: it tells those sites the learner's IP address. */
   remoteMedia: boolean;
+  /** After a recall answer, ask "How sure were you?" (1–5, optional, #205). It never changes the schedule. */
+  confidence: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -79,6 +81,7 @@ export const DEFAULT_SETTINGS: Settings = {
   launchAtLogin: false,
   aiAssistant: false,
   remoteMedia: false,
+  confidence: true,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });

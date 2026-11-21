@@ -100,6 +100,16 @@ export function sendOverride(itemId: number) {
   );
 }
 
+/** "How sure were you?" (#205), queued after the answer it belongs to. */
+export function sendConfidence(c: InputOf<'attempt.confidence'>) {
+  chain = chain.then(() =>
+    call('attempt.confidence', c).then(
+      () => {},
+      () => {},
+    ),
+  );
+}
+
 // Attempts are sent in order in the background so answering never waits for the app.
 export function sendAttempt(a: Attempt) {
   chain = chain.then(() =>

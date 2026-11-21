@@ -64,7 +64,7 @@ Each item is a GitHub issue; finished ones ship in the next minor release.
 
 ## Later
 
-- [ ] **Confidence rating** (1–5) on reveal.
+- [x] **Confidence rating** (1–5) on reveal (#205).
 - [ ] **Leech handling:** offer a rewrite or mnemonic after 8 lapses.
 - [ ] **Cloze with a word bank** (scaffolded), then typed.
 - [ ] **Slow audio replay** for listening and dictation.

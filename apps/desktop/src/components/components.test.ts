@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {
   Button,
   Card,
+  ConfidenceRow,
   Feedback,
   Input,
   LevelTag,
@@ -129,6 +130,21 @@ test('Sidebar is a named navigation landmark that marks the current page', () =>
   assert.match(out, /<a class="nav-link" href="#\/home" aria-current="page"><svg aria-hidden="true"/);
   assert.match(out, /<a class="nav-link" href="#\/decks"><svg/);
   assert.match(out, /<div class="grow"><\/div><a class="nav-link footer" href="#\/settings">/);
+});
+
+test('ConfidenceRow is a labelled radio group of 1 to 5 with one tab stop, named for screen readers', () => {
+  const names = ['1 guess', '2', '3', '4', '5 certain'];
+  const props = { id: 'cf', label: 'How sure?', low: 'Guess', high: 'Certain', names, onPick: () => {} };
+  const none = html(h(ConfidenceRow, { ...props, value: null }));
+  assert.match(none, /<span id="cf" class="confidenceLabel">How sure\?<\/span>/);
+  assert.match(none, /role="radiogroup" aria-labelledby="cf"/);
+  assert.equal(none.match(/role="radio"/g)?.length, 5);
+  assert.match(none, /aria-checked="false" aria-label="1 guess" tabindex="0"[^>]*>1</);
+  assert.equal(none.match(/tabindex="0"/g)?.length, 1);
+  assert.match(none, />Guess<.*>Certain</);
+  const four = html(h(ConfidenceRow, { ...props, value: 4 }));
+  assert.match(four, /aria-checked="true" aria-label="4" tabindex="0"/);
+  assert.match(four, /aria-label="1 guess" tabindex="-1"/);
 });
 
 test('LevelTag shows the level word with a class per level', () => {
