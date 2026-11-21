@@ -1,0 +1,43 @@
+# Supply-chain checks on every pull request:
+# - dependency review: fails if the change adds a library with a known high or critical
+#   vulnerability, or one whose licence doesn't fit an MIT project;
+# - npm audit signatures: proves every installed package really came from the npm registry
+#   unchanged (registry signatures and, where published, provenance).
+name: supply-chain
+on:
+  pull_request:
+    branches: [dev, main]
+  push:
+    branches: [dev]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: supply-chain-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
+        with:
+          fail-on-severity: high
+          # Copyleft licences that would conflict with shipping LernLab under MIT.
+          deny-licenses: GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later, AGPL-3.0-only, AGPL-3.0-or-later
+  signatures:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: { node-version: 24, cache: npm }
+      - run: npm ci --ignore-scripts
+      - run: npm audit signatures
+      # Known high or critical vulnerabilities anywhere in the tree. The app bundles its libraries at
+      # build time, so they are all devDependencies; lower severities are handled by Dependabot.
+      - run: npm audit --audit-level=high

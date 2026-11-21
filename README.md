@@ -1,6 +1,6 @@
 # LernLab
 
-[![CI](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml)
+[![CI](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/n1m5l5ss/lernlab/actions/workflows/ci.yml) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/n1m5l5ss/lernlab/badge)](https://scorecard.dev/viewer/?uri=github.com/n1m5l5ss/lernlab)
 
 **Free, open-source flashcards that feel like a game, for any subject.**
 

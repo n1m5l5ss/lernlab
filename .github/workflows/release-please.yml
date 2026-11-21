@@ -3,18 +3,20 @@ on:
   push:
     branches: [main]
 permissions:
-  contents: write
-  pull-requests: write
-  actions: write
+  contents: read
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
     outputs:
       released: ${{ steps.rp.outputs.release_created }}
       tag: ${{ steps.rp.outputs.tag_name }}
     steps:
       - id: rp
-        uses: googleapis/release-please-action@v4
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         with:
           target-branch: main
           config-file: release-please-config.json
