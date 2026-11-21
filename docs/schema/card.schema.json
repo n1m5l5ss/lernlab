@@ -25,6 +25,10 @@
       "description": "Other accepted answers, separated by |, e.g. \"colour|color\".",
       "type": "string"
     },
+    "variants": {
+      "description": "Optional, added after v1 was published; older readers ignore it. Other ways to ask the card's question (the answer stays the same), separated by |. Each may start with its level and a colon: recall, apply or analyse; without one it is recall. Plain text, at most 8 questions of 500 characters. Example: \"apply: A patient has X. Which mechanism? | analyse: What happens if X doubles?\"",
+      "type": "string"
+    },
     "example": {
       "description": "Example sentence. Mark the studied word with <b>...</b> to get fill-the-gap rounds.",
       "type": "string"

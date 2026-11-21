@@ -34,6 +34,7 @@ export const MAPPABLE_FIELDS = {
   correct: 'correct',
   steps: 'steps',
   altAnswers: 'alt_answers',
+  variants: 'variants',
 } as const;
 export type MappableField = keyof typeof MAPPABLE_FIELDS;
 

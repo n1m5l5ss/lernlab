@@ -24,6 +24,7 @@ const { readApkg } = await import('../src/formats/apkg');
 const { writeApkg } = await import('../src/formats/apkgwrite');
 const { listZip, unsafeZipPath } = await import('../src/formats/zip');
 const { sanitizeHtml, SAFE_TAGS } = await import('../src/cards');
+const { cleanVariants, parseVariants, VARIANTS_MAX, VARIANT_MAX_LENGTH } = await import('../src/variants');
 const { UserError } = await import('../src/errors');
 const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
@@ -126,6 +127,23 @@ test('sanitizeHtml: whatever goes in, only bare safe-list tags come out', () => 
 test('CSV and pasted text: any input is read or refused cleanly', () => {
   fc.assert(
     fc.property(hostileText, (text) => worksOrUserError(() => csvToCards(text))),
+    params(RUNS * 2),
+  );
+});
+
+test('question variants: any text gives a few plain-text questions, and cleaning is stable', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const variants = parseVariants(text);
+      assert.ok(variants.length <= VARIANTS_MAX);
+      for (const v of variants) {
+        assert.ok(v.prompt && v.prompt.length <= VARIANT_MAX_LENGTH && !v.prompt.includes('|'));
+        assert.ok(['recall', 'apply', 'analyse'].includes(v.level));
+      }
+      const line = cleanVariants(text);
+      assert.equal(cleanVariants(line), line, 'cleaning twice changes nothing');
+      assert.equal(parseVariants(line).length, variants.length);
+    }),
     params(RUNS * 2),
   );
 });

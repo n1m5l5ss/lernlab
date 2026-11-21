@@ -125,3 +125,18 @@ test('JSON previews its cards', () => {
   assert.equal(p.deckName, 'J');
   assert.equal(p.total, 1);
 });
+
+test('a column of question variants is recognised, and can be mapped by hand', () => {
+  const known = previewFile(
+    'Pharma.csv',
+    strToU8('front,back,other questions\nBeta blocker,slows the heart,apply: Angina?\n'),
+  );
+  assert.equal(known.table?.fields.variants, 2);
+  const csv = 'Begriff;Antwort;Fragen\nBeta blocker;slows the heart;apply: A patient with angina?\n';
+  const res = importFile(
+    'Pharma.csv',
+    mapFile('Pharma.csv', strToU8(csv), { header: true, fields: { front: 0, back: 1, variants: 2 } }),
+  );
+  const extra = getDb().prepare('SELECT extra FROM items WHERE deck_id = ?').get(res.deck.id)!.extra;
+  assert.equal(JSON.parse(String(extra)).variants, 'apply: A patient with angina?');
+});
