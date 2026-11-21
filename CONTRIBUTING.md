@@ -7,6 +7,7 @@ Thanks for helping! LernLab is a free, local-first flashcard app for any subject
 - **Share a deck** through the "Deck submission" template. Decks must be your own work or openly licensed. No copyrighted exam questions.
 - **Translate the interface.** Use the "Translation" template. A translation platform is coming in 1.x.
 - **Write code.** Pick an issue labelled `good first issue` or `help wanted`.
+- **Join the team** as a reviewer, a maintainer or the lead, with the [Join the team form](https://github.com/n1m5l5ss/lernlab/issues/new?template=join_team.yml). See [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Set up
 ```bash

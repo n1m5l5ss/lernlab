@@ -236,6 +236,12 @@ The repo is an npm workspace: the engine lives in `packages/core` and the app in
 
 Issues and pull requests are welcome, especially new importers, card types, translations of the interface, and shared decks for `examples/`. Shared decks must be your own work or openly licensed. No copyrighted exam questions, please. [CONTRIBUTING.md](CONTRIBUTING.md) explains how to set up, test and open a pull request.
 
+## Help run LernLab
+
+LernLab is run by volunteers and is built to outlive any one of them, including its founder. Anyone can become a reviewer or a maintainer, or take over as lead. Use the [Join the team form](https://github.com/n1m5l5ss/lernlab/issues/new?template=join_team.yml). [GOVERNANCE.md](GOVERNANCE.md) explains how decisions are made and how a handover works, and the team is listed in [MAINTAINERS.md](MAINTAINERS.md).
+
 ## License
+
+LernLab was originally created by kandru (aka [@n1m5l5ss](https://github.com/n1m5l5ss)); see [AUTHORS.md](AUTHORS.md).
 
 MIT for the code. The example decks are CC0.
