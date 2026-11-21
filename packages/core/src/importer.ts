@@ -16,13 +16,20 @@ import {
 import { csvToCards, pastedToCards } from './formats/csv';
 import { lernpackMedia, readLernpack } from './formats/lernpack';
 import { readApkg } from './formats/apkg';
+import { importAnkiHistory } from './ankihistory';
 import { jsonToCard, parseJson } from './formats/json';
 import { IMPORT_LIMITS, isNestedZip, listZip, mediaProblem, readZip, type MediaProblem } from './formats/zip';
 import { UserError } from './errors';
 
 export { IMPORT_LIMITS } from './formats/zip';
 
-export type ImportOptions = { deckId?: number; deckName?: string; language?: string | null };
+export type ImportOptions = {
+  deckId?: number;
+  deckName?: string;
+  language?: string | null;
+  /** Anki packages: replay the review history into the schedule (default on). */
+  ankiHistory?: boolean;
+};
 
 export type ImportFormat = 'lernpack' | 'apkg' | 'csv+media' | 'json' | 'csv' | 'tsv' | 'paste' | 'anki';
 export type ImportWarningCode = MediaProblem | 'nested_zip_ignored' | 'encoding_guessed';
@@ -49,6 +56,8 @@ export type ImportReport = {
   missingMedia: string[];
   /** Files that were left out, with the reason. */
   warnings: { code: ImportWarningCode; file?: string }[];
+  /** Past Anki reviews replayed into the schedule (0 for other formats). */
+  reviews: number;
 };
 /** Older name of ImportReport. */
 export type ImportResult = ImportReport;
@@ -150,6 +159,7 @@ function finish(p: Parsed, deck: () => Deck, d: DB): ImportReport {
     mediaMissing: missing.size,
     missingMedia: [...missing].slice(0, REPORT_LIST_MAX),
     warnings: warnings.slice(0, REPORT_LIST_MAX),
+    reviews: 0,
   };
 }
 
@@ -208,7 +218,13 @@ export function importFile(
                 apkg.decks.filter((x) => x.startsWith(b)).length - apkg.decks.filter((x) => x.startsWith(a)).length,
             )[0]
         : base;
-      return finish({ format: 'apkg', ...apkg }, () => pickDeck(root.replace(/^Lang$/, base), opts, null, {}, d), d);
+      const report = finish(
+        { format: 'apkg', ...apkg },
+        () => pickDeck(root.replace(/^Lang$/, base), opts, null, {}, d),
+        d,
+      );
+      if (opts.ankiHistory !== false) report.reviews = importAnkiHistory(report.deck.id, apkg.history, d);
+      return report;
     }
     // A zip with a CSV plus its images/audio.
     const csvName = names.find((n) => /\.(csv|tsv|txt)$/i.test(n) && notInMacFolder(n));

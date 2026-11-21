@@ -423,9 +423,15 @@ export const handlers = {
       deckName: v.optional(v.string(200)),
       language: v.optional(v.nullable(v.string(20))),
       mapping: v.optional(columnMapping),
+      ankiHistory: v.optional(v.boolean),
     }),
-    ({ name, data, deckId, deckName, language, mapping }) => {
-      const res = importFile(name, mapFile(name, data, mapping), { deckId, deckName: deckName || undefined, language });
+    ({ name, data, deckId, deckName, language, mapping, ankiHistory }) => {
+      const res = importFile(name, mapFile(name, data, mapping), {
+        deckId,
+        deckName: deckName || undefined,
+        language,
+        ankiHistory,
+      });
       chooseDeck(res.deck.id);
       return res;
     },

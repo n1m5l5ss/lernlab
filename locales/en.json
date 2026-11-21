@@ -299,6 +299,9 @@
       },
       "reportMedia_one": "{{count}} media file added.",
       "reportMedia_other": "{{count}} media files added.",
+      "ankiHistory_one": "Keep my Anki progress ({{count}} past review)",
+      "ankiHistory_other": "Keep my Anki progress ({{count}} past reviews)",
+      "ankiHistoryHint": "Cards you already know in Anki come up when they are due, instead of starting from zero.",
       "chooseOther": "Choose another file",
       "pasteLabel": "Paste one card per line",
       "found_one": "Found {{count}} card. Nothing is saved until you press Import.",
@@ -400,6 +403,8 @@
       },
       "total_one": "The deck now has {{count}} card.",
       "total_other": "The deck now has {{count}} cards.",
+      "reviews_one": "{{count}} past review brought over from Anki",
+      "reviews_other": "{{count}} past reviews brought over from Anki",
       "again": "Import more",
       "done": "Done"
     },

@@ -2602,3 +2602,19 @@ h1.session-title:focus,
 .settings-row > .input {
   width: auto;
 }
+
+/* ---- Anki review history (#48): the "Keep my Anki progress" choice in the import preview. ---- */
+.import-history {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.import-history input {
+  margin-block-start: var(--space-1);
+}
+.import-history-hint {
+  display: block;
+}

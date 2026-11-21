@@ -46,6 +46,7 @@ test('the report counts added and updated cards and groups skips by reason', () 
     missingMedia: ['hund.png'],
     warnings: [{ code: 'media_wrong_type', file: 'evil.png' }],
     format: 'csv',
+    reviews: 0,
   } as ImportReport;
   assert.deepEqual(reportLines(r), {
     added: 3,
@@ -59,7 +60,9 @@ test('the report counts added and updated cards and groups skips by reason', () 
     moreSkipped: 2,
     missingMedia: ['hund.png'],
     warnings: [{ code: 'media_wrong_type', file: 'evil.png' }],
+    reviews: 0,
   });
+  assert.equal(reportLines({ ...r, format: 'apkg', reviews: 1234 }).reviews, 1234, 'Anki reviews brought over');
   const clean = reportLines({ ...r, skipped: [], skippedCount: 0, mediaMissing: 0, missingMedia: [], warnings: [] });
   assert.deepEqual([clean.skipped, clean.moreSkipped, clean.warnings], [[], 0, []]);
 });

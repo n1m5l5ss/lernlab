@@ -61,6 +61,8 @@ export type ReportLines = {
   missingMedia: string[];
   /** Files left out, with the reason (each code has a message under errors.<code>). */
   warnings: ImportReport['warnings'];
+  /** Past Anki reviews replayed into the schedule. */
+  reviews: number;
 };
 
 /** What the report screen shows for an import: counts, skipped rows grouped by reason, missing media and warnings. */
@@ -76,5 +78,6 @@ export function reportLines(r: ImportReport): ReportLines {
     moreSkipped: Math.max(0, r.skippedCount - r.skipped.length),
     missingMedia: r.missingMedia,
     warnings: r.warnings,
+    reviews: r.reviews ?? 0,
   };
 }

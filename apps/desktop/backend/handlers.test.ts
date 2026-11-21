@@ -45,8 +45,11 @@ test('create a deck, add and edit a card, import a file, plan a session', async 
   const card = await ok('cards.get', { id });
   assert.equal(card.meaning, 'Paris');
   const csv = new TextEncoder().encode('front,back\nGermany,Berlin\nItaly,Rome\n');
-  const imp = await ok('import.file', { name: 'more.csv', data: csv, deckId: deck.id });
+  const imp = await ok('import.file', { name: 'more.csv', data: csv, deckId: deck.id, ankiHistory: false });
   assert.equal(imp.added, 2);
+  assert.equal(imp.reviews, 0);
+  const notBool = await handle('import.file', { name: 'more.csv', data: csv, ankiHistory: 'yes' });
+  assert.equal(!notBool.ok && notBool.error.code, 'invalid_input');
   const exp = await ok('decks.export', { id: deck.id, format: 'csv' });
   assert.ok(exp.data instanceof Uint8Array && new TextDecoder().decode(exp.data).includes('Berlin'));
   const plan = await ok('session.plan', { length: 'mini' });
