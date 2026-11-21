@@ -6,15 +6,15 @@ import { parseTolerance } from '@lernlab/core/numeric';
 import { codeTask, type CodeTask } from '@lernlab/core/code';
 import { formatBox } from '@lernlab/core/occlusion';
 import { VARIANTS_MAX, formatVariants, parseVariants, takesVariants, type Variant } from '@lernlab/core/variants';
-import { correctionsOf, formatCorrections } from '@lernlab/core/misconceptions';
+import { correctionsOf, formatCorrections, isMyth } from '@lernlab/core/misconceptions';
 import { stripHtml } from '@lernlab/core/text';
 import type { Shape } from './occlusion-logic';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
 
 type FullCard = OutputOf<'cards.get'>;
-export type CardType = 'basic' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code' | 'occlusion';
-export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order', 'numeric', 'code', 'occlusion'];
+export type CardType = 'basic' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code' | 'occlusion' | 'myth';
+export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order', 'numeric', 'code', 'occlusion', 'myth'];
 const STORED_TYPES = new Set<string>(CARD_TYPES);
 export type MediaSlot = 'image' | 'audio' | 'video';
 
@@ -64,7 +64,7 @@ export const formFor = (c: FullCard): Form => ({
   audio: c.audio ?? '',
   video: c.video ?? '',
   alt: c.extra.alt ?? '',
-  type: STORED_TYPES.has(c.kind) ? (c.kind as CardType) : 'basic',
+  type: isMyth(c) ? 'myth' : STORED_TYPES.has(c.kind) ? (c.kind as CardType) : 'basic',
   choices: c.extra.choices ?? '',
   correct: c.extra.correct ?? '',
   steps: c.extra.steps ?? '',
@@ -85,7 +85,8 @@ export const formFor = (c: FullCard): Form => ({
 export const showImageAlt = (f: Pick<Form, 'image'>) => !!f.image;
 
 /** Question variants are for cards asked as a written question (flip or typed). */
-export const showVariants = (f: Pick<Form, 'type'>) => takesVariants(f.type === 'basic' ? 'card' : f.type);
+export const showVariants = (f: Pick<Form, 'type'>) =>
+  f.type !== 'myth' && takesVariants(f.type === 'basic' ? 'card' : f.type);
 export const canAddVariant = (list: Variant[]) => list.length < VARIANTS_MAX;
 /** A new question starts as apply: the card's own question already covers recall. */
 export const addVariant = (list: Variant[]): Variant[] =>
@@ -144,6 +145,8 @@ function toCard(f: Form): NormalizedCard {
 export type PreviewView =
   | { type: 'typed'; prompt: string; answer: string; also: string[]; mediaFirst: boolean }
   | { type: 'flip'; prompt: string; answer: string; mediaFirst: boolean }
+  /** A myth card: "True or myth?" about the front, then why (the back). */
+  | { type: 'myth'; prompt: string; answer: string }
   | { type: 'cloze'; before: string; after: string; answer: string; hint: string; extra: string }
   | { type: 'mcq'; stem: string; choices: string[]; correct: number[] }
   | { type: 'order'; prompt: string; steps: string[] }
@@ -178,6 +181,7 @@ export function previewOf(
     const answer = ex.accepted[0] ?? '';
     return out({ type: 'cloze', before: ex.before, after: ex.after, answer, hint: ex.hint, extra: ex.translation });
   }
+  if (f.type === 'myth') return out({ type: 'myth', prompt: item.target, answer: item.meaning });
   if (f.type === 'mcq') {
     const m = mcqOf(item);
     return out(m ? { type: 'mcq', stem: item.target, ...m } : { type: 'problem', problem: 'choices' });

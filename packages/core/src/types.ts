@@ -125,6 +125,8 @@ export type Exercise =
   | { type: 'lesson'; group: string; title: string; text: string; examples: { de: string; en: string }[] }
   | { type: 'flip'; itemId: number; prompt: string; answer: string; reverse: boolean; level?: Level }
   | { type: 'truefalse'; itemId: number; front: string; shown: string; isTrue: boolean }
+  /** A myth card (misconceptions.ts): "True or myth?" about the statement, then why (its back). A real recall. */
+  | { type: 'myth'; itemId: number; statement: string; why: string }
   | { type: 'imagemc'; itemId: number; options: string[]; answerIndex: number }
   /** corrections: per choice, safe HTML shown when that wrong choice is picked ('' for none; misconceptions.ts). */
   | {

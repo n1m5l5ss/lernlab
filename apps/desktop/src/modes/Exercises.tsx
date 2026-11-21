@@ -474,6 +474,98 @@ export function Flip({
   );
 }
 
+/* ───────────── Myth card: reject the myth, then say why (a real recall, #202) ───────────── */
+export function Myth({
+  ex,
+  ctx,
+  onNext,
+  format = 'flip',
+}: P<Extract<Exercise, { type: 'myth' }>> & { format?: 'flip' | 'boss' }) {
+  const { t } = useTranslation();
+  const item = ctx.item(ex.itemId);
+  // ask → (picked "Myth") why → shown → rated; or ask → (picked "True") fooled.
+  const [step, setStep] = useState<'ask' | 'why' | 'shown' | 'fooled'>('ask');
+  const shown = useRef(now());
+  const record = (correct: boolean, given: string, nearMiss = false) => {
+    ctx.answer({ itemId: item.id, format, correct, nearMiss, shownAt: shown.current, given });
+    if (!correct) ctx.missed.add(item.id);
+  };
+  const pick = (myth: boolean) => {
+    if (step !== 'ask') return;
+    if (myth) return setStep('why');
+    record(false, 'true');
+    setStep('fooled');
+  };
+  const rate = (r: 0 | 1 | 2) => {
+    if (step !== 'shown') return;
+    record(r > 0, ['no', 'partly', 'yes'][r], r === 1);
+    onNext({ correct: r > 0 });
+  };
+  useKeys((e) => {
+    if (step === 'ask' && ['1', '2'].includes(e.key)) pick(e.key === '2');
+    else if (step === 'why' && (e.key === ' ' || e.key === 'Enter')) {
+      e.preventDefault();
+      setStep('shown');
+    } else if (step === 'shown' && ['1', '2', '3'].includes(e.key)) rate((Number(e.key) - 1) as 0 | 1 | 2);
+    else if (step === 'fooled' && e.key === 'Enter') onNext({ correct: false });
+  });
+  return (
+    <div>
+      <div className="blocktitle">{t('ex.myth.title')}</div>
+      <div className="card flipcard">
+        <Media item={item} size="sm" />
+        <div className="prompt" style={{ fontSize: ex.statement.length > 80 ? textPx(22) : textPx(28) }}>
+          <Rich html={ex.statement} />
+        </div>
+        {step === 'why' && <Feedback tone="right">{t('ex.myth.rejected')}</Feedback>}
+        {(step === 'shown' || step === 'fooled') && (
+          <Feedback tone={step === 'shown' ? 'right' : 'wrong'} style={{ textAlign: 'start' }}>
+            {t(step === 'shown' ? 'ex.myth.because' : 'ex.myth.fooled')}
+            <div className="ans">
+              <Rich html={ex.why} />
+            </div>
+          </Feedback>
+        )}
+      </div>
+      {step === 'ask' ? (
+        <div className="actions">
+          <button className="btn" onClick={() => pick(false)}>
+            {t('ex.myth.true')} <span className="kbd">1</span>
+          </button>
+          <button className="btn" onClick={() => pick(true)}>
+            {t('ex.myth.myth')} <span className="kbd">2</span>
+          </button>
+        </div>
+      ) : step === 'why' ? (
+        <div className="actions">
+          <button className="btn primary" onClick={() => setStep('shown')}>
+            {t('ex.myth.show')} <span className="kbd">{t('keys.space')}</span>
+          </button>
+          <span className="small muted">{t('ex.myth.hint')}</span>
+        </div>
+      ) : step === 'shown' ? (
+        <div className="grade3">
+          <button className="btn rate-no" onClick={() => rate(0)}>
+            {t('ex.flip.no')} <span className="kbd">1</span>
+          </button>
+          <button className="btn rate-partly" onClick={() => rate(1)}>
+            {t('ex.flip.partly')} <span className="kbd">2</span>
+          </button>
+          <button className="btn rate-yes" onClick={() => rate(2)}>
+            {t('ex.flip.yes')} <span className="kbd">3</span>
+          </button>
+        </div>
+      ) : (
+        <div className="actions">
+          <button className="btn primary" onClick={() => onNext({ correct: false })}>
+            {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ───────────── Typed answer engine: retry once, then reveal and copy (forced repeat) ───────────── */
 type TypedProps = {
   ctx: Ctx;

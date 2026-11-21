@@ -11,7 +11,7 @@ import { parseQuantity, parseTolerance } from './numeric';
 import { normalizeCode } from './code';
 import { formatBox, modeOf, parseBox } from './occlusion';
 import { cleanVariants, takesVariants } from './variants';
-import { cleanCorrections } from './misconceptions';
+import { cleanCorrections, isMyth } from './misconceptions';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -94,7 +94,7 @@ export type NormalizedCard = {
   group?: string; // lesson group, e.g. "G01" (taught together as a mini-lesson)
   rank?: number; // frequency rank / introduction order
   extra?: Record<string, string>;
-  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image). */
+  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image), myth (a misconception to reject). */
   type?: string;
   choices?: string; // "A|B|C|D"
   correct?: string; // "2|4" (1-based) or the correct choice texts
@@ -219,6 +219,7 @@ export function detectKind(
   c?: NormalizedCard,
 ): ItemKind {
   const t = (c?.type ?? '').toLowerCase();
+  if (t === 'myth') return 'card';
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
   if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
@@ -290,8 +291,12 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   if (imageAlt && c.image) extra.imageAlt = imageAlt;
   else delete extra.imageAlt;
   // Question variants: plain text in one canonical line, kept only on cards asked as a written question.
+  // A myth card (misconceptions.ts): a basic card with a flag, set by its type; kept while no other type is given.
+  const myth = kind === 'card' && (c.type ? c.type.toLowerCase() === 'myth' : isMyth({ extra }));
+  if (myth) extra.myth = '1';
+  else delete extra.myth;
   const variants = cleanVariants(c.variants ?? extra.variants);
-  if (variants && takesVariants(kind)) extra.variants = variants;
+  if (variants && takesVariants(kind) && !myth) extra.variants = variants;
   else delete extra.variants;
   // Corrections for wrong choices: plain text, kept only on a multiple-choice card, one slot per choice.
   const corrections =

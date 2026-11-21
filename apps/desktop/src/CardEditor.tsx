@@ -234,14 +234,18 @@ export function CardEditor({
               ? t('browse.editor.codeTask')
               : occlusion
                 ? t('browse.editor.occlusion.title')
-                : t('browse.editor.front'),
+                : c.type === 'myth'
+                  ? t('browse.editor.myth')
+                  : t('browse.editor.front'),
         c.type === 'cloze'
           ? t('browse.editor.clozePlaceholder', CLOZE)
           : c.type === 'code'
             ? t('browse.editor.codeTaskPlaceholder')
             : occlusion
               ? t('browse.editor.occlusion.titlePlaceholder')
-              : t('browse.editor.frontPlaceholder'),
+              : c.type === 'myth'
+                ? t('browse.editor.mythPlaceholder')
+                : t('browse.editor.frontPlaceholder'),
         true,
       )}
       {dups.length > 0 && (
@@ -302,6 +306,8 @@ export function CardEditor({
           {f('back', t('browse.editor.number'), t('browse.editor.numberPlaceholder'))}
           {f('tolerance', t('browse.editor.tolerance'), t('browse.editor.tolerancePlaceholder'))}
         </>
+      ) : c.type === 'myth' ? (
+        f('back', t('browse.editor.mythWhy'), t('browse.editor.mythWhyPlaceholder'), true)
       ) : (
         f(
           'back',
@@ -481,6 +487,25 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
             <div className="small">{t('browse.editor.alsoAccepted', { answers: view.also.join(', ') })}</div>
           )}
           {!view.mediaFirst && media}
+        </>
+      );
+      break;
+    case 'myth':
+      question = (
+        <>
+          <div className="blocktitle">{t('ex.myth.title')}</div>
+          {media}
+          <div className="prompt">
+            <Rich html={view.prompt} />
+          </div>
+        </>
+      );
+      answer = (
+        <>
+          {t('ex.myth.because')}
+          <div className="ans">
+            <Rich html={view.answer} />
+          </div>
         </>
       );
       break;

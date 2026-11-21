@@ -59,3 +59,10 @@ export const pickedCorrections = (corrections: string[] | undefined, picked: num
     .filter((i) => !correct.includes(i))
     .map((i) => corrections?.[i] ?? '')
     .filter(Boolean);
+
+/**
+ * Myth cards: a card of type "myth" states a common misconception on its front and explains it on its back.
+ * Sessions ask "True or myth?" (always a myth), then why, and show the back: a real recall, graded once a day.
+ * Stored as a basic card with this flag in its extra fields (no migration); files carry it as `type: myth`.
+ */
+export const isMyth = (item: Pick<Item, 'extra'>): boolean => item.extra?.myth === '1';

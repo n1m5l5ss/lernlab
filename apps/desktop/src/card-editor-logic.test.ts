@@ -261,3 +261,24 @@ test('corrections: one per wrong choice, written in the form and saved as one li
     { choice: 'B', correct: false },
   ]);
 });
+
+test('a myth card: saved as type myth, read back as one, previewed as true-or-myth, without other questions', () => {
+  const f = form({
+    type: 'myth',
+    front: 'We only use 10% of our brains.',
+    back: 'Scans show activity everywhere.',
+    variants: [{ prompt: 'Why?', level: 'apply' }],
+  });
+  assert.equal(showVariants(f), false);
+  assert.equal(fieldsToSave(f).type, 'myth');
+  assert.equal(fieldsToSave(f).variants, '');
+  const p = previewOf(f, deck)!;
+  assert.equal(p.item.extra.myth, '1');
+  assert.deepEqual(p.view, {
+    type: 'myth',
+    prompt: 'We only use 10% of our brains.',
+    answer: 'Scans show activity everywhere.',
+  });
+  assert.equal(formFor({ ...p.item, suspended: false, starred: false }).type, 'myth');
+  assert.equal(formFor({ ...p.item, extra: {}, suspended: false, starred: false }).type, 'basic');
+});

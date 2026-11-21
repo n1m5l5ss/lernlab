@@ -602,8 +602,13 @@
         "order": "Put steps in order",
         "numeric": "Number answer (with tolerance and unit)",
         "code": "Code (output, missing token or line order)",
-        "occlusion": "Image occlusion (hide parts of a picture)"
+        "occlusion": "Image occlusion (hide parts of a picture)",
+        "myth": "Myth (a common misconception to reject)"
       },
+      "myth": "Myth (what many people wrongly believe)",
+      "mythPlaceholder": "We only use 10% of our brains.",
+      "mythWhy": "Why it is wrong",
+      "mythWhyPlaceholder": "Brain scans show activity all over the brain, even during sleep.",
       "question": "Question",
       "prompt": "Prompt",
       "front": "Front",
@@ -1159,6 +1164,16 @@
       "title": "True or false?",
       "false": "✗ False",
       "true": "✓ True"
+    },
+    "myth": {
+      "title": "True or myth?",
+      "true": "True",
+      "myth": "Myth",
+      "rejected": "Right: it's a myth. Now, why?",
+      "show": "Show why",
+      "hint": "Say or think why first, then check.",
+      "because": "It's a myth, because:",
+      "fooled": "It's a myth, a common one. Here's why:"
     },
     "flip": {
       "title": "Recall · think of the answer",

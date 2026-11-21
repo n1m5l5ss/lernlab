@@ -15,6 +15,7 @@ import {
   Intro,
   Lesson,
   Mcq,
+  Myth,
   Order,
   Speak,
   TrueFalse,
@@ -127,6 +128,8 @@ function ExerciseBlock({
       return <TrueFalse key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'flip':
       return <Flip key={k} ex={ex} ctx={ctx} onNext={next} />;
+    case 'myth':
+      return <Myth key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'mcq':
       return <Mcq key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'order':

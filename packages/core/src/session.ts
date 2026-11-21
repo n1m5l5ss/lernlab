@@ -26,6 +26,7 @@ import * as gen from './exercises';
 import { qa } from './cards';
 import { GUESS_MAX, pickGuessRound, topicIsNew, topicName } from './guess';
 import { variantIndex, variantsOf } from './variants';
+import { isMyth } from './misconceptions';
 import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
@@ -88,8 +89,11 @@ export function planSession(
   const get = (id: number) => byId.get(id)!;
   const has = (id: number) => byId.has(id);
   const notGrammar = (id: number) => get(id).kind !== 'grammar';
-  /** Plain front/back cards (question cards with their own format are excluded from pair games). */
-  const plain = (id: number) => !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(get(id).kind);
+  /** Plain front/back cards (question cards with their own format, and myth cards, are excluded from pair games). */
+  const plain = (id: number) =>
+    !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(get(id).kind) && !isMyth(get(id));
+  /** Myth cards are only asked as "true or myth?" (misconceptions.ts): no sprints, listening, pictures or speaking. */
+  const notMyth = (id: number) => !isMyth(get(id));
 
   // Practice (cramming) draws on every card in the source, due or not, and teaches nothing new.
   const due = practice
@@ -126,7 +130,7 @@ export function planSession(
 
   // 2. Category sprint: sort cards into their category (der/die/das, IaaS/PaaS/SaaS…) on the clock.
   if (size.sprint) {
-    const withCat = [...new Set([...known, ...fresh, ...upcoming])].filter((id) => get(id).category);
+    const withCat = [...new Set([...known, ...fresh, ...upcoming])].filter((id) => get(id).category && notMyth(id));
     const freq = new Map<string, number>();
     withCat.forEach((id) => freq.set(get(id).category!, (freq.get(get(id).category!) ?? 0) + 1));
     const cats = [...freq.entries()]
@@ -261,11 +265,11 @@ export function planSession(
 
   // 8. Listening: the card's recording, or the system voice on a language deck. Known cards with a short
   //    sentence also get dictation (recall). The window skips any it can't play (no voice installed).
-  const listenEx = shuffle([...fresh, ...learned.slice(0, 40)].filter((id) => gen.hearable(get(id))))
+  const listenEx = shuffle([...fresh, ...learned.slice(0, 40)].filter((id) => notMyth(id) && gen.hearable(get(id))))
     .map((id) => gen.listen(get(id), pool))
     .filter(Boolean)
     .slice(0, size.listen) as Exercise[];
-  const dictationEx = shuffle(known)
+  const dictationEx = shuffle(known.filter(notMyth))
     .map((id) => gen.dictation(get(id)))
     .filter(Boolean)
     .slice(0, size.listen ? 2 : 0) as Exercise[];
@@ -281,7 +285,7 @@ export function planSession(
     });
 
   // 9. Picture quiz (cards with images).
-  const picEx = shuffle([...fresh, ...known].filter((id) => get(id).image))
+  const picEx = shuffle([...fresh, ...known].filter((id) => get(id).image && notMyth(id)))
     .map((id) => gen.imagemc(get(id), pool))
     .filter(Boolean)
     .slice(0, 5) as Exercise[];
@@ -303,13 +307,13 @@ export function planSession(
       format: 'cloze',
       title: 'Fill the gap',
       teacher: say('cloze'),
-      exercises: dueB.map((id) => gen.cloze(get(id)) ?? review(id)),
+      exercises: dueB.map((id) => (notMyth(id) && gen.cloze(get(id))) || review(id)),
     });
 
   // 11. Speak aloud (language decks): production effect on a subset.
   if (lang) {
     const speakIds = shuffle(
-      [...fresh, ...due, ...leftovers].filter((id) => notGrammar(id) && get(id).kind !== 'occlusion'),
+      [...fresh, ...due, ...leftovers].filter((id) => notGrammar(id) && notMyth(id) && get(id).kind !== 'occlusion'),
     ).slice(0, size.speak);
     if (speakIds.length)
       blocks.push({
@@ -332,7 +336,7 @@ export function planSession(
       title: 'Recall',
       teacher: say('recall'),
       exercises: shuffle(recallIds).map((id, i) =>
-        i % 3 === 2 ? (gen.cloze(get(id)) ?? gen.recall(get(id))) : gen.recall(get(id)),
+        i % 3 === 2 && notMyth(id) ? (gen.cloze(get(id)) ?? gen.recall(get(id))) : gen.recall(get(id)),
       ),
     });
   }
