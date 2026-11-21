@@ -1,6 +1,6 @@
 {
   "name": "lernlab-monorepo",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "Free, open-source, local-first study app: turn any deck into short game rounds with spaced repetition. Like Anki, but fun.",
   "type": "module",
