@@ -5,7 +5,8 @@ import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { directionOf } from './direction';
 import { formatDate, formatNumber, formatPercent } from './i18n';
-import { heatColumn, heatmapWeeks, monthStarts, recallRate } from './progress-logic';
+import { heatColumn, heatmapWeeks, levelMix, monthStarts, recallRate } from './progress-logic';
+import { LevelTag } from './components';
 
 type Journey = OutputOf<'progress.get'>;
 type DeckJourney = Journey['decks'][number];
@@ -93,7 +94,29 @@ function DeckProgress({ d }: { d: DeckJourney }) {
         <i style={{ width: `${d.cards ? (d.learned / d.cards) * 100 : 0}%` }} />
       </div>
       <p className="journey-forecast">{forecast}</p>
+      {d.levels && <LevelMix levels={d.levels} />}
     </section>
+  );
+}
+
+/** The mix of question levels answered in a deck, with a gentle hint when it is nearly all recall. */
+function LevelMix({ levels }: { levels: NonNullable<DeckJourney['levels']> }) {
+  const { t } = useTranslation();
+  const mix = levelMix(levels);
+  return (
+    <div className="journey-levels">
+      <p>
+        <span className="muted small">{t('progress.deck.levels')}</span>{' '}
+        {mix.shares.map((s) => (
+          <span key={s.level} className="journey-level">
+            <LevelTag level={s.level}>
+              {t('progress.deck.levelShare', { level: t(`levels.${s.level}`), percent: formatPercent(s.share) })}
+            </LevelTag>
+          </span>
+        ))}
+      </p>
+      {mix.mostlyRecall && <p className="small muted">{t('progress.deck.levelsHint')}</p>}
+    </div>
   );
 }
 

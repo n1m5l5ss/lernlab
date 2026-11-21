@@ -24,6 +24,7 @@ import {
 import { getDeck } from './library';
 import * as gen from './exercises';
 import { qa } from './cards';
+import { variantIndex, variantsOf } from './variants';
 import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
@@ -101,6 +102,8 @@ export function planSession(
   const grammar = group ? grammarItemIds(group, d, scope).slice(0, 4).filter(has) : [];
   const info = srsInfo([...due, ...learned], d);
   const known = [...new Set([...learned, ...leftovers])];
+  /** A review asks the card's next wording (its own question, or one of its variants), in turn per review. */
+  const review = (id: number) => gen.recall(get(id), variantIndex(id, info[id]?.reps ?? 0, variantsOf(get(id)).length));
 
   const blocks: Block[] = [];
   const say = teacherFor(lang).block;
@@ -155,7 +158,7 @@ export function planSession(
       format: 'typed',
       title: 'Review',
       teacher: say('review'),
-      exercises: dueA.map((id) => gen.recall(get(id))),
+      exercises: dueA.map(review),
     });
 
   // 4. New cards: meet each one, then recognise it right away.
@@ -285,7 +288,7 @@ export function planSession(
       format: 'cloze',
       title: 'Fill the gap',
       teacher: say('cloze'),
-      exercises: dueB.map((id) => gen.cloze(get(id)) ?? gen.recall(get(id))),
+      exercises: dueB.map((id) => gen.cloze(get(id)) ?? review(id)),
     });
 
   // 11. Speak aloud (language decks): production effect on a subset.

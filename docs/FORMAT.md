@@ -167,7 +167,7 @@ apply: A patient has X. Which mechanism? | analyse: What happens if X doubles? |
 - Each question may start with its **level** and a colon: `recall` (remember the fact), `apply` (use it in a new situation) or `analyse` (predict, compare, explain why; `analyze` is read too). A question without a level is a recall question. The card's own question (its front) is always recall.
 - Plain text: formatting tags are removed. At most 8 questions of up to 500 characters each are kept; empty questions and repeats are dropped.
 - Only cards asked as a written question use them: basic, language and numeric cards. Cloze, multiple-choice, order, code and occlusion cards ask in their own way and drop the field.
-- The card is still one card with one schedule. Exported to Anki, the questions are added under the notes.
+- The card is still one card with one schedule (one grade per day, whichever question was asked). A new card is learned with its own question; after that, each review asks the next question in turn, and a mock exam picks one at random. Exported to Anki, the questions are added under the notes.
 
 ## Math and numeric cards
 

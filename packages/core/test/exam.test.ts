@@ -14,7 +14,7 @@ const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
 const { importFile } = await import('../src/importer');
 const { recordAttempt } = await import('../src/learn');
-const { createDeck, updateDeck } = await import('../src/library');
+const { createDeck, updateDeck, upsertCards } = await import('../src/library');
 const { buildExam, recordExam } = await import('../src/examplan');
 const { getDb } = await import('../src/db');
 const { dayKey } = await import('../src/game');
@@ -88,6 +88,28 @@ test('handing in an exam scores it and logs practice attempts that never change 
   assert.equal(logged.length, 3, 'every question is logged, answered or not');
   assert.ok(logged.every((r) => r.practice === 1 && r.grade === null));
   assert.equal(score.reviewed, 0);
+});
+
+test('a card with question variants is asked in one of its wordings, with its level, and logged with it', () => {
+  const pharma = createDeck('Pharma', null);
+  upsertCards(pharma, [
+    { front: 'Beta blocker', back: 'propranolol', variants: 'apply: Angina & asthma? | analyse: Dose doubles?' },
+    { front: 'Statin', back: 'atorvastatin' },
+    { front: 'ACE inhibitor', back: 'ramipril' },
+  ]);
+  const beta = Number(getDb().prepare("SELECT id FROM items WHERE target = 'Beta blocker'").get()!.id);
+  const stems = new Set<string>();
+  for (let i = 0; i < 40 && stems.size < 3; i++) {
+    const q = buildExam(pharma.id, getDb()).questions.find((x) => x.itemId === beta)!;
+    stems.add(`${q.level ?? 'own'}:${q.stem}`);
+    assert.equal(q.choices[q.correct[0]], 'propranolol', 'the answer stays the same');
+  }
+  assert.deepEqual([...stems].sort(), ['analyse:Dose doubles?', 'apply:Angina &amp; asthma?', 'own:Beta blocker']);
+  const exam = buildExam(pharma.id, getDb());
+  const asked = exam.questions.map((q) => ({ ...q, level: 'apply' as const }));
+  recordExam(exam.id, asked, [], 70, 'timed', getDb(), at);
+  const levels = getDb().prepare('SELECT level FROM attempts WHERE session_id = ?').all(exam.id);
+  assert.ok(levels.length === 3 && levels.every((r) => r.level === 'apply'));
 });
 
 test('an empty deck gives an empty exam', () => {

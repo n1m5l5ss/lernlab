@@ -796,7 +796,10 @@
       "deckBy": "At this pace, the whole deck by about {{date}}",
       "noPace": "Learn a few cards to see when you will get there.",
       "goalReached": "Goal reached. Well done.",
-      "allLearned": "Every card learned. Well done."
+      "allLearned": "Every card learned. Well done.",
+      "levels": "Questions answered",
+      "levelShare": "{{level}} {{percent}}",
+      "levelsHint": "Most of your practice in this deck is recall. A mock exam mixes in its apply and analyse questions."
     },
     "days": {
       "title": "Study days",
@@ -923,6 +926,8 @@
     "unanswered_other": "left unanswered",
     "timeUsed": "time used",
     "byTopic": "Score by topic",
+    "byLevel": "Score by question level",
+    "byLevelHint": "Recall asks the fact; apply and analyse ask you to use it.",
     "noTag": "No tag",
     "topicScore": "{{count}} of {{total}} · {{percent}}%",
     "weak": "Weak areas",

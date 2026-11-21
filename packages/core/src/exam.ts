@@ -1,5 +1,6 @@
 // Exam simulator (#43): the deck's exam settings, checking an answer and the score by topic.
 // Pure: the window uses it too (tutor mode checks each answer as it is given).
+import { LEVELS, type Level } from './variants';
 
 /** Tutor mode counts toward your reviews like normal study; timed mode is practice only. */
 export type ExamMode = 'tutor' | 'timed';
@@ -48,6 +49,8 @@ export type ExamQuestion = {
   explanation: string;
   /** The card's tags; the score is split by these. */
   topics: string[];
+  /** Asked with one of the card's question variants: its level (the card's own question is recall). */
+  level?: Level;
 };
 
 /** Right only when every correct choice, and nothing else, is picked. */
@@ -80,6 +83,7 @@ export function examAttempt(a: {
 }
 
 export type TopicScore = { topic: string; correct: number; total: number; percent: number };
+export type LevelScore = { level: Level; correct: number; total: number; percent: number };
 export type ExamScore = {
   correct: number;
   total: number;
@@ -91,6 +95,8 @@ export type ExamScore = {
   topics: TopicScore[];
   /** Topics under the pass mark, weakest first. */
   weak: string[];
+  /** Recall, apply and analyse (those asked), when any question was a variant; otherwise empty. */
+  levels: LevelScore[];
 };
 
 const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
@@ -98,10 +104,13 @@ const pct = (n: number, of: number) => (of ? Math.round((n / of) * 100) : 0);
 /** The score for answers given by item id. An unanswered question counts as wrong. */
 export function scoreExam(questions: ExamQuestion[], answers: Record<number, number[]>, passMark: number): ExamScore {
   const byTopic = new Map<string, { correct: number; total: number }>();
+  const byLevel = new Map<Level, { correct: number; total: number }>();
   let correct = 0;
   for (const q of questions) {
     const ok = isRight(q, answers[q.itemId]);
     if (ok) correct++;
+    const l = byLevel.get(q.level ?? 'recall') ?? { correct: 0, total: 0 };
+    byLevel.set(q.level ?? 'recall', { correct: l.correct + (ok ? 1 : 0), total: l.total + 1 });
     for (const topic of q.topics.length ? new Set(q.topics) : ['']) {
       const t = byTopic.get(topic) ?? { correct: 0, total: 0 };
       t.total++;
@@ -122,5 +131,11 @@ export function scoreExam(questions: ExamQuestion[], answers: Record<number, num
     passed: questions.length > 0 && percent >= passMark,
     topics,
     weak: topics.filter((t) => t.percent < passMark).map((t) => t.topic),
+    levels: questions.some((q) => q.level)
+      ? LEVELS.flatMap((level) => {
+          const l = byLevel.get(level);
+          return l ? [{ level, ...l, percent: pct(l.correct, l.total) }] : [];
+        })
+      : [],
   };
 }

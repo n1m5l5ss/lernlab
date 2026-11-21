@@ -3,6 +3,7 @@ import { acceptedAnswers, shuffle, splitBold, stripHtml, tokenize } from './text
 import { clozeText, mcqOf, parseCloze, qa, stepsOf } from './cards';
 import { hasMath, splitMath } from './math';
 import { codeTask, GAP } from './code';
+import { variantsOf } from './variants';
 import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
@@ -87,8 +88,18 @@ export const hintSource = (answer: string) =>
 /** "S___ (4)": the first character, then a blank for every other one that is not a space. */
 const hintOf = (core: string) => `${core[0]}${core.slice(1).replace(/[^\s]/g, '_')} (${core.length})`;
 
-export function typed(item: Item): Exercise {
+/** Plain text shown where card HTML is expected. */
+export const asHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+/** Question variant `k` (1-based) of a card that takes them, or null for the card's own question. */
+function variantOf(item: Item, k: number) {
+  const v = k > 0 ? variantsOf(item)[k - 1] : undefined;
+  return v ? { prompt: asHtml(v.prompt), level: v.level } : null;
+}
+
+export function typed(item: Item, k = 0): Exercise {
   const q = qa(item);
+  const v = variantOf(item, k);
   const hint = hintOf(hintSource(q.requireArticle ? item.word : q.accepted[0]));
   const kindLabel = item.lang
     ? item.kind === 'noun'
@@ -100,16 +111,26 @@ export function typed(item: Item): Exercise {
   return {
     type: 'typed',
     itemId: item.id,
-    prompt: stripHtml(q.prompt) + kindLabel,
+    prompt: (v ? v.prompt : stripHtml(q.prompt)) + kindLabel,
     accepted: q.accepted,
     requireArticle: q.requireArticle,
     hint,
+    ...(v && { level: v.level }),
   };
 }
 
-export function flip(item: Item): Exercise {
+export function flip(item: Item, k = 0): Exercise {
   const q = qa(item);
-  return { type: 'flip', itemId: item.id, prompt: q.prompt, answer: q.answer, reverse: q.prompt === item.meaning };
+  const v = variantOf(item, k);
+  const reverse = q.prompt === item.meaning;
+  return {
+    type: 'flip',
+    itemId: item.id,
+    prompt: v?.prompt ?? q.prompt,
+    answer: q.answer,
+    reverse,
+    ...(v && { level: v.level }),
+  };
 }
 
 export function mcq(item: Item): Exercise | null {
@@ -165,8 +186,11 @@ export function codeExercise(item: Item): Exercise | null {
   };
 }
 
-/** Recall exercise for any card: question cards ask their question; short answers are typed; long ones flip. */
-export const recall = (item: Item): Exercise =>
+/**
+ * Recall exercise for any card: question cards ask their question; short answers are typed; long ones flip.
+ * `variant` asks one of the card's other wordings instead (variants.ts); 0 is the card's own question.
+ */
+export const recall = (item: Item, variant = 0): Exercise =>
   (item.kind === 'mcq'
     ? mcq(item)
     : item.kind === 'order'
@@ -175,7 +199,7 @@ export const recall = (item: Item): Exercise =>
         ? codeExercise(item)
         : item.kind === 'occlusion'
           ? typed(item)
-          : null) ?? (qa(item).typeable ? typed(item) : flip(item));
+          : null) ?? (qa(item).typeable ? typed(item, variant) : flip(item, variant));
 
 export function cloze(item: Item): Exercise | null {
   if (item.kind === 'cloze') {

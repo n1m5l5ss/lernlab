@@ -5,7 +5,8 @@
 import { getDb, type DB } from './db';
 import { host } from './host';
 import { qa } from './cards';
-import { backText, mc, mcq } from './exercises';
+import { asHtml, backText, mc, mcq } from './exercises';
+import { variantsOf } from './variants';
 import { allItems, deckNewPerDay, introducedTodayCount, recordAttempt } from './learn';
 import { getDeck, type Deck } from './library';
 import { shuffle, stripHtml } from './text';
@@ -41,7 +42,11 @@ function question(item: Item, pool: Item[]): ExamQuestion | null {
   // Ask from the side the card asks from (qa): the shorter side is the answer.
   const ex = mc(item, pool, stripHtml(qa(item).answer) === backText(item) ? 'de2en' : 'en2de');
   if (ex.type !== 'mc' || ex.options.length < 2) return null;
-  return { ...base, stem: ex.prompt, choices: ex.options, correct: [ex.answerIndex] };
+  // A card with question variants is asked in one of its wordings, picked at random (the card's own is one).
+  const variants = variantsOf(item);
+  const v = variants[Math.floor(Math.random() * (variants.length + 1)) - 1];
+  const asked = v ? { stem: asHtml(v.prompt), level: v.level } : { stem: ex.prompt };
+  return { ...base, ...asked, choices: ex.options, correct: [ex.answerIndex] };
 }
 
 export function buildExam(deckId: number, d: DB = getDb()): Exam {
@@ -108,6 +113,7 @@ export function recordExam(
         given: a?.chosen.map((i) => q.choices[i] ?? '').join(' | '),
         xp: 0,
         practice: as === 'practice',
+        level: q.level,
       },
       d,
       now,
