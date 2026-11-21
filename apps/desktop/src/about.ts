@@ -7,6 +7,7 @@ export const LIBRARIES = [
   { name: 'i18next', pkg: 'i18next', licence: 'MIT' },
   { name: 'react-i18next', pkg: 'react-i18next', licence: 'MIT' },
   { name: 'ts-fsrs', pkg: 'ts-fsrs', licence: 'MIT' },
+  { name: 'srs-kit', pkg: '@open-spaced-repetition/srs-kit', licence: 'BSD-3-Clause' },
   { name: 'fflate', pkg: 'fflate', licence: 'MIT' },
   { name: 'fzstd', pkg: 'fzstd', licence: 'MIT' },
   { name: 'canvas-confetti', pkg: 'canvas-confetti', licence: 'ISC' },

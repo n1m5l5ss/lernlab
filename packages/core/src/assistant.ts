@@ -1,7 +1,6 @@
 // What an AI assistant the user connects (MCP, issue #148) may read. Every function here only reads: the
 // assistant's process opens the database read-only, so a write would fail anyway. Streaks are settled in
 // memory (settleStreak) instead of through streakState, which saves the settled state.
-import { fsrs, generatorParameters, type CardInput } from 'ts-fsrs';
 import type { Row, SqlValue } from './host';
 import { getMeta, type DB } from './db';
 import { addDays, daysBetween, dayKey, NEW_STREAK, settleStreak, weekStart, type StreakState } from './game';
@@ -10,6 +9,7 @@ import { getDeck, LANGUAGES, listDecks } from './library';
 import { KNOWN_MASTERY } from './browse';
 import { stripHtml } from './text';
 import { examSettings } from './exam';
+import { recallProbability, type CardInput } from './scheduler';
 
 /** Periods the assistant can ask about. "day" needs a date; week, month and year may take one (else the current one). */
 export const PERIODS = ['today', 'day', 'week', 'month', 'year', 'all'] as const;
@@ -175,7 +175,7 @@ function series(d: DB, from: string, to: string) {
 /** FSRS's chance of recalling a card now (0–1), or null when the stored state can't be read. */
 function retrievability(card: CardInput, now: Date): number | null {
   try {
-    return fsrs(generatorParameters()).get_retrievability(card, now, false);
+    return recallProbability(card, now);
   } catch {
     return null;
   }
