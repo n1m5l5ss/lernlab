@@ -119,3 +119,20 @@ export function markdownBudgets(rows: BudgetRow[], system: string): string {
     '',
   ].join('\n');
 }
+
+/**
+ * Long tasks in each study block. A block runs from its start to the next block's start or to the end of
+ * its session (the summary showing), whichever is first, so the summary and Home screens between
+ * sessions don't count against a block.
+ */
+export function longTasksPerBlock(probe: {
+  blocks: readonly number[];
+  ends: readonly number[];
+  longTasks: readonly number[];
+}): number[] {
+  return probe.blocks.map((start, i) => {
+    const next = probe.blocks[i + 1] ?? Infinity;
+    const end = Math.min(next, probe.ends.find((e) => e > start) ?? Infinity);
+    return probe.longTasks.filter((t) => t >= start && t < end).length;
+  });
+}

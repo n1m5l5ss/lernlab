@@ -15,7 +15,7 @@ import { parseArgs } from 'node:util';
 import { rmSync } from 'node:fs';
 import { _electron, type ElectronApplication, type Page } from 'playwright-core';
 import { freshProfile, playSession, startsWith, t } from '../apps/desktop/e2e/app';
-import { median, percentile, type Measured } from './report';
+import { longTasksPerBlock, median, percentile, type Measured } from './report';
 
 const { values: args } = parseArgs({
   options: {
@@ -94,7 +94,7 @@ async function startup(profile: string, launches: number) {
  * tsx would add helpers to a function that don't exist in the page.
  */
 const PROBE = `(() => {
-  const probe = { samples: [], longTasks: [], blocks: [] };
+  const probe = { samples: [], longTasks: [], blocks: [], ends: [], where: [] };
   window.__probe = probe;
   const measure = (e) => {
     const start = e.timeStamp;
@@ -103,11 +103,18 @@ const PROBE = `(() => {
   };
   addEventListener('keydown', measure, true);
   addEventListener('pointerdown', measure, true);
-  new PerformanceObserver((list) => list.getEntries().forEach((e) => probe.longTasks.push(e.startTime)))
-    .observe({ type: 'longtask' });
+  // Which screen each long task happened on, so a slow summary or Home isn't blamed on a study block.
+  const screen = () =>
+    document.querySelector('.summary') ? 'summary' : document.querySelector('.stage') ? 'study' : 'other';
+  new PerformanceObserver((list) =>
+    list.getEntries().forEach((e) => {
+      probe.longTasks.push(e.startTime);
+      probe.where.push(screen() + ' ' + Math.round(e.duration) + ' ms');
+    }),
+  ).observe({ type: 'longtask' });
 })()`;
 
-type Probe = { samples: number[]; longTasks: number[]; blocks: number[] };
+type Probe = { samples: number[]; longTasks: number[]; blocks: number[]; ends: number[]; where: string[] };
 
 async function session(profile: string, cards: number) {
   const { electron, page } = await launch(profile);
@@ -120,15 +127,16 @@ async function session(profile: string, cards: number) {
       await playSession(page, async () => {
         await page.evaluate(() => (window as unknown as { __probe: Probe }).__probe.blocks.push(performance.now()));
       });
+      // The session's last block ends when its summary shows, not when the next session starts.
+      await page.evaluate(() => (window as unknown as { __probe: Probe }).__probe.ends.push(performance.now()));
       await page.getByRole('button', { name: startsWith(t('summary.done')) }).click();
       await page.waitForSelector(HOME);
     }
     const probe = await read();
     add('session key-to-paint', probe.samples);
-    // Long tasks in each block (a block runs from its start to the next one).
-    const edges = [...probe.blocks, Infinity];
-    const perBlock = probe.blocks.map((b, i) => probe.longTasks.filter((t) => t >= b && t < edges[i + 1]).length);
-    add('session long-tasks per block', perBlock);
+    add('session long-tasks per block', longTasksPerBlock(probe));
+    for (const [i, at] of probe.longTasks.entries())
+      console.log(`long task at ${Math.round(at)} ms: ${probe.where[i]}`);
   } finally {
     await electron.close();
   }
@@ -139,7 +147,8 @@ try {
   await startup(profile, Number(args.launches));
   if (args.session) await session(profile, Number(args.cards));
 } finally {
-  rmSync(profile, { recursive: true, force: true });
+  // Windows can hold the profile's files for a moment after Electron quits.
+  rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 300 });
 }
 for (const r of results)
   console.log(

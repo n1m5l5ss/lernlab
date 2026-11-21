@@ -1,6 +1,16 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { budgetRows, compare, kindOf, markdownBudgets, markdownCompare, median, percentile, MARKER } from './report';
+import {
+  budgetRows,
+  compare,
+  kindOf,
+  longTasksPerBlock,
+  markdownBudgets,
+  markdownCompare,
+  median,
+  percentile,
+  MARKER,
+} from './report';
 
 test('median and nearest-rank percentile', () => {
   assert.equal(median([3, 1, 2]), 2);
@@ -68,4 +78,12 @@ test('budgets: P50 and P95 against docs/TESTING.md', () => {
     markdownBudgets(rows, 'Linux'),
     /\| due-queue 100k \| 2\.00 ms \/ ≤ 5 ms \| 20\.00 ms \/ ≤ 15 ms \| ❌ \|/,
   );
+});
+
+test('a block ends at the next block or at its session summary, whichever comes first', () => {
+  // Two sessions: blocks at 0 and 100 (summary at 200), then 300 (summary at 400).
+  const probe = { blocks: [0, 100, 300], ends: [200, 400], longTasks: [50, 150, 250, 350, 450] };
+  // 250 is on the summary / Home between sessions and 450 after the last summary: neither is in a block.
+  assert.deepEqual(longTasksPerBlock(probe), [1, 1, 1]);
+  assert.deepEqual(longTasksPerBlock({ blocks: [0], ends: [], longTasks: [5, 900] }), [2], 'no summary: open-ended');
 });
