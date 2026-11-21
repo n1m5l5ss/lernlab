@@ -195,6 +195,8 @@ To make one yourself, go to **Settings → Your data** and press **Back up now**
 
 Your data as it is now is backed up first, so you can change your mind.
 
+After a restore or an import of all your data, the AI assistant is off. Turn it on again in Settings if you want it. A backup or zip that holds anything LernLab never makes itself is refused, and your data stays as it was.
+
 ### Move to another computer
 
 1. On the old computer, go to **Settings → Your data → Export everything** and press **Export as zip**. The zip holds your decks, progress, settings and media.

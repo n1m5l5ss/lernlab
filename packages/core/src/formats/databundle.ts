@@ -1,8 +1,9 @@
 // "Export everything": one zip with the database, media and daily progress files. Importing it treats
-// the zip as untrusted: only known paths with plain file names are accepted, and sizes are capped
-// before anything is unpacked.
+// the zip as untrusted: only known paths with plain file names are accepted, and sizes and compression
+// ratios are capped before anything is unpacked.
 import { strFromU8, strToU8, unzipSync, zipSync, type Zippable } from 'fflate';
 import { UserError } from '../errors';
+import { IMPORT_LIMITS } from './zip';
 
 export const BUNDLE_FORMAT = 'lernlab-data';
 export const BUNDLE_VERSION = 1;
@@ -65,6 +66,9 @@ export function unpackDataBundle(bytes: Uint8Array, maxBytes = MAX_BUNDLE_BYTES)
         if (!bundlePath(f.name)) return false;
         total += f.originalSize;
         if (total > maxBytes) throw bad('too large');
+        // A zip bomb: one entry that unpacks to far more than its packed size (as listZip checks).
+        if (f.originalSize > 1024 * 1024 && f.originalSize > Math.max(f.size, 1) * IMPORT_LIMITS.maxRatio)
+          throw bad('compressed too much');
         return true;
       },
     });

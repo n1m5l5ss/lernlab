@@ -1247,6 +1247,7 @@
     "anki_unreachable": "Anki is not reachable. Open Anki with the AnkiConnect add-on and try again.",
     "not_a_backup": "This file is not a LernLab backup.",
     "backup_too_new": "This backup was made by a newer version of LernLab. Update LernLab first.",
+    "backup_unsafe": "This backup contains parts LernLab never makes, so it was not restored. Your data was not changed.",
     "backup_not_found": "That backup no longer exists.",
     "not_data_export": "This file is not a LernLab data export. Use a zip made with Export everything.",
     "data_export_too_new": "This export was made by a newer version of LernLab. Update LernLab first.",
