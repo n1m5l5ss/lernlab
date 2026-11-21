@@ -12,6 +12,7 @@ import { normalizeCode } from './code';
 import { formatBox, modeOf, parseBox } from './occlusion';
 import { cleanVariants, takesVariants } from './variants';
 import { cleanCorrections, isMyth } from './misconceptions';
+import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -94,7 +95,7 @@ export type NormalizedCard = {
   group?: string; // lesson group, e.g. "G01" (taught together as a mini-lesson)
   rank?: number; // frequency rank / introduction order
   extra?: Record<string, string>;
-  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image), myth (a misconception to reject). */
+  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image), myth (a misconception to reject), explain (a why/how question checked against key points). */
   type?: string;
   choices?: string; // "A|B|C|D"
   correct?: string; // "2|4" (1-based) or the correct choice texts
@@ -102,6 +103,8 @@ export type NormalizedCard = {
   altAnswers?: string; // "colour|color"
   /** mcq cards: a correction per wrong choice, in the choices' order: "Many people think…||" (misconceptions.ts). '' clears them. */
   corrections?: string;
+  /** explain cards: 2–5 key points the learner ticks after explaining, "Earth is tilted|…" (explain.ts). '' clears them. */
+  keyPoints?: string;
   /** Other ways to ask the question, with a level: "apply: A patient has X. Which mechanism? | analyse: …" (variants.ts). '' clears them. */
   variants?: string;
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
@@ -219,12 +222,13 @@ export function detectKind(
   c?: NormalizedCard,
 ): ItemKind {
   const t = (c?.type ?? '').toLowerCase();
-  if (t === 'myth') return 'card';
+  if (t === 'myth' || t === 'explain') return 'card';
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
   if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
   if ((c?.code ?? c?.extra?.code ?? '').trim() && (t === 'code' || !t)) return 'code';
   if (c?.image && parseBox(c.occlusion ?? c.extra?.occlusion) && (t === 'occlusion' || !t)) return 'occlusion';
+  if (!t && cleanKeyPoints(c?.keyPoints)) return 'card';
   if (/\{\{c\d+::/.test(front)) return 'cloze';
   if (tags.includes('grammar')) return 'grammar';
   if (!language) return 'card';
@@ -295,8 +299,15 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   const myth = kind === 'card' && (c.type ? c.type.toLowerCase() === 'myth' : isMyth({ extra }));
   if (myth) extra.myth = '1';
   else delete extra.myth;
+  // An explain card (explain.ts): a basic card with 2–5 key points, from its type or the points alone.
+  const keyPoints =
+    kind === 'card' && !myth && (!c.type || c.type.toLowerCase() === 'explain')
+      ? cleanKeyPoints(c.keyPoints ?? extra.keyPoints)
+      : '';
+  if (keyPoints) extra.keyPoints = keyPoints;
+  else delete extra.keyPoints;
   const variants = cleanVariants(c.variants ?? extra.variants);
-  if (variants && takesVariants(kind) && !myth) extra.variants = variants;
+  if (variants && takesVariants(kind) && !myth && !keyPoints) extra.variants = variants;
   else delete extra.variants;
   // Corrections for wrong choices: plain text, kept only on a multiple-choice card, one slot per choice.
   const corrections =
@@ -340,7 +351,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
         ? normalizeCode(String(c.back ?? ''))
         : ['cloze', 'mcq', 'order'].includes(kind)
           ? back
-          : stripHtml(back),
+          : // A back that is only the key points (what older readers get) is no model explanation of its own.
+            keyPoints && stripHtml(back) === stripHtml(keyPointsAsBack(parseKeyPoints(keyPoints)))
+            ? ''
+            : stripHtml(back),
     sentenceHtml: example,
     sentence: stripHtml(example),
     sentenceMeaning: stripHtml(c.exampleTranslation ?? ''),

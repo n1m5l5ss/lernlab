@@ -27,6 +27,8 @@ const { sanitizeHtml, SAFE_TAGS } = await import('../src/cards');
 const { cleanVariants, parseVariants, VARIANTS_MAX, VARIANT_MAX_LENGTH } = await import('../src/variants');
 const { cleanCorrections, correctionHtml, parseCorrections, CORRECTION_MAX_LENGTH } =
   await import('../src/misconceptions');
+const { cleanKeyPoints, keyPointHtml, parseKeyPoints, KEY_POINTS_MAX, KEY_POINT_MAX_LENGTH } =
+  await import('../src/explain');
 const { UserError } = await import('../src/errors');
 const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
@@ -162,6 +164,23 @@ test('corrections: any text gives plain-text corrections, cleaning is stable and
       assert.equal(cleanCorrections(line, mcq), line, 'cleaning twice changes nothing');
       const list = parseCorrections(line);
       assert.ok(list.length <= 4 && !list[1]);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test('key points: any text gives at most five plain-text points, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const list = parseKeyPoints(text);
+      assert.ok(list.length <= KEY_POINTS_MAX);
+      for (const p of list) {
+        assert.ok(p && p.length <= KEY_POINT_MAX_LENGTH && !p.includes('|'));
+        assert.equal(sanitizeHtml(keyPointHtml(p)), keyPointHtml(p), 'already safe HTML');
+      }
+      const line = cleanKeyPoints(text);
+      assert.equal(cleanKeyPoints(line), line, 'cleaning twice changes nothing');
+      assert.ok(line === '' || parseKeyPoints(line).length >= 2);
     }),
     params(RUNS * 2),
   );

@@ -29,6 +29,7 @@ export const MAPPABLE: MappableField[] = [
   'altAnswers',
   'variants',
   'corrections',
+  'keyPoints',
 ];
 
 export type Fields = ColumnMapping['fields'];

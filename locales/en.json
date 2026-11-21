@@ -476,7 +476,8 @@
         "steps": "Steps",
         "altAnswers": "Other accepted answers",
         "variants": "Question variants",
-        "corrections": "Corrections for wrong choices"
+        "corrections": "Corrections for wrong choices",
+        "keyPoints": "Key points"
       },
       "previewCaption_one": "The first card",
       "previewCaption_other": "The first {{count}} cards",

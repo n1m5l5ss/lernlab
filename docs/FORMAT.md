@@ -68,7 +68,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong". The card type `myth` (November 2026): an older reader studies it as a basic card (front: the myth, back: why it is wrong).
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong". The card type `myth` (November 2026): an older reader studies it as a basic card (front: the myth, back: why it is wrong). The card type `explain` and `keyPoints` (November 2026, `key_points` in CSV): an older reader ignores the points and studies a basic card (front: the question, back: the model explanation, or the key points one per line when there is none).
 
 ### manifest.json
 
@@ -120,7 +120,7 @@ Each line is one card. Only `front` is required.
 | Field | Meaning |
 |---|---|
 | `id` | Stable id so updates keep progress. Write a string; readers also accept a number |
-| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)), `myth` (see [Myth cards](#myth-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card |
+| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)), `myth` (see [Myth cards](#myth-cards)), `explain` (see [Explain cards](#explain-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card, two or more `keyPoints` an explain card |
 | `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
@@ -132,6 +132,7 @@ Each line is one card. Only `front` is required.
 | `category` | Group for sorting rounds (`der`/`die`/`das`, `Storage`/`Compute`, `Cardio`…) |
 | `choices` | Multiple choice / multi-select: the choices, separated by `|` |
 | `correct` | Multiple choice: the correct choices as 1-based numbers or as texts, separated by `|` |
+| `keyPoints` | Explain card: its 2–5 key points, separated by `|`: `Earth is tilted\|The tilt changes the angle of sunlight`. See [Explain cards](#explain-cards) (optional, added after v1 was published; older readers ignore it) |
 | `corrections` | Multiple choice: a correction per wrong choice, in the order of `choices`, separated by `|`: `Many people think EC2 is serverless. In fact you manage its servers.\|\|\|RDS is a database.` See [Corrections for wrong choices](#corrections-for-wrong-choices) (optional, added after v1 was published; older readers ignore it) |
 | `steps` | Ordering card: steps in the correct order, separated by `|` |
 | `tolerance` | Numeric card: how far off a typed number may be, `0.05` (in the card's unit) or `1%` (optional, added after v1 was published) |
@@ -194,6 +195,19 @@ A card of type `myth` states a common misconception on its front and explains on
 ```
 
 In CSV, put `myth` in the `type` column. A session asks "True or myth?" (the answer is always myth), then asks you to say why before it shows the back, and you rate yourself as on a flip card. It is a normal recall with one grade per day. Myth cards have no question variants, and they are left out of games, guess-first rounds and mock exams, so a myth is never shown as a fact. Exported to Anki, a myth card is a basic card.
+
+## Explain cards
+
+A card of type `explain` asks a why or how question. Its back is a model explanation, and `keyPoints` lists the 2–5 points a good explanation covers, separated by `|`:
+
+```json
+{"type":"explain","front":"Why do we have seasons?","back":"Earth's tilted axis changes how directly sunlight hits each half.","keyPoints":"Earth is tilted|The tilt changes the angle of sunlight|Not the distance to the sun"}
+```
+
+- In CSV, put `explain` in the `type` column and the points in a `key_points` column. Two or more key points make an explain card even without a type.
+- Key points are plain text with `**bold**`, `*italic*` and `` `code` ``, at most 300 characters each. Repeats and blanks are dropped, a sixth point and later ones too. With fewer than two, the card is a basic card and keeps none.
+- The back may be empty. A writer then puts the key points in the back, one per line starting with `• `, so an older reader still has an answer; a reader that knows explain cards drops such a back again.
+- Exported to Anki, an explain card is a basic card with its key points under the notes (or as its back when it has none).
 
 ## Math and numeric cards
 
@@ -275,6 +289,7 @@ Recognised column names (case-insensitive):
 | `alt_answers` | alternatives, also accept |
 | `variants` | question variants, variant questions, other questions: see [Question variants](#question-variants) |
 | `corrections` | misconceptions, choice feedback, wrong choice feedback: see [Corrections for wrong choices](#corrections-for-wrong-choices) |
+| `key_points` | key points, keypoints: see [Explain cards](#explain-cards) |
 | `tolerance` | tol |
 | `code` | snippet, source code: a code card's code (quote it to keep line breaks; a line starting with `#` inside quotes is code, not a comment) |
 | `code_lang` | code language, programming language |

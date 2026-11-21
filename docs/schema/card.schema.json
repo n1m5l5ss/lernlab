@@ -11,9 +11,9 @@
       "type": ["string", "number"]
     },
     "type": {
-      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit; code: a code snippet in `code`; occlusion: a box hidden on the image; myth: a common misconception on the front, why it is wrong on the back (all added after v1 was published). Readers treat an unknown type as if it were missing.",
+      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit; code: a code snippet in `code`; occlusion: a box hidden on the image; myth: a common misconception on the front, why it is wrong on the back; explain: a why or how question on the front, a model explanation on the back and 2–5 keyPoints (all added after v1 was published). Readers treat an unknown type as if it were missing.",
       "type": "string",
-      "enum": ["basic", "cloze", "mcq", "order", "numeric", "code", "occlusion", "myth"]
+      "enum": ["basic", "cloze", "mcq", "order", "numeric", "code", "occlusion", "myth", "explain"]
     },
     "front": {
       "description": "Term, question or prompt. Cloze: text with {{c1::answer}} or {{c1::answer::hint}} (Anki syntax). A card with an empty front is skipped.",
@@ -50,6 +50,10 @@
     },
     "corrections": {
       "description": "Optional, added after v1 was published; older readers ignore it. Multiple choice: a short correction per wrong choice, shown when that choice is picked (\"Many people think X. In fact Y, because Z.\"). One slot per choice, in the order of choices, separated by |; an empty slot is a choice without one. Plain text with **bold**, *italic* and `code`, at most 500 characters each; slots of correct choices are dropped. Example for choices \"EC2|Lambda|Fargate|RDS\": \"Many people think EC2 is serverless. In fact you manage its servers.|||RDS is a database.\"",
+      "type": "string"
+    },
+    "keyPoints": {
+      "description": "Optional, added after v1 was published; older readers ignore it. Explain card: the 2–5 key points a good explanation covers, separated by |. The learner ticks the ones they covered. Plain text with **bold**, *italic* and `code`, at most 300 characters each; a card with fewer than two keeps none. Without a back, writers put the points in the back, one per line starting with \"• \", so older readers can still study the card. Example: \"Earth is tilted|The tilt changes the angle of sunlight|Not the distance to the sun\"",
       "type": "string"
     },
     "steps": {
