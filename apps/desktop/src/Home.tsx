@@ -1,5 +1,5 @@
 // Home (mockup: docs/design/images/Home-light.png): one obvious next step, Start, with today's work above it.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SessionLength } from '@lernlab/core/types';
 import { estimateMinutes } from '@lernlab/core/game';
@@ -12,6 +12,7 @@ import { LENGTHS } from './lengths';
 import { dayDate, MotivationIcon } from './Motivation';
 import { parseSourceValue, sourceValue } from './sources';
 import { UpdateNote } from './UpdateNote';
+import { markOnce, MARKS } from './perf';
 
 type AppState = OutputOf<'state.get'>;
 
@@ -33,6 +34,8 @@ export function Home({
   const [length, setLength] = useState<SessionLength>(state.settings.sessionLength);
   const [practice, setPractice] = useState(false);
   const canStart = state.decks.length > 0;
+  // Home has its data and Start works: the end of the startup path (docs/TESTING.md, performance budgets).
+  useEffect(() => markOnce(MARKS.homeInteractive), []);
   useKeys(
     (e) => {
       // Enter starts, unless a control has focus and Enter means something there.

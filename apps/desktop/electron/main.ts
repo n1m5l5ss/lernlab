@@ -32,6 +32,7 @@ import { reminderPrefsOf, startedAtLogin } from './reminder-policy';
 import { MIN_SIZE, restoreWindow, type WindowState } from './window-state';
 import { HOME_SELECTOR, isSmokeTest, SMOKE_FAIL, SMOKE_OK, waitFor } from './smoke';
 import { planRestart } from './data-restart';
+import { startupMarks } from './perf';
 import {
   parseDataMessage,
   type ConnectMessage,
@@ -39,6 +40,9 @@ import {
   type DataResult,
   type DataStatus,
 } from '../backend/data-protocol';
+
+// Startup marks for the performance check (perf.ts); they do nothing unless LERNLAB_PERF=1.
+const perfMark = startupMarks();
 
 // Installer smoke test (see smoke.ts): a fresh, throw-away profile, so it never touches real data.
 const smoke = isSmokeTest(process.argv);
@@ -299,6 +303,7 @@ if (process.platform === 'win32') app.setAppUserModelId('dev.lernlab.app');
 
 async function main() {
   await app.whenReady();
+  perfMark('app-ready');
   nativeTheme.themeSource = readConfig().theme ?? 'system';
   const dir = dataDir();
   mkdirSync(dir, { recursive: true });
@@ -356,6 +361,7 @@ async function main() {
     process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin,
   );
   win.once('ready-to-show', () => {
+    perfMark('ready-to-show');
     if (place.maximized) win!.maximize();
     if (!atLogin) win!.show();
     else if (process.platform !== 'darwin') {
