@@ -56,6 +56,7 @@ import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
+import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
 import { lastSeenVersion, markVersionSeen, whatsNewToShow, type ReleaseNotes } from '@lernlab/core/whatsnew';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
@@ -485,6 +486,10 @@ export const handlers = {
     if (!mediaKind(name)) throw new AppError('unsupported_media', 'Unsupported media type');
     return { file: storeMedia(name, data), kind: mediaKind(name) };
   }),
+  /** A recording made in the card editor (Opus in WebM or Ogg). The engine checks the bytes and the length. */
+  'media.record': h(v.object({ data: v.bytes(2 * RECORDING_MAX_BYTES) }), ({ data }) => ({
+    file: saveRecording(data),
+  })),
 
   /* ── Study ── */
   'session.plan': h(

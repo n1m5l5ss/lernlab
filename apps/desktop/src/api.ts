@@ -71,6 +71,7 @@ export const api = {
   ankiImport: (b: { sources?: string[]; deckName?: string }) => call('import.anki', b),
   uploadMedia: async (file: File) =>
     call('media.upload', { name: file.name, data: new Uint8Array(await file.arrayBuffer()) }),
+  saveRecording: async (audio: Blob) => call('media.record', { data: new Uint8Array(await audio.arrayBuffer()) }),
   downloadSummary: async () => {
     const s = await call('summary.today');
     saveFile(`lernlab-${s.date}.json`, JSON.stringify(s, null, 2), 'application/json');
