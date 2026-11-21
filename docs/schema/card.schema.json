@@ -48,6 +48,10 @@
       "description": "Multiple choice: the correct choices as 1-based numbers or as texts, separated by |.",
       "type": "string"
     },
+    "corrections": {
+      "description": "Optional, added after v1 was published; older readers ignore it. Multiple choice: a short correction per wrong choice, shown when that choice is picked (\"Many people think X. In fact Y, because Z.\"). One slot per choice, in the order of choices, separated by |; an empty slot is a choice without one. Plain text with **bold**, *italic* and `code`, at most 500 characters each; slots of correct choices are dropped. Example for choices \"EC2|Lambda|Fargate|RDS\": \"Many people think EC2 is serverless. In fact you manage its servers.|||RDS is a database.\"",
+      "type": "string"
+    },
     "steps": {
       "description": "Ordering card: the steps in the correct order, separated by |.",
       "type": "string"

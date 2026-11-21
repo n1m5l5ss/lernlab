@@ -22,6 +22,7 @@ const TEXT_FIELDS = [
   'steps',
   'altAnswers',
   'variants',
+  'corrections',
   'tolerance',
   'code',
   'codeLang',

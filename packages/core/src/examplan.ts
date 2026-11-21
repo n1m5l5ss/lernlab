@@ -37,7 +37,9 @@ function question(item: Item, pool: Item[]): ExamQuestion | null {
   const base = { itemId: item.id, explanation: item.grammar || item.notes, topics: item.tags };
   if (item.kind === 'mcq') {
     const ex = mcq(item);
-    return ex?.type === 'mcq' ? { ...base, stem: ex.stem, choices: ex.choices, correct: ex.correct } : null;
+    if (ex?.type !== 'mcq') return null;
+    const { stem, choices, correct, corrections } = ex;
+    return { ...base, stem, choices, correct, ...(corrections && { corrections }) };
   }
   // Ask from the side the card asks from (qa): the shorter side is the answer.
   const ex = mc(item, pool, stripHtml(qa(item).answer) === backText(item) ? 'de2en' : 'en2de');

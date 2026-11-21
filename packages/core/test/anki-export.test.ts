@@ -151,3 +151,21 @@ test('.apkg: Anki has no question variants, so they are kept under the notes', (
   db.close();
   assert.equal(fields[5], 'n<br>apply: A &amp; B?');
 });
+
+test('.apkg: Anki has no corrections for wrong choices, so they are kept under the notes with their choice', () => {
+  const quiz = createDeck('Corrections', null);
+  upsertCards(quiz, [
+    {
+      front: 'Serverless?',
+      back: '',
+      type: 'mcq',
+      choices: 'EC2|Lambda|RDS',
+      correct: '2',
+      corrections: 'A <b>&</b> B||C',
+    },
+  ]);
+  const db = collection(unzipSync(exportDeck(quiz.id, 'apkg').data));
+  const fields = String(db.prepare('SELECT flds FROM notes').get()!.flds).split('\x1f');
+  db.close();
+  assert.equal(fields[5], 'EC2: A &amp; B<br>RDS: C');
+});

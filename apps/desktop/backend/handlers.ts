@@ -135,6 +135,7 @@ const cardInput = v.object({
   occlusionMode: text,
   alt: text,
   variants: text,
+  corrections: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -443,6 +444,7 @@ export const handlers = {
           occlusionMode: opt(b.occlusionMode),
           altAnswers: opt(b.alt),
           variants: opt(b.variants),
+          corrections: opt(b.corrections),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);

@@ -51,6 +51,8 @@ export type ExamQuestion = {
   topics: string[];
   /** Asked with one of the card's question variants: its level (the card's own question is recall). */
   level?: Level;
+  /** Per choice: the correction (safe HTML) tutor mode shows when that wrong choice is picked; '' for none. */
+  corrections?: string[];
 };
 
 /** Right only when every correct choice, and nothing else, is picked. */
