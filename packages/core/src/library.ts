@@ -375,25 +375,6 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
   return { deck, added, updated, total, skipped };
 }
 
-export function deckCounts(d: DB = getDb()) {
-  const rows = d
-    .prepare(
-      `
-    SELECT i.deck_id AS id, COUNT(*) AS cards,
-      SUM(CASE WHEN s.item_id IS NULL THEN 1 ELSE 0 END) AS fresh,
-      SUM(CASE WHEN st.mastery >= 3 THEN 1 ELSE 0 END) AS learned
-    FROM items i LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
-    WHERE i.suspended = 0 GROUP BY i.deck_id`,
-    )
-    .all();
-  return Object.fromEntries(
-    rows.map((r: Row) => [
-      Number(r.id),
-      { cards: Number(r.cards), fresh: Number(r.fresh), learned: Number(r.learned) },
-    ]),
-  );
-}
-
 export function readMedia(file: string): Uint8Array | null {
   return host().media.read(basename(file));
 }

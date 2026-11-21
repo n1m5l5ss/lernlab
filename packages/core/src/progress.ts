@@ -1,6 +1,6 @@
 // Progress: streaks, daily goal, achievements, stats, and the daily summary for the AI tutor / Notion.
 import type { Row, SqlValue } from './host';
-import { getDb, getMeta, setMeta, type DB } from './db';
+import { getDb, getMeta, setMeta, whileUnchanged, type DB } from './db';
 import { host } from './host';
 import {
   addDays,
@@ -17,18 +17,20 @@ import {
 } from './game';
 import {
   activeDeckId,
-  allItems,
   currentSource,
   deckNewPerDay,
+  deckStats,
   dueItemIds,
   freshPerDeck,
   getSettings,
   hardestCards,
+  hardestCount,
   HARDEST_LIMIT,
   introducedTodayCount,
+  newTodayFor,
   scopeFor,
 } from './learn';
-import { deckCounts, getDeck, listDecks, LANGUAGES } from './library';
+import { getDeck, listDecks, LANGUAGES } from './library';
 import { KNOWN_MASTERY } from './browse';
 import { stripHtml } from './text';
 
@@ -61,8 +63,10 @@ function metDays(d: DB): Set<string> {
 
 export function streakState(d: DB = getDb(), now = new Date()): StreakState {
   const today = dayKey(now);
-  const s = settleStreak(getMeta(d, 'streak', NEW_STREAK), today, metDays(d));
-  setMeta(d, 'streak', s);
+  const before = getMeta(d, 'streak', NEW_STREAK);
+  const s = settleStreak(before, today, metDays(d));
+  // Write only a real change, so that reading the state leaves the data (and its cached counts) as they are.
+  if (JSON.stringify(s) !== JSON.stringify(before)) setMeta(d, 'streak', s);
   return s;
 }
 
@@ -76,7 +80,7 @@ export function wordsProducible(d: DB = getDb(), deckId?: number | null): number
   );
 }
 
-function goalProgress(deckId: number | null, d: DB) {
+function goalProgress(deckId: number | null, d: DB, words?: number) {
   const deck = deckId ? getDeck(deckId, d) : null;
   const goal = deck?.settings.goal;
   if (!goal) return null;
@@ -88,7 +92,7 @@ function goalProgress(deckId: number | null, d: DB) {
           )
           .get(deckId, `%${goal.tag}%`)!.n,
       )
-    : wordsProducible(d, deckId);
+    : (words ?? wordsProducible(d, deckId));
   const total = goal.tag
     ? Number(
         d.prepare(`SELECT COUNT(*) AS n FROM items WHERE deck_id = ? AND tags LIKE ?`).get(deckId, `%${goal.tag}%`)!.n,
@@ -127,21 +131,26 @@ export function appState(d: DB = getDb(), now = new Date()) {
   const scope = scopeFor(source, d);
   const where = deckId ? ` WHERE deck_id = ${Number(deckId)}` : '';
   const itemCount = Number(d.prepare(`SELECT COUNT(*) AS n FROM items${where}`).get()!.n);
-  const introduced = Number(
-    d
-      .prepare(
-        `SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id${where ? where.replace('deck_id', 'i.deck_id') : ''}`,
-      )
-      .get()!.n,
-  );
-  const counts = deckCounts(d);
-  const decks = listDecks(d).map((dk) => ({
-    ...dk,
-    ...(counts[dk.id] ?? { cards: 0, fresh: 0, learned: 0 }),
-    due: dueItemIds(d, now, 2000, dk.id).length,
-    newToday: freshPerDeck(d, now, dk.id, 1000).length,
-    languageName: dk.language ? (LANGUAGES[dk.language] ?? dk.language) : null,
-  }));
+  // Every deck's counts in one grouped query (#130), then the totals from them.
+  const stats = whileUnchanged(d, `deckStats:${today}`, () => deckStats(d, now));
+  const total = (key: 'introduced' | 'words') =>
+    deckId ? (stats.get(deckId)?.[key] ?? 0) : [...stats.values()].reduce((n, s) => n + s[key], 0);
+  const introduced = total('introduced');
+  const newPerDay = (dk: { settings: { newPerDay?: unknown } }) =>
+    typeof dk.settings.newPerDay === 'number' ? dk.settings.newPerDay : settings.newPerDay;
+  const decks = listDecks(d).map((dk) => {
+    const s = stats.get(dk.id);
+    return {
+      ...dk,
+      cards: s?.cards ?? 0,
+      fresh: s?.fresh ?? 0,
+      learned: s?.learned ?? 0,
+      due: Math.min(2000, s?.due ?? 0),
+      newToday: newTodayFor(s, newPerDay(dk)),
+      languageName: dk.language ? (LANGUAGES[dk.language] ?? dk.language) : null,
+    };
+  });
+  const oneDeck = typeof scope === 'number' && scope ? decks.find((dk) => dk.id === scope) : undefined;
   const lastDay = d.prepare('SELECT MAX(day) AS d FROM days WHERE sessions > 0 AND day < ?').get(today)!.d as
     string | null;
   return {
@@ -152,11 +161,11 @@ export function appState(d: DB = getDb(), now = new Date()) {
     introduced,
     // Due and new counts follow what the next session covers (a deck, all decks, a tag, starred, hardest).
     source,
-    due: dueItemIds(d, now, 2000, scope).length,
-    newLeftToday: freshPerDeck(d, now, scope, 1000).length,
-    tags: allTags(d),
+    due: oneDeck ? oneDeck.due : dueItemIds(d, now, 2000, scope).length,
+    newLeftToday: oneDeck ? oneDeck.newToday : freshPerDeck(d, now, scope, 1000).length,
+    tags: whileUnchanged(d, 'tags', () => allTags(d)),
     starredCount: Number(d.prepare('SELECT COUNT(*) AS n FROM items WHERE starred = 1 AND suspended = 0').get()!.n),
-    hardestCount: allItems(d, scopeFor({ kind: 'hardest' }, d)).length,
+    hardestCount: hardestCount(d),
     totalXp,
     level: levelFor(totalXp),
     streak,
@@ -176,8 +185,8 @@ export function appState(d: DB = getDb(), now = new Date()) {
           .map((r: Row) => r.day as string),
       ),
     ),
-    wordsProducible: wordsProducible(d, deckId),
-    goal: goalProgress(deckId, d),
+    wordsProducible: total('words'),
+    goal: goalProgress(deckId, d, total('words')),
     achievements: getMeta<Record<string, string>>(d, 'achievements', {}),
     missedYesterday: !!lastDay && lastDay < addDays(today, -1) && Number(t.sessions) === 0,
     settings,

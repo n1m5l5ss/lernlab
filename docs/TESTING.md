@@ -94,11 +94,11 @@ Everything lives in `bench/` (an npm workspace) and `.github/workflows/perf.yml`
 | Long tasks per block | 0 | 0 |
 | Due queue, 100k | 0.07 ms | 0.10 ms |
 | Save a review, 100k | 0.31 ms | 0.50 ms |
-| Deck list / stats (`state.get`), 100k | **955 ms** | **1,129 ms** |
+| Deck list / stats (`state.get`), 100k | 1 ms (after a change: 81 ms) | 3 ms (after a change: 95 ms) |
 | Import 10k (no media) | 402 ms | 508 ms |
 | Import 100k (no media) | 4.8 s | 4.9 s |
 
-Deck list / stats is far over its budget at 100k cards (72 ms at 10k): `appState` runs the due and new-card queries once per deck, and `deckCounts` alone takes about 230 ms. The nightly run stays red on it until that is fixed.
+Deck list / stats was 955 / 1,129 ms at 100k cards before #130: `appState` ran the due and new-card queries once per deck. It now counts every deck in one grouped query over the `items(deck_id, suspended, kind)` index and keeps the counts until the data changes, so `deck-stats` measures a repeat call and `deck-stats-changed` the first call after a write.
 
 ## Commands
 
