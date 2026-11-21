@@ -1,6 +1,8 @@
 # User guide
 
-This guide shows how to use LernLab: get cards in, study, follow your progress and keep your data safe. It describes the app as it is now (version 0.3). Names in **bold** are the words you see on screen.
+This guide shows how to use LernLab: get cards in, study, follow your progress and keep your data safe. Names in **bold** are the words you see on screen.
+
+This guide describes version 1.0.0 of the app. <!-- x-release-please-version -->
 
 LernLab has five places, in the sidebar on the left: **Home**, **Decks**, **Cards**, **Progress** and **Settings**.
 
