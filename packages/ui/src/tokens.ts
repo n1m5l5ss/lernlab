@@ -19,7 +19,12 @@ export function tokensToCss(t: Tokens = tokens): string {
     ['font-ui', t.font.ui],
     ['font-reading', t.font.reading],
     ['font-mono', t.font.mono],
-    ...Object.entries(t.typeScale).map(([k, v]): [string, string] => [`text-${kebab(k)}`, px(v)]),
+    // Text sizes follow the Text size setting through --text-scale (spacing and layout stay put).
+    ['text-scale', t.textSize.normal],
+    ...Object.entries(t.typeScale).map(([k, v]): [string, string] => [
+      `text-${kebab(k)}`,
+      `calc(${px(v)} * var(--text-scale))`,
+    ]),
     ...Object.entries(t.lineHeight).map(([k, v]): [string, number] => [`line-${kebab(k)}`, v]),
     ...t.space.map((v, i): [string, string] => [`space-${i + 1}`, px(v)]),
     ...Object.entries(t.radius).map(([k, v]): [string, string] => [`radius-${kebab(k)}`, px(v)]),
@@ -30,21 +35,21 @@ export function tokensToCss(t: Tokens = tokens): string {
     ]),
   ];
   const dark = colours(t.color.dark);
+  const reducedMotion = Object.entries(t.motionReduced).map(([k, v]): [string, string] => [
+    `motion-${kebab(k)}`,
+    `${v}ms`,
+  ]);
   return [
     '/* Generated from docs/design/tokens.json by `npm run tokens -w @lernlab/ui`. Do not edit by hand. */',
     block(':root', [...colours(t.color.light), ...shared]).replace(/\n}$/, '\n  color-scheme: light;\n}'),
     `@media (prefers-color-scheme: dark) {\n${block(":root:not([data-theme='light'])", dark, '  ').replace(/\n {2}}$/, '\n    color-scheme: dark;\n  }')}\n}`,
     block(":root[data-theme='dark']", dark).replace(/\n}$/, '\n  color-scheme: dark;\n}'),
-    // Reduced motion: movement becomes an instant change; fades stay short.
-    `@media (prefers-reduced-motion: reduce) {\n${block(
-      ':root',
-      [
-        ['motion-press', '0ms'],
-        ['motion-card', `${t.motion.feedback}ms`],
-        ['motion-summary', `${t.motion.feedback}ms`],
-      ],
-      '  ',
-    )}\n}`,
+    ...Object.entries(t.textSize)
+      .filter(([k]) => k !== 'normal')
+      .map(([k, v]) => block(`:root[data-text-size='${k}']`, [['text-scale', v]])),
+    // Reduced motion, from the computer or the app setting: movement becomes an instant change; fades stay short.
+    `@media (prefers-reduced-motion: reduce) {\n${block(':root', reducedMotion, '  ')}\n}`,
+    block(":root[data-motion='reduce']", reducedMotion),
     '',
   ].join('\n\n');
 }

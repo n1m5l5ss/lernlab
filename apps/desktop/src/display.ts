@@ -1,5 +1,6 @@
 // Applies the text size and reduced-motion settings as data attributes on the root element.
-// styles.css (Settings block) maps them to a scale and to zero-length animations.
+// @lernlab/ui/tokens.css maps them to --text-scale (every --text-* token scales) and to the
+// reduced --motion-* values; styles.css (Settings block) also stops the prototype's raw animations.
 export const TEXT_SIZES = ['normal', 'large', 'larger'] as const;
 export type TextSize = (typeof TEXT_SIZES)[number];
 
@@ -21,3 +22,6 @@ export function motionReduced(
 ) {
   return root.dataset.motion === 'reduce' || system;
 }
+
+/** An inline font size in px that still follows the Text size setting, like the --text-* tokens. */
+export const textPx = (px: number) => `calc(${px}px * var(--text-scale))`;
