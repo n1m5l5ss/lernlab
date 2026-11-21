@@ -10,7 +10,11 @@ import { fixtureFile, makeCsv, NOW, SIZES } from './fixtures';
 import { percentile, type Measured } from './report';
 
 process.env.LERNLAB_DATA = mkdtempSync(join(tmpdir(), 'lernlab-bench-'));
-const { installNodeHost, openDb } = await import('@lernlab/storage-sqlite');
+const storage = await import('@lernlab/storage-sqlite');
+const { installNodeHost, openDb } = storage;
+// The compare job runs this file against the base branch too, whose storage may not have it yet (#140).
+const checkpointNow: () => void = (storage as { checkpointNow?: () => void }).checkpointNow ?? (() => {});
+const hasCheckpoint = 'checkpointNow' in storage;
 installNodeHost();
 const { dueItemIds, recordAttempt } = await import('@lernlab/core/learn');
 const { appState } = await import('@lernlab/core/progress');
@@ -32,8 +36,9 @@ async function measure(
   name: string,
   fn: () => void,
   run: { time?: number; warmupTime?: number; iterations?: number; warmupIterations?: number } = QUICK,
+  afterEach?: () => void,
 ) {
-  const r = await bench(name, { retainSamples: true }, fn).run(run);
+  const r = await bench(name, { retainSamples: true, afterEach }, fn).run(run);
   const samples = [...(r.latency.samples ?? [])];
   results.push({ name, p50: r.latency.p50, p95: percentile(samples, 95), n: samples.length });
 }
@@ -88,16 +93,35 @@ describe('import', () => {
   const d = open(SIZES[0]);
   const csv = new TextEncoder().encode(makeCsv(10_000, 7, 'import'));
   let n = 0;
-  test('import 10,000 cards (CSV, no media)', (ctx) =>
-    measure(ctx, 'import 10k', () => importFile('Import.csv', csv, { deckName: `Import ${n++}` }, d), SLOW));
+  // The app checkpoints soon after an import, outside it (#140). Do it between runs, as the app would,
+  // and report how long it takes.
+  const checkpoints: number[] = [];
+  const checkpoint = () => {
+    const t = performance.now();
+    checkpointNow();
+    checkpoints.push(performance.now() - t);
+  };
+  test('import 10,000 cards (CSV, no media)', async (ctx) => {
+    await measure(
+      ctx,
+      'import 10k',
+      () => importFile('Import.csv', csv, { deckName: `Import ${n++}` }, d),
+      SLOW,
+      checkpoint,
+    );
+    const [p50, p95] = [percentile(checkpoints, 50), percentile(checkpoints, 95)];
+    if (hasCheckpoint) results.push({ name: 'import-checkpoint 10k', p50, p95, n: checkpoints.length });
+  });
 
   // 100,000 cards take seconds each, so only the nightly run (BENCH_FULL=1) measures them.
   test.runIf(process.env.BENCH_FULL === '1')('import 100,000 cards (CSV, no media)', (ctx) => {
     const big = new TextEncoder().encode(makeCsv(100_000, 8, 'big'));
-    return measure(ctx, 'import 100k', () => importFile('Big.csv', big, { deckName: `Big ${n++}` }, d), {
-      time: 0,
-      iterations: 3,
-      warmupIterations: 0,
-    });
+    return measure(
+      ctx,
+      'import 100k',
+      () => importFile('Big.csv', big, { deckName: `Big ${n++}` }, d),
+      { time: 0, iterations: 3, warmupIterations: 0 },
+      checkpointNow,
+    );
   });
 });

@@ -5,7 +5,7 @@
 //   4 manual ("set due date", "forget"), 5 rescheduled by Anki, and any entry without a button (ease 1–4).
 // - A "forget" (type 4 with interval 0) reset the card to new in Anki, so the history before it is dropped.
 // - One grade per card per day, like LernLab: the first answer of each learning day (4 a.m. to 4 a.m.).
-import { createEmptyCard, fsrs, generatorParameters, type Card, type Grade } from 'ts-fsrs';
+import { createEmptyCard, replayScheduler, type Card, type Grade } from './scheduler';
 import { tx, type DB } from './db';
 import { dayKey } from './game';
 import { getSettings } from './learn';
@@ -38,7 +38,7 @@ export function reviewsFromRevlog(rows: RevlogRow[]): PastReview[] {
 
 /** The FSRS card after each answer, and at the end. No fuzz, so the same history gives the same schedule. */
 export function replayReviews(reviews: PastReview[], retention: number) {
-  const f = fsrs(generatorParameters({ request_retention: retention, enable_fuzz: false, enable_short_term: false }));
+  const f = replayScheduler(retention);
   let card: Card = createEmptyCard(new Date(reviews[0].time));
   const steps: { time: number; card: Card }[] = [];
   for (const r of reviews) {

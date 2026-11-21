@@ -3,7 +3,8 @@ import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { basename, join } from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
 import { strToU8, zipSync } from 'fflate';
 import { cleanupTempDir } from './test-utils';
 
@@ -15,7 +16,8 @@ const { dailyBackup, listBackups, restoreBackup, exportAllData, importAllData, d
   await import('@lernlab/storage-sqlite/backups');
 const { importFile } = await import('../src/importer');
 const { createDeck } = await import('../src/library');
-const { getDb } = await import('../src/db');
+const { getDb, setMeta } = await import('../src/db');
+const { getSettings } = await import('../src/learn');
 const { unpackDataBundle, packDataBundle, bundlePath } = await import('../src/formats/databundle');
 const { UserError } = await import('../src/errors');
 after(() => cleanupTempDir(dir));
@@ -126,6 +128,70 @@ test('an imported zip is untrusted: odd paths, other zips and bombs are refused'
   assert.throws(
     () => unpackDataBundle(newer),
     (e: InstanceType<typeof UserError>) => e.code === 'data_export_too_new',
+  );
+  assert.equal(deckCount(), 2);
+});
+
+/** The current data as an export, with `sql` run on its database first. */
+function craftedExport(sql: string): Uint8Array {
+  const bundle = unpackDataBundle(exportAllData().data);
+  const work = mkdtempSync(join(tmpdir(), 'lernlab-crafted-'));
+  try {
+    const file = join(work, 'x.db');
+    writeFileSync(file, bundle.db);
+    const d = new DatabaseSync(file);
+    d.exec(sql);
+    d.close();
+    return packDataBundle({ ...bundle, db: readFileSync(file) });
+  } finally {
+    cleanupTempDir(work);
+  }
+}
+
+const isUnsafe = (e: InstanceType<typeof UserError>) => e.code === 'backup_unsafe';
+
+test('a restored database with views, triggers or virtual tables is refused before it becomes live (#176)', () => {
+  const before = backups();
+  for (const sql of [
+    'CREATE VIEW endless AS WITH RECURSIVE n(i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n) SELECT i FROM n',
+    'CREATE TRIGGER sneaky AFTER INSERT ON decks BEGIN DELETE FROM items; END',
+    'CREATE VIRTUAL TABLE search USING fts5(a)',
+  ]) {
+    assert.throws(() => importAllData(craftedExport(sql)), isUnsafe, sql);
+    assert.equal(deckCount(), 2, 'the current data is untouched');
+  }
+  assert.deepEqual(backups(), before, 'nothing was swapped, so no safety copy was needed');
+  // The same check guards restoring a copy from backups/ (the daily backups share the code).
+  const bad = 'lernlab-20260102-crafted-v2.db';
+  writeFileSync(
+    join(dir, 'backups', bad),
+    unpackDataBundle(craftedExport('CREATE TRIGGER t AFTER DELETE ON decks BEGIN SELECT 1; END')).db,
+  );
+  assert.throws(() => restoreBackup(bad), isUnsafe);
+  assert.equal(deckCount(), 2);
+});
+
+test('the AI assistant and internet media are off after any restore, so the user turns them on again knowingly (#176)', () => {
+  const on = () => setMeta(getDb(), 'settings', { ...getSettings(), aiAssistant: true, remoteMedia: true });
+  on();
+  importAllData(exportAllData().data);
+  assert.equal(getSettings().aiAssistant, false, 'import everything');
+  assert.equal(getSettings().remoteMedia, false, 'import everything: internet media');
+  assert.equal(deckCount(), 2);
+  on();
+  const copy = basename(storage.backupAppDb(undefined, 'before-update', day(12)));
+  restoreBackup(copy);
+  assert.equal(getSettings().aiAssistant, false, 'restore a backup');
+  assert.equal(getSettings().remoteMedia, false, 'restore a backup: internet media');
+});
+
+test('a data export that compresses too well (a zip bomb) is refused (#176)', () => {
+  const manifest = strToU8(JSON.stringify({ format: 'lernlab-data', version: 1 }));
+  const db = new Uint8Array(16 * 1024 * 1024);
+  db.set(strToU8('SQLite format 3\u0000'));
+  assert.throws(
+    () => unpackDataBundle(zipSync({ 'manifest.json': manifest, 'lernlab.db': [db, { level: 9 }] })),
+    /compressed too much/,
   );
   assert.equal(deckCount(), 2);
 });

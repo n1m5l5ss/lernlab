@@ -1,13 +1,13 @@
 // Core learning state: items, spaced repetition (FSRS), attempts, mastery, days.
 import type { Row } from './host';
 import type { ItemRow } from './schema';
-import { fsrs, generatorParameters, createEmptyCard, type Card, type Grade as FsrsGrade } from 'ts-fsrs';
 import { getDb, getMeta, tx, type DB } from './db';
 import { gradeFor, dayKey } from './game';
 import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from './types';
 import { qa } from './cards';
 import { DEFAULT_REMINDER_TIME } from './reminder';
 import { withOcclusionBoxes } from './occlusion';
+import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 
 export type Settings = {
   deck: string;
@@ -80,9 +80,6 @@ export function deckNewPerDay(deckId: number | null | undefined, d: DB = getDb()
 }
 
 export const activeDeckId = (d: DB = getDb()): number | null => getMeta<number | null>(d, 'activeDeck', null);
-
-const scheduler = (retention: number) =>
-  fsrs(generatorParameters({ request_retention: retention, enable_fuzz: true, enable_short_term: false }));
 
 export const ITEM_SELECT = 'SELECT i.*, dk.language AS lang FROM items i JOIN decks dk ON dk.id = i.deck_id';
 /** What a session covers. "all" is every deck; "hardest" is the cards you lapse on most. */
@@ -301,7 +298,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
       if (grade) {
         const settings = getSettings(d);
         const card: Card = reviveCard(JSON.parse(srs.card as string));
-        const next = scheduler(settings.retention).next(card, now, grade as FsrsGrade).card;
+        const next = liveScheduler(settings.retention).next(card, now, grade as FsrsGrade).card;
         d.prepare(
           `UPDATE srs SET prev_card = card, prev_due = due, card = ?, due = ?, last_graded_day = ?, reps = reps + 1, lapses = lapses + ? WHERE item_id = ?`,
         ).run(JSON.stringify(next), next.due.toISOString(), day, grade === 1 ? 1 : 0, a.itemId);
@@ -326,7 +323,7 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
       .get(itemId, day);
     if (!srs || !last || srs.last_graded_day !== day || !srs.prev_card || Number(last.grade) >= 3) return { ok: false };
     const prev = reviveCard(JSON.parse(srs.prev_card as string));
-    const next = scheduler(getSettings(d).retention).next(prev, now, 3 as FsrsGrade).card;
+    const next = liveScheduler(getSettings(d).retention).next(prev, now, 3 as FsrsGrade).card;
     d.prepare('UPDATE srs SET card = ?, due = ?, lapses = MAX(0, lapses - ?) WHERE item_id = ?').run(
       JSON.stringify(next),
       next.due.toISOString(),
@@ -339,10 +336,6 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
     ).run(itemId);
     return { ok: true, due: next.due.toISOString() };
   });
-}
-
-function reviveCard(c: Omit<Card, 'due' | 'last_review'> & { due: string; last_review?: string }): Card {
-  return { ...c, due: new Date(c.due), last_review: c.last_review ? new Date(c.last_review) : undefined };
 }
 
 export function allItems(d: DB = getDb(), scope?: Scope): Item[] {

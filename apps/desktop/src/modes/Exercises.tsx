@@ -588,7 +588,7 @@ export function TypedEngine({
       });
       setMsg(
         r.nearMiss
-          ? [coach.near(), r.note ? t(r.note.key, r.note.params) : ''].join(' ')
+          ? [coach.near(), r.note ? t(r.note.key, r.note.params ?? {}) : ''].join(' ')
           : requireArticle
             ? coach.rightArticle()
             : coach.right(ctx.combo + 1),
@@ -609,7 +609,7 @@ export function TypedEngine({
     ctx.missed.add(itemId);
     if (first) {
       setPhase('retry');
-      setMsg(r.articleError ? `${r.note ? t(r.note.key, r.note.params) : ''}. ${coach.retry()}` : coach.retry());
+      setMsg(r.articleError ? `${r.note ? t(r.note.key, r.note.params ?? {}) : ''}. ${coach.retry()}` : coach.retry());
       if (!r.articleError) setValue('');
     } else {
       setPhase('copy');

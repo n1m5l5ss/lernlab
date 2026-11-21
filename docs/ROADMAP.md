@@ -49,6 +49,13 @@ Priorities come from a review of Quizlet, Anki, Duolingo, Memrise, Brainscape, K
 - **Connect your own AI assistant (MCP):** an assistant that can connect to local MCP servers (such as Claude Desktop, the ChatGPT desktop app or Hermes Agent) reads your decks, stats, hard cards and mock exams, quizzes you in the chat without changing your schedule, and proposes new decks and cards, fixes, merges, tidy-ups, goals, an exam study plan or an export. Each proposal waits for you to edit, accept or decline it; nothing is deleted. Off by default, and LernLab itself stays offline (#148).
 - **STEM:** numeric answers with tolerance and units (with #45).
 
+## Done (1.2, November 2026)
+
+- **Safer restore:** a backup or data zip is checked before it replaces anything, and one that holds something LernLab never makes itself is refused (#186).
+- **Home is up to date after a session:** today's study day and progress show right away (#187).
+- **Faster big imports:** a 10,000-card deck imports about a quarter faster, with far fewer disk writes (#140).
+- **Updated libraries:** the FSRS scheduler (ts-fsrs 6, same schedules; only the small random spread of due dates can land on another day), translations (react-i18next 18) and the build actions.
+
 ## Next (1.x)
 
 Each item is a GitHub issue; finished ones ship in the next minor release.

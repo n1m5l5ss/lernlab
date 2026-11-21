@@ -16,7 +16,7 @@ Languages, AWS, medicine, physics, law, history: if you can put it on a card, Le
 - **Opens your existing decks:** imports Anki `.apkg` packages with their review history, Quizlet-style CSV, pasted lists and live Anki.
 - **Deck gallery:** browse free community decks and install one with a click.
 - **No lock-in:** export any deck as a `.lernpack`, a CSV or an Anki `.apkg` with its media.
-- **Safe with your data:** a daily backup, restore with a preview, and export everything as a zip.
+- **Safe with your data:** a daily backup, restore with a preview (each backup is checked before it replaces anything), and export everything as a zip.
 - **For everyone:** works fully by keyboard and with screen readers, in light and dark themes, and lays out right to left for Arabic, Hebrew and Urdu.
 - **Stays up to date:** Windows and Linux update themselves; Mac users download each new version from the website.
 - **Bring your own AI assistant (optional):** connect Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other assistant that supports MCP, to ask about your progress, be quizzed in the chat, turn a PDF into cards, fix, merge and tidy up cards, or plan a deck toward an exam. Every change waits for you to review and accept it in the app. Off until you turn it on, and LernLab itself stays offline. See [AI assistants](docs/AI-ASSISTANTS.md).
@@ -90,6 +90,8 @@ Download the file for your system from the [LernLab website](https://n1m5l5ss.gi
 To uninstall: Settings → Apps → Installed apps → LernLab → Uninstall.
 
 ### macOS (Apple silicon and Intel)
+
+Intel Macs are supported for as long as Apple and Electron support them; after that, only Apple silicon gets new versions (see [platform support](docs/RELEASING.md#installers)).
 
 #### Opening LernLab on a Mac for the first time
 

@@ -20,6 +20,8 @@ import {
 import { tmpdir } from 'node:os';
 import { basename, join, resolve } from 'node:path';
 import type { DB } from '@lernlab/core/host';
+import { getMeta, setMeta } from '@lernlab/core/db';
+import { hasRiskySchema } from '@lernlab/core/formats/untrusted-db';
 import { LATEST_VERSION, schemaVersion } from '@lernlab/core/migrate';
 import { UserError } from '@lernlab/core/errors';
 import { BUNDLE_FORMAT, BUNDLE_VERSION, packDataBundle, unpackDataBundle } from '@lernlab/core/formats/databundle';
@@ -58,8 +60,13 @@ export const countsOf = (d: DB): Counts => ({
 });
 
 const notBackup = () => new UserError('not_a_backup', 'This file is not a LernLab backup.');
+const unsafe = () =>
+  new UserError('backup_unsafe', 'This backup contains parts LernLab never makes, so it was not restored.');
 
-/** Open a database file read-only and check it is LernLab data this version can use. */
+/**
+ * Open a database file read-only and check it is LernLab data this version can use. The file may come from
+ * anywhere (#176), so views, triggers and virtual tables are refused before any other query runs.
+ */
 function inspect(file: string): { schemaVersion: number; counts: Counts } {
   let d: DB;
   try {
@@ -68,6 +75,7 @@ function inspect(file: string): { schemaVersion: number; counts: Counts } {
     throw notBackup();
   }
   try {
+    if (hasRiskySchema(d)) throw unsafe();
     const version = schemaVersion(d);
     if (!d.prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'items'").get()) throw notBackup();
     if (version > LATEST_VERSION)
@@ -121,7 +129,11 @@ export function dailyBackup(now = new Date(), keep = DAILY_KEEP): string | null 
   return made;
 }
 
-/** Put another database file in place of the app's, then open it (running migrations if it is older). */
+/**
+ * Put another database file in place of the app's, then open it (running migrations if it is older).
+ * The AI assistant is always turned off afterwards (#176): a restored file could have turned it on, and
+ * the user should switch it on again knowingly.
+ */
 function swapIn(source: string, safety: string) {
   const file = appFile();
   const put = (from: string) => {
@@ -132,10 +144,17 @@ function swapIn(source: string, safety: string) {
   };
   try {
     put(source);
+    assistantOff(getAppDb(file));
   } catch (e) {
     put(safety);
     throw e;
   }
+}
+
+function assistantOff(d: DB) {
+  const saved: unknown = getMeta(d, 'settings', {});
+  const settings = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  setMeta(d, 'settings', { ...settings, aiAssistant: false, remoteMedia: false });
 }
 
 /** Restore a backup from backups/. The current data is backed up first; returns that backup's name. */
