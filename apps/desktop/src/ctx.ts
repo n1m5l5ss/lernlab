@@ -14,6 +14,8 @@ export type AnswerInput = {
   genderOnly?: boolean;
   shownAt: number;
   silent?: boolean; // no sound/XP float (e.g. intro)
+  /** A card brought back for relearning: logged as practice, never a second grade. */
+  practice?: boolean;
 };
 
 export type Ctx = {
@@ -29,7 +31,7 @@ export type Ctx = {
   pool: Item[];
   answer: (a: AnswerInput) => number;
   /** "I was right": undo today's failing grade for this card. */
-  override: (itemId: number) => void;
+  override: (itemId: number, practice?: boolean) => void;
   combo: number;
   missed: Set<number>;
   /** Show a line in the speech bubble (a core Line, or text already translated). */

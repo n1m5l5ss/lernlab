@@ -24,7 +24,7 @@ import {
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { mcFor, recallFor } from './plan';
 import { agendaText, bubbleFor, textTeacher, type Bubble } from './lines';
-import { blockKey, needsRescue, playableOnly, requeue } from './session-logic';
+import { Relearn, answerKind, asRepeat, blockKey, needsRescue, plannedRecalls, playableOnly } from './session-logic';
 import { Button, ProgressBar } from './components';
 
 /** Where the learner is inside the current block, for the progress bar and "5 of 12". */
@@ -47,24 +47,37 @@ export type SessionResult = {
   introduced: number;
 };
 
-const RECALL = new Set(['typed', 'cloze', 'flip', 'mcq', 'order']);
+/** Blocks of single exercises can bring cards back; games and blitz rounds can't. */
+const hostsRepeats = (b: Block) => 'exercises' in b && b.kind !== 'blitz';
 
-/* A block of single exercises with re-queueing: a missed recall item comes back 3 exercises later. */
+/*
+ * A block of single exercises. Missed cards and new cards come back a few exercises later (successive
+ * relearning, see Relearn), as practice, until they meet their target.
+ */
 function ExerciseBlock({
   block,
   ctx: ctxIn,
+  relearn,
+  plannedLater,
+  last,
   onDone,
   onStep,
 }: {
   block: Extract<Block, { exercises: Exercise[] }>;
   ctx: Ctx;
+  relearn: Relearn;
+  /** Recalls of each card planned in later blocks. */
+  plannedLater: Map<number, number>;
+  /** No later block can bring cards back: a card still missed gets its last tries here. */
+  last: boolean;
   onDone: (r: BlockResult) => void;
   onStep: (s: Step) => void;
 }) {
   let ctx = ctxIn;
   const [queue, setQueue] = useState<Exercise[]>(block.exercises);
   const [i, setI] = useState(0);
-  const tally = useRef({ correct: 0, total: 0, requeued: new Set<number>() });
+  const tally = useRef({ correct: 0, total: 0 });
+  const repeats = useRef(new WeakSet<Exercise>());
   const grammarIds = useMemo(() => block.exercises.map((e) => ('itemId' in e ? e.itemId : 0)).filter(Boolean), []);
 
   const next = (r: { correct: boolean }) => {
@@ -73,10 +86,21 @@ function ExerciseBlock({
       tally.current.total++;
       if (r.correct) tally.current.correct++;
     }
+    const id = 'itemId' in ex ? ex.itemId : 0;
+    if (id) relearn.answered(id, answerKind(ex.type), r.correct, { fresh: block.kind === 'learn' });
+    else relearn.skip(1);
     let q = queue;
-    if (!r.correct && 'itemId' in ex && RECALL.has(ex.type) && !tally.current.requeued.has(ex.itemId)) {
-      tally.current.requeued.add(ex.itemId);
-      q = requeue(queue, i, recallFor(ctx.item(ex.itemId)));
+    const ahead = plannedRecalls(queue.slice(i + 1));
+    const back = relearn.due((itemId) => (ahead.get(itemId) ?? 0) + (plannedLater.get(itemId) ?? 0), {
+      ending: last && i + 1 >= queue.length,
+      last: id,
+    });
+    const item = back === null ? undefined : ctx.item(back);
+    if (back !== null && item) {
+      relearn.shown(back);
+      const again = recallFor(item);
+      repeats.current.add(again);
+      q = [...queue.slice(0, i + 1), again, ...queue.slice(i + 1)];
       setQueue(q);
     }
     if (i + 1 >= q.length) onDone({ correct: tally.current.correct, total: tally.current.total });
@@ -90,6 +114,7 @@ function ExerciseBlock({
   const k = `${block.id}-${i}`;
   // Timers only on review blocks: time pressure while first learning a card hurts memory.
   if (block.kind !== 'drill') ctx = { ...ctx, timer: 0 };
+  if (repeats.current.has(ex)) ctx = asRepeat<AnswerInput, Ctx>(ctx);
   switch (ex.type) {
     case 'intro':
       return <Intro key={k} ex={ex} ctx={ctx} onNext={next} />;
@@ -227,6 +252,7 @@ export function Session({
     bossWon: null as boolean | null,
   });
   const missed = useRef(new Set<number>());
+  const relearn = useRef(new Relearn());
   const responseTimes = useRef<number[]>([]);
   const slowStreak = useRef(0);
   const kickPending = useRef(false);
@@ -331,15 +357,15 @@ export function Session({
         given: a.given,
         xp: gained,
         genderOnly: a.genderOnly,
-        practice: plan.practice,
+        practice: plan.practice || !!a.practice,
       });
       return gained;
     },
     [plan.id],
   );
 
-  const override = useCallback((itemId: number) => {
-    if (!plan.practice) sendOverride(itemId); // practice never touches today's real grade
+  const override = useCallback((itemId: number, practice?: boolean) => {
+    if (!plan.practice && !practice) sendOverride(itemId); // practice never touches today's real grade
     missed.current.delete(itemId);
     totals.current.correct++;
   }, []);
@@ -368,6 +394,7 @@ export function Session({
     if (b.kind === 'gender' && r.bestCombo)
       totals.current.bestGender = Math.max(totals.current.bestGender, r.bestCombo);
     if (b.kind === 'boss') totals.current.bossWon = r.bossWon ?? null;
+    if (!hostsRepeats(b)) relearn.current.skip(r.total); // a game still spaces out the cards waiting to come back
 
     let rest = blocks.slice(bi + 1);
     // Struggling (under 60%)? Insert a quick recognition rescue round on the missed words.
@@ -475,6 +502,8 @@ export function Session({
 
   const b = blocks[bi];
   if (!b) return null;
+  const later = blocks.slice(bi + 1);
+  const plannedLater = plannedRecalls(later.flatMap((x) => ('exercises' in x ? x.exercises : [])));
   const title = tr(`session.blocks.${blockKey(b.title)}`, { defaultValue: '' });
   return (
     <div className="session">
@@ -569,7 +598,15 @@ export function Session({
           </div>
         ) : (
           <div className="panel ex-card" aria-live="polite">
-            <ExerciseBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
+            <ExerciseBlock
+              block={b}
+              ctx={ctx}
+              relearn={relearn.current}
+              plannedLater={plannedLater}
+              last={!later.some(hostsRepeats)}
+              onDone={blockDone}
+              onStep={setStep}
+            />
           </div>
         )}
       </main>
