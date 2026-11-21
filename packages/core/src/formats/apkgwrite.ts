@@ -136,9 +136,16 @@ const clozeOrds = (text: string) => {
   return ords.length ? ords.sort((a, b) => a - b) : [0];
 };
 
-/** Anki has no choice or ordering cards: an empty back shows the right choices, or the steps in order. */
+/** Card types whose back LernLab keeps as (sanitised) HTML; every other back is plain text. */
+const HTML_BACKS = ['cloze', 'mcq', 'order'];
+
+/**
+ * Anki has no choice or ordering cards: an empty back shows the right choices, or the steps in order.
+ * A plain-text back (code output, a number) is escaped, with its line breaks kept.
+ */
 function answerOf(c: NormalizedCard): string {
-  if (c.back.trim() || !c.type) return c.back;
+  if (c.back.trim() || !c.type)
+    return HTML_BACKS.includes(c.type ?? '') ? c.back : escapeHtml(c.back).replace(/\r?\n/g, '<br>');
   const list = (s?: string) =>
     (s ?? '')
       .split('|')

@@ -125,3 +125,20 @@ test('.apkg: importing the export into the same deck updates the cards in place'
   assert.equal(r.updated, 3);
   assert.equal(r.total, 3);
 });
+
+test('.apkg: the plain-text back of a code card is escaped, its line breaks kept', () => {
+  const typed = createDeck('Typed answers', null);
+  upsertCards(typed, [
+    { type: 'code', front: 'What does this print?', code: 'print("<b>x</b> & y")', back: '<b>x</b> & y\nok' },
+    { type: 'order', front: 'Order', back: '', steps: '<b>one</b>|two' },
+  ]);
+  const db = collection(unzipSync(exportDeck(typed.id, 'apkg').data));
+  const backs = db
+    .prepare('SELECT flds FROM notes')
+    .all()
+    .map((n) => String(n.flds).split('\x1f').slice(0, 2));
+  db.close();
+  const back = (front: string) => backs.find((f) => f[0] === front)?.[1];
+  assert.equal(back('What does this print?'), '&lt;b&gt;x&lt;/b&gt; &amp; y<br>ok');
+  assert.equal(back('Order'), '1. <b>one</b><br>2. two', 'formatted steps keep their HTML');
+});
