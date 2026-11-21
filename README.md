@@ -4,7 +4,8 @@
 
 **Free, open-source flashcards that feel like a game, for any subject.**
 
-> **Status:** Working prototype (v0.3). We are building version 1.0 now: see [docs/PLAN.md](docs/PLAN.md) and the [issues](https://github.com/n1m5l5ss/lernlab/issues). Installers are not signed yet, so your system will warn you the first time you open LernLab (see [Install](#install) and the [code signing policy](docs/CODE_SIGNING.md)).
+> **Status:** Version 1.0.0 is out. <!-- x-release-please-version -->
+> Get it from the [LernLab website](https://n1m5l5ss.github.io/lernlab/) or the [Releases page](https://github.com/n1m5l5ss/lernlab/releases/latest); what changed is in the [changelog](CHANGELOG.md) and what comes next in the [roadmap](docs/ROADMAP.md). Installers are not signed yet, so your system will warn you the first time you open LernLab (see [Install](#install) and the [code signing policy](docs/CODE_SIGNING.md)).
 
 ![The Home screen: reviews due, new cards, what to study, session length and one Start button](docs/screenshots/home.png)
 
@@ -13,6 +14,9 @@ Languages, AWS, medicine, physics, law, history: if you can put it on a card, Le
 - **Local and private:** no account, no cloud. Your decks and progress stay on your computer.
 - **Runs on Mac, Windows and Linux.**
 - **Opens your existing decks:** imports Anki `.apkg` packages, Quizlet-style CSV, pasted lists and live Anki.
+- **Safe with your data:** a daily backup, restore with a preview, and export everything as a zip.
+- **For everyone:** works fully by keyboard and with screen readers, in light and dark themes, and lays out right to left for Arabic, Hebrew and Urdu.
+- **Stays up to date:** Windows and Linux update themselves; Mac users download each new version from the website.
 
 New here? The [user guide](docs/USER-GUIDE.md) shows how to import, study, follow your progress and back up.
 
@@ -144,7 +148,7 @@ npm run dist:win     # → release/*.exe   (run on Windows)
 npm run dist:linux   # → release/*.AppImage, *.deb
 ```
 
-Pushing a tag such as `v0.2.0` makes GitHub Actions build all three and attach them to a draft release (`.github/workflows/release.yml`).
+Pushing a tag such as `v1.2.3` makes GitHub Actions build all three and attach them to a draft release (`.github/workflows/release.yml`).
 
 ## Getting cards in
 

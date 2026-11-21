@@ -2,20 +2,23 @@
 
 Priorities come from a review of Quizlet, Anki, Duolingo, Memrise, Brainscape, Kahoot, Wordwall, Wayground, Sporcle/Seterra and medical and certification tools, together with learning-science evidence. That evidence covers the testing effect, spacing, the generation effect, interleaving and timing.
 
-## Done (v0.2)
+## Done (1.0, November 2026)
 
 - **Platform:**
   - Desktop app for Mac, Windows and Linux; local-first, no account.
-  - Decks for any subject, with images, audio, video and GIFs.
+  - Installers for every system, a website with download buttons, and automatic updates on Windows and Linux.
+  - Daily backups, restore with a preview, export everything, delete all data.
+  - Works by keyboard and with screen readers (WCAG 2.2 AA), light and dark themes, right-to-left layout.
 - **Import and export:**
-  - Import: CSV/TSV, paste box, JSON, `.lernpack`, CSV+media zip, Anki `.apkg` (old and new format), live Anki.
-  - Export: `.lernpack` and CSV.
+  - Import: CSV/TSV, paste box, JSON, `.lernpack`, CSV+media zip, Anki `.apkg` (old and new format), live Anki, with a preview and column mapping.
+  - Export: `.lernpack` and CSV that import back the same.
 - **Study formats:**
   - Multiple choice both ways, typed recall, flip with self-rating.
   - Cloze, fill-the-gap from examples.
   - Multi-select questions with explanations, ordering.
   - True/false, picture quiz, listening, dictation, speaking.
   - Sentence building.
+  - Study several decks, a tag, starred cards or your hardest cards; a practice mode that never changes the schedule.
 - **Games and rounds:**
   - Category sprint, match pairs, word rain, Blitz (timed), boss fight.
   - Rescue rounds and attention-triggered action rounds.
@@ -26,43 +29,40 @@ Priorities come from a review of Quizlet, Anki, Duolingo, Memrise, Brainscape, K
   - An "I was right" override.
 - **Motivation and progress:**
   - FSRS scheduling, mastery ladder.
-  - XP, levels, combos, badges.
+  - XP, levels, combos, badges, with celebrations.
   - Forgiving streaks with freezes and repair.
-  - Goals and forecasts.
+  - A Progress screen: learned vs remaining, pace, forecast, study days, retention, hardest cards.
 - **Timers:**
   - Off / relaxed / normal / challenge.
   - Timers apply only to known cards (WCAG 2.2.1).
 
-## Next (v0.3)
+## Next (1.x)
 
-- [ ] **Image occlusion:** hide labels on a diagram, for medicine and anatomy.
-- [ ] **Exam simulator:**
-  - timed vs tutor mode;
-  - flag and review;
-  - score by domain/tag;
-  - exam-like question count. Useful for AWS and other certifications.
-- [ ] **Anki import with scheduling history:** replay the revlog into FSRS.
+Each item is a GitHub issue; finished ones ship in the next minor release.
+
+- [x] **Anki import with scheduling history:** replay the review log into FSRS (#48).
+- [ ] **Exam simulator:** timed and tutor modes, flag and review, score by tag (#43). Tutor answers count toward the schedule; timed answers are practice.
+- [ ] **Image occlusion:** hide labels on a diagram, for medicine and anatomy (#44).
+- [ ] **Math cards:** LaTeX rendering and answers (#45).
+- [ ] **Code cards:** syntax highlighting, predict the output (#46).
+- [x] **Record your own audio** on a card (#47).
+- [ ] **Anki `.apkg` export** (#49).
+- [ ] **Deck gallery:** browse and install community decks (#50).
+- [ ] **Translations through Weblate** (#51).
+- [ ] **Connect your own AI assistant (MCP):** Claude, ChatGPT, Hermes Agent or any MCP client can read your decks, stats and hard cards, and suggest new decks and cards (from your PDFs or links) that you review before they are saved. Off by default (#148).
+
+## Later
+
 - [ ] **Confidence rating** (1–5) on reveal.
-- [ ] **Cram mode:** study a deck or tag without touching the schedule.
-- [ ] **Starred-only sessions; leech handling:** offer a rewrite or mnemonic after 8 lapses.
+- [ ] **Leech handling:** offer a rewrite or mnemonic after 8 lapses.
 - [ ] **Cloze with a word bank** (scaffolded), then typed.
 - [ ] **Slow audio replay** for listening and dictation.
-
-## Later (v1)
-
 - [ ] **Hotspot / click-on-image; labelled diagrams.**
-- [ ] **STEM:** numeric answers with tolerance and units; LaTeX rendering and answers.
-- [ ] **Code cards:** predict the output, Parsons problems (order the lines), fill the missing token.
-- [ ] **Timed list recall:** "name all 7 …".
-- [ ] **AI with your own API key:**
-  - generate cards from notes or PDFs, reviewed before they are added;
-  - "explain in your own words" grading;
-  - better distractors.
-- [ ] **Hands-free audio mode.**
-- [ ] **Mastery by tag;** exam-readiness view.
-- [ ] **Public deck registry on GitHub** (CC-licensed decks), deep links and QR codes.
-- [ ] **Anki `.apkg` export;** Mochi, Brainscape, Kahoot and Blooket importers.
-- [ ] **Mobile companion:** a PWA that syncs through a folder you choose (Syncthing, iCloud Drive, Dropbox).
+- [ ] **STEM:** numeric answers with tolerance and units.
+- [ ] **Parsons problems** (order the lines), timed list recall ("name all 7 …").
+- [ ] **Hands-free audio mode;** mastery by tag; exam-readiness view.
+- [ ] **Mochi, Brainscape, Kahoot and Blooket importers;** deep links and QR codes.
+- [ ] **2.0:** sync and a phone app.
 
 ## Avoid
 
