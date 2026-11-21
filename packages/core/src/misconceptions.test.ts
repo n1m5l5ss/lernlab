@@ -7,6 +7,7 @@ import {
   correctionsOf,
   formatCorrections,
   parseCorrections,
+  pickedCorrections,
 } from './misconceptions';
 import { cardToItem } from './library';
 import { mcq } from './exercises';
@@ -87,4 +88,13 @@ test('the multiple-choice exercise carries each choice’s correction, shuffled 
   }
   const plain = mcq(cardToItem(deck, { front: 'Q', back: '', type: 'mcq', choices: 'A|B', correct: '1' })!);
   assert.ok(plain?.type === 'mcq' && !('corrections' in plain), 'no corrections, no field');
+});
+
+test('an answer shows the corrections of the wrong choices it picked, in the order shown', () => {
+  const corrections = ['Not A', '', 'Not C', 'Not D'];
+  assert.deepEqual(pickedCorrections(corrections, [0], [1]), ['Not A']);
+  assert.deepEqual(pickedCorrections(corrections, [3, 1, 0], [1]), ['Not A', 'Not D'], 'right picks have none');
+  assert.deepEqual(pickedCorrections(corrections, [1], [1]), []);
+  assert.deepEqual(pickedCorrections(corrections, [2], [1, 2]), [], 'a correct choice never shows a correction');
+  assert.deepEqual(pickedCorrections(undefined, [0], [1]), []);
 });

@@ -51,3 +51,11 @@ export function correctionsOf(item: Pick<Item, 'extra' | 'meaning'>): string[] {
 /** A correction as safe HTML to show: its text escaped, with **bold**, *italic* and `code`. */
 export const correctionHtml = (text: string): string =>
   sanitizeHtml(markdownLite(text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')));
+
+/** The corrections an answer shows: those of the wrong choices it picked, in the order the choices are shown. */
+export const pickedCorrections = (corrections: string[] | undefined, picked: number[], correct: number[]): string[] =>
+  [...picked]
+    .sort((a, b) => a - b)
+    .filter((i) => !correct.includes(i))
+    .map((i) => corrections?.[i] ?? '')
+    .filter(Boolean);

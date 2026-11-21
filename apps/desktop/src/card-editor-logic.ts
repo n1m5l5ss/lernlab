@@ -6,6 +6,8 @@ import { parseTolerance } from '@lernlab/core/numeric';
 import { codeTask, type CodeTask } from '@lernlab/core/code';
 import { formatBox } from '@lernlab/core/occlusion';
 import { VARIANTS_MAX, formatVariants, parseVariants, takesVariants, type Variant } from '@lernlab/core/variants';
+import { correctionsOf, formatCorrections } from '@lernlab/core/misconceptions';
+import { stripHtml } from '@lernlab/core/text';
 import type { Shape } from './occlusion-logic';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
@@ -42,6 +44,8 @@ export const EMPTY = {
   occlusionMode: 'one',
   /** Other ways to ask the question (rows being edited may still be empty). */
   variants: [] as Variant[],
+  /** mcq: a correction per choice, in the order of the choices ('' for none). */
+  corrections: [] as string[],
 };
 export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
 
@@ -71,6 +75,7 @@ export const formFor = (c: FullCard): Form => ({
   occlusionGroup: c.extra.occlusionGroup ?? '',
   occlusionMode: c.extra.occlusionMode ?? 'one',
   variants: parseVariants(c.extra.variants),
+  corrections: correctionsOf(c),
   suspended: c.suspended,
   starred: c.starred,
   item: c,
@@ -89,6 +94,18 @@ export const editVariant = (list: Variant[], i: number, change: Partial<Variant>
   list.map((v, k) => (k === i ? { ...v, ...change } : v));
 export const removeVariant = (list: Variant[], i: number): Variant[] => list.filter((_, k) => k !== i);
 
+/** The choices as written in the form, each with whether it is marked correct (corrections are for the others). */
+export function choiceRows(f: Pick<Form, 'choices' | 'correct'>): { choice: string; correct: boolean }[] {
+  const m = mcqOf({ extra: { choices: f.choices, correct: f.correct }, meaning: '' });
+  return f.choices
+    .split('|')
+    .map((c) => c.trim())
+    .filter(Boolean)
+    .map((c, i) => ({ choice: stripHtml(c), correct: !!m?.correct.includes(i) }));
+}
+export const editCorrection = (list: string[], i: number, text: string): string[] =>
+  Array.from({ length: Math.max(list.length, i + 1) }, (_, k) => (k === i ? text : (list[k] ?? '')));
+
 /** What the editor saves: only the fields of the chosen type, so a leftover choice list can't turn a card into a quiz. */
 export function fieldsToSave(f: Form) {
   const { id: _id, item: _item, suspended: _s, starred: _st, ...fields } = f;
@@ -104,6 +121,10 @@ export function fieldsToSave(f: Form) {
     occlusionGroup: f.type === 'occlusion' ? f.occlusionGroup : '',
     occlusionMode: f.type === 'occlusion' ? f.occlusionMode : '',
     variants: showVariants(f) ? formatVariants(f.variants) : '',
+    corrections:
+      f.type === 'mcq'
+        ? formatCorrections(f.corrections, mcqOf({ extra: { choices: f.choices, correct: f.correct }, meaning: '' }))
+        : '',
   };
 }
 
