@@ -232,7 +232,7 @@ export function storeMedia(name: string, data: Uint8Array): string {
 
 export const MEDIA_TYPES = {
   image: ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif'],
-  audio: ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.opus', '.flac'],
+  audio: ['.mp3', '.wav', '.ogg', '.m4a', '.aac', '.opus', '.flac', '.weba'],
   video: ['.mp4', '.webm', '.mov', '.m4v'],
 };
 export const mediaKind = (f: string) => {

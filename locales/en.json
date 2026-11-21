@@ -474,6 +474,20 @@
         "video": "Remove video"
       },
       "dropHint": "Drop images, GIFs, audio or video here, or choose a file.",
+      "record": {
+        "start": "Record",
+        "again": "Record again",
+        "stop": "Stop recording ({{seconds}} s left)",
+        "play": "Play",
+        "stopPlaying": "Stop",
+        "started": "Recording. Press Stop recording when you are done.",
+        "saved": "Recording ready. Save the card to keep it.",
+        "problem": {
+          "denied": "LernLab may not use the microphone. Allow it in your system settings and try again.",
+          "noMic": "No microphone was found. Connect one and try again.",
+          "failed": "Recording did not start. Try again."
+        }
+      },
       "uploading": "Adding media…",
       "dropRejected": "Can't put these on a card: {{names}}. Use an image, GIF, audio or video file.",
       "duplicate_one": "This deck already has a card with this front: “{{front}}” → {{back}}. You can still add it.",
@@ -972,6 +986,7 @@
     "nested_zip_ignored": "{{file}} was left out: zip files inside a zip are not imported.",
     "encoding_guessed": "{{file}} was not saved as UTF-8, so it was read as Windows-1252. Check accented letters.",
     "unsupported_media": "This media file type is not supported.",
+    "recording_too_long": "This recording is too long. Keep it under {{seconds}} seconds.",
     "anki_unreachable": "Anki is not reachable. Open Anki with the AnkiConnect add-on and try again.",
     "not_a_backup": "This file is not a LernLab backup.",
     "backup_too_new": "This backup was made by a newer version of LernLab. Update LernLab first.",

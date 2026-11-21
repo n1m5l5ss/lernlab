@@ -29,6 +29,9 @@ function play(tones: Tone[]) {
 export const sfx = createSfx(play, () => enabled);
 
 let current: HTMLAudioElement | null = null;
+/** Stop the card audio that is playing, if any. */
+export const stopMedia = () => current?.pause();
+
 export function playMedia(file: string | null | undefined, rate = 1): Promise<void> {
   if (!file) return Promise.resolve();
   current?.pause();

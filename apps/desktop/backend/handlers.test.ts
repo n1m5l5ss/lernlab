@@ -315,3 +315,26 @@ test('the card editor warns about a card with the same front in the deck, and sa
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
   assert.equal((await ok('cards.get', { id })).grammar, 'see <b>this</b>');
 });
+
+test('a recording made in the card editor is kept in media/ and plays from the card', async () => {
+  const deck = await ok('decks.create', { name: 'Voice', language: 'de' });
+  const opus = new Uint8Array([0x1a, 0x45, 0xdf, 0xa3, 0x9f, 0x42, 0x86, 0x81, 0x01]);
+  const { file } = await ok('media.record', { data: opus });
+  assert.match(file, /^recording-.+\.weba$/);
+  assert.ok(existsSync(join(dir, 'media', file)));
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'der Hund', back: 'dog', audio: file } });
+  assert.equal((await ok('cards.get', { id })).audio, file);
+  await ok('cards.update', { id, card: { front: 'der Hund', back: 'dog', audio: '' } });
+  assert.equal((await ok('cards.get', { id })).audio, null, 'deleting the recording takes it off the card');
+
+  const notAudio = await handle('media.record', { data: new TextEncoder().encode('<script>alert(1)</script>') });
+  assert.equal(!notAudio.ok && notAudio.error.code, 'unsupported_media');
+  const big = new Uint8Array(3 * 1024 * 1024);
+  big.set(opus);
+  const tooLong = await handle('media.record', { data: big });
+  assert.equal(!tooLong.ok && tooLong.error.code, 'recording_too_long');
+  const huge = await handle('media.record', { data: new Uint8Array(5 * 1024 * 1024) });
+  assert.equal(!huge.ok && huge.error.code, 'invalid_input');
+  const noBytes = await handle('media.record', { data: 'GkXfow==' });
+  assert.equal(!noBytes.ok && noBytes.error.code, 'invalid_input');
+});

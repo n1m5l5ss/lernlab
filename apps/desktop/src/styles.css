@@ -2618,3 +2618,20 @@ h1.session-title:focus,
 .import-history-hint {
   display: block;
 }
+
+/* ---- Record your own audio on a card (#47): the audio slot in the card editor. ---- */
+.editor-audio {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.editor-audio .editor-recording {
+  color: var(--color-incorrect);
+  box-shadow: inset 0 0 0 2px var(--color-incorrect);
+}
+.editor-audio .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}

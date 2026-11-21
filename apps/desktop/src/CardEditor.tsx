@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { SAFE_TAGS } from '@lernlab/core/cards';
 import type { Duplicate } from '@lernlab/core/browse';
 import { api } from './api';
+import { AudioSlot } from './AudioSlot';
 import { mediaUrl } from './bridge';
 import {
   CARD_TYPES,
@@ -230,7 +231,16 @@ export function CardEditor({
         <p className="small muted">{uploading ? t('browse.editor.uploading') : t('browse.editor.dropHint')}</p>
         <div className="editor-slots">
           {SLOTS.map((k) =>
-            c[k] ? (
+            k === 'audio' ? (
+              <AudioSlot
+                key={k}
+                file={c.audio}
+                onChange={(file) => set('audio', file)}
+                onUpload={(file) => upload('audio', file)}
+                onBusy={(d) => setUploading((n) => n + d)}
+                onError={fail}
+              />
+            ) : c[k] ? (
               <span key={k} className="editor-slot">
                 {t(`browse.editor.mediaSet.${k}`)}
                 <button

@@ -32,6 +32,7 @@ import { reminderPrefsOf, startedAtLogin } from './reminder-policy';
 import { MIN_SIZE, restoreWindow, type WindowState } from './window-state';
 import { HOME_SELECTOR, isSmokeTest, SMOKE_FAIL, SMOKE_OK, waitFor } from './smoke';
 import { planRestart } from './data-restart';
+import { allowPermission } from './media-permission';
 import { startupMarks } from './perf';
 import {
   parseDataMessage,
@@ -329,8 +330,10 @@ async function main() {
     return net.fetch(pathToFileURL(join(mediaDir, name)).href);
   });
 
-  // Microphone for speaking rounds; nothing else.
-  session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'media'));
+  // The microphone (recording audio on a card, speaking rounds) for the app's own page; never the camera.
+  session.defaultSession.setPermissionRequestHandler((wc, permission, cb, details) =>
+    cb(allowPermission(permission, { ...details, requestingUrl: details.requestingUrl || wc.getURL() }, isAppUrl)),
+  );
 
   buildMenu();
   const place = restoreWindow(
