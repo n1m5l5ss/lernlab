@@ -8,6 +8,7 @@ import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
 import { textPx } from '../display';
+import { Feedback } from '../components';
 
 type P<E> = { ex: E; ctx: Ctx; onNext: (r: { correct: boolean }) => void };
 const now = () => performance.now();
@@ -284,18 +285,14 @@ export function Choice({
           </button>
         ))}
       </div>
-      {timedOut && (
-        <div role="status" className="feedback wrong">
-          {ctx.t.timeUp()}
-        </div>
-      )}
+      {timedOut && <Feedback tone="wrong">{ctx.t.timeUp()}</Feedback>}
       {picked !== null && !timedOut && (
         // Said in words with an icon, not only by the options' colours (WCAG 1.4.1), and announced.
-        <div role="status" className={`feedback ${picked === ex.answerIndex ? 'right' : 'wrong'}`}>
+        <Feedback tone={picked === ex.answerIndex ? 'right' : 'wrong'}>
           {picked === ex.answerIndex
             ? t('ex.choice.right')
             : t('ex.choice.wrong', { answer: stripHtml(ex.options[ex.answerIndex]) })}
-        </div>
+        </Feedback>
       )}
       {picked !== null && picked !== ex.answerIndex && !seconds && (
         <div className="actions">
@@ -358,12 +355,12 @@ export function TrueFalse({
         </button>
       </div>
       {ans !== null && !ok && (
-        <div role="status" className="feedback wrong">
+        <Feedback tone="wrong">
           {t('common.correctAnswer')}{' '}
           <div className="ans">
             <Rich html={item.meaning} />
           </div>
-        </div>
+        </Feedback>
       )}
     </div>
   );
@@ -410,7 +407,7 @@ export function Flip({
           <Rich html={ex.prompt} />
         </div>
         {shownAns && (
-          <div role="status" className="feedback right" style={{ textAlign: 'start' }}>
+          <Feedback tone="right" style={{ textAlign: 'start' }}>
             <div className="ans">
               <Rich html={ex.answer} />
             </div>
@@ -420,7 +417,7 @@ export function Flip({
                 <Rich html={item.notes || item.grammar} />
               </div>
             )}
-          </div>
+          </Feedback>
         )}
       </div>
       {!shownAns ? (
@@ -697,9 +694,18 @@ export function TypedEngine({
         }}
       />
       {msg && (
-        <div
-          role="status"
-          className={`feedback ${phase === 'done' ? (res?.nearMiss ? 'near' : finalCorrect.current ? 'right' : 'wrong') : phase === 'answer' ? 'near' : 'wrong'}`}
+        <Feedback
+          tone={
+            phase === 'done'
+              ? res?.nearMiss
+                ? 'near'
+                : finalCorrect.current
+                  ? 'right'
+                  : 'wrong'
+              : phase === 'answer'
+                ? 'near'
+                : 'wrong'
+          }
         >
           {msg}
           {(phase === 'copy' || (phase === 'done' && !finalCorrect.current) || res?.nearMiss) && (
@@ -712,7 +718,7 @@ export function TypedEngine({
             </>
           )}
           {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
-        </div>
+        </Feedback>
       )}
       <div className="actions">
         {phase !== 'done' && (
@@ -867,10 +873,10 @@ export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'uns
         })()}
       </div>
       {result !== null && (
-        <div role="status" className={`feedback ${result ? 'right' : 'wrong'}`}>
+        <Feedback tone={result ? 'right' : 'wrong'}>
           {result ? ctx.t.right(ctx.combo) : t('common.correctOrder')}
           {!result && <div className="ans">{ex.answer.join(' ')}</div>}
-        </div>
+        </Feedback>
       )}
       <div className="actions">
         {result === null && <span className="small muted">{t('ex.unscramble.help')}</span>}
@@ -941,11 +947,11 @@ export function Dictation({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'dict
       />
       <Umlauts lang={ctx.lang} onAdd={(c) => setValue((v) => v + c)} />
       {res && (
-        <div role="status" className={`feedback ${res}`}>
+        <Feedback tone={res}>
           {res === 'right' ? ctx.t.right(ctx.combo) : res === 'near' ? ctx.t.near() : t('common.correctLabel')}
           <div className="ans">{ex.sentence}</div>
           <div className="small">{ex.translation}</div>
-        </div>
+        </Feedback>
       )}
       <div className="actions">
         <button className="btn primary" onClick={submit}>
@@ -1044,9 +1050,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
                 : t('ex.speak.sayThenSpace')}
           </div>
           {phase === 'heard' && (
-            <div role="status" className="feedback near">
-              {t('ex.speak.heard', { heard: heard || '…', retry: ctx.t.retry() })}
-            </div>
+            <Feedback tone="near">{t('ex.speak.heard', { heard: heard || '…', retry: ctx.t.retry() })}</Feedback>
           )}
           {rec && phase !== 'listening' && (
             <button className="btn ghost" onClick={() => setPhase('reveal')}>
@@ -1056,7 +1060,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
         </div>
       )}
       {phase === 'reveal' && (
-        <div role="status" className="feedback near">
+        <Feedback tone="near">
           {t('ex.speak.didYouSay')}
           <div className="ans">{ex.expected}</div>
           <div className="actions">
@@ -1070,10 +1074,10 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
               {t('ex.speak.yes')} <span className="kbd">2</span>
             </button>
           </div>
-        </div>
+        </Feedback>
       )}
       {phase === 'done' && (
-        <div role="status" className={`feedback ${ok ? 'right' : 'wrong'}`}>
+        <Feedback tone={ok ? 'right' : 'wrong'}>
           {ok ? ctx.t.right(ctx.combo) : t('ex.speak.repeat')}
           <div className="ans">{ex.expected}</div>
           {heard && <div className="small">{t('ex.speak.heardShort', { heard })}</div>}
@@ -1085,7 +1089,7 @@ export function Speak({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'speak' }
               {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
             </button>
           </div>
-        </div>
+        </Feedback>
       )}
     </div>
   );
@@ -1204,7 +1208,7 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
         })}
       </div>
       {done !== null && (
-        <div role="status" className={`feedback ${done ? 'right' : 'wrong'}`}>
+        <Feedback tone={done ? 'right' : 'wrong'}>
           {done
             ? ctx.t.right(ctx.combo)
             : t('common.correctIs', { answer: ex.correct.map((i) => ex.choices[i]).join(' + ') })}
@@ -1213,7 +1217,7 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
               <Rich html={ex.explanation} />
             </div>
           )}
-        </div>
+        </Feedback>
       )}
       <div className="actions">
         {done === null && multi && (
@@ -1293,7 +1297,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
           ))}
       </div>
       {result === false && (
-        <div role="status" className="feedback wrong">
+        <Feedback tone="wrong">
           {t('common.correctOrder')}
           <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
             {ex.steps.map((s, i) => (
@@ -1302,13 +1306,9 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
               </li>
             ))}
           </ol>
-        </div>
+        </Feedback>
       )}
-      {result === true && (
-        <div role="status" className="feedback right">
-          {ctx.t.right(ctx.combo)}
-        </div>
-      )}
+      {result === true && <Feedback tone="right">{ctx.t.right(ctx.combo)}</Feedback>}
       <div className="actions">
         {result === null && <span className="small muted">{t('ex.order.help')}</span>}
         {result === false && (

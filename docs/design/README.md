@@ -37,3 +37,17 @@
    - **Contrast:** at least 4.5:1 for text, 3:1 for icons and borders.
    - **Targets:** at least 44 px.
    - **Keyboard and screen readers:** visible focus, full keyboard use, and `aria-live` announcements of feedback.
+
+## Components
+
+The base components live in `apps/desktop/src/components/` and are imported from `./components`. They use design tokens only and contain no text: callers pass every word in through `t()`.
+
+| Component | What it is | Accessibility |
+| --- | --- | --- |
+| `Button` | `.btn` with `variant` `primary`, `good`, `ghost` or `danger` | at least 44 px tall, visible focus |
+| `Card` | the surface with a hairline border (`as="section"` for a group with a heading) | — |
+| `ProgressBar` | `variant="meter"` (Home tiles) or `"session"` (the 4 px bar on the study screen) | `role="progressbar"` with min, max and value, named by `label` or `labelledBy` |
+| `Feedback` | colour + icon + word, `tone` `right`, `wrong` or `near` | `role="status"` (`urgent` gives `role="alert"`); the word leads the message |
+| `Input`, `Select` | a control with its `label`, optional `hint` and `error` | label tied to the control; hint and error through `aria-describedby`, error sets `aria-invalid` |
+| `SegmentedControl` | pick one of a few options | `radiogroup` with one tab stop; arrows (mirrored right to left), Home and End |
+| `Sidebar` | the app's navigation: name, main places, Settings at the bottom | named `nav` landmark, `aria-current="page"` |
