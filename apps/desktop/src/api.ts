@@ -17,6 +17,8 @@ export const api = {
   startImport: () => call('import.anki', {}),
   session: (length: SessionLength, practice = false) => call('session.plan', { length, practice }),
   finish: (body: Parameters<typeof call<'session.finish'>>[1]) => call('session.finish', body),
+  examStart: (deckId: number) => call('exam.start', { deckId }),
+  examSubmit: (body: InputOf<'exam.submit'>) => call('exam.submit', body),
   stats: () => call('stats.get'),
   summary: () => call('summary.today'),
   progress: () => call('progress.get'),

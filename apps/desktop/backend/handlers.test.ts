@@ -233,6 +233,40 @@ test('a practice session is planned as practice, and its answers are accepted as
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
 });
 
+test('an exam is drawn from a deck with its settings, handed in once, and scored by topic', async () => {
+  const deck = await ok('decks.create', { name: 'Exam deck', language: null });
+  for (const [front, back] of [
+    ['Object storage', 'S3'],
+    ['Block storage', 'EBS'],
+    ['Users', 'IAM'],
+    ['Functions', 'Lambda'],
+  ])
+    await ok('cards.add', { deckId: deck.id, card: { front, back, tags: front === 'Users' ? 'security' : 'storage' } });
+  const saved = await ok('decks.update', {
+    id: deck.id,
+    patch: { settings: { exam: { questions: 3, minutes: 0, passMark: '60', junk: 1 } } },
+  });
+  assert.deepEqual(saved.settings.exam, { questions: 3, minutes: 1, passMark: 60 }, 'checked and clamped');
+  const exam = await ok('exam.start', { deckId: deck.id });
+  assert.equal(exam.questions.length, 3);
+  assert.equal(exam.settings.passMark, 60);
+  const answers = exam.questions.map((q: { itemId: number; correct: number[] }) => ({
+    itemId: q.itemId,
+    chosen: q.correct,
+    ms: 2000,
+  }));
+  const score = await ok('exam.submit', { examId: exam.id, answers });
+  assert.equal(score.correct, 3);
+  assert.equal(score.passed, true);
+  assert.ok(score.topics.length >= 1);
+  const twice = await handle('exam.submit', { examId: exam.id, answers });
+  assert.equal(!twice.ok && twice.error.code, 'exam_not_found', 'an exam is handed in once');
+  const missing = await handle('exam.start', { deckId: 9999 });
+  assert.equal(!missing.ok && missing.error.code, 'deck_not_found');
+  const bad = await handle('exam.submit', { examId: 'x', answers: [{ itemId: 1, chosen: ['a'], ms: 1 }] });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+});
+
 test('deck settings are checked, and deleting a deck takes a backup first', async () => {
   const deck = await ok('decks.create', {
     name: 'Medicine::Cardio',

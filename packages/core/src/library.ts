@@ -9,6 +9,7 @@ import { stripHtml, splitArticle } from './text';
 import { markdownLite, sanitizeHtml } from './cards';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
+import { cleanExamSettings, type ExamSettings } from './exam';
 
 export type DeckSettings = {
   newPerDay?: number;
@@ -20,6 +21,8 @@ export type DeckSettings = {
   voice?: string;
   /** Reading-aloud speed, 0.5–1.5 (1 is normal). */
   rate?: number;
+  /** Exam simulator: question count, minutes and pass mark (defaults fill in what is missing). */
+  exam?: Partial<ExamSettings>;
 };
 
 /**
@@ -53,6 +56,7 @@ export function cleanDeckSettings(input: Record<string, unknown>): Partial<Recor
     const n = input.rate === null || input.rate === '' ? NaN : Number(input.rate);
     out.rate = Number.isFinite(n) ? Math.round(Math.max(0.5, Math.min(1.5, n)) * 20) / 20 : undefined;
   }
+  if ('exam' in input) out.exam = cleanExamSettings(input.exam);
   return out;
 }
 
