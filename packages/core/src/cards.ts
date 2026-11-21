@@ -107,22 +107,73 @@ export function stepsOf(item: Item): string[] {
     .filter(Boolean);
 }
 
+export type ClozeMatch = { start: number; end: number; answer: string; hint: string | undefined };
+
+const CLOZE_START = /\{\{c\d+::/g;
+const LINE_END = /[\n\r\u2028\u2029]/g;
+
+/**
+ * Every cloze from `from` on, in order: `{{c1::answer}}` or `{{c1::answer::hint}}`, ending at the first `}}`
+ * on the same line (the same matches as /\{\{c(\d+)::(.*?)(?:::(.*?))?\}\}/g; with `multiline`, as with
+ * [\s\S] instead of `.`). A scanner instead of that regex, because the regex backtracks: a card full of
+ * unclosed `{{c1::` took minutes and froze the app. This runs in linear time.
+ */
+export function* clozes(text: string, multiline = false): Generator<ClozeMatch> {
+  const starts = new RegExp(CLOZE_START.source, 'g');
+  const lines = new RegExp(LINE_END.source, 'g');
+  let close = -1; // next "}}" at or after the current start, cached
+  let lineEnd = -1; // next line terminator at or after the current start, cached
+  let m: RegExpExecArray | null;
+  while ((m = starts.exec(text))) {
+    const body = m.index + m[0].length;
+    if (close < body) close = text.indexOf('}}', body);
+    if (close < 0) return; // no "}}" anywhere after this: no more clozes
+    if (multiline) lineEnd = Infinity;
+    else if (lineEnd < body) {
+      lines.lastIndex = body;
+      lineEnd = lines.exec(text)?.index ?? Infinity;
+    }
+    if (lineEnd < close) continue; // this one isn't closed on its line; try the next start
+    const inner = text.slice(body, close);
+    const sep = inner.indexOf('::');
+    yield {
+      start: m.index,
+      end: close + 2,
+      answer: sep < 0 ? inner : inner.slice(0, sep),
+      hint: sep < 0 ? undefined : inner.slice(sep + 2),
+    };
+    starts.lastIndex = close + 2;
+  }
+}
+
+/** Replace every cloze with what `to` makes of it (by default its answer). */
+export function replaceClozes(text: string, to: (c: ClozeMatch) => string = (c) => c.answer, multiline = false) {
+  let out = '';
+  let at = 0;
+  for (const c of clozes(text, multiline)) {
+    out += text.slice(at, c.start) + to(c);
+    at = c.end;
+  }
+  return out + text.slice(at);
+}
+
+const reveal = (text: string) => replaceClozes(text);
+
 /** Anki/LernLab cloze syntax: {{c1::answer}} or {{c1::answer::hint}}. Returns the first cloze as a gap. */
 export function parseCloze(text: string): { before: string; answer: string; hint: string; after: string } | null {
-  const m = text.match(/\{\{c(\d+)::(.*?)(?:::(.*?))?\}\}/);
-  if (!m) return null;
-  const reveal = (s: string) => s.replace(/\{\{c\d+::(.*?)(?:::.*?)?\}\}/g, '$1');
-  const idx = text.indexOf(m[0]);
+  const first = clozes(text).next();
+  if (first.done) return null;
+  const m = first.value;
   return {
-    before: stripHtml(reveal(text.slice(0, idx))),
-    answer: stripHtml(m[2]),
-    hint: m[3] ? stripHtml(m[3]) : '',
-    after: stripHtml(reveal(text.slice(idx + m[0].length))),
+    before: stripHtml(reveal(text.slice(0, m.start))),
+    answer: stripHtml(m.answer),
+    hint: m.hint ? stripHtml(m.hint) : '',
+    after: stripHtml(reveal(text.slice(m.end))),
   };
 }
 
 /** Plain-text version of a cloze card (all gaps filled), for lists and match games. */
-export const clozeText = (text: string) => text.replace(/\{\{c\d+::(.*?)(?:::.*?)?\}\}/g, '$1');
+export const clozeText = (text: string) => reveal(text);
 
 /** The safe list: the only tags a card may keep (decks are shared files). Listed in docs/FORMAT.md. */
 export const SAFE_TAGS = [

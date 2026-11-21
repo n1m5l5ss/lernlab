@@ -1,9 +1,10 @@
 // Start the local server: API + media + game UI on one localhost port. Used by the CLI and the desktop app.
 import { createServer, type Server } from 'node:http';
 import { existsSync, readFileSync } from 'node:fs';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { getRequestListener } from '@hono/node-server';
 import { createApp } from './app';
+import { allowRequest } from './guard';
 import { getDb } from '../backend/storage';
 
 const MIME: Record<string, string> = {
@@ -30,16 +31,21 @@ export async function startServer(
   } else if (!existsSync(join(dist, 'index.html'))) {
     throw new Error('No UI build found. Run "npm run build" first.');
   }
+  let port = 0;
   const server = createServer((req, res) => {
+    if (!allowRequest(req, port)) {
+      res.writeHead(403);
+      return res.end();
+    }
     const url = req.url ?? '/';
     if (url.startsWith('/api/') || url.startsWith('/media/')) return api(req, res);
     if (vite) return vite.middlewares(req, res);
     const path = normalize(join(dist, decodeURIComponent(url.split('?')[0].split('#')[0])));
-    const file = path.startsWith(dist) && existsSync(path) && extname(path) ? path : join(dist, 'index.html');
+    const file = path.startsWith(dist + sep) && existsSync(path) && extname(path) ? path : join(dist, 'index.html');
     res.writeHead(200, { 'Content-Type': MIME[extname(file)] ?? 'application/octet-stream' });
     res.end(readFileSync(file));
   });
-  const port: number = await new Promise((ok, fail) => {
+  port = await new Promise<number>((ok, fail) => {
     server.once('error', fail);
     server.listen(opts.port ?? 0, '127.0.0.1', () => ok((server.address() as any).port));
   });
