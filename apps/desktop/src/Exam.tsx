@@ -1,9 +1,10 @@
 // Exam simulator (#43): a mock exam from one deck. Tutor mode explains each answer; timed mode runs one
 // clock for the whole exam (the user's choice, never per card) and saves feedback for the end. Flag
-// questions, review before handing in, then a score by topic. Exams are practice: the schedule never changes.
+// questions, review before handing in, then a score by topic. Tutor answers count toward your reviews like
+// normal study; timed exams are practice and never change the schedule.
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { isRight } from '@lernlab/core/exam';
+import { isRight, type ExamMode } from '@lernlab/core/exam';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { Feedback, SegmentedControl } from './components';
@@ -15,7 +16,6 @@ import { Rich } from './rich';
 
 type ExamData = OutputOf<'exam.start'>;
 type Score = OutputOf<'exam.submit'>;
-type Mode = 'tutor' | 'timed';
 type Phase = 'intro' | 'run' | 'review' | 'result';
 
 export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void }) {
@@ -23,7 +23,7 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
   const [exam, setExam] = useState<ExamData | null>(null);
   const [error, setError] = useState('');
   const [phase, setPhase] = useState<Phase>('intro');
-  const [mode, setMode] = useState<Mode>('tutor');
+  const [mode, setMode] = useState<ExamMode>('tutor');
   const [index, setIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number[]>>({});
   const [flags, setFlags] = useState(new Set<number>());
@@ -79,7 +79,7 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
     used.current = (Date.now() - started.current) / 1000;
     const list = qs.map((x) => ({ itemId: x.itemId, chosen: answers[x.itemId] ?? [], ms: ms.current[x.itemId] ?? 0 }));
     try {
-      setScore(await api.examSubmit({ examId: exam.id, answers: list }));
+      setScore(await api.examSubmit({ examId: exam.id, mode, answers: list }));
       setPhase('result');
     } catch (e) {
       sending.current = false;
@@ -163,7 +163,7 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
               <p className="muted">
                 {timed ? t('exam.timedHint', { minutes: exam.settings.minutes }) : t('exam.tutorHint')}
               </p>
-              <p className="small muted">{t('exam.practiceNote')}</p>
+              <p className="small muted">{t(timed ? 'exam.timedNote' : 'exam.tutorNote')}</p>
             </section>
           </>
         ) : (
@@ -192,7 +192,12 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
           {t('exam.percent', { percent: formatNumber(score.percent) })}
         </h1>
         <p className="summary-note">
-          {t(score.passed ? 'exam.passed' : 'exam.notYet', { mark: score.passMark })} {t('exam.practiceNote')}
+          {t(score.passed ? 'exam.passed' : 'exam.notYet', { mark: score.passMark })}{' '}
+          {timed
+            ? t('exam.timedNote')
+            : score.reviewed
+              ? t('exam.tutorCounted', { count: score.reviewed })
+              : t('exam.tutorCountedNone')}
         </p>
         <div className="summary-tiles">
           <section className="panel summary-tile">

@@ -1,14 +1,24 @@
 // Exam simulator (#43): draw an exam from one deck and hand it in. Questions are always the user's own
 // cards: question cards keep their choices; other cards become multiple choice with answers from the deck.
-// An exam is practice: its answers are logged (practice = 1) but never grade FSRS or introduce a card.
+// Timed exams are practice: their answers are logged (practice = 1) but never grade FSRS or introduce a
+// card. Tutor-mode answers count like normal study (owner's decision, Nov 21 2026): see examAttempt.
 import { getDb, type DB } from './db';
 import { host } from './host';
 import { qa } from './cards';
 import { backText, mc, mcq } from './exercises';
-import { allItems, recordAttempt } from './learn';
+import { allItems, deckNewPerDay, introducedTodayCount, recordAttempt } from './learn';
 import { getDeck, type Deck } from './library';
 import { shuffle, stripHtml } from './text';
-import { examSettings, isRight, scoreExam, type ExamQuestion, type ExamScore, type ExamSettings } from './exam';
+import {
+  examAttempt,
+  examSettings,
+  isRight,
+  scoreExam,
+  type ExamMode,
+  type ExamQuestion,
+  type ExamScore,
+  type ExamSettings,
+} from './exam';
 import type { Item } from './types';
 
 export type Exam = {
@@ -47,32 +57,63 @@ export function buildExam(deckId: number, d: DB = getDb()): Exam {
   return { id: `exam-${host().randomId()}`, deckId, deckName: deck?.name ?? '', settings, questions };
 }
 
-/** Score an exam and log every question as a practice attempt (unanswered ones as wrong). No XP, no FSRS. */
+/**
+ * Score an exam and log every question (unanswered ones as wrong practice). No XP. Timed answers are
+ * practice; tutor answers go through recordAttempt like a session's (see examAttempt). `reviewed` is how
+ * many answers changed a card's schedule.
+ */
 export function recordExam(
   examId: string,
   questions: ExamQuestion[],
   answers: ExamAnswer[],
   passMark: number,
+  mode: ExamMode,
   d: DB = getDb(),
   now = new Date(),
-): ExamScore {
+): ExamScore & { reviewed: number } {
   const given = new Map(answers.map((a) => [a.itemId, a]));
+  const cards = new Map<number, { kind: string; deck: number; introduced: boolean }>();
+  if (questions.length)
+    for (const r of d
+      .prepare(
+        `SELECT i.id, i.kind, i.deck_id, s.item_id AS srs FROM items i LEFT JOIN srs s ON s.item_id = i.id
+         WHERE i.id IN (${questions.map((q) => Number(q.itemId)).join(',')})`,
+      )
+      .all())
+      cards.set(Number(r.id), { kind: String(r.kind), deck: Number(r.deck_id), introduced: r.srs != null });
+  const newLeft = new Map<number, number>();
+  const left = (deck: number) =>
+    newLeft.get(deck) ?? Math.max(0, deckNewPerDay(deck, d) - introducedTodayCount(d, now, deck));
+  let reviewed = 0;
   for (const q of questions) {
     const a = given.get(q.itemId);
-    recordAttempt(
+    const card = cards.get(q.itemId);
+    const as = card
+      ? examAttempt({
+          mode,
+          answered: !!a?.chosen.length,
+          questionCard: card.kind === 'mcq',
+          introduced: card.introduced,
+          newLeft: left(card.deck),
+        })
+      : 'practice';
+    if (card && as === 'mcq' && !card.introduced) newLeft.set(card.deck, left(card.deck) - 1);
+    const { grade } = recordAttempt(
       {
         sessionId: examId,
         itemId: q.itemId,
-        format: 'mcq',
+        format: as === 'practice' ? 'mcq' : as,
         correct: isRight(q, a?.chosen),
         responseMs: Math.max(0, a?.ms ?? 0),
         given: a?.chosen.map((i) => q.choices[i] ?? '').join(' | '),
         xp: 0,
-        practice: true,
+        practice: as === 'practice',
       },
       d,
       now,
     );
+    if (grade) reviewed++;
   }
-  return scoreExam(questions, Object.fromEntries(answers.map((a) => [a.itemId, a.chosen])), passMark);
+  const score = scoreExam(questions, Object.fromEntries(answers.map((a) => [a.itemId, a.chosen])), passMark);
+  return { ...score, reviewed };
 }

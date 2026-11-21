@@ -1,6 +1,10 @@
 // Exam simulator (#43): the deck's exam settings, checking an answer and the score by topic.
 // Pure: the window uses it too (tutor mode checks each answer as it is given).
 
+/** Tutor mode counts toward your reviews like normal study; timed mode is practice only. */
+export type ExamMode = 'tutor' | 'timed';
+export const EXAM_MODES: ExamMode[] = ['tutor', 'timed'];
+
 export type ExamSettings = {
   /** How many questions an exam draws from the deck (fewer if the deck is smaller). */
   questions: number;
@@ -52,6 +56,28 @@ export const isRight = (q: ExamQuestion, chosen: number[] | undefined) =>
   chosen.length === q.correct.length &&
   q.correct.every((c) => chosen.includes(c)) &&
   new Set(chosen).size === chosen.length;
+
+/**
+ * How one handed-in answer is logged (owner's decision, Nov 21 2026). Timed answers and skipped questions
+ * are practice. In tutor mode an answer is logged as a normal session would ask the card: a question card
+ * as 'mcq' (recall: it grades FSRS, once per card per day, and a first try introduces a new card), any
+ * other card as 'mc' (recognition: never grades). A new card counts only while the deck's new cards for
+ * today last, and never from recognition.
+ */
+export function examAttempt(a: {
+  mode: ExamMode;
+  answered: boolean;
+  /** The card is a question card (its own choices), not a flashcard turned into choices. */
+  questionCard: boolean;
+  /** The card is already in the schedule. */
+  introduced: boolean;
+  /** New cards the deck may still introduce today. */
+  newLeft: number;
+}): 'mcq' | 'mc' | 'practice' {
+  if (a.mode !== 'tutor' || !a.answered) return 'practice';
+  if (a.questionCard) return a.introduced || a.newLeft > 0 ? 'mcq' : 'practice';
+  return a.introduced ? 'mc' : 'practice';
+}
 
 export type TopicScore = { topic: string; correct: number; total: number; percent: number };
 export type ExamScore = {

@@ -58,6 +58,7 @@ import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkA
 import { planSession } from '@lernlab/core/session';
 import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
 import { buildExam, recordExam, type Exam } from '@lernlab/core/examplan';
+import { EXAM_MODES } from '@lernlab/core/exam';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
 import { lastSeenVersion, markVersionSeen, whatsNewToShow, type ReleaseNotes } from '@lernlab/core/whatsnew';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
@@ -548,17 +549,18 @@ export const handlers = {
     for (const id of [...exams.keys()].slice(0, -5)) exams.delete(id);
     return exam;
   }),
-  /** Hand an exam in: scored by topic, and logged as practice (never changes the schedule). */
+  /** Hand an exam in: scored by topic. Tutor answers count toward reviews; timed ones are practice. */
   'exam.submit': h(
     v.object({
       examId: v.string(100),
+      mode: v.oneOf(...EXAM_MODES),
       answers: v.array(v.object({ itemId: v.id, chosen: v.array(v.number, 20), ms: v.number }), 200),
     }),
-    ({ examId, answers }) => {
+    ({ examId, mode, answers }) => {
       const exam = exams.get(examId);
       if (!exam) throw new AppError('exam_not_found', 'Exam not found');
       exams.delete(examId);
-      return recordExam(exam.id, exam.questions, answers, exam.settings.passMark, getDb());
+      return recordExam(exam.id, exam.questions, answers, exam.settings.passMark, mode, getDb());
     },
   ),
 

@@ -255,16 +255,40 @@ test('an exam is drawn from a deck with its settings, handed in once, and scored
     chosen: q.correct,
     ms: 2000,
   }));
-  const score = await ok('exam.submit', { examId: exam.id, answers });
+  const score = await ok('exam.submit', { examId: exam.id, mode: 'timed', answers });
   assert.equal(score.correct, 3);
   assert.equal(score.passed, true);
+  assert.equal(score.reviewed, 0, 'timed mode is practice');
   assert.ok(score.topics.length >= 1);
-  const twice = await handle('exam.submit', { examId: exam.id, answers });
+  const twice = await handle('exam.submit', { examId: exam.id, mode: 'timed', answers });
   assert.equal(!twice.ok && twice.error.code, 'exam_not_found', 'an exam is handed in once');
   const missing = await handle('exam.start', { deckId: 9999 });
   assert.equal(!missing.ok && missing.error.code, 'deck_not_found');
-  const bad = await handle('exam.submit', { examId: 'x', answers: [{ itemId: 1, chosen: ['a'], ms: 1 }] });
+  const bad = await handle('exam.submit', {
+    examId: 'x',
+    mode: 'timed',
+    answers: [{ itemId: 1, chosen: ['a'], ms: 1 }],
+  });
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  const noMode = await handle('exam.submit', { examId: 'x', mode: 'cram', answers: [] });
+  assert.equal(!noMode.ok && noMode.error.code, 'invalid_input');
+});
+
+test('a tutor-mode exam counts toward your reviews; question cards are graded like a session', async () => {
+  const deck = await ok('decks.create', { name: 'Tutor deck', language: null });
+  await ok('cards.add', {
+    deckId: deck.id,
+    card: { type: 'mcq', front: 'Which is object storage?', choices: 'S3|EBS|EFS', correct: '1' },
+  });
+  const exam = await ok('exam.start', { deckId: deck.id });
+  assert.equal(exam.questions.length, 1);
+  const [q] = exam.questions;
+  const score = await ok('exam.submit', {
+    examId: exam.id,
+    mode: 'tutor',
+    answers: [{ itemId: q.itemId, chosen: q.correct, ms: 3000 }],
+  });
+  assert.equal(score.reviewed, 1, 'the answer scheduled the card');
 });
 
 test('deck settings are checked, and deleting a deck takes a backup first', async () => {

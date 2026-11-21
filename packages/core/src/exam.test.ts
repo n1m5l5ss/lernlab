@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanExamSettings, EXAM_DEFAULTS, examSettings, isRight, scoreExam, type ExamQuestion } from './exam';
+import {
+  cleanExamSettings,
+  EXAM_DEFAULTS,
+  examAttempt,
+  examSettings,
+  isRight,
+  scoreExam,
+  type ExamQuestion,
+} from './exam';
 
 const q = (itemId: number, correct: number[], topics: string[]): ExamQuestion => ({
   itemId,
@@ -52,4 +60,31 @@ test('the score is split by topic (tag) and weak areas are the topics under the 
   assert.deepEqual(s.weak, ['', 's3']);
   assert.equal(scoreExam(questions, { 1: [0], 2: [1], 3: [2] }, 70).passed, true);
   assert.equal(scoreExam([], {}, 70).percent, 0);
+});
+
+test('timed answers are practice; tutor answers count like a normal session would count them', () => {
+  const base = { answered: true, questionCard: true, introduced: true, newLeft: 5 };
+  assert.equal(examAttempt({ ...base, mode: 'timed' }), 'practice', 'timed mode never counts');
+  assert.equal(examAttempt({ ...base, mode: 'tutor' }), 'mcq', 'a question card is recall');
+  assert.equal(
+    examAttempt({ ...base, mode: 'tutor', answered: false }),
+    'practice',
+    'a skipped question is no attempt',
+  );
+  assert.equal(examAttempt({ ...base, mode: 'tutor', introduced: false }), 'mcq', 'a new question card is introduced');
+  assert.equal(
+    examAttempt({ ...base, mode: 'tutor', introduced: false, newLeft: 0 }),
+    'practice',
+    "never past the deck's new cards for today",
+  );
+  assert.equal(
+    examAttempt({ ...base, mode: 'tutor', questionCard: false }),
+    'mc',
+    'a flashcard as choices is recognition',
+  );
+  assert.equal(
+    examAttempt({ ...base, mode: 'tutor', questionCard: false, introduced: false }),
+    'practice',
+    'recognition never introduces a card',
+  );
 });
