@@ -79,7 +79,7 @@ Everything lives in `bench/` (an npm workspace) and `.github/workflows/perf.yml`
 
 - `bench/fixtures.ts` builds the 10k and 100k fixture databases through the real importer: 10 decks, about 60% of the cards studied (due dates ±60 days, three logged attempts each), a year of study days. They are generated into `bench/fixtures/generated/` (gitignored) and rebuilt when the schema or the generator changes.
 - `bench/db.bench.ts` (`npm run bench`, vitest bench) calls the real core functions on the real `node:sqlite` host: due queue (`dueItemIds`), save a review (`recordAttempt`), deck list and stats (`appState`, what `state.get` returns) at 10k and 100k cards, and importing 10k cards (100k with `BENCH_FULL=1`).
-- `bench/startup.ts` (`npm run bench:startup`, needs `npm run build:electron`, and `xvfb-run -a` on Linux without a screen) launches the built app 10 times and plays sessions until 50 cards are answered. With `LERNLAB_PERF=1` the main process keeps its marks (`app-ready`, `ready-to-show`; `electron/perf.ts`) in a global that Playwright reads; the window sets User Timing marks (`first-render`, `home-interactive`; `src/perf.ts`). Without that variable the main process records nothing. Key press or click → next frame is measured in the window (the event's time to a task queued from the next `requestAnimationFrame`), long tasks with a `longtask` `PerformanceObserver`.
+- `bench/startup.ts` (`npm run bench:startup`, needs `npm run build:electron`, and `xvfb-run -a` on Linux without a screen) launches the built app 10 times and plays sessions until 50 cards are answered. With `LERNLAB_PERF=1` the main process keeps its marks (`app-ready`, `ready-to-show`; `electron/perf.ts`) in a global that Playwright reads; the window sets User Timing marks (`first-render`, `home-interactive`; `src/perf.ts`). Without that variable the main process records nothing. Key press or click → next frame is measured in the window (the event's time to a task queued from the next `requestAnimationFrame`), long tasks with a `longtask` `PerformanceObserver`. A block runs from its first exercise to the next block or to the session summary, whichever comes first: the Summary and Home screens between sessions are not study time and don't count. Each long task is logged with its length and the screen it happened on.
 - `bench/compare.ts` (pull requests) copies this branch's benchmark code into the `dev` checkout, runs both 5 times interleaved, takes each run's median and then the median of the runs. Changes smaller than 0.05 ms (database) or 30 ms (startup) never fail, so timer noise on a 70 µs query can't block a pull request. Key-press latency is shown in the table but not gated.
 - `bench/budgets.ts` (`npm run bench:budgets`, nightly) checks P50 and P95 against the table above and fails when one is over.
 
@@ -91,14 +91,14 @@ Everything lives in `bench/` (an npm workspace) and `.github/workflows/perf.yml`
 |---|---|---|---|
 | Start → Home on screen | 345 / 381 ms | 765 / 1,123 ms (first run: 1,058 / 1,655 ms) | 412 / 434 ms |
 | Key press → next frame | 13 / 15 ms | 14 / 29 ms | 14 / 15 ms |
-| Long tasks per block | 0 / 1 | **0 / 3 (over: P95 ≤ 1)** | 0 / 0 |
+| Long tasks per block | 0 / 1 | 0 / 1 (first runs: 0 / 3, see below) | 0 / 0 |
 | Due queue, 100k | 0.07 / 0.11 ms | 0.06 / 0.13 ms | 0.06 / 0.08 ms |
 | Save a review, 100k | 0.37 / 0.56 ms | 0.22 / 0.51 ms | 0.24 / 0.40 ms |
 | Deck list / stats, 100k | 0.69 / 0.75 ms | 0.60 / 0.71 ms | 0.66 / 0.75 ms |
 | Import 10k (no media) | 1,783 / 2,888 ms | 367 / 517 ms | 532 / 635 ms |
 | Import 100k (no media) | 12.6 / 14.2 s | 5.2 / 6.2 s | 5.5 / 7.0 s |
 
-- **macOS long tasks** are over budget in both runs (the job was re-run once with the same result), so the nightly macOS job is red until #137 finds the cause. The budget was not loosened.
+- **macOS long tasks** were 3 per block (P95) in the first two runs. The cause was the measurement, not studying (#137). A session's last block was counted until the next session started, so it took in the Summary screen, Home and the next start. With blocks ending at the summary, macOS is 0 / 1. The remaining long tasks come in the first seconds after the window opens (Windows 484 and 1,240 ms, macOS 238 and 128 ms), while the app loads and the first session starts. The 1,240 ms one on Windows is worth a look: it is a real one-off stall when studying starts. One 93 ms task happened during a macOS block. The budget was not loosened.
 - **Windows import** is the closest to its budget (10k: 89% of P50, 72% of P95; 100k: 84% of P50). It is the first thing to speed up if the budget is ever tightened.
 - The macOS start-up time varies a lot between runner machines, but both runs are inside the budget.
 
