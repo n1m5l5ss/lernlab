@@ -7,6 +7,7 @@ import { hear, playMedia, say, recognizer, sfx } from '../audio';
 import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
+import { textPx } from '../display';
 
 type P<E> = { ex: E; ctx: Ctx; onNext: (r: { correct: boolean }) => void };
 const now = () => performance.now();
@@ -130,14 +131,14 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
     <div className="card introcard">
       <div className="blocktitle">{t('ex.intro.title')}</div>
       <Media item={item} size="lg" />
-      <div className="word" style={{ fontSize: item.target.length > 40 ? 28 : undefined }}>
+      <div className="word" style={{ fontSize: item.target.length > 40 ? textPx(28) : undefined }}>
         <Article item={item} />
       </div>
-      <div className="prompt" style={{ fontSize: 22, margin: '6px 0 16px' }}>
+      <div className="prompt" style={{ fontSize: textPx(22), margin: '6px 0 16px' }}>
         <Rich html={item.meaning} />
       </div>
       {item.sentence && (
-        <div style={{ fontSize: 20 }}>
+        <div style={{ fontSize: textPx(20) }}>
           <Rich html={item.sentenceHtml} className="sentence" />
         </div>
       )}
@@ -241,7 +242,7 @@ export function Choice({
             </span>
           </div>
           {picked !== null && (
-            <div className="prompt" style={{ fontSize: 22 }}>
+            <div className="prompt" style={{ fontSize: textPx(22) }}>
               {item.sentence || item.target}
             </div>
           )}
@@ -265,7 +266,7 @@ export function Choice({
           {ex.direction === 'de2en' && <Media item={item} size="sm" />}
           <div
             className={`prompt ${ex.direction === 'de2en' && ctx.lang ? 'de' : ''}`}
-            style={{ fontSize: ex.prompt.length > 60 ? 22 : undefined }}
+            style={{ fontSize: ex.prompt.length > 60 ? textPx(22) : undefined }}
           >
             {ex.direction === 'de2en' ? <Article item={item} /> : <Rich html={ex.prompt} />}
           </div>
@@ -342,10 +343,10 @@ export function TrueFalse({
       <QuestionTimer seconds={timer} running={ans === null && !ctx.paused} onTimeout={() => answer(null)} />
       <div className="blocktitle">{t('ex.tf.title')}</div>
       <Media item={item} size="sm" />
-      <div className="prompt" style={{ fontSize: 28 }}>
+      <div className="prompt" style={{ fontSize: textPx(28) }}>
         <Rich html={ex.front} />
       </div>
-      <div className="card" style={{ fontSize: 22, marginBottom: 16 }}>
+      <div className="card" style={{ fontSize: textPx(22), marginBottom: 16 }}>
         = <Rich html={ex.shown} />
       </div>
       <div className="tf">
@@ -405,7 +406,7 @@ export function Flip({
       <div className="blocktitle">{t('ex.flip.title')}</div>
       <div className="card flipcard">
         {!ex.reverse && <Media item={item} size="md" />}
-        <div className="prompt" style={{ fontSize: ex.prompt.length > 80 ? 22 : 28 }}>
+        <div className="prompt" style={{ fontSize: ex.prompt.length > 80 ? textPx(22) : textPx(28) }}>
           <Rich html={ex.prompt} />
         </div>
         {shownAns && (
@@ -756,7 +757,7 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
         <>
           <div className="blocktitle">{ctx.lang ? t('ex.typed.titleLanguage') : t('ex.typed.title')}</div>
           {ex.prompt === item.target && <Media item={item} size="sm" />}
-          <div className="prompt" style={{ fontSize: ex.prompt.length > 70 ? 22 : undefined }}>
+          <div className="prompt" style={{ fontSize: ex.prompt.length > 70 ? textPx(22) : undefined }}>
             <Rich html={ex.prompt} />
           </div>
           {input}
@@ -833,7 +834,7 @@ export function Unscramble({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'uns
   return (
     <div>
       <div className="blocktitle">{t('ex.unscramble.title')}</div>
-      <div className="prompt" style={{ fontSize: 24 }}>
+      <div className="prompt" style={{ fontSize: textPx(24) }}>
         {ex.translation}
       </div>
       <div
@@ -1109,10 +1110,10 @@ export function Lesson({
   return (
     <div className="card lesson">
       <div className="blocktitle">{t('ex.lesson.title', { group: ex.group })}</div>
-      <div className="prompt" style={{ fontSize: 28 }}>
+      <div className="prompt" style={{ fontSize: textPx(28) }}>
         {ex.title}
       </div>
-      <p style={{ fontSize: 18, lineHeight: 1.5 }}>{ex.text}</p>
+      <p style={{ fontSize: textPx(18), lineHeight: 1.5 }}>{ex.text}</p>
       <div className="col">
         {ex.examples.map((e, i) => (
           <button key={i} className="opt" onClick={() => ctx.lang && say(e.de, 0.95, ctx.lang)}>
@@ -1182,7 +1183,7 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
         {multi ? t('ex.mcq.titleMulti', { count: ex.correct.length }) : t('ex.mcq.title')}
       </div>
       <Media item={item} size="sm" />
-      <div className="prompt" style={{ fontSize: ex.stem.length > 120 ? 19 : 24, lineHeight: 1.4 }}>
+      <div className="prompt" style={{ fontSize: ex.stem.length > 120 ? textPx(19) : textPx(24), lineHeight: 1.4 }}>
         <Rich html={ex.stem} />
       </div>
       <div className="col">
@@ -1265,7 +1266,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
   return (
     <div>
       <div className="blocktitle">{t('ex.order.title')}</div>
-      <div className="prompt" style={{ fontSize: 24 }}>
+      <div className="prompt" style={{ fontSize: textPx(24) }}>
         <Rich html={ex.prompt} />
       </div>
       <ol className="col" style={{ paddingInlineStart: 22, minHeight: 40 }}>

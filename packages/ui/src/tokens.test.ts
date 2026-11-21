@@ -27,12 +27,37 @@ test('dark applies when chosen, or when the system is dark and light was not cho
 });
 
 test('sizes, spacing and motion get units', () => {
-  assert.match(css, /--text-body: 16px;/);
+  assert.match(css, /--text-body: calc\(16px \* var\(--text-scale\)\);/);
   assert.match(css, /--space-1: 4px;/);
   assert.match(css, /--space-8: 64px;/);
   assert.match(css, /--size-min-target: 44px;/);
   assert.match(css, /--motion-card: 280ms;/);
   assert.match(css, /--line-body: 1.5;/);
+});
+
+test('the text size setting scales every text token, not spacing', () => {
+  assert.match(css, /:root \{\n(?:.*\n)*? {2}--text-scale: 1;/);
+  assert.match(css, /:root\[data-text-size='large'\] \{\n {2}--text-scale: 1\.15;\n\}/);
+  assert.match(css, /:root\[data-text-size='larger'\] \{\n {2}--text-scale: 1\.3;\n\}/);
+  for (const [k, v] of Object.entries(tokens.typeScale)) {
+    const name = `--text-${k.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
+    assert.ok(css.includes(`${name}: calc(${v}px * var(--text-scale));`), name);
+  }
+  assert.match(css, /--space-4: 16px;/);
+  assert.doesNotMatch(css, /data-text-size='normal'/);
+});
+
+test('reduced motion applies from the system or from the setting, with the same values', () => {
+  const reduced = Object.entries(tokens.motionReduced)
+    .map(([k, v]) => `--motion-${k}: ${v}ms;`)
+    .join('\n');
+  const flat = (s: string) => s.replace(/\n\s+/g, '\n');
+  const media = /@media \(prefers-reduced-motion: reduce\) \{\n {2}:root \{\n([^}]*)\}/.exec(css);
+  const setting = /:root\[data-motion='reduce'\] \{\n([^}]*)\}/.exec(css);
+  assert.ok(media && setting);
+  assert.equal(flat(media[1]).trim(), reduced);
+  assert.equal(flat(setting[1]).trim(), reduced);
+  assert.match(reduced, /--motion-press: 0ms;/);
 });
 
 test('the window starts in the theme background', () => {
