@@ -9,6 +9,7 @@ import {
   editVariant,
   fieldsToSave,
   formFor,
+  keyPointRows,
   previewOf,
   removeVariant,
   showImageAlt,
@@ -281,4 +282,32 @@ test('a myth card: saved as type myth, read back as one, previewed as true-or-my
   });
   assert.equal(formFor({ ...p.item, suspended: false, starred: false }).type, 'myth');
   assert.equal(formFor({ ...p.item, extra: {}, suspended: false, starred: false }).type, 'basic');
+});
+
+test('an explain card: key points written in rows, saved as one line, previewed with its points, without other questions', () => {
+  assert.deepEqual(keyPointRows([]), ['', ''], 'two rows to start');
+  assert.deepEqual(keyPointRows(['a', 'b', 'c']), ['a', 'b', 'c']);
+  const f = form({
+    type: 'explain',
+    front: 'Why do we have seasons?',
+    back: '',
+    keyPoints: ['Earth is **tilted**', '', 'Not the distance|to the sun'],
+    variants: [{ prompt: 'Why?', level: 'apply' }],
+  });
+  assert.equal(showVariants(f), false);
+  assert.equal(fieldsToSave(f).type, 'explain');
+  assert.equal(fieldsToSave(f).keyPoints, 'Earth is **tilted**|Not the distance/to the sun');
+  assert.equal(fieldsToSave(f).variants, '');
+  assert.equal(fieldsToSave({ ...f, type: 'basic' }).keyPoints, '', 'other types save none');
+  const p = previewOf(f, deck)!;
+  assert.deepEqual(p.view, {
+    type: 'explain',
+    prompt: 'Why do we have seasons?',
+    answer: '',
+    points: ['Earth is <b>tilted</b>', 'Not the distance/to the sun'],
+  });
+  const card = { ...p.item, suspended: false, starred: false };
+  assert.equal(formFor(card).type, 'explain');
+  assert.deepEqual(formFor(card).keyPoints, ['Earth is **tilted**', 'Not the distance/to the sun']);
+  assert.deepEqual(previewOf({ ...f, keyPoints: ['one'] }, deck)!.view, { type: 'problem', problem: 'keyPoints' });
 });

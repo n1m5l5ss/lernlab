@@ -7,14 +7,25 @@ import { codeTask, type CodeTask } from '@lernlab/core/code';
 import { formatBox } from '@lernlab/core/occlusion';
 import { VARIANTS_MAX, formatVariants, parseVariants, takesVariants, type Variant } from '@lernlab/core/variants';
 import { correctionsOf, formatCorrections, isMyth } from '@lernlab/core/misconceptions';
+import { KEY_POINTS_MIN, formatKeyPoints, isExplain, keyPointHtml, keyPointsOf } from '@lernlab/core/explain';
 import { stripHtml } from '@lernlab/core/text';
 import type { Shape } from './occlusion-logic';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
 
 type FullCard = OutputOf<'cards.get'>;
-export type CardType = 'basic' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code' | 'occlusion' | 'myth';
-export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order', 'numeric', 'code', 'occlusion', 'myth'];
+export type CardType = 'basic' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code' | 'occlusion' | 'myth' | 'explain';
+export const CARD_TYPES: CardType[] = [
+  'basic',
+  'cloze',
+  'mcq',
+  'order',
+  'numeric',
+  'code',
+  'occlusion',
+  'myth',
+  'explain',
+];
 const STORED_TYPES = new Set<string>(CARD_TYPES);
 export type MediaSlot = 'image' | 'audio' | 'video';
 
@@ -46,6 +57,8 @@ export const EMPTY = {
   variants: [] as Variant[],
   /** mcq: a correction per choice, in the order of the choices ('' for none). */
   corrections: [] as string[],
+  /** explain: its key points (rows being edited may still be empty). */
+  keyPoints: [] as string[],
 };
 export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
 
@@ -64,7 +77,7 @@ export const formFor = (c: FullCard): Form => ({
   audio: c.audio ?? '',
   video: c.video ?? '',
   alt: c.extra.alt ?? '',
-  type: isMyth(c) ? 'myth' : STORED_TYPES.has(c.kind) ? (c.kind as CardType) : 'basic',
+  type: isMyth(c) ? 'myth' : isExplain(c) ? 'explain' : STORED_TYPES.has(c.kind) ? (c.kind as CardType) : 'basic',
   choices: c.extra.choices ?? '',
   correct: c.extra.correct ?? '',
   steps: c.extra.steps ?? '',
@@ -76,6 +89,7 @@ export const formFor = (c: FullCard): Form => ({
   occlusionMode: c.extra.occlusionMode ?? 'one',
   variants: parseVariants(c.extra.variants),
   corrections: correctionsOf(c),
+  keyPoints: keyPointsOf(c),
   suspended: c.suspended,
   starred: c.starred,
   item: c,
@@ -86,7 +100,7 @@ export const showImageAlt = (f: Pick<Form, 'image'>) => !!f.image;
 
 /** Question variants are for cards asked as a written question (flip or typed). */
 export const showVariants = (f: Pick<Form, 'type'>) =>
-  f.type !== 'myth' && takesVariants(f.type === 'basic' ? 'card' : f.type);
+  f.type !== 'myth' && f.type !== 'explain' && takesVariants(f.type === 'basic' ? 'card' : f.type);
 export const canAddVariant = (list: Variant[]) => list.length < VARIANTS_MAX;
 /** A new question starts as apply: the card's own question already covers recall. */
 export const addVariant = (list: Variant[]): Variant[] =>
@@ -94,6 +108,10 @@ export const addVariant = (list: Variant[]): Variant[] =>
 export const editVariant = (list: Variant[], i: number, change: Partial<Variant>): Variant[] =>
   list.map((v, k) => (k === i ? { ...v, ...change } : v));
 export const removeVariant = (list: Variant[], i: number): Variant[] => list.filter((_, k) => k !== i);
+
+/** The key point rows to show: at least two, as an explain card needs. */
+export const keyPointRows = (list: string[]): string[] =>
+  list.length >= KEY_POINTS_MIN ? list : [...list, ...Array<string>(KEY_POINTS_MIN - list.length).fill('')];
 
 /** The choices as written in the form, each with whether it is marked correct (corrections are for the others). */
 export function choiceRows(f: Pick<Form, 'choices' | 'correct'>): { choice: string; correct: boolean }[] {
@@ -122,6 +140,7 @@ export function fieldsToSave(f: Form) {
     occlusionGroup: f.type === 'occlusion' ? f.occlusionGroup : '',
     occlusionMode: f.type === 'occlusion' ? f.occlusionMode : '',
     variants: showVariants(f) ? formatVariants(f.variants) : '',
+    keyPoints: f.type === 'explain' ? formatKeyPoints(f.keyPoints) : '',
     corrections:
       f.type === 'mcq'
         ? formatCorrections(f.corrections, mcqOf({ extra: { choices: f.choices, correct: f.correct }, meaning: '' }))
@@ -147,6 +166,8 @@ export type PreviewView =
   | { type: 'flip'; prompt: string; answer: string; mediaFirst: boolean }
   /** A myth card: "True or myth?" about the front, then why (the back). */
   | { type: 'myth'; prompt: string; answer: string }
+  /** An explain card: the question, then the model answer ('' for none) and the key points (safe HTML). */
+  | { type: 'explain'; prompt: string; answer: string; points: string[] }
   | { type: 'cloze'; before: string; after: string; answer: string; hint: string; extra: string }
   | { type: 'mcq'; stem: string; choices: string[]; correct: number[] }
   | { type: 'order'; prompt: string; steps: string[] }
@@ -154,7 +175,10 @@ export type PreviewView =
   /** The asked box hidden on the picture (the item carries its group's boxes). */
   | { type: 'occlusion'; prompt: string; answer: string }
   /** The card would not study as the chosen type: say what is missing. */
-  | { type: 'problem'; problem: 'noGap' | 'choices' | 'steps' | 'number' | 'tolerance' | 'code' | 'occlusion' };
+  | {
+      type: 'problem';
+      problem: 'noGap' | 'choices' | 'steps' | 'number' | 'tolerance' | 'code' | 'occlusion' | 'keyPoints';
+    };
 export type Preview = { item: Item; view: PreviewView; explanation: string };
 
 /**
@@ -182,6 +206,14 @@ export function previewOf(
     return out({ type: 'cloze', before: ex.before, after: ex.after, answer, hint: ex.hint, extra: ex.translation });
   }
   if (f.type === 'myth') return out({ type: 'myth', prompt: item.target, answer: item.meaning });
+  if (f.type === 'explain') {
+    const points = keyPointsOf(item);
+    return out(
+      points.length
+        ? { type: 'explain', prompt: item.target, answer: item.meaning, points: points.map(keyPointHtml) }
+        : { type: 'problem', problem: 'keyPoints' },
+    );
+  }
   if (f.type === 'mcq') {
     const m = mcqOf(item);
     return out(m ? { type: 'mcq', stem: item.target, ...m } : { type: 'problem', problem: 'choices' });

@@ -1,4 +1,4 @@
-// Card editor: seven card types, a live preview drawn like the real exercise, media by drag and drop,
+// Card editor: nine card types, a live preview drawn like the real exercise, media by drag and drop,
 // and a gentle warning when the deck already has a card with the same front.
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,7 @@ import {
   editCorrection,
   editVariant,
   fieldsToSave,
+  keyPointRows,
   previewOf,
   removeVariant,
   showImageAlt,
@@ -28,6 +29,7 @@ import {
 } from './card-editor-logic';
 import { LEVELS, VARIANTS_MAX, type Variant } from '@lernlab/core/variants';
 import { CORRECTION_MAX_LENGTH } from '@lernlab/core/misconceptions';
+import { KEY_POINTS_MAX, KEY_POINTS_MIN, KEY_POINT_MAX_LENGTH } from '@lernlab/core/explain';
 import { Media, Rich } from './rich';
 import { CodeBlock } from './code-block';
 import { OcclusionEditor } from './occlusion';
@@ -236,7 +238,9 @@ export function CardEditor({
                 ? t('browse.editor.occlusion.title')
                 : c.type === 'myth'
                   ? t('browse.editor.myth')
-                  : t('browse.editor.front'),
+                  : c.type === 'explain'
+                    ? t('browse.editor.explain')
+                    : t('browse.editor.front'),
         c.type === 'cloze'
           ? t('browse.editor.clozePlaceholder', CLOZE)
           : c.type === 'code'
@@ -245,7 +249,9 @@ export function CardEditor({
               ? t('browse.editor.occlusion.titlePlaceholder')
               : c.type === 'myth'
                 ? t('browse.editor.mythPlaceholder')
-                : t('browse.editor.frontPlaceholder'),
+                : c.type === 'explain'
+                  ? t('browse.editor.explainPlaceholder')
+                  : t('browse.editor.frontPlaceholder'),
         true,
       )}
       {dups.length > 0 && (
@@ -308,6 +314,11 @@ export function CardEditor({
         </>
       ) : c.type === 'myth' ? (
         f('back', t('browse.editor.mythWhy'), t('browse.editor.mythWhyPlaceholder'), true)
+      ) : c.type === 'explain' ? (
+        <>
+          {f('back', t('browse.editor.explainBack'), t('browse.editor.explainBackPlaceholder'), true)}
+          <KeyPointsField points={c.keyPoints} onChange={(v) => set('keyPoints', v)} />
+        </>
       ) : (
         f(
           'back',
@@ -506,6 +517,33 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
           <div className="ans">
             <Rich html={view.answer} />
           </div>
+        </>
+      );
+      break;
+    case 'explain':
+      question = (
+        <>
+          <div className="blocktitle">{t('ex.explain.title')}</div>
+          {media}
+          <div className="prompt">
+            <Rich html={view.prompt} />
+          </div>
+        </>
+      );
+      answer = (
+        <>
+          {view.answer && (
+            <div className="ans">
+              <Rich html={view.answer} />
+            </div>
+          )}
+          <ul className="explain-points">
+            {view.points.map((p, i) => (
+              <li key={i}>
+                <Rich html={p} />
+              </li>
+            ))}
+          </ul>
         </>
       );
       break;
@@ -737,6 +775,63 @@ function VariantsField({ variants, onChange }: { variants: Variant[]; onChange: 
         </button>
       ) : (
         <p className="small muted">{t('browse.editor.variants.full', { count: VARIANTS_MAX })}</p>
+      )}
+    </fieldset>
+  );
+}
+
+/** An explain card's 2–5 key points: the ones a good explanation covers, ticked by the learner after explaining. */
+function KeyPointsField({ points, onChange }: { points: string[]; onChange: (v: string[]) => void }) {
+  const { t } = useTranslation();
+  const uid = useId();
+  const rows = keyPointRows(points);
+  const [added, setAdded] = useState(-1);
+  return (
+    <fieldset className="editor-variants editor-keypoints" aria-describedby={`${uid}-help`}>
+      <legend>{t('browse.editor.keyPoints.title')}</legend>
+      <p id={`${uid}-help`} className="small muted">
+        {t('browse.editor.keyPoints.help')}
+      </p>
+      {rows.map((p, i) => {
+        const n = i + 1;
+        return (
+          <div className="editor-keypoint" key={i}>
+            <label className="sr-only" htmlFor={`${uid}-p${i}`}>
+              {t('browse.editor.keyPoints.point', { n })}
+            </label>
+            <input
+              id={`${uid}-p${i}`}
+              className="input"
+              maxLength={KEY_POINT_MAX_LENGTH}
+              value={p}
+              autoFocus={i === added}
+              placeholder={t('browse.editor.keyPoints.placeholder')}
+              onChange={(e) => onChange(rows.map((x, k) => (k === i ? e.target.value : x)))}
+            />
+            {rows.length > KEY_POINTS_MIN && (
+              <button
+                className="btn ghost"
+                onClick={() => onChange(rows.filter((_, k) => k !== i))}
+                aria-label={t('browse.editor.keyPoints.remove', { n })}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {rows.length < KEY_POINTS_MAX ? (
+        <button
+          className="btn ghost"
+          onClick={() => {
+            setAdded(rows.length);
+            onChange([...rows, '']);
+          }}
+        >
+          {t('browse.editor.keyPoints.add')}
+        </button>
+      ) : (
+        <p className="small muted">{t('browse.editor.keyPoints.full', { count: KEY_POINTS_MAX })}</p>
       )}
     </fieldset>
   );

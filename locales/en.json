@@ -606,7 +606,21 @@
         "numeric": "Number answer (with tolerance and unit)",
         "code": "Code (output, missing token or line order)",
         "occlusion": "Image occlusion (hide parts of a picture)",
-        "myth": "Myth (a common misconception to reject)"
+        "myth": "Myth (a common misconception to reject)",
+        "explain": "Explain it (a why or how question with key points)"
+      },
+      "explain": "Question (why or how)",
+      "explainPlaceholder": "Why do we have seasons?",
+      "explainBack": "Model explanation (optional)",
+      "explainBackPlaceholder": "Earth's tilted axis changes how directly sunlight hits each half of the planet.",
+      "keyPoints": {
+        "title": "Key points",
+        "help": "2 to 5 points a good explanation covers. After explaining, learners tick the ones they got: all is Good, some is Hard, none is Again.",
+        "point": "Key point {{n}}",
+        "placeholder": "One idea a good answer mentions",
+        "remove": "Remove key point {{n}}",
+        "add": "Add a key point",
+        "full": "A card can hold {{count}} key points."
       },
       "myth": "Myth (what many people wrongly believe)",
       "mythPlaceholder": "We only use 10% of our brains.",
@@ -737,7 +751,8 @@
         "number": "Start the answer with a number, like 9.81 m/s^2, or this card is studied as a basic card.",
         "tolerance": "Write the tolerance as a number like 0.05 or a percentage like 1%, or it is left out.",
         "code": "Add the output, a gap like {{open}}token{{close}} in the code, or at least two lines to put in order.",
-        "occlusion": "Add an image, draw at least one box and give each box a label."
+        "occlusion": "Add an image, draw at least one box and give each box a label.",
+        "keyPoints": "Write at least two key points, or this card is studied as a basic card."
       },
       "add": "Add card",
       "starred": "★ Starred",
