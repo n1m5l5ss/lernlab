@@ -12,6 +12,8 @@ LernLab imports and exports decks in open formats, so your cards never get locke
 | Anki `.apkg` / `.colpkg` | ✅ | ✅ `.apkg` | Moving between LernLab and Anki: old (`collection.anki2/anki21`) and new (`anki21b`, zstd) packages |
 | Live Anki (AnkiConnect) | ✅ | — | Pulling a deck straight from a running Anki |
 
+The deck gallery (Decks → Deck gallery) installs community `.lernpack` decks from GitHub; its `index.json` format is in [GALLERY.md](GALLERY.md).
+
 Re-importing a deck **updates** cards instead of duplicating them, and keeps your progress. Cards are matched by their `id`, or, if there is none, by deck name plus front and back. Exports (CSV, `.lernpack` and Anki `.apkg`) write each card's own id, so importing an export back into the same deck updates it in place; importing it into another deck makes a copy.
 
 ## Deck package: `.lernpack` format version 1

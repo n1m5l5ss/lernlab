@@ -147,6 +147,7 @@ docs/adr/        architecture decision records
   - checks media types by magic bytes.
 - Card HTML is sanitised (DOMPurify allow-list), and a strict Content-Security-Policy applies.
 - There are only three network destinations: GitHub Releases, the deck gallery and the user's own AI provider.
+- **Today (#50):** the deck gallery downloads run in the data process (`backend/gallery.ts`), only after the user opens the gallery, with timeouts and size caps; a deck file must match the SHA-256 in the index before the normal untrusted-file importer reads it (`docs/GALLERY.md`).
 - Fork pull requests run without secrets. Signing keys live only in the protected `release` environment.
 
 ## 10. Decisions log

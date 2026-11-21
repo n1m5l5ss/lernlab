@@ -4,6 +4,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import { deckTree, type DeckNode } from '@lernlab/core/decktree';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
+import { Gallery } from './Gallery';
 import { ImportPanel } from './ImportPanel';
 import { onVoicesChanged, systemVoices, tryVoice } from './audio';
 import { formatDate, formatLanguage, formatNumber } from './i18n';
@@ -58,6 +59,8 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse, onExam }:
   const { t } = useTranslation();
   const [editing, setEditing] = useState<Form | null>(null);
   const [showImport, setShowImport] = useState(!state.decks.length);
+  // The gallery goes online only once the user opens it (principle 4).
+  const [showGallery, setShowGallery] = useState(false);
   const [dropped, setDropped] = useState<File | undefined>();
   const [removing, setRemoving] = useState<DeckRow | null>(null);
   const [notice, setNotice] = useState('');
@@ -151,6 +154,9 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse, onExam }:
   return (
     <div className="decks">
       <div className="decks-head">
+        <button className="btn" onClick={() => setShowGallery((v) => !v)} aria-expanded={showGallery}>
+          {t('decks.gallery.open')}
+        </button>
         <button className="btn" onClick={() => setShowImport((v) => !v)} aria-expanded={showImport}>
           {t('decks.import')}
         </button>
@@ -163,6 +169,7 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse, onExam }:
           {notice}
         </p>
       )}
+      {showGallery && <Gallery decks={state.decks} refresh={refresh} onClose={() => setShowGallery(false)} />}
       {showImport && (
         <ImportPanel
           state={state}

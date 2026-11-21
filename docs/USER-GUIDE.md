@@ -53,6 +53,10 @@ Paste one card per line, for example a list copied from Quizlet or a document. C
 
 With Anki open and the AnkiConnect add-on installed, LernLab lists your Anki decks. Tick the ones you want and import them. A ticked deck brings its subdecks along. If LernLab can't reach Anki, the panel shows the steps to fix it. No add-on? Export the deck from Anki as `.apkg` and use the **File** tab.
 
+### From the deck gallery
+
+On the Decks screen, choose **Deck gallery** to browse free decks made by the community. Search by name, language or topic. Every deck shows its licence next to its **Install** button. Installing a deck adds it like any other import, and installing it again later brings in its fixes and keeps your progress. LernLab goes online only while the gallery is open. To share your own deck, choose **Share your deck** and fill in the form.
+
 ### After the import
 
 The report says how many cards were added, how many were updated and how many were skipped, and why. It also lists pictures or sounds that were missing from the file.
