@@ -8,6 +8,7 @@ import { sha1Hex } from './sha1';
 import { stripHtml, splitArticle } from './text';
 import { markdownLite, sanitizeHtml } from './cards';
 import { parseQuantity, parseTolerance } from './numeric';
+import { normalizeCode } from './code';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -90,13 +91,15 @@ export type NormalizedCard = {
   group?: string; // lesson group, e.g. "G01" (taught together as a mini-lesson)
   rank?: number; // frequency rank / introduction order
   extra?: Record<string, string>;
-  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back). */
+  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code. */
   type?: string;
   choices?: string; // "A|B|C|D"
   correct?: string; // "2|4" (1-based) or the correct choice texts
   steps?: string; // "first|second|third"
   altAnswers?: string; // "colour|color"
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
+  code?: string; // code cards: the snippet, as plain text (never HTML)
+  codeLang?: string; // code cards: its language, e.g. "python"
 };
 
 export const LANGUAGES: Record<string, string> = {
@@ -209,6 +212,7 @@ export function detectKind(
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
   if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
+  if ((c?.code ?? c?.extra?.code ?? '').trim() && (t === 'code' || !t)) return 'code';
   if (/\{\{c\d+::/.test(front)) return 'cloze';
   if (tags.includes('grammar')) return 'grammar';
   if (!language) return 'card';
@@ -278,6 +282,12 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   const tolerance = (c.tolerance ?? extra.tolerance ?? '').trim();
   if (kind === 'numeric' && parseTolerance(tolerance)) extra.tolerance = tolerance;
   else delete extra.tolerance;
+  // A code card's snippet and language: plain text with its indentation, kept only on a code card.
+  const code = normalizeCode(c.code ?? extra.code ?? '');
+  const codeLang = stripHtml(c.codeLang ?? extra.codeLang ?? '').toLowerCase();
+  delete extra.code;
+  delete extra.codeLang;
+  if (kind === 'code') Object.assign(extra, { code }, codeLang && { codeLang });
   const { article, word } = splitArticle(stripHtml(front));
   const example = clean(c.example);
   const isNoun = kind === 'noun';
@@ -290,7 +300,13 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
     target: kind === 'cloze' ? front : stripHtml(front),
     article: isNoun ? article : null,
     word: isNoun ? word : stripHtml(front),
-    meaning: ['cloze', 'mcq', 'order'].includes(kind) ? back : stripHtml(back),
+    // A code card's back is its expected output: plain text with its line breaks (shown as text, never as HTML).
+    meaning:
+      kind === 'code'
+        ? normalizeCode(String(c.back ?? ''))
+        : ['cloze', 'mcq', 'order'].includes(kind)
+          ? back
+          : stripHtml(back),
     sentenceHtml: example,
     sentence: stripHtml(example),
     sentenceMeaning: stripHtml(c.exampleTranslation ?? ''),

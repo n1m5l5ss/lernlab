@@ -246,7 +246,11 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     d.prepare(`INSERT OR IGNORE INTO item_state(item_id) VALUES (?)`).run(a.itemId);
 
     // Intro introduces a card; so does a first attempt on a question card (a pretest – guessing first helps).
-    if (a.format === 'intro' || (['mcq', 'order', 'flip'].includes(a.format) && !a.genderOnly))
+    // Code cards are question cards in every format they are asked in.
+    if (
+      a.format === 'intro' ||
+      ((['mcq', 'order', 'flip'].includes(a.format) || item.kind === 'code') && !a.genderOnly)
+    )
       introduce(a.itemId, d, now);
 
     // Mastery ladder and counters

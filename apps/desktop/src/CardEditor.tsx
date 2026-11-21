@@ -1,8 +1,9 @@
-// Card editor: five card types, a live preview drawn like the real exercise, media by drag and drop,
+// Card editor: six card types, a live preview drawn like the real exercise, media by drag and drop,
 // and a gentle warning when the deck already has a card with the same front.
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { SAFE_TAGS } from '@lernlab/core/cards';
+import { CODE_LANGS } from '@lernlab/core/code';
 import type { Duplicate } from '@lernlab/core/browse';
 import { api } from './api';
 import { AudioSlot } from './AudioSlot';
@@ -19,6 +20,7 @@ import {
   type Preview,
 } from './card-editor-logic';
 import { Media, Rich } from './rich';
+import { CodeBlock } from './code-block';
 
 /** Cloze gap markers are card syntax, not text. */
 const CLOZE = { open: '{{c1::', close: '}}' };
@@ -199,8 +201,14 @@ export function CardEditor({
           ? t('browse.editor.question')
           : c.type === 'order'
             ? t('browse.editor.prompt')
-            : t('browse.editor.front'),
-        c.type === 'cloze' ? t('browse.editor.clozePlaceholder', CLOZE) : t('browse.editor.frontPlaceholder'),
+            : c.type === 'code'
+              ? t('browse.editor.codeTask')
+              : t('browse.editor.front'),
+        c.type === 'cloze'
+          ? t('browse.editor.clozePlaceholder', CLOZE)
+          : c.type === 'code'
+            ? t('browse.editor.codeTaskPlaceholder')
+            : t('browse.editor.frontPlaceholder'),
         true,
       )}
       {dups.length > 0 && (
@@ -215,6 +223,46 @@ export function CardEditor({
         </>
       ) : c.type === 'order' ? (
         f('steps', t('browse.editor.steps'), t('browse.editor.stepsPlaceholder'))
+      ) : c.type === 'code' ? (
+        <>
+          <label className="lbl" htmlFor={`${uid}-codeLang`}>
+            {t('browse.editor.codeLang')}
+          </label>
+          <select
+            id={`${uid}-codeLang`}
+            className="input"
+            value={c.codeLang}
+            onChange={(e) => set('codeLang', e.target.value)}
+          >
+            <option value="">{t('browse.editor.codeLangNone')}</option>
+            {[
+              ...CODE_LANGS,
+              ...(CODE_LANGS.some((l) => l.id === c.codeLang) || !c.codeLang
+                ? []
+                : [{ id: c.codeLang, name: c.codeLang }]),
+            ].map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </select>
+          <label className="lbl" htmlFor={`${uid}-code`}>
+            {t('browse.editor.code')}
+          </label>
+          <textarea
+            id={`${uid}-code`}
+            className="input code-input"
+            rows={6}
+            spellCheck={false}
+            autoCapitalize="off"
+            autoCorrect="off"
+            value={c.code}
+            onChange={(e) => set('code', e.target.value)}
+            placeholder={t('browse.editor.codePlaceholder', CLOZE)}
+          />
+          {f('back', t('browse.editor.codeOutput'), t('browse.editor.codeOutputPlaceholder'), true)}
+          <p className="small muted">{t('browse.editor.codeHelp', CLOZE)}</p>
+        </>
       ) : c.type === 'numeric' ? (
         <>
           {f('back', t('browse.editor.number'), t('browse.editor.numberPlaceholder'))}
@@ -451,6 +499,38 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
         </ol>
       );
       break;
+    case 'code': {
+      const { task } = view;
+      question = (
+        <>
+          <div className="blocktitle">
+            {task.mode === 'fill'
+              ? t('ex.code.fillTitle')
+              : task.mode === 'output'
+                ? t('ex.code.outputTitle')
+                : t('ex.code.orderTitle')}
+          </div>
+          {media}
+          <div className="prompt">
+            <Rich html={view.prompt} />
+          </div>
+          {task.mode === 'order' ? (
+            <div className="small muted">{t('browse.editor.previewShuffled')}</div>
+          ) : (
+            <CodeBlock code={task.code} lang={task.lang} gap={<span className="editor-gap">…</span>} />
+          )}
+        </>
+      );
+      answer =
+        task.mode === 'order' ? (
+          <CodeBlock code={task.lines.join('\n')} lang={task.lang} />
+        ) : (
+          <div className="code-answer">
+            <div className="ans">{task.answer}</div>
+          </div>
+        );
+      break;
+    }
     case 'problem':
       return (
         <p className="editor-dup small" role="status">

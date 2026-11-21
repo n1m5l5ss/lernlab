@@ -32,6 +32,11 @@ export function qa(item: Item): {
     const back = stripHtml(item.meaning);
     return { prompt: item.target, answer: back, accepted: withAlts([back]), requireArticle: false, typeable: true };
   }
+  if (item.kind === 'code') {
+    // Asked by codeExercise (exercises.ts); the answer is the output, or the code itself.
+    const answer = item.meaning || (item.extra?.code ?? '');
+    return { prompt: item.target, answer, accepted: withAlts([]), requireArticle: false, typeable: false };
+  }
   if (item.kind === 'mcq' || item.kind === 'order') {
     return {
       prompt: item.target,

@@ -2763,3 +2763,94 @@ h1.session-title:focus,
   overflow-x: auto;
   overflow-y: hidden;
 }
+
+/* ── Code cards (#46): highlighted snippets, fill-the-token and order-the-lines ── */
+.code-block {
+  margin: var(--space-3) 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-subtle);
+  overflow: hidden;
+}
+.code-lang {
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.code,
+.code-input {
+  font-family: var(--font-mono);
+  tab-size: 4;
+}
+.code {
+  color: var(--color-text);
+  font-weight: 400;
+  font-size: var(--text-body);
+  line-height: var(--line-body);
+  white-space: pre;
+  text-align: start;
+  direction: ltr; /* code reads left to right in every interface language */
+  unicode-bidi: isolate;
+  user-select: text;
+}
+pre.code {
+  margin: 0;
+  padding: var(--space-3);
+  overflow-x: auto;
+}
+pre.code:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: -2px;
+}
+.code code,
+code.code-line {
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  font-size: inherit;
+}
+code.code-line {
+  display: block;
+  overflow-x: auto;
+}
+.tok-keyword {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.tok-string {
+  color: var(--color-correct);
+}
+.tok-comment {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+.tok-number {
+  color: var(--color-incorrect);
+}
+.code-gap {
+  display: inline-block;
+}
+.code-gap input {
+  width: 100%;
+  padding: 0 var(--space-1);
+  border: none;
+  border-bottom: 2px solid var(--color-accent);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+}
+.code-gap input:focus-visible {
+  outline: 2px solid var(--color-accent);
+}
+.code-answer .ans,
+.code-answer .compare-given,
+.code-answer .compare-answer {
+  font-family: var(--font-mono);
+  white-space: pre-wrap;
+}
+textarea.input.code-input {
+  font-family: var(--font-mono);
+  white-space: pre;
+  direction: ltr;
+}

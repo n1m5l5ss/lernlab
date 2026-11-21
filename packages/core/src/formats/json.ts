@@ -22,6 +22,8 @@ const TEXT_FIELDS = [
   'steps',
   'altAnswers',
   'tolerance',
+  'code',
+  'codeLang',
 ] as const;
 
 const text = (v: unknown) =>

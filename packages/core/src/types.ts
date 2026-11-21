@@ -2,7 +2,7 @@ import type { Line } from './teacher';
 import type { Article } from './text';
 
 export type ItemKind =
-  'noun' | 'verb' | 'word' | 'phrase' | 'grammar' | 'number' | 'card' | 'cloze' | 'mcq' | 'order' | 'numeric';
+  'noun' | 'verb' | 'word' | 'phrase' | 'grammar' | 'number' | 'card' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code';
 
 /** A study item (one card/note). front = target/term/question, back = meaning/definition/answer. */
 export type Item = {
@@ -78,7 +78,17 @@ export const FORMAT_LEVEL: Partial<Record<Format, number>> = {
 export type Exercise =
   | { type: 'intro'; itemId: number }
   | { type: 'mc'; itemId: number; direction: 'de2en' | 'en2de'; prompt: string; options: string[]; answerIndex: number }
-  | { type: 'typed'; itemId: number; prompt: string; accepted: string[]; requireArticle: boolean; hint: string }
+  | {
+      type: 'typed';
+      itemId: number;
+      prompt: string;
+      accepted: string[];
+      requireArticle: boolean;
+      hint: string;
+      /** Code cards: the snippet to read (predict its output) and its language. */
+      code?: string;
+      codeLang?: string;
+    }
   | {
       type: 'cloze';
       itemId: number;
@@ -87,6 +97,8 @@ export type Exercise =
       accepted: string[];
       translation: string;
       hint: string;
+      /** Code cards: before/after are the code around the gap, in this language. */
+      codeLang?: string;
     }
   | { type: 'unscramble'; itemId: number; tiles: string[]; answer: string[]; translation: string }
   | { type: 'listen'; itemId: number; options: string[]; answerIndex: number }
@@ -97,7 +109,8 @@ export type Exercise =
   | { type: 'truefalse'; itemId: number; front: string; shown: string; isTrue: boolean }
   | { type: 'imagemc'; itemId: number; options: string[]; answerIndex: number }
   | { type: 'mcq'; itemId: number; stem: string; choices: string[]; correct: number[]; explanation: string }
-  | { type: 'order'; itemId: number; prompt: string; steps: string[]; shuffled: number[] };
+  /** codeLang: the steps are lines of code in this language (order the lines). */
+  | { type: 'order'; itemId: number; prompt: string; steps: string[]; shuffled: number[]; codeLang?: string };
 
 /** A session block. `title` is an internal name for logs and tests, never shown; `teacher` is shown. */
 export type Block =

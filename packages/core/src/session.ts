@@ -87,7 +87,7 @@ export function planSession(
   const has = (id: number) => byId.has(id);
   const notGrammar = (id: number) => get(id).kind !== 'grammar';
   /** Plain front/back cards (question cards with their own format are excluded from pair games). */
-  const plain = (id: number) => !['grammar', 'mcq', 'order'].includes(get(id).kind);
+  const plain = (id: number) => !['grammar', 'mcq', 'order', 'code'].includes(get(id).kind);
 
   // Practice (cramming) draws on every card in the source, due or not, and teaches nothing new.
   const due = practice

@@ -66,7 +66,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026). An older reader studies a numeric card as a basic card.
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026). An older reader studies a numeric card as a basic card, and a code card as a basic card without its code.
 
 ### manifest.json
 
@@ -109,6 +109,7 @@ Each line is one card. Only `front` is required.
 {"id":"s3","front":"Amazon S3","back":"Object storage for any amount of data","category":"Storage","tags":["aws","storage"],"image":"s3.png"}
 {"id":"serverless","type":"mcq","front":"Which TWO services are serverless?","choices":"Amazon EC2|AWS Lambda|AWS Fargate|Amazon RDS","correct":"2|3","explanation":"Lambda and Fargate need no server management."}
 {"id":"tcp","type":"order","front":"Order the TCP handshake","steps":"SYN|SYN-ACK|ACK"}
+{"id":"loop","type":"code","front":"What does this print?","code":"for i in range(3):\n    print(i)","codeLang":"python","back":"0\n1\n2"}
 {"id":"mito","front":"The {{c1::mitochondrion}} is the powerhouse of the cell","back":"Biology 101"}
 {"id":"sohn","front":"der Sohn","back":"son","example":"Mein <b>Sohn</b> ist zehn.","exampleTranslation":"My son is ten.","audio":"sohn.mp3","category":"der"}
 ```
@@ -116,7 +117,7 @@ Each line is one card. Only `front` is required.
 | Field | Meaning |
 |---|---|
 | `id` | Stable id so updates keep progress. Write a string; readers also accept a number |
-| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card |
+| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card |
 | `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
@@ -129,6 +130,8 @@ Each line is one card. Only `front` is required.
 | `correct` | Multiple choice: the correct choices as 1-based numbers or as texts, separated by `|` |
 | `steps` | Ordering card: steps in the correct order, separated by `|` |
 | `tolerance` | Numeric card: how far off a typed number may be, `0.05` (in the card's unit) or `1%` (optional, added after v1 was published) |
+| `code` | Code card: the code as plain text, with its line breaks and indentation (optional, added after v1 was published; older readers ignore it) |
+| `codeLang` | Code card: the code's language, e.g. `python` (optional, added after v1 was published) |
 | `image` | Image file name inside `media/` (or an `https://` URL). GIFs work as images |
 | `imageAlt` | Description of the image, in plain text, read out by screen readers (its alt text). Write what a picture question needs to be answered (optional, added after v1 was published; older readers ignore it) |
 | `audio` | Audio file name inside `media/` (or an `https://` URL) |
@@ -170,11 +173,29 @@ Case always matters (`X` ≠ `x`). An answer with a math part is never split int
 - The unit may be left out. A typed unit must be the card's unit, written with any spacing or `²`/`^2`, or the same unit with another SI prefix (`1500 m` for `1.5 km`, `20000 µA` for `20 mA`; prefixes T to p on the base and derived SI units, litres, bar, eV, B). Units are case-sensitive (`mA` ≠ `MA`); compound units (`m/s`) must match as written.
 - There are no near misses: a number is right or wrong. `altAnswers` are still accepted as text.
 
+## Code cards
+
+A code card (`type: code`) holds a snippet in `code` and its language in `codeLang`. The code is plain text: it is shown exactly as written (line breaks, indentation, `<` and `&`), is never treated as HTML and is **never run**. The `front` is the task (`What does this print?`). How the card is asked depends on what it holds:
+
+- **Fill the token**: a gap like `{{c1::range}}` (or `{{c1::range::hint}}`) in the code. You type the missing token; other gaps are shown filled in.
+- **Predict the output**: a `back`. The back is the exact output, plain text with its line breaks.
+- **Order the lines** (a Parsons problem): neither. The non-empty lines are shuffled and you put them back in order; indentation is shown. Identical lines (two closing braces) may go either way round. A card with fewer than two lines and nothing else is studied as a basic card.
+
+`codeLang` colours the code and names it for screen readers. Known: `python` (`py`), `javascript` (`js`), `typescript` (`ts`), `java`, `c`, `cpp` (`c++`), `csharp` (`c#`, `cs`), `go`, `rust` (`rs`), `sql`, `bash` (`sh`, `shell`). Any other language, or none, is shown as plain code.
+
+**Typed code answers** (an output or a token) are compared exactly, with no typo forgiveness and with case mattering (`True` ≠ `true`), except for whitespace:
+
+- a run of spaces, tabs and line breaks counts as one space, so a multi-line output can be typed on one line (`0 1 2` for three lines);
+- spaces next to punctuation don't count (`[1, 2]` = `[1,2]`), but a space between two words or numbers does (`1 2` ≠ `12`);
+- spaces at the start and end don't count, and curly quotes count as straight quotes.
+
+`altAnswers` are other accepted answers, compared the same way.
+
 ## CSV / TSV
 
 - One card per row, UTF-8. Comma, tab or semicolon is detected automatically.
 - A header row is optional. Without one, column 1 is the front and column 2 is the back (Quizlet export style).
-- Lines starting with `#` are ignored.
+- Lines starting with `#` are ignored (except inside a quoted cell).
 
 Recognised column names (case-insensitive):
 
@@ -193,6 +214,8 @@ Recognised column names (case-insensitive):
 | `steps` | sequence |
 | `alt_answers` | alternatives, also accept |
 | `tolerance` | tol |
+| `code` | snippet, source code: a code card's code (quote it to keep line breaks; a line starting with `#` inside quotes is code, not a comment) |
+| `code_lang` | code language, programming language |
 | `image`, `audio`, `video` | picture, sound, gif |
 | `image_alt` | image alt, image description, alt text: the image's description for screen readers |
 | `deck` | subdeck, chapter, section, topic |

@@ -1,5 +1,6 @@
-// Typed-answer checking for the session: numeric cards by number, tolerance and unit; everything else
-// (including math, compared by its source) by the text rules in core.
+// Typed-answer checking for the session: numeric cards by number, tolerance and unit; code cards by the code
+// whitespace rules; everything else (including math, compared by its source) by the text rules in core.
+import { checkCode } from '@lernlab/core/code';
 import { hintSource } from '@lernlab/core/exercises';
 import { checkNumeric, numericOf } from '@lernlab/core/numeric';
 import { checkAnswer, type CheckResult } from '@lernlab/core/text';
@@ -12,6 +13,7 @@ export function checkTyped(
   accepted: string[],
   requireArticle: boolean,
 ): CheckResult {
+  if (item.kind === 'code') return checkCode(input, accepted);
   const numeric = format === 'cloze' ? null : numericOf(item);
   if (!numeric || accepted[0] !== numeric.text) return checkAnswer(input, accepted, { requireArticle });
   const r = checkNumeric(input, numeric);

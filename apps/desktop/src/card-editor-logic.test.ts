@@ -99,6 +99,28 @@ test('a stored numeric card opens as a numeric card with its tolerance', () => {
   assert.equal(f.tolerance, '0.5');
 });
 
+test('a code card previews the way it is asked; one with nothing to ask is named; it reopens as code', () => {
+  const code = (f: Partial<Form>) =>
+    previewOf(form({ type: 'code', front: 'What does it print?', codeLang: 'Python', ...f }), deck)!;
+  const out = code({ code: '  print(1)\n', back: '1' });
+  assert.equal(out.item.kind, 'code');
+  assert.deepEqual(out.view, {
+    type: 'code',
+    prompt: 'What does it print?',
+    task: { mode: 'output', lang: 'python', code: '  print(1)', answer: '1' },
+  });
+  assert.deepEqual(code({ code: 'a\nb' }).view, {
+    type: 'code',
+    prompt: 'What does it print?',
+    task: { mode: 'order', lang: 'python', lines: ['a', 'b'] },
+  });
+  assert.deepEqual(code({ code: 'print(1)' }).view, { type: 'problem', problem: 'code' });
+  assert.deepEqual(code({ code: '' }).view, { type: 'problem', problem: 'code' });
+  assert.equal(fieldsToSave(form({ type: 'basic', code: 'x' })).code, '', 'only code cards keep their code');
+  const f = formFor({ ...out.item, suspended: false, starred: false });
+  assert.deepEqual([f.type, f.code, f.codeLang, f.back], ['code', '  print(1)', 'python', '1']);
+});
+
 test('dropped files go to the image, audio or video slot; GIFs are images; others are named', () => {
   const r = sortDrop([
     { name: 'cell.png' },

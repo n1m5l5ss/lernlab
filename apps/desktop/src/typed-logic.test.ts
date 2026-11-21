@@ -52,3 +52,10 @@ test('answers to copy are shown without math delimiters', () => {
   assert.equal(plainAnswer('\\(\\pi r^2\\)'), '\\pi r^2');
   assert.equal(plainAnswer('der Hund'), 'der Hund');
 });
+
+test('code cards: output and tokens are checked by the code rules, never forgiven as typos', () => {
+  const code = card({ kind: 'code', meaning: '[1, 2]\nok', extra: { code: 'print([1,2]); print("ok")' } });
+  assert.equal(checkTyped(code, 'typed', '[1,2] ok', ['[1, 2]\nok'], false).correct, true);
+  assert.equal(checkTyped(code, 'typed', '[1, 2] Ok', ['[1, 2]\nok'], false).correct, false, 'case matters');
+  assert.equal(checkTyped(code, 'cloze', 'rnage', ['range'], false).correct, false, 'no near miss');
+});

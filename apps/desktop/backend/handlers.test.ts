@@ -90,6 +90,19 @@ test('the card editor saves a numeric card with its tolerance, and turning it ba
   assert.ok(!('tolerance' in basic.extra));
 });
 
+test('the card editor saves a code card with its code and language, and turning it basic drops them', async () => {
+  const deck = await ok('decks.create', { name: 'Python', language: null });
+  const card = { front: 'Output?', back: '3', type: 'code', code: 'print(1 + 2)\n', codeLang: 'python' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card });
+  const saved = await ok('cards.get', { id });
+  assert.equal(saved.kind, 'code');
+  assert.deepEqual([saved.extra.code, saved.extra.codeLang, saved.meaning], ['print(1 + 2)', 'python', '3']);
+  await ok('cards.update', { id, card: { ...card, type: 'basic', code: '', codeLang: '' } });
+  const basic = await ok('cards.get', { id });
+  assert.equal(basic.kind, 'card');
+  assert.ok(!('code' in basic.extra) && !('codeLang' in basic.extra));
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');

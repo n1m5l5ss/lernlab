@@ -3,12 +3,13 @@ import { mcqOf, qa, stepsOf } from '@lernlab/core/cards';
 import { cloze, typed } from '@lernlab/core/exercises';
 import { cardToItem, mediaKind, type NormalizedCard } from '@lernlab/core/library';
 import { parseTolerance } from '@lernlab/core/numeric';
+import { codeTask, type CodeTask } from '@lernlab/core/code';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
 
 type FullCard = OutputOf<'cards.get'>;
-export type CardType = 'basic' | 'cloze' | 'mcq' | 'order' | 'numeric';
-export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order', 'numeric'];
+export type CardType = 'basic' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code';
+export const CARD_TYPES: CardType[] = ['basic', 'cloze', 'mcq', 'order', 'numeric', 'code'];
 const STORED_TYPES = new Set<string>(CARD_TYPES);
 export type MediaSlot = 'image' | 'audio' | 'video';
 
@@ -31,6 +32,8 @@ export const EMPTY = {
   correct: '',
   steps: '',
   tolerance: '',
+  code: '',
+  codeLang: '',
 };
 export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
 
@@ -54,6 +57,8 @@ export const formFor = (c: FullCard): Form => ({
   correct: c.extra.correct ?? '',
   steps: c.extra.steps ?? '',
   tolerance: c.extra.tolerance ?? '',
+  code: c.extra.code ?? '',
+  codeLang: c.extra.codeLang ?? '',
   suspended: c.suspended,
   starred: c.starred,
   item: c,
@@ -71,6 +76,8 @@ export function fieldsToSave(f: Form) {
     correct: f.type === 'mcq' ? f.correct : '',
     steps: f.type === 'order' ? f.steps : '',
     tolerance: f.type === 'numeric' ? f.tolerance : '',
+    code: f.type === 'code' ? f.code : '',
+    codeLang: f.type === 'code' ? f.codeLang : '',
   };
 }
 
@@ -93,8 +100,9 @@ export type PreviewView =
   | { type: 'cloze'; before: string; after: string; answer: string; hint: string; extra: string }
   | { type: 'mcq'; stem: string; choices: string[]; correct: number[] }
   | { type: 'order'; prompt: string; steps: string[] }
+  | { type: 'code'; prompt: string; task: CodeTask }
   /** The card would not study as the chosen type: say what is missing. */
-  | { type: 'problem'; problem: 'noGap' | 'choices' | 'steps' | 'number' | 'tolerance' };
+  | { type: 'problem'; problem: 'noGap' | 'choices' | 'steps' | 'number' | 'tolerance' | 'code' };
 export type Preview = { item: Item; view: PreviewView; explanation: string };
 
 /**
@@ -121,6 +129,10 @@ export function previewOf(f: Form, deck: { id: number; language: string | null }
     return out(
       steps.length >= 2 ? { type: 'order', prompt: item.target, steps } : { type: 'problem', problem: 'steps' },
     );
+  }
+  if (f.type === 'code') {
+    const task = codeTask(item);
+    return out(task ? { type: 'code', prompt: item.target, task } : { type: 'problem', problem: 'code' });
   }
   if (f.type === 'numeric' && item.kind !== 'numeric') return out({ type: 'problem', problem: 'number' });
   if (f.type === 'numeric' && f.tolerance.trim() && !parseTolerance(f.tolerance))
