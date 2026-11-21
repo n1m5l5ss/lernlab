@@ -38,6 +38,7 @@ const setAssistant = async (on: boolean) =>
 /** Each tool with input that works, so every one is called in both states. */
 let deckId = 0;
 let cardId = 0;
+let otherId = 0;
 const sample = (): Record<keyof typeof TOOLS, unknown> => ({
   get_overview: {},
   list_decks: {},
@@ -50,6 +51,9 @@ const sample = (): Record<keyof typeof TOOLS, unknown> => ({
   quiz_cards: { from: 'random', count: 2 },
   propose_new_deck: { deck: { name: 'Rivers', language: 'en' }, cards: [{ front: 'Nile', back: 'Africa' }] },
   propose_cards: { deckId, cards: [{ front: 'Ecuador', back: 'Quito' }], note: 'From the atlas PDF' },
+  propose_card_fix: { cardId, changes: { back: 'Lima (capital)' } },
+  propose_merge: { keepId: cardId, mergeIds: [otherId] },
+  propose_organise: { cardIds: [cardId, otherId], action: { kind: 'tag', tag: 'andes' } },
   list_requests: {},
 });
 
@@ -58,6 +62,7 @@ before(async () => {
   deckId = deck.id;
   await ok('import.text', { text: 'Peru\tLima\nChile\tSantiago', fieldSep: '\t', deckId });
   cardId = (await ok('cards.find', { q: 'Peru' })).rows[0].id;
+  otherId = (await ok('cards.find', { q: 'Chile' })).rows[0].id;
   const answer = { sessionId: 's1', itemId: cardId, responseMs: 900, xp: 1 };
   await ok('attempt.record', { ...answer, format: 'intro', correct: true });
   await ok('attempt.record', { ...answer, format: 'typed', correct: false, given: 'Cusco' });
@@ -100,7 +105,13 @@ test('every tool answers once it is on', async () => {
   assert.deepEqual(
     // Requests made in the same millisecond have no set order.
     results.list_requests.map((r: { summary: string }) => r.summary).sort(),
-    ['New deck "Rivers" with 1 cards', `1 cards for deck ${deckId}`].sort(),
+    [
+      'New deck "Rivers" with 1 cards',
+      `1 cards for deck ${deckId}`,
+      `Fix card ${cardId}: back`,
+      `Merge cards ${otherId} into card ${cardId}`,
+      'tag 2 cards',
+    ].sort(),
   );
   assert.equal((await ok('cards.find', { q: 'Quito' })).total, 0, 'a proposal changes nothing');
 });
@@ -125,6 +136,14 @@ test('input is checked with the app validators; unknown tools and missing things
     await code('propose_cards', { deckId, cards: [{ front: 'x'.repeat(2001), back: '' }] }),
     'invalid_input',
   );
+  assert.equal(await code('propose_card_fix', { cardId, changes: {} }), 'invalid_input');
+  assert.equal(await code('propose_card_fix', { cardId: 999_999, changes: { back: 'x' } }), 'card_not_found');
+  assert.equal(await code('propose_merge', { keepId: cardId, mergeIds: [cardId] }), 'invalid_input');
+  const organise = (action: unknown) => code('propose_organise', { cardIds: [cardId], action });
+  assert.equal(await organise({ kind: 'delete' }), 'invalid_input', 'there is no delete');
+  assert.equal(await organise({ kind: 'tag', tag: 'two words' }), 'invalid_input');
+  assert.equal(await organise({ kind: 'move' }), 'invalid_input');
+  assert.equal(await organise({ kind: 'move', deckId: 999 }), 'deck_not_found');
   const many = Array.from({ length: 501 }, () => ({ front: 'a', back: 'b' }));
   assert.equal(await code('propose_new_deck', { deck: { name: 'Big' }, cards: many }), 'invalid_input');
 });

@@ -3177,3 +3177,64 @@ textarea.input.code-input {
     grid-column: 2;
   }
 }
+/* AI requests (#148): fixes, merges and tidy-ups. Each changed field shows the card as it is now above the
+   proposal; the cards a merge or tidy-up touches are a checklist. */
+.request-fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.request-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.request-field label,
+.request-sub {
+  margin: 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.request-now {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  overflow-wrap: anywhere;
+}
+.request-kept {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+}
+.request-kept span,
+.request-checklist label span {
+  color: var(--color-text-muted);
+}
+.request-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.request-checklist li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 32px;
+}
+.request-checklist input[type='checkbox'] {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  accent-color: var(--color-accent);
+}
+.request-checklist label {
+  overflow-wrap: anywhere;
+}
+.request-checklist li.off label {
+  opacity: 0.5;
+  text-decoration: line-through;
+}

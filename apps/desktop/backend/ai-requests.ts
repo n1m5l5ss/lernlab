@@ -1,9 +1,16 @@
 // The shapes of AI requests (#148), checked with the app's validators wherever one arrives: from the assistant
 // (MCP tools), from a file in ai-requests/ (anything could have written it) and from the window (the user's edits).
-import { AI_CARDS_MAX, type AiRequest, type AiRequestBody, type AiRequestKind } from '@lernlab/core/airequests';
+import {
+  AI_CARDS_MAX,
+  ORGANISE_KINDS,
+  type AiRequest,
+  type AiRequestBody,
+  type AiRequestKind,
+  type OrganiseAction,
+} from '@lernlab/core/airequests';
 import { isRequestId } from '@lernlab/storage-sqlite/airequests';
 import { InvalidInput } from './validate';
-import { f, type Shape } from './fields';
+import { f, type Field, type Shape } from './fields';
 
 const opt = f.optional;
 
@@ -20,6 +27,41 @@ export const proposedCard = f.object({
   choices: opt(f.text(2000, 'For mcq: the choices separated by |.')),
   correct: opt(f.text(200, 'For mcq: the correct choice numbers (1-based), separated by |.')),
 });
+/** Changes to an existing card: only the fields given change. */
+export const cardChanges = f.object({
+  front: opt(f.text(2000, 'New question side.')),
+  back: opt(f.text(5000, 'New answer side.')),
+  example: opt(f.text(2000, 'New example sentence.')),
+  exampleTranslation: opt(f.text(2000, 'Its translation.')),
+  explanation: opt(f.text(5000, 'New explanation.')),
+  notes: opt(f.text(5000, 'New notes.')),
+  tags: opt(f.list(f.text(100, 'One tag, no spaces.'), 20, 'The full new list of tags.')),
+  category: opt(f.text(100, 'New category.')),
+});
+const ORGANISE_SHAPE = f.object({
+  kind: f.oneOf(ORGANISE_KINDS, 'What to do with the cards. There is no delete.'),
+  tag: opt(f.text(200, 'For tag and untag: the tag (one word).')),
+  deckId: opt(f.id('For move: the deck to move the cards to.')),
+});
+/** One organising action: tag and untag need a single-word tag, move needs a deck. */
+const organiseAction: Field<OrganiseAction> = {
+  schema: ORGANISE_SHAPE.schema,
+  check: (value, path = 'action') => {
+    const a = ORGANISE_SHAPE.check(value, path);
+    if (a.kind === 'tag' || a.kind === 'untag') {
+      const tag = a.tag?.trim();
+      if (!tag || /\s/.test(tag)) throw new InvalidInput(`${path}.tag must be one tag`);
+      return { kind: a.kind, tag };
+    }
+    if (a.kind === 'move') {
+      if (!a.deckId) throw new InvalidInput(`${path}.deckId must be an id`);
+      return { kind: a.kind, deckId: a.deckId };
+    }
+    return { kind: a.kind };
+  },
+};
+const cardIds = (max: number, description: string) => f.list(f.id('A card id.'), max, description);
+
 const cards = f.list(proposedCard, AI_CARDS_MAX, `The cards (at most ${AI_CARDS_MAX}).`);
 const note = opt(
   f.text(1000, 'Why you propose this, and where it comes from (e.g. the PDF or link). The user sees it.'),
@@ -37,6 +79,18 @@ export const REQUEST_BODIES = {
     note,
   },
   add_cards: { deckId: f.id('The deck to add to (an id from list_decks).'), cards, note },
+  edit_card: { cardId: f.id('The card to fix (an id from search_cards).'), changes: cardChanges, note },
+  merge_cards: {
+    keepId: f.id('The card to keep.'),
+    mergeIds: cardIds(20, 'The duplicates of it. They are suspended and tagged "merged", never deleted.'),
+    changes: opt(cardChanges),
+    note,
+  },
+  organise_cards: {
+    cardIds: cardIds(1000, 'The cards (at most 1000).'),
+    action: organiseAction,
+    note,
+  },
 } satisfies Record<AiRequestKind, Shape>;
 
 const kindOf = (value: unknown): AiRequestKind => {
