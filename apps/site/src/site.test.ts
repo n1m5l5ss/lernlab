@@ -54,6 +54,18 @@ test('the privacy statement is on the page', () => {
   }
 });
 
+test('the AI assistant section says it is off until turned on, LernLab stays offline, and links the guide', () => {
+  const section = html.match(/<section class="wrap" id="assistant"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(section, 'the section is on the page');
+  assert.match(html, /<a href="#assistant">/, 'the header links it');
+  assert.match(section, /href="https:\/\/github\.com\/n1m5l5ss\/lernlab\/blob\/main\/docs\/AI-ASSISTANTS\.md"/);
+  const text = section.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  for (const promise of ['Off until you turn it on', 'LernLab itself stays offline', 'MCP', "can't delete"]) {
+    assert.ok(text.includes(promise), promise);
+  }
+  assert.doesNotMatch(html, /AI key/, 'the old in-app AI key plan is gone');
+});
+
 test('every image has alt text and size, and dark screenshots exist for each light one', () => {
   for (const img of html.match(/<img\b[^>]*>/g) ?? []) {
     assert.match(img, /\balt="/, img);

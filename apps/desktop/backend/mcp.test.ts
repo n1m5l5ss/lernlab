@@ -54,6 +54,9 @@ const sample = (): Record<keyof typeof TOOLS, unknown> => ({
   propose_card_fix: { cardId, changes: { back: 'Lima (capital)' } },
   propose_merge: { keepId: cardId, mergeIds: [otherId] },
   propose_organise: { cardIds: [cardId, otherId], action: { kind: 'tag', tag: 'andes' } },
+  propose_goals: { dailyGoalSessions: 2, newPerDay: 15 },
+  propose_study_plan: { deckId, plan: { examDate: '2027-03-01', goal: { label: 'Geography quiz', words: 2 } } },
+  propose_export: { deckId, format: 'csv' },
   list_requests: {},
 });
 
@@ -111,6 +114,9 @@ test('every tool answers once it is on', async () => {
       `Fix card ${cardId}: back`,
       `Merge cards ${otherId} into card ${cardId}`,
       'tag 2 cards',
+      'Goals: 2 sessions a day, 15 new cards a day',
+      `Study plan for deck ${deckId}: examDate, goal`,
+      `Export deck ${deckId} as csv`,
     ].sort(),
   );
   assert.equal((await ok('cards.find', { q: 'Quito' })).total, 0, 'a proposal changes nothing');
@@ -144,6 +150,12 @@ test('input is checked with the app validators; unknown tools and missing things
   assert.equal(await organise({ kind: 'tag', tag: 'two words' }), 'invalid_input');
   assert.equal(await organise({ kind: 'move' }), 'invalid_input');
   assert.equal(await organise({ kind: 'move', deckId: 999 }), 'deck_not_found');
+  assert.equal(await code('propose_goals', {}), 'invalid_input');
+  assert.equal(await code('propose_goals', { dailyGoalSessions: 9 }), 'invalid_input');
+  assert.equal(await code('propose_study_plan', { deckId, plan: {} }), 'invalid_input');
+  assert.equal(await code('propose_study_plan', { deckId, plan: { examDate: 'next May' } }), 'invalid_input');
+  assert.equal(await code('propose_study_plan', { deckId: 999, plan: { newPerDay: 5 } }), 'deck_not_found');
+  assert.equal(await code('propose_export', { deckId, format: 'pdf' }), 'invalid_input');
   const many = Array.from({ length: 501 }, () => ({ front: 'a', back: 'b' }));
   assert.equal(await code('propose_new_deck', { deck: { name: 'Big' }, cards: many }), 'invalid_input');
 });

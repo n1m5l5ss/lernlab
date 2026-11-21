@@ -6,6 +6,7 @@ import {
   draftOf,
   editCard,
   editChange,
+  editValue,
   fieldText,
   keptCards,
   keptIds,
@@ -66,6 +67,40 @@ test('a fix: the user rewrites the proposed text; an empty front or no change is
   assert.equal(acceptedBody(fix, editChange(d, 'back', ' ')), null);
   assert.equal(acceptedBody(fix, { ...d, changes: {} }), null);
   assert.equal(fieldText(undefined), '');
+});
+
+test('goals, a study plan and an export: the user can change the values; bad numbers or dates block accepting', () => {
+  const goals: AiRequest = { ...base, kind: 'set_goals', dailyGoalSessions: 3 };
+  let g = draftOf(goals);
+  assert.deepEqual(g.values, { dailyGoalSessions: '3' });
+  g = editValue(g, 'dailyGoalSessions', '2');
+  assert.deepEqual(acceptedBody(goals, g), { dailyGoalSessions: 2, newPerDay: undefined, note: undefined });
+  assert.equal(acceptedBody(goals, editValue(g, 'dailyGoalSessions', '9')), null);
+  assert.equal(acceptedBody(goals, editValue(g, 'dailyGoalSessions', 'two')), null);
+
+  const plan: AiRequest = {
+    ...base,
+    kind: 'study_plan',
+    deckId: 4,
+    plan: { examDate: '2027-03-01', goal: { label: 'B1', words: 800 }, newPerDay: 20 },
+  };
+  let p = draftOf(plan);
+  assert.deepEqual(p.values, { examDate: '2027-03-01', goalLabel: 'B1', goalWords: '800', newPerDay: '20' });
+  p = editValue(editValue(p, 'goalWords', '600'), 'newPerDay', '15');
+  assert.deepEqual(acceptedBody(plan, p), {
+    deckId: 4,
+    plan: { examDate: '2027-03-01', goal: { label: 'B1', words: 600 }, newPerDay: 15 },
+    note: undefined,
+  });
+  assert.equal(acceptedBody(plan, editValue(p, 'examDate', '')), null);
+  assert.equal(acceptedBody(plan, editValue(p, 'goalLabel', ' ')), null);
+
+  const exp: AiRequest = { ...base, kind: 'export_deck', deckId: 4, format: 'lernpack' };
+  assert.deepEqual(acceptedBody(exp, editValue(draftOf(exp), 'format', 'csv')), {
+    deckId: 4,
+    format: 'csv',
+    note: undefined,
+  });
 });
 
 test('a merge or tidy-up: the user leaves cards out; with none left there is nothing to accept', () => {

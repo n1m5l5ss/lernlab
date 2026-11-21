@@ -2,6 +2,8 @@
 // (MCP tools), from a file in ai-requests/ (anything could have written it) and from the window (the user's edits).
 import {
   AI_CARDS_MAX,
+  GOAL_SESSIONS,
+  NEW_PER_DAY_MAX,
   ORGANISE_KINDS,
   type AiRequest,
   type AiRequestBody,
@@ -89,6 +91,32 @@ export const REQUEST_BODIES = {
   organise_cards: {
     cardIds: cardIds(1000, 'The cards (at most 1000).'),
     action: organiseAction,
+    note,
+  },
+  set_goals: {
+    dailyGoalSessions: opt(
+      f.int(GOAL_SESSIONS.min, GOAL_SESSIONS.max, 'Daily goal: how many sessions a day count as done.'),
+    ),
+    newPerDay: opt(f.int(0, NEW_PER_DAY_MAX, 'New cards a day, for decks without their own number.')),
+    note,
+  },
+  study_plan: {
+    deckId: f.id('The deck the plan is for.'),
+    plan: f.object({
+      examDate: opt(f.date('The day of the exam or deadline (YYYY-MM-DD).')),
+      goal: opt(
+        f.object({
+          label: f.text(100, 'What the goal is, e.g. "B1 exam" or "Chapter 3 test".'),
+          words: f.int(0, 1_000_000, 'How many cards to know by then.'),
+        }),
+      ),
+      newPerDay: opt(f.int(0, 999, 'New cards a day for this deck.')),
+    }),
+    note,
+  },
+  export_deck: {
+    deckId: f.id('The deck to export.'),
+    format: f.oneOf(['csv', 'lernpack'] as const, 'csv (cards only) or lernpack (cards, media and settings).'),
     note,
   },
 } satisfies Record<AiRequestKind, Shape>;

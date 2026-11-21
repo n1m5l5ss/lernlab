@@ -2,8 +2,19 @@
 // The shapes are checked before they get here (apps/desktop/backend/ai-requests.ts). Card text goes through
 // upsertCards, so it is sanitised exactly like an imported deck, and new cards start new (no schedule).
 import type { DB } from './db';
-import { getDb } from './db';
-import { createDeck, deckByName, getDeck, stableId, upsertCards, type NormalizedCard } from './library';
+import { getDb, setMeta } from './db';
+import {
+  cleanDeckSettings,
+  createDeck,
+  deckByName,
+  getDeck,
+  stableId,
+  updateDeck,
+  upsertCards,
+  type DeckSettings,
+  type NormalizedCard,
+} from './library';
+import { getSettings } from './learn';
 import { bulkCards, type BulkAction } from './browse';
 import { rowToCard } from './exporter';
 import { UserError } from './errors';
@@ -35,7 +46,21 @@ export type AiRequestBody =
   | { kind: 'edit_card'; cardId: number; changes: CardChanges; note?: string }
   /** Keep one card (with changes); the others are suspended and tagged "merged", never deleted. */
   | { kind: 'merge_cards'; keepId: number; mergeIds: number[]; changes?: CardChanges; note?: string }
-  | { kind: 'organise_cards'; cardIds: number[]; action: OrganiseAction; note?: string };
+  | { kind: 'organise_cards'; cardIds: number[]; action: OrganiseAction; note?: string }
+  /** The daily goal (sessions a day) and new cards a day, for every deck. */
+  | { kind: 'set_goals'; dailyGoalSessions?: number; newPerDay?: number; note?: string }
+  /** A deck's study plan: its exam date, goal and new cards a day. */
+  | { kind: 'study_plan'; deckId: number; plan: StudyPlan; note?: string }
+  /** Export a deck: the window saves the file where the user chooses; nothing in LernLab changes. */
+  | { kind: 'export_deck'; deckId: number; format: 'csv' | 'lernpack'; note?: string };
+
+/** The parts of a deck's settings a study plan sets. Left out stays as it is. */
+export type StudyPlan = Partial<Pick<DeckSettings, 'examDate' | 'newPerDay'>> & {
+  goal?: { label: string; words: number };
+};
+/** Limits the Settings screen also uses. */
+export const GOAL_SESSIONS = { min: 1, max: 5 } as const;
+export const NEW_PER_DAY_MAX = 100;
 
 /** Fields an edit may change. Anything left out stays as it is. */
 export type CardChanges = Partial<Omit<ProposedCard, 'type' | 'choices' | 'correct'>>;
@@ -52,6 +77,9 @@ export const AI_REQUEST_KINDS: AiRequestKind[] = [
   'edit_card',
   'merge_cards',
   'organise_cards',
+  'set_goals',
+  'study_plan',
+  'export_deck',
 ];
 /** At most this many cards in one request. */
 export const AI_CARDS_MAX = 500;
@@ -84,8 +112,23 @@ const toCard = (requestId: string, deckName: string, c: ProposedCard, i: number)
   sourceId: stableId(`${deckName}\u0000ai\u0000${requestId}\u0000${i}`),
 });
 
+const clamp = (n: number, min: number, max: number) => Math.max(min, Math.min(max, Math.round(n)));
+
 /** Apply an accepted request (as the user may have edited it). */
 export function applyAiRequest(req: AiRequest, d: DB = getDb()): AiResult {
+  if (req.kind === 'set_goals') {
+    const next = { ...getSettings(d) };
+    if (req.dailyGoalSessions !== undefined)
+      next.dailyGoalSessions = clamp(req.dailyGoalSessions, GOAL_SESSIONS.min, GOAL_SESSIONS.max);
+    if (req.newPerDay !== undefined) next.newPerDay = clamp(req.newPerDay, 0, NEW_PER_DAY_MAX);
+    setMeta(d, 'settings', next);
+    return { deckId: null, added: 0, updated: 0, skipped: 0 };
+  }
+  if (req.kind === 'study_plan' || req.kind === 'export_deck') {
+    if (!getDeck(req.deckId, d)) throw new UserError('deck_not_found', 'Deck not found');
+    if (req.kind === 'study_plan') updateDeck(req.deckId, { settings: cleanDeckSettings(req.plan) as DeckSettings }, d);
+    return { deckId: req.deckId, added: 0, updated: 0, skipped: 0 };
+  }
   if (req.kind === 'create_deck') {
     const name = req.deck.name.trim();
     if (!name) throw new UserError('name_required', 'Name required');
@@ -136,6 +179,12 @@ export function requestCardIds(req: AiRequestBody): number[] {
   if (req.kind === 'merge_cards') return [req.keepId, ...req.mergeIds.filter((id) => id !== req.keepId)];
   if (req.kind === 'organise_cards') return req.cardIds;
   return [];
+}
+
+/** The settings a goals or study plan request would change, as they are now. */
+export function currentGoals(d: DB = getDb()) {
+  const s = getSettings(d);
+  return { dailyGoalSessions: s.dailyGoalSessions, newPerDay: s.newPerDay };
 }
 
 /** A card as it is now, as plain text, so the user can compare it with what the assistant proposes. */
