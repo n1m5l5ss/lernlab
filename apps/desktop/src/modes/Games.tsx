@@ -8,17 +8,37 @@ import { useKeys, type Ctx, type BlockResult } from '../ctx';
 import { Flip, TypedEngine } from './Exercises';
 import { Media, Rich } from '../rich';
 import { recallFor } from '../plan';
+import { Feedback } from '../components';
 
 type G<K extends Block['kind']> = { block: Extract<Block, { kind: K }>; ctx: Ctx; onDone: (r: BlockResult) => void };
 const now = () => performance.now();
 
-function useCountdown(seconds: number, onEnd: () => void) {
+/** A thin bar and a text count for a round's clock (nothing when the round is untimed). */
+function RoundClock({ left, total }: { left: number; total: number }) {
+  const { t } = useTranslation();
+  if (!total) return null;
+  return (
+    <div className="round-clock">
+      <div className="round-clock-bar" aria-hidden="true">
+        <i style={{ width: `${(left / total) * 100}%` }} />
+      </div>
+      <span className="pill">{t('games.secondsLeft', { count: left })}</span>
+    </div>
+  );
+}
+
+/** Seconds left on a round's clock. 0 seconds means no clock; the clock stops while `paused`. */
+function useCountdown(seconds: number, onEnd: () => void, paused: boolean) {
   const [left, setLeft] = useState(seconds);
   const end = useRef(onEnd);
   end.current = onEnd;
+  const hold = useRef(paused);
+  hold.current = paused;
   useEffect(() => {
+    if (!seconds) return;
     const t = setInterval(
       () =>
+        !hold.current &&
         setLeft((l) => {
           if (l <= 1) {
             clearInterval(t);
@@ -58,7 +78,7 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
     if (stats.current.correct > best) localStorage.setItem(pbKey, String(stats.current.correct));
     onDone({ correct: stats.current.correct, total: stats.current.total, bestCombo: stats.current.best });
   };
-  const left = useCountdown(block.seconds, finish);
+  const left = useCountdown(block.seconds, finish, ctx.paused);
   const item = items[idx % items.length];
   const pick = (c: string) => {
     if (flash || done.current) return;
@@ -74,6 +94,8 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
     setFlash({ ok, cat: item.category! });
     setTimeout(
       () => {
+        // Without a clock the sprint is one pass through the cards.
+        if (!block.seconds && st.total >= items.length) return finish();
         setFlash(null);
         setIdx((i) => i + 1);
         shown.current = now();
@@ -99,40 +121,36 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
       pick(cats[keys[e.key]]);
     }
   });
-  const label = isArticles ? item.word : stripHtml(item.target);
+  // Never show the article being asked for, even when a card's word field still carries it.
+  const label = isArticles ? splitArticle(stripHtml(item.word)).word : stripHtml(item.target);
   return (
     <div>
-      <div className="timer">
-        <i style={{ width: `${(left / block.seconds) * 100}%` }} />
-      </div>
-      <div className="row">
-        <div className="blocktitle grow">
-          {isArticles ? t('games.sprintArticles', { seconds: left }) : t('games.sprint', { seconds: left })}
-        </div>
+      <div className="round-head">
+        <div className="blocktitle grow">{isArticles ? t('games.sprintArticles') : t('games.sprint')}</div>
         <span className="pill">{t('games.hits', { count: stats.current.correct })}</span>
-        <span className="pill">{t('games.best', { count: best })}</span>
+        {best > 0 && <span className="pill">{t('games.best', { count: best })}</span>}
       </div>
-      <div className="center" style={{ margin: '28px 0' }}>
-        <div className="prompt de" style={{ fontSize: label.length > 24 ? 34 : 52, marginBottom: 4 }}>
-          {flash && isArticles ? <span className={`art-${flash.cat}`}>{flash.cat} </span> : null}
+      <RoundClock left={left} total={block.seconds} />
+      <div className="round-prompt">
+        <div className="prompt" lang={ctx.lang ?? undefined} aria-live="polite">
           {label}
         </div>
-        <div className="muted">{isArticles ? item.meaning : ''}</div>
-        {flash && !isArticles && (
-          <div className={`feedback ${flash.ok ? 'right' : 'wrong'}`} style={{ display: 'inline-block' }}>
-            {flash.cat}
-          </div>
+        {isArticles && <div className="muted">{item.meaning}</div>}
+        {flash && (
+          <Feedback tone={flash.ok ? 'right' : 'wrong'}>
+            {flash.ok ? t('games.sorted', { category: flash.cat }) : t('games.itWas', { category: flash.cat })}
+          </Feedback>
         )}
       </div>
-      <div className="gender3" style={{ gridTemplateColumns: `repeat(${cats.length}, 1fr)` }}>
+      <div className="sprint-options" style={{ gridTemplateColumns: `repeat(${cats.length}, 1fr)` }}>
         {cats.map((c, i) => (
           <button
             key={c}
-            className={`gbtn ${isArticles ? c : `cat-${i}`} ${flash && c !== flash.cat ? 'dim' : ''}`}
-            style={{ fontSize: c.length > 8 ? 18 : undefined }}
+            className={`opt ${flash && c === flash.cat ? 'right' : ''}`}
+            aria-disabled={!!flash || undefined /* not disabled: that would drop keyboard focus */}
             onClick={() => pick(c)}
           >
-            {c} <span className="kbd">{i + 1}</span>
+            <span className="k">{i + 1}</span> {c}
           </button>
         ))}
       </div>
@@ -150,8 +168,10 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
   const [gone, setGone] = useState<Set<number>>(new Set());
   const [bad, setBad] = useState<string | null>(null);
   const missedOnce = useRef(new Set<number>());
+  const board = useRef<HTMLDivElement>(null);
   const start = useRef(now());
   const [elapsed, setElapsed] = useState(0);
+  const timed = (ctx.settings.blitzSeconds ?? 8) > 0; // the stopwatch is hidden when timers are off
   useEffect(() => {
     const t = setInterval(() => setElapsed(Math.floor((now() - start.current) / 1000)), 250);
     return () => clearInterval(t);
@@ -161,10 +181,12 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
     if (sel === null) return;
     if (it.id === sel) {
       ctx.answer({ itemId: it.id, format: 'match', correct: !missedOnce.current.has(it.id), shownAt: start.current });
-      if (ctx.lang) say(it.target, 0.95, ctx.lang);
+      if (ctx.lang) say(it.target, 0.95, ctx.lang, it.deckId);
       const g = new Set(gone).add(it.id);
       setGone(g);
       setSel(null);
+      // The matched pair disappears; keyboard focus moves on to the next word instead of getting lost.
+      requestAnimationFrame(() => board.current?.querySelector<HTMLButtonElement>('.col .opt:not(:disabled)')?.focus());
       if (g.size === items.length) {
         const correct = items.length - missedOnce.current.size;
         setTimeout(() => onDone({ correct, total: items.length }), 500);
@@ -179,16 +201,19 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
 
   return (
     <div>
-      <div className="row">
+      <div className="round-head">
         <div className="blocktitle grow">{t('games.match')}</div>
-        <span className="pill">{t('games.elapsed', { count: elapsed })}</span>
+        <span className="pill">{t('games.pairsLeft', { count: items.length - gone.size })}</span>
+        {timed && <span className="pill">{t('games.elapsed', { count: elapsed })}</span>}
       </div>
-      <div className="match" style={{ marginTop: 10 }}>
+      <div className="match" ref={board}>
         <div className="col">
           {left.map((it) => (
             <button
               key={it.id}
-              className={`${gone.has(it.id) ? 'gone' : ''} ${sel === it.id ? 'sel' : ''}`}
+              className={`opt ${gone.has(it.id) ? 'gone' : ''}`}
+              aria-pressed={sel === it.id}
+              disabled={gone.has(it.id)}
               onClick={() => {
                 sfx.tap();
                 setSel(it.id);
@@ -202,7 +227,8 @@ export function MatchPairs({ block, ctx, onDone }: G<'match'>) {
           {right.map((it) => (
             <button
               key={it.id}
-              className={`${gone.has(it.id) ? 'gone' : ''} ${bad === `r${it.id}` ? 'bad' : ''}`}
+              className={`opt ${gone.has(it.id) ? 'gone' : ''} ${bad === `r${it.id}` ? 'wrong' : ''}`}
+              disabled={gone.has(it.id)}
               onClick={() => pickRight(it)}
             >
               {stripHtml(it.meaning)}
@@ -232,8 +258,12 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
       onDone({ correct: score.hit, total: score.hit + score.miss });
     }
   };
-  const left = useCountdown(block.seconds, finish);
+  const left = useCountdown(block.seconds, finish, ctx.paused);
   const elapsed = block.seconds - left;
+  // Drops fall at a pace that matches the timer setting (a 90 s relaxed round falls slower than a 45 s one).
+  const pace = 60 / block.seconds;
+  const hold = useRef(ctx.paused);
+  hold.current = ctx.paused;
 
   useEffect(() => {
     input.current?.focus();
@@ -244,7 +274,7 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
     let spawnIn = 0;
     const loop = () => {
       const t = now();
-      const dt = (t - last) / 1000;
+      const dt = hold.current ? 0 : (t - last) / 1000;
       last = t;
       spawnIn -= dt;
       setDrops((ds) => {
@@ -267,10 +297,10 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
               item,
               x: 15 + Math.random() * 70,
               y: 0,
-              speed: 26 + Math.min(40, next.current * 2.2),
+              speed: (26 + Math.min(40, next.current * 2.2)) * pace,
             },
           ];
-          spawnIn = Math.max(1.1, 2.6 - next.current * 0.08);
+          spawnIn = Math.max(1.1, 2.6 - next.current * 0.08) / pace;
         }
         return out;
       });
@@ -299,19 +329,27 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
     }
   };
 
+  const latest = drops.find((d) => d.key === keyN.current - 1 && !d.hit);
   return (
     <div>
-      <div className="timer">
-        <i style={{ width: `${(left / block.seconds) * 100}%` }} />
-      </div>
-      <div className="row">
-        <div className="blocktitle grow">{t('games.rain', { seconds: left })}</div>
+      <div className="round-head">
+        <div className="blocktitle grow">{t('games.rain')}</div>
         <span className="pill">{t('games.rainHit', { count: score.hit })}</span>
         <span className="pill">{t('games.rainMiss', { count: score.miss })}</span>
       </div>
-      <div className="rain" style={{ marginTop: 8 }}>
+      <RoundClock left={left} total={block.seconds} />
+      {/* The rain is drawn for the eyes; screen readers hear each new word as it starts to fall. */}
+      <p className="sr-only" aria-live="polite">
+        {latest ? stripHtml(qa(latest.item).prompt) : ''}
+      </p>
+      <div className="rain" aria-hidden="true">
         {drops.map((d) => (
-          <div key={d.key} className={`drop ${d.hit ? 'hit' : ''}`} style={{ left: `${d.x}%`, top: d.y }}>
+          <div
+            key={d.key}
+            className={`drop ${d.hit ? 'hit' : ''}`}
+            lang={d.hit ? (ctx.lang ?? undefined) : undefined}
+            style={{ left: `${d.x}%` /* rtl-ignore: a random spot, centred */, top: d.y }}
+          >
             {d.hit ? qa(d.item).answer : stripHtml(qa(d.item).prompt)}
           </div>
         ))}
@@ -319,15 +357,15 @@ export function WordRain({ block, ctx, onDone }: G<'rain'>) {
       </div>
       <input
         ref={input}
-        className="typed"
-        style={{ marginTop: 12 }}
+        className="typed rain-input"
+        aria-label={t('games.rainPlaceholder')}
         value={value}
         onChange={(e) => tryType(e.target.value)}
         placeholder={t('games.rainPlaceholder')}
         spellCheck={false}
         autoComplete="off"
       />
-      <div className="small muted" style={{ marginTop: 6 }}>
+      <div className="small muted round-note">
         {ctx.lang === 'de' ? `${t('games.articleOptional')} ` : ''}
         {t('games.rainSpeed', { seconds: elapsed })}
       </div>
@@ -386,20 +424,19 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
   const ex = recallFor(item);
   return (
     <div>
-      <div className="boss">
-        <div className={`bossface ${hit ? 'hit' : ''}`}>{over === true ? '💀' : '👾'}</div>
-        <div className="hp">
-          <div className="row">
-            <b className="grow">{t('games.boss')}</b>
-            <span className="lives" title={t('games.lives', { count: Math.max(0, lives), total: block.lives })}>
-              {'❤️'.repeat(Math.max(0, lives))}
-              {'🖤'.repeat(Math.max(0, block.lives - lives))}
-            </span>
-          </div>
-          <div className="bar">
-            <i style={{ width: `${(hp / ids.length) * 100}%` }} />
-          </div>
-        </div>
+      <div className="round-head">
+        <div className="blocktitle grow">{t('games.boss')}</div>
+        <span className="pill">{t('games.lives', { count: Math.max(0, lives), total: block.lives })}</span>
+      </div>
+      <div
+        className={`boss-bar ${hit ? 'hit' : ''}`}
+        role="meter"
+        aria-label={t('games.bossLeft')}
+        aria-valuemin={0}
+        aria-valuemax={ids.length}
+        aria-valuenow={hp}
+      >
+        <i style={{ width: `${(hp / ids.length) * 100}%` }} />
       </div>
       {over === null ? (
         ex.type === 'typed' ? (
@@ -426,10 +463,8 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
           <Flip key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
         ) : null
       ) : (
-        <div className="card center">
-          <div className="big" style={{ fontSize: 40, fontWeight: 900 }}>
-            {over ? t('games.won') : t('games.lost')}
-          </div>
+        <div className="round-end">
+          <h2>{over ? t('games.won') : t('games.lost')}</h2>
           <p className="muted">{over ? t('games.wonText', { xp: 30, count: correct.current }) : t('games.lostText')}</p>
           <button
             className="btn primary"

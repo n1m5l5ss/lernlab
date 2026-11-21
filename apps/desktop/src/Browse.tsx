@@ -1,134 +1,155 @@
-import { useEffect, useState } from 'react';
+// Card browser: search and filter every card, select many, and change them together.
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { CARD_STATES, type BulkAction, type CardState } from '@lernlab/core/browse';
+import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
-import { Media, Rich } from './rich';
+import { selectClick, visibleRange } from './browse-logic';
+import { formatNumber } from './i18n';
+import { EMPTY, formFor, type Form } from './card-editor-logic';
+import { CardEditor } from './CardEditor';
 
-const LEVELS = ['new', 'seen', 'recognised', 'matched', 'recalled', 'inContext', 'spoken'];
-/** Cloze gap markers are card syntax, not text. */
-const CLOZE = { open: '{{c1::', close: '}}' };
-const EMPTY = {
-  front: '',
-  back: '',
-  example: '',
-  exampleTranslation: '',
-  explanation: '',
-  notes: '',
-  category: '',
-  tags: '',
-  image: '',
-  audio: '',
-  video: '',
-  alt: '',
-  type: 'basic',
-  choices: '',
-  correct: '',
-  steps: '',
-};
+type AppState = OutputOf<'state.get'>;
+type Found = OutputOf<'cards.find'>;
+type Filter = { deckId: number | null; q: string; tag: string; state: CardState | '' };
+/** Row height in px; the list draws only the rows in view, so 10,000 cards scroll smoothly. */
+const ROW = 44;
 
-export function Browse({ state, refresh }: { state: any; refresh: () => void }) {
+export function Browse({ state, refresh }: { state: AppState; refresh: () => Promise<unknown> }) {
   const { t } = useTranslation();
-  const deck = state.decks.find((d: any) => d.id === state.activeDeck);
-  const [q, setQ] = useState('');
-  const [data, setData] = useState<any>({ cards: [], total: 0 });
-  const [sel, setSel] = useState<any>(null);
-  const load = () => deck && api.cards(deck.id, q).then(setData);
-  useEffect(() => {
-    load();
-  }, [deck?.id, q]);
-  if (!deck) return <div className="card muted">{t('browse.noDeck')}</div>;
+  const [filter, setFilter] = useState<Filter>({ deckId: state.activeDeck ?? null, q: '', tag: '', state: '' });
+  const [found, setFound] = useState<Found>({ total: 0, rows: [], limit: 0 });
+  const [sel, setSel] = useState<Set<number>>(new Set());
+  const [editing, setEditing] = useState<Form | null>(null);
+  const [notice, setNotice] = useState('');
+  const deckName = useMemo(() => new Map(state.decks.map((d) => [d.id, d.name])), [state.decks]);
 
-  const edit = (c: any) =>
-    setSel({
-      id: c.id,
-      front: c.target,
-      back: c.meaning,
-      example: c.sentenceHtml,
-      exampleTranslation: c.sentenceMeaning,
-      explanation: c.grammar,
-      notes: c.notes,
-      category: c.category ?? '',
-      tags: c.tags.join(' '),
-      image: c.image ?? '',
-      audio: c.audio ?? '',
-      video: c.video ?? '',
-      alt: c.extra?.alt ?? '',
-      type: c.kind === 'mcq' || c.kind === 'order' || c.kind === 'cloze' ? c.kind : 'basic',
-      choices: c.extra?.choices ?? '',
-      correct: c.extra?.correct ?? '',
-      steps: c.extra?.steps ?? '',
-      suspended: c.suspended,
-      starred: c.starred,
-      item: c,
-    });
+  const load = () =>
+    api
+      .findCards({
+        deckId: filter.deckId,
+        q: filter.q || undefined,
+        tag: filter.tag || undefined,
+        state: filter.state || undefined,
+      })
+      .then((f) => {
+        setFound(f);
+        const shown = new Set(f.rows.map((r) => r.id));
+        setSel((s) => new Set([...s].filter((id) => shown.has(id))));
+      });
+  useEffect(() => {
+    const timer = setTimeout(load, filter.q ? 150 : 0);
+    return () => clearTimeout(timer);
+  }, [filter]);
+
+  if (state.decks.length === 0) return <div className="card muted">{t('browse.noDeck')}</div>;
+
+  const set = <K extends keyof Filter>(k: K, value: Filter[K]) => setFilter((f) => ({ ...f, [k]: value }));
+  const open = (id: number) => api.getCard(id).then((c) => setEditing(formFor(c)));
+  const afterChange = async (message = '') => {
+    setNotice(message);
+    await load();
+    await refresh();
+  };
+  const apply = async (ids: number[], action: BulkAction) => {
+    const r = await api.bulkCards(ids, action);
+    if (action.kind === 'delete') {
+      setSel(new Set());
+      if (editing?.id && ids.includes(editing.id)) setEditing(null);
+    }
+    await afterChange(t(action.kind === 'delete' ? 'browse.bulk.deleted' : 'browse.bulk.changed', { count: r.count }));
+  };
 
   return (
-    <div className="col" style={{ gap: 12 }}>
-      <div className="row">
-        <h2 className="grow" style={{ margin: 0 }}>
-          {deck.name} <span className="small muted">{t('browse.count', { count: data.total })}</span>
-        </h2>
-        <input
-          className="input"
-          style={{ width: 260 }}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder={t('browse.search')}
-          aria-label={t('browse.search')}
-        />
-        <button className="btn primary" onClick={() => setSel({ ...EMPTY })}>
+    <div className="col browse" style={{ gap: 'var(--space-3)' }}>
+      <div className="browse-head">
+        <p className="muted">{t('browse.count', { count: found.total, n: formatNumber(found.total) })}</p>
+        <button className="btn primary" onClick={() => setEditing({ ...EMPTY })}>
           {t('browse.addCard')}
         </button>
       </div>
+      <div className="browse-filters" role="search">
+        <input
+          className="input"
+          type="search"
+          value={filter.q}
+          onChange={(e) => set('q', e.target.value)}
+          placeholder={t('browse.search')}
+          aria-label={t('browse.search')}
+        />
+        <select
+          className="input"
+          aria-label={t('browse.filterDeck')}
+          value={filter.deckId ?? ''}
+          onChange={(e) => set('deckId', e.target.value ? Number(e.target.value) : null)}
+        >
+          <option value="">{t('browse.allDecks')}</option>
+          {state.decks.map((d) => (
+            <option key={d.id} value={d.id}>
+              {d.name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="input"
+          aria-label={t('browse.filterTag')}
+          value={filter.tag}
+          onChange={(e) => set('tag', e.target.value)}
+        >
+          <option value="">{t('browse.anyTag')}</option>
+          {state.tags.map((tag) => (
+            <option key={tag} value={tag}>
+              {tag}
+            </option>
+          ))}
+        </select>
+        <select
+          className="input"
+          aria-label={t('browse.filterState')}
+          value={filter.state}
+          onChange={(e) => set('state', e.target.value as CardState | '')}
+        >
+          <option value="">{t('browse.anyState')}</option>
+          {CARD_STATES.map((s) => (
+            <option key={s} value={s}>
+              {t(`browse.state.${s}`)}
+            </option>
+          ))}
+        </select>
+      </div>
+      {sel.size > 0 && (
+        <BulkBar
+          count={sel.size}
+          decks={state.decks}
+          tags={state.tags}
+          onApply={(action) => apply([...sel], action)}
+          onClear={() => setSel(new Set())}
+        />
+      )}
+      {notice && (
+        <p className="small muted browse-notice" role="status">
+          {notice}
+        </p>
+      )}
       <div className="split">
-        <div className="table-wrap">
-          <table className="t">
-            <thead>
-              <tr>
-                <th>{t('browse.colFront')}</th>
-                <th>{t('browse.colBack')}</th>
-                <th>{t('browse.colLevel')}</th>
-                <th aria-label={t('browse.colMedia')}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.cards.map((c: any) => (
-                <tr
-                  key={c.id}
-                  className={sel?.id === c.id ? 'sel' : ''}
-                  onClick={() => edit(c)}
-                  style={{ opacity: c.suspended ? 0.45 : 1 }}
-                >
-                  <td>
-                    {c.starred ? '★ ' : ''}
-                    {c.target.replace(/<[^>]+>/g, '').slice(0, 60)}
-                  </td>
-                  <td className="muted">{c.meaning.replace(/<[^>]+>/g, '').slice(0, 50)}</td>
-                  <td className="small">{t(`browse.level.${c.due ? (LEVELS[c.mastery + 1] ?? 'spoken') : 'new'}`)}</td>
-                  <td className="small muted">
-                    {c.image && <span title={t('browse.hasImage')}>🖼</span>}
-                    {c.audio && <span title={t('browse.hasAudio')}>🔊</span>}
-                    {c.video && <span title={t('browse.hasVideo')}>🎬</span>}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {data.total > data.cards.length && (
-            <div className="small muted" style={{ padding: 10 }}>
-              {t('browse.showingFirst', { count: data.cards.length })}
-            </div>
-          )}
-        </div>
-        {sel ? (
+        <CardList
+          found={found}
+          sel={sel}
+          setSel={setSel}
+          openId={editing?.id}
+          showDeck={filter.deckId === null}
+          deckName={deckName}
+          onOpen={open}
+        />
+        {editing ? (
           <CardEditor
-            key={sel.id ?? 'new'}
-            card={sel}
-            deckId={deck.id}
-            onClose={() => setSel(null)}
-            onSaved={() => {
-              load();
-              refresh();
-            }}
+            key={editing.id ?? 'new'}
+            card={editing}
+            deckId={filter.deckId ?? state.activeDeck ?? state.decks[0].id}
+            decks={state.decks}
+            onClose={() => setEditing(null)}
+            onSaved={() => afterChange()}
+            onDelete={(id) => apply([id], { kind: 'delete' })}
           />
         ) : (
           <div className="card muted">{t('browse.selectHint')}</div>
@@ -138,161 +159,230 @@ export function Browse({ state, refresh }: { state: any; refresh: () => void }) 
   );
 }
 
-function CardEditor({
-  card,
-  deckId,
-  onClose,
-  onSaved,
+function CardList({
+  found,
+  sel,
+  setSel,
+  openId,
+  showDeck,
+  deckName,
+  onOpen,
 }: {
-  card: any;
-  deckId: number;
-  onClose: () => void;
-  onSaved: () => void;
+  found: Found;
+  sel: Set<number>;
+  setSel: (s: Set<number>) => void;
+  openId?: number;
+  showDeck: boolean;
+  deckName: Map<number, string>;
+  onOpen: (id: number) => void;
 }) {
   const { t } = useTranslation();
-  const [c, setC] = useState(card);
-  const [msg, setMsg] = useState('');
-  const set = (k: string, v: any) => setC({ ...c, [k]: v });
-  const upload = async (k: 'image' | 'audio' | 'video', f?: File) => {
-    if (!f) return;
-    try {
-      const r = await api.uploadMedia(f);
-      set(k, r.file);
-    } catch (e: any) {
-      setMsg(e.message);
-    }
-  };
-  const save = async () => {
-    try {
-      if (c.id) await api.saveCard(c.id, c);
-      else await api.addCard(deckId, c);
-      setMsg(t('common.saved'));
-      onSaved();
-      if (!c.id) setC({ ...EMPTY, type: c.type });
-    } catch (e: any) {
-      setMsg(e.message);
-    }
-  };
-  const toggle = async (k: 'suspended' | 'starred') => {
-    await api.saveCard(c.id, { [k]: !c[k] });
-    set(k, !c[k]);
-    onSaved();
-  };
-  const del = async () => {
-    if (!confirm(t('browse.editor.confirmDelete'))) return;
-    await api.deleteCard(c.id);
-    onSaved();
-    onClose();
-  };
-  const f = (k: string, label: string, ph = '', area = false) => (
-    <>
-      <label className="lbl">{label}</label>
-      {area ? (
-        <textarea className="input" value={c[k] ?? ''} onChange={(e) => set(k, e.target.value)} placeholder={ph} />
-      ) : (
-        <input className="input" value={c[k] ?? ''} onChange={(e) => set(k, e.target.value)} placeholder={ph} />
-      )}
-    </>
-  );
-  const preview = { ...(card.item ?? {}), image: c.image || null, video: c.video || null } as any;
+  const box = useRef<HTMLDivElement>(null);
+  const anchor = useRef<number | null>(null);
+  const [view, setView] = useState({ top: 0, height: 600 });
+  const ids = useMemo(() => found.rows.map((r) => r.id), [found.rows]);
+  useEffect(() => {
+    const el = box.current;
+    if (!el) return;
+    const measure = () => setView({ top: el.scrollTop, height: el.clientHeight });
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  useEffect(() => {
+    if (box.current) box.current.scrollTop = 0;
+    anchor.current = null;
+  }, [found]);
+  const { start, end } = visibleRange(view.top, view.height, ROW, found.rows.length);
+  const allOn = ids.length > 0 && ids.every((id) => sel.has(id));
+
   return (
-    <div className="card" style={{ position: 'sticky', top: 12 }}>
-      <div className="row">
-        <b className="grow">{c.id ? t('browse.editor.editTitle') : t('browse.editor.newTitle')}</b>
-        <button className="btn ghost" onClick={onClose} aria-label={t('browse.editor.closeLabel')}>
-          ✕
-        </button>
+    <div className={`browse-list${showDeck ? '' : ' one-deck'}`}>
+      <div className="browse-row browse-row-head">
+        <input
+          type="checkbox"
+          checked={allOn}
+          disabled={ids.length === 0}
+          onChange={() => setSel(allOn ? new Set() : new Set(ids))}
+          aria-label={t('browse.selectAll', { count: ids.length })}
+        />
+        <span>{t('browse.colFront')}</span>
+        <span>{t('browse.colBack')}</span>
+        {showDeck && <span>{t('browse.colDeck')}</span>}
+        <span>{t('browse.colState')}</span>
       </div>
-      <label className="lbl">{t('browse.editor.type')}</label>
-      <select className="input" value={c.type} onChange={(e) => set('type', e.target.value)}>
-        <option value="basic">{t('browse.editor.types.basic')}</option>
-        <option value="cloze">{t('browse.editor.types.cloze', CLOZE)}</option>
-        <option value="mcq">{t('browse.editor.types.mcq')}</option>
-        <option value="order">{t('browse.editor.types.order')}</option>
-      </select>
-      {f(
-        'front',
-        c.type === 'mcq'
-          ? t('browse.editor.question')
-          : c.type === 'order'
-            ? t('browse.editor.prompt')
-            : t('browse.editor.front'),
-        c.type === 'cloze' ? t('browse.editor.clozePlaceholder', CLOZE) : t('browse.editor.frontPlaceholder'),
-        true,
-      )}
-      {c.type === 'mcq' ? (
-        <>
-          {f('choices', t('browse.editor.choices'), t('browse.editor.choicesPlaceholder'))}
-          {f('correct', t('browse.editor.correct'), '2|3')}
-        </>
-      ) : c.type === 'order' ? (
-        f('steps', t('browse.editor.steps'), t('browse.editor.stepsPlaceholder'))
-      ) : (
-        f(
-          'back',
-          c.type === 'cloze' ? t('browse.editor.extra') : t('browse.editor.back'),
-          t('browse.editor.backPlaceholder'),
-          true,
-        )
-      )}
-      {c.type === 'basic' && f('alt', t('browse.editor.alt'), t('browse.editor.altPlaceholder'))}
-      {f('explanation', t('browse.editor.explanation'), t('browse.editor.explanationPlaceholder'), true)}
-      {c.type === 'basic' && f('example', t('browse.editor.example'), t('browse.editor.examplePlaceholder'))}
-      {c.type === 'basic' && f('exampleTranslation', t('browse.editor.exampleTranslation'))}
-      <div className="row" style={{ gap: 10 }}>
-        <div className="grow">{f('category', t('browse.editor.category'), t('browse.editor.categoryPlaceholder'))}</div>
-        <div className="grow">{f('tags', t('browse.editor.tags'), t('browse.editor.tagsPlaceholder'))}</div>
-      </div>
-      <label className="lbl">{t('browse.editor.media')}</label>
-      <Media item={preview} size="sm" />
-      <div className="row small" style={{ flexWrap: 'wrap', gap: 8 }}>
-        {(['image', 'audio', 'video'] as const).map((k) => (
-          <label key={k} className="btn ghost" style={{ padding: '6px 10px' }}>
-            {c[k] ? t(`browse.editor.mediaSet.${k}`) : t(`browse.editor.mediaAdd.${k}`)}
-            <input
-              type="file"
-              hidden
-              accept={k === 'image' ? 'image/*' : k === 'audio' ? 'audio/*' : 'video/*,image/gif'}
-              onChange={(e) => upload(k, e.target.files?.[0])}
-            />
-          </label>
-        ))}
-        {(c.image || c.audio || c.video) && (
-          <button
-            className="btn ghost"
-            style={{ padding: '6px 10px' }}
-            onClick={() => setC({ ...c, image: '', audio: '', video: '' })}
-          >
-            {t('browse.editor.removeMedia')}
-          </button>
-        )}
-      </div>
-      {c.front && c.type === 'basic' && (
-        <div className="small muted" style={{ marginTop: 10 }}>
-          {t('browse.editor.preview')} <Rich html={c.front} /> → <Rich html={c.back} />
+      <div
+        ref={box}
+        className="browse-scroll"
+        role="list"
+        aria-label={t('browse.title')}
+        onScroll={(e) => setView({ top: e.currentTarget.scrollTop, height: e.currentTarget.clientHeight })}
+      >
+        {found.rows.length === 0 && <p className="muted browse-empty">{t('browse.noMatch')}</p>}
+        <div style={{ height: found.rows.length * ROW, position: 'relative' }}>
+          {found.rows.slice(start, end).map((r, k) => {
+            const i = start + k;
+            return (
+              <div
+                key={r.id}
+                role="listitem"
+                className={`browse-row${openId === r.id ? ' open' : ''}${sel.has(r.id) ? ' sel' : ''}${r.suspended ? ' suspended' : ''}`}
+                style={{ top: i * ROW }}
+              >
+                <input
+                  type="checkbox"
+                  checked={sel.has(r.id)}
+                  onClick={(e) => {
+                    setSel(selectClick(sel, ids, i, anchor.current, e.shiftKey));
+                    anchor.current = i;
+                  }}
+                  onChange={() => {}}
+                  aria-label={t('browse.selectCard', { front: r.front })}
+                />
+                <button className="browse-open" onClick={() => onOpen(r.id)}>
+                  {r.starred && <span aria-label={t('browse.state.starred')}>★ </span>}
+                  {r.front}
+                </button>
+                <span className="muted">{r.back}</span>
+                {showDeck && <span className="small muted">{deckName.get(r.deckId)}</span>}
+                <span className="small">
+                  <span className={`browse-state ${r.state}`}>{t(`browse.state.${r.state}`)}</span>
+                  {r.suspended && <span className="browse-state">{t('browse.state.suspended')}</span>}
+                </span>
+              </div>
+            );
+          })}
         </div>
+      </div>
+      {found.total > found.rows.length && (
+        <p className="small muted browse-empty">{t('browse.showingFirst', { count: found.rows.length })}</p>
       )}
-      <div className="actions" style={{ flexWrap: 'wrap' }}>
-        <button className="btn primary" onClick={save} disabled={!c.front?.trim()}>
-          {c.id ? t('common.save') : t('browse.editor.add')}
-        </button>
-        {c.id && (
-          <button className="btn ghost" onClick={() => toggle('starred')}>
-            {c.starred ? t('browse.editor.starred') : t('browse.editor.star')}
+    </div>
+  );
+}
+
+type Pending = 'tag' | 'untag' | 'move' | 'delete' | null;
+
+function BulkBar({
+  count,
+  decks,
+  tags,
+  onApply,
+  onClear,
+}: {
+  count: number;
+  decks: AppState['decks'];
+  tags: string[];
+  onApply: (action: BulkAction) => Promise<void>;
+  onClear: () => void;
+}) {
+  const { t } = useTranslation();
+  const [pending, setPending] = useState<Pending>(null);
+  const [tag, setTag] = useState('');
+  const [deckId, setDeckId] = useState(decks[0]?.id ?? 0);
+  const confirm = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (pending === 'delete') confirm.current?.showModal?.();
+  }, [pending]);
+  const run = async (action: BulkAction) => {
+    setPending(null);
+    setTag('');
+    await onApply(action);
+  };
+  const cleanTag = tag.trim().replace(/\s+/g, '-');
+
+  return (
+    <div className="panel browse-bulk" role="toolbar" aria-label={t('browse.bulk.label')}>
+      <b>{t('browse.bulk.selected', { count })}</b>
+      <button className="btn ghost" onClick={() => setPending('tag')} aria-pressed={pending === 'tag'}>
+        {t('browse.bulk.tag')}
+      </button>
+      <button className="btn ghost" onClick={() => setPending('untag')} aria-pressed={pending === 'untag'}>
+        {t('browse.bulk.untag')}
+      </button>
+      <button className="btn ghost" onClick={() => setPending('move')} aria-pressed={pending === 'move'}>
+        {t('browse.bulk.move')}
+      </button>
+      <button className="btn ghost" onClick={() => run({ kind: 'suspend' })}>
+        {t('browse.bulk.suspend')}
+      </button>
+      <button className="btn ghost" onClick={() => run({ kind: 'unsuspend' })}>
+        {t('browse.bulk.unsuspend')}
+      </button>
+      <button className="btn danger" onClick={() => setPending('delete')}>
+        {t('common.delete')}
+      </button>
+      <button className="btn ghost" onClick={onClear}>
+        {t('browse.bulk.clear')}
+      </button>
+      {(pending === 'tag' || pending === 'untag') && (
+        <form
+          className="browse-bulk-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (cleanTag) run({ kind: pending, tag: cleanTag });
+          }}
+        >
+          <input
+            className="input"
+            list="browse-tags"
+            autoFocus
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+            aria-label={t('browse.bulk.tagName')}
+            placeholder={t('browse.bulk.tagName')}
+          />
+          <datalist id="browse-tags">
+            {tags.map((x) => (
+              <option key={x} value={x} />
+            ))}
+          </datalist>
+          <button className="btn primary" disabled={!cleanTag}>
+            {t('browse.bulk.apply')}
           </button>
-        )}
-        {c.id && (
-          <button className="btn ghost" onClick={() => toggle('suspended')}>
-            {c.suspended ? t('browse.editor.unsuspend') : t('browse.editor.suspend')}
-          </button>
-        )}
-        {c.id && (
-          <button className="btn ghost" style={{ color: 'var(--bad)' }} onClick={del}>
+        </form>
+      )}
+      {pending === 'move' && (
+        <form
+          className="browse-bulk-form"
+          onSubmit={(e) => {
+            e.preventDefault();
+            run({ kind: 'move', deckId });
+          }}
+        >
+          <select
+            className="input"
+            autoFocus
+            value={deckId}
+            onChange={(e) => setDeckId(Number(e.target.value))}
+            aria-label={t('browse.bulk.moveTo')}
+          >
+            {decks.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
+            ))}
+          </select>
+          <button className="btn primary">{t('browse.bulk.apply')}</button>
+        </form>
+      )}
+      <dialog
+        ref={confirm}
+        className="panel session-dialog"
+        aria-labelledby="bulk-delete-title"
+        onClose={() => setPending((p) => (p === 'delete' ? null : p))}
+      >
+        <h2 id="bulk-delete-title">{t('browse.bulk.deleteTitle', { count })}</h2>
+        <p>{t('browse.bulk.deleteBody', { count })}</p>
+        <div className="session-dialog-actions">
+          <button className="btn danger" onClick={() => run({ kind: 'delete' })}>
             {t('common.delete')}
           </button>
-        )}
-        {msg && <span className="small">{msg}</span>}
-      </div>
+          <button className="btn primary" autoFocus onClick={() => confirm.current?.close()}>
+            {t('browse.bulk.keep', { count })}
+          </button>
+        </div>
+      </dialog>
     </div>
   );
 }

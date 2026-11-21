@@ -1,0 +1,27 @@
+/* ProgressBar. meter: 8 px and rounded (Home tiles); session-bar: the 4 px bar along the top of the
+   study screen. The global .meter in styles.css is the same look for the decorative bars that Decks,
+   Progress and Summary still draw by hand; it goes once they use this component. */
+.meter {
+  height: 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-subtle);
+  overflow: hidden;
+}
+.meter > i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-accent);
+}
+.session-bar {
+  position: fixed;
+  inset: 0 0 auto;
+  height: var(--size-progress-bar);
+  background: var(--color-subtle);
+}
+.session-bar > i {
+  display: block;
+  height: 100%;
+  background: var(--color-accent);
+  transition: width var(--motion-card) var(--motion-ease-enter);
+}

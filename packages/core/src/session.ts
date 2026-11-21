@@ -5,13 +5,14 @@ import { teacherFor } from './teacher';
 import { getDb, type DB } from './db';
 import { host } from './host';
 import {
-  activeDeckId,
   allItems,
-  deckNewPerDay,
+  currentSource,
+  freshPerDeck,
+  scopeFor,
+  type StudySource,
   dueItemIds,
   getSettings,
   grammarItemIds,
-  introducedTodayCount,
   itemsByIds,
   learnedIds,
   learningTodayIds,
@@ -23,7 +24,7 @@ import {
 import { getDeck } from './library';
 import * as gen from './exercises';
 import { qa } from './cards';
-import { dayKey } from './game';
+import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
@@ -59,14 +60,28 @@ export function planSession(
   length: SessionLength,
   d: DB = getDb(),
   now = new Date(),
-  deckIdArg?: number | null,
+  sourceArg?: number | null | StudySource,
+  { practice = false }: { practice?: boolean } = {},
 ): SessionPlan {
-  const deckId = deckIdArg === undefined ? activeDeckId(d) : deckIdArg;
+  const source: StudySource =
+    sourceArg === undefined
+      ? currentSource(d)
+      : sourceArg === null
+        ? { kind: 'all' }
+        : typeof sourceArg === 'number'
+          ? { kind: 'deck', deckId: sourceArg }
+          : sourceArg;
+  const scope = scopeFor(source, d);
+  const deckId = source.kind === 'deck' ? source.deckId : null;
   const deck = deckId ? getDeck(deckId, d) : null;
-  const lang = deck?.language ?? null;
   const settings = getSettings(d);
   const size = SIZES[length];
-  const pool = allItems(d, deckId);
+  const pool = allItems(d, scope);
+  const deckIds = [...new Set(pool.map((i) => i.deckId))];
+  // Several decks in one language still get that language's voice and teacher; mixed languages get neither.
+  const poolDecks = deckIds.map((id) => getDeck(id, d));
+  const langs = new Set(poolDecks.map((x) => x?.language ?? null));
+  const lang = deck ? (deck.language ?? null) : langs.size === 1 ? [...langs][0] : null;
   const byId = new Map(pool.map((i) => [i.id, i]));
   const get = (id: number) => byId.get(id)!;
   const has = (id: number) => byId.has(id);
@@ -74,14 +89,16 @@ export function planSession(
   /** Plain front/back cards (question cards with their own format are excluded from pair games). */
   const plain = (id: number) => !['grammar', 'mcq', 'order'].includes(get(id).kind);
 
-  const due = dueItemIds(d, now, size.due, deckId).filter(has);
-  const leftovers = learningTodayIds(d, now, deckId).filter((id) => has(id) && notGrammar(id));
-  const newBudget = Math.max(0, deckNewPerDay(deckId, d) - introducedTodayCount(d, now, deckId));
-  const fresh = newItemIds(d, Math.min(size.fresh, newBudget), undefined, deckId).filter(has);
-  const learned = learnedIds(d, 300, deckId).filter((id) => has(id) && notGrammar(id));
-  const upcoming = newItemIds(d, 40, undefined, deckId).filter(has);
-  const group = length === 'mini' ? null : nextGrammarGroup(d, now, deckId);
-  const grammar = group ? grammarItemIds(group, d, deckId).slice(0, 4).filter(has) : [];
+  // Practice (cramming) draws on every card in the source, due or not, and teaches nothing new.
+  const due = practice
+    ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
+    : dueItemIds(d, now, size.due, scope).filter(has);
+  const leftovers = practice ? [] : learningTodayIds(d, now, scope).filter((id) => has(id) && notGrammar(id));
+  const fresh = practice ? [] : freshPerDeck(d, now, scope, size.fresh, (id) => get(id).deckId);
+  const learned = learnedIds(d, 300, scope).filter((id) => has(id) && notGrammar(id));
+  const upcoming = newItemIds(d, 40, undefined, scope).filter(has);
+  const group = length === 'mini' || practice ? null : nextGrammarGroup(d, now, scope);
+  const grammar = group ? grammarItemIds(group, d, scope).slice(0, 4).filter(has) : [];
   const info = srsInfo([...due, ...learned], d);
   const known = [...new Set([...learned, ...leftovers])];
 
@@ -122,7 +139,7 @@ export function planSession(
         title: 'Category sprint',
         teacher: label,
         itemIds: sprintIds,
-        seconds: size.sprint,
+        seconds: arcadeSeconds(size.sprint, settings), // 0: timers off, one untimed pass
       });
     }
   }
@@ -224,11 +241,17 @@ export function planSession(
     });
   }
 
-  // 8. Listening (cards with audio).
-  const listenEx = shuffle([...fresh, ...learned.slice(0, 40)].filter((id) => get(id).audio))
+  // 8. Listening: the card's recording, or the system voice on a language deck. Known cards with a short
+  //    sentence also get dictation (recall). The window skips any it can't play (no voice installed).
+  const listenEx = shuffle([...fresh, ...learned.slice(0, 40)].filter((id) => gen.hearable(get(id))))
     .map((id) => gen.listen(get(id), pool))
     .filter(Boolean)
     .slice(0, size.listen) as Exercise[];
+  const dictationEx = shuffle(known)
+    .map((id) => gen.dictation(get(id)))
+    .filter(Boolean)
+    .slice(0, size.listen ? 2 : 0) as Exercise[];
+  listenEx.push(...dictationEx);
   if (listenEx.length >= 2)
     blocks.push({
       id: bid(),
@@ -301,19 +324,20 @@ export function planSession(
     ),
   ).slice(0, 24);
   const rainDay = Number(dayKey(now).slice(-2)) % 2 === 0;
-  if (size.extras && rainIds.length >= 6 && (length === 'long' || rainDay)) {
+  const rainSeconds = arcadeSeconds(60, settings); // rain is a race against the clock: none when timers are off
+  if (size.extras && rainSeconds && rainIds.length >= 6 && (length === 'long' || rainDay)) {
     blocks.splice(Math.max(2, blocks.length - 1), 0, {
       id: bid(),
       kind: 'rain',
       title: 'Word rain',
       teacher: say('rain'),
       itemIds: rainIds,
-      seconds: 60,
+      seconds: rainSeconds,
     });
   }
 
   // 14. Boss battle: today's mistakes + leeches (the client adds every card missed this session).
-  const leeches = leechIds(d, 6, deckId).filter((id) => has(id) && notGrammar(id));
+  const leeches = leechIds(d, 6, scope).filter((id) => has(id) && notGrammar(id));
   blocks.push({ id: bid(), kind: 'boss', title: 'Boss', teacher: say('boss'), itemIds: leeches, lives: 3 });
 
   const finalBlocks = rotate(blocks);
@@ -354,6 +378,7 @@ export function planSession(
   return {
     id: host().randomId(),
     deckId: deckId ?? null,
+    practice,
     lang,
     length,
     agendaTarget: lang === 'de' ? `Heute: ${parts.join(', ')}.` : null,
@@ -362,5 +387,12 @@ export function planSession(
     items,
     extras,
     counts: { due: due.length, fresh: fresh.length, grammar: group },
+    speech: Object.fromEntries(
+      poolDecks.flatMap((x) => {
+        if (!x) return [];
+        const { voice, rate } = x.settings;
+        return [[x.id, { ...(voice ? { voice } : {}), ...(rate ? { rate } : {}) }]];
+      }),
+    ),
   };
 }

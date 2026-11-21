@@ -1,6 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { gradeFor, levelFor, xpFor, settleStreak, recordSession, NEW_STREAK, dayKey } from './game';
+import {
+  gradeFor,
+  levelFor,
+  xpFor,
+  settleStreak,
+  streakChange,
+  recordSession,
+  NEW_STREAK,
+  dayKey,
+  weekDays,
+  estimateMinutes,
+  timerLevel,
+  arcadeSeconds,
+  ARCADE_FORMATS,
+} from './game';
 
 test('recognition formats never produce an SRS grade', () => {
   assert.equal(gradeFor({ format: 'mc', correct: true, responseMs: 900, answerLength: 4, reps: 0 }), null);
@@ -57,7 +71,66 @@ test('streak: counting, freezes, break and repair', () => {
   assert.equal(s.current, 3, 'repaired streak (2) + today (1)');
 });
 
+test('streak change: what a finished session did to the streak, for the summary', () => {
+  const base = { ...NEW_STREAK, current: 6, freezes: 1, lastCountedDay: '2026-11-19', lastSettledDay: '2026-11-19' };
+  const week = recordSession(base, '2026-11-20', true);
+  assert.deepEqual(streakChange(base, week), { freezeEarned: true, repaired: false, repairDone: null });
+
+  const broken = {
+    ...NEW_STREAK,
+    current: 0,
+    freezes: 0,
+    repair: { value: 5, deadline: '2026-11-22', sessionsDone: 0 },
+  };
+  const one = recordSession(broken, '2026-11-21', false);
+  assert.deepEqual(streakChange(broken, one), { freezeEarned: false, repaired: false, repairDone: 1 });
+  const two = recordSession(one, '2026-11-21', false);
+  assert.deepEqual(streakChange(one, two), { freezeEarned: false, repaired: true, repairDone: null });
+  assert.equal(two.current, 5, 'the old streak comes back');
+
+  const full = { ...base, freezes: 3 };
+  assert.equal(streakChange(full, recordSession(full, '2026-11-20', true)).freezeEarned, false, 'at most 3 freezes');
+});
+
 test('day starts at 4am', () => {
   assert.equal(dayKey(new Date(2026, 10, 21, 2, 0)), '2026-11-20');
   assert.equal(dayKey(new Date(2026, 10, 21, 5, 0)), '2026-11-21');
+});
+
+test('the week runs Monday to Sunday around today and marks study days', () => {
+  // 2026-11-20 is a Friday.
+  const week = weekDays('2026-11-20', new Set(['2026-11-16', '2026-11-17', '2026-11-19', '2026-11-20', '2026-11-13']));
+  assert.deepEqual(
+    week.map((d) => d.day),
+    ['2026-11-16', '2026-11-17', '2026-11-18', '2026-11-19', '2026-11-20', '2026-11-21', '2026-11-22'],
+  );
+  assert.deepEqual(
+    week.map((d) => d.studied),
+    [true, true, false, true, true, false, false],
+  );
+  assert.equal(week.find((d) => d.today)?.day, '2026-11-20');
+  assert.equal(weekDays('2026-11-16', new Set())[0].today, true); // Monday
+  assert.equal(weekDays('2026-11-22', new Set())[6].today, true); // Sunday
+});
+
+test("today's estimate counts reviews quickly and new cards slowly, and is never zero", () => {
+  assert.equal(estimateMinutes(24, 10), 8);
+  assert.equal(estimateMinutes(0, 0), 1);
+  assert.equal(estimateMinutes(120, 0), 16);
+});
+
+test('arcade rounds pay a flat rate, whatever the combo', () => {
+  for (const f of ARCADE_FORMATS) assert.equal(xpFor(f, true, 1), xpFor(f, true, 30), f);
+});
+
+test('arcade round length follows the timer setting: off, relaxed, normal, challenge', () => {
+  assert.deepEqual(
+    [0, 20, 8, 5].map((blitzSeconds) => timerLevel({ blitzSeconds })),
+    ['off', 'relaxed', 'normal', 'challenge'],
+  );
+  assert.equal(timerLevel({}), 'normal');
+  assert.deepEqual(
+    [0, 20, 8, 5].map((blitzSeconds) => arcadeSeconds(40, { blitzSeconds })),
+    [0, 60, 40, 30],
+  );
 });

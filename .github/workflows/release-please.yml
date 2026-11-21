@@ -21,7 +21,10 @@ jobs:
           manifest-file: .release-please-manifest.json
       # A PR opened with GITHUB_TOKEN doesn't trigger pull_request workflows, so start the required
       # checks on it by hand (workflow_dispatch is the exception GITHUB_TOKEN may trigger).
-      - if: steps.rp.outputs.pr
+      # Not after a release: then `pr` is the merged release PR, whose branch is already gone.
+      # Never fail the job over it, or the installers would be skipped.
+      - if: steps.rp.outputs.pr && steps.rp.outputs.release_created != 'true'
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BRANCH: ${{ fromJSON(steps.rp.outputs.pr).headBranchName }}
@@ -35,9 +38,13 @@ jobs:
     if: needs.release-please.outputs.released == 'true'
     permissions:
       contents: write
+      # Windows signing (SignPath) reads the build's artifacts.
+      actions: read
     uses: ./.github/workflows/release.yml
     with:
       tag: ${{ needs.release-please.outputs.tag }}
+    # SignPath secret and variables (#39, docs/CODE_SIGNING.md); without them Windows builds unsigned.
+    secrets: inherit
   sync-dev:
     # Keep dev up to date with version bumps, changelog and hotfixes on main.
     # Opens a pull request main -> dev (rulesets block direct pushes to dev).

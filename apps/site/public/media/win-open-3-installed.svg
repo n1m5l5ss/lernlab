@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-labelledby="t">
+  <title id="t">Drawing of the LernLab installer's progress box, followed by LernLab open on its home screen with the Start button</title>
+  <style>
+    .desk{fill:#F1EDE7}.panel{fill:#FFFFFF;stroke:#E4DED6}.side{fill:#F1EDE7}.ink{fill:#1F1D1A}.muted{fill:#5C574F}
+    .track{fill:#E4DED6}.fill{fill:#2F5BB7}.cta{fill:#2F5BB7}.on{fill:#FFFFFF}.line{stroke:#E4DED6}
+    .mark{fill:none;stroke:#2F5BB7;stroke-width:3}.badge{fill:#2F5BB7}
+    text{font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+    @media (prefers-color-scheme: dark){
+      .desk{fill:#1A1917}.panel{fill:#24221F;stroke:#3A3732}.side{fill:#2D2B27}.ink{fill:#ECE9E4}.muted{fill:#A8A39B}
+      .track{fill:#3A3732}.fill{fill:#8FA8F0}.cta{fill:#8FA8F0}.on{fill:#1A1917}.line{stroke:#3A3732}
+      .mark{stroke:#8FA8F0}.badge{fill:#8FA8F0}
+    }
+  </style>
+  <rect class="desk" width="480" height="300" rx="12"/>
+  <rect class="panel" x="16" y="40" width="168" height="110" rx="8"/>
+  <text class="ink" x="30" y="66" font-size="12" font-weight="700">LernLab Setup</text>
+  <path class="line" d="M16 78h168"/>
+  <text class="muted" x="30" y="100" font-size="11">Installing, please wait…</text>
+  <rect class="track" x="30" y="114" width="140" height="10" rx="5"/>
+  <rect class="fill" x="30" y="114" width="96" height="10" rx="5"/>
+  <path class="mark" d="M188 96q20 0 30 20"/>
+  <rect class="panel" x="214" y="60" width="250" height="200" rx="10"/>
+  <path class="side" d="M215 70a9 9 0 0 1 9-9h56v198h-56a9 9 0 0 1-9-9z"/>
+  <rect class="muted" x="228" y="84" width="38" height="6" rx="3"/>
+  <rect class="muted" x="228" y="102" width="30" height="6" rx="3"/>
+  <rect class="muted" x="228" y="120" width="34" height="6" rx="3"/>
+  <text class="ink" x="372" y="126" font-size="15" font-weight="700" text-anchor="middle">LernLab</text>
+  <rect class="track" x="322" y="140" width="100" height="6" rx="3"/>
+  <rect class="cta" x="322" y="164" width="100" height="34" rx="10"/>
+  <text class="on" x="372" y="186" font-size="13" font-weight="700" text-anchor="middle">Start</text>
+  <circle class="badge" cx="214" cy="262" r="14"/>
+  <text class="on" x="214" y="267" font-size="14" font-weight="700" text-anchor="middle">3</text>
+</svg>

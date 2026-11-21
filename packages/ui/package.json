@@ -1,0 +1,18 @@
+{
+  "name": "@lernlab/ui",
+  "version": "0.0.0",
+  "private": true,
+  "description": "LernLab's design system: CSS variables built from docs/design/tokens.json, and the bundled fonts.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    "./tokens.css": "./tokens.css",
+    "./fonts.css": "./fonts.css",
+    "./tokens": "./src/tokens.ts"
+  },
+  "scripts": {
+    "tokens": "tsx --no-warnings src/build-tokens.ts",
+    "test": "tsx --no-warnings --test \"src/*.test.ts\"",
+    "typecheck": "tsc --noEmit"
+  }
+}

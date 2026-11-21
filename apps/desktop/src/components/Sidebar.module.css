@@ -1,0 +1,55 @@
+/* Sidebar (mockup: docs/design/images/Home-light.png). Scoped to the component; tokens only. */
+.sidebar {
+  flex: 0 0 232px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-5) var(--space-4);
+  border-inline-end: 1px solid var(--color-border);
+  overflow-y: auto;
+}
+.sidebar-name {
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  padding: var(--space-2) var(--space-3) var(--space-5);
+}
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--size-min-target);
+  /* A label that wraps (long Telugu, say) stays inside its tint; a short window scrolls the sidebar
+     instead of squashing the links. */
+  flex: none;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  color: var(--color-text);
+  text-decoration: none;
+}
+.nav-link:hover {
+  background: var(--color-subtle);
+}
+.nav-link[aria-current='page'] {
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  font-weight: 700;
+}
+.footer:not([aria-current]) {
+  color: var(--color-text-muted);
+}
+.nav-link svg {
+  flex: none;
+}
+@media (max-width: 860px) {
+  .sidebar {
+    flex-basis: 76px;
+    padding-inline: var(--space-3);
+  }
+  .sidebar-name {
+    display: none;
+  }
+  .nav-link {
+    font-size: 0;
+    justify-content: center;
+  }
+}

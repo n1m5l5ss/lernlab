@@ -1,0 +1,79 @@
+name: visual
+# Screenshot and accessibility check of every Storybook story (issue #55; docs/TESTING.md, "A new button
+# must not break other buttons"). Fonts render differently on each system, so screenshots are made and
+# compared only inside one pinned Linux Docker image (Playwright 1.65.1 on Ubuntu 24.04, pinned by digest).
+#
+# - Every pull request: compares each story with apps/desktop/visual/baselines and fails on any change or
+#   on a serious/critical axe problem. The "visual-results" artifact has the actual, expected and diff images.
+# - A pull request with the `visual-change` label: makes new baselines and commits them to the pull
+#   request's branch, so the Files tab shows each changed image before and after. Remove the label once
+#   the images are approved.
+# - Run by hand (Actions → visual → Run workflow) with "update" ticked: the same, on the chosen branch.
+on:
+  pull_request:
+    branches: [dev, main]
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+  workflow_dispatch:
+    inputs:
+      update:
+        description: Make new baselines and commit them to this branch
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: visual-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  stories:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      # mcr.microsoft.com/playwright:v1.65.1-noble. Bump together with playwright-core in package.json,
+      # then make new baselines (the label above).
+      image: mcr.microsoft.com/playwright@sha256:1507cbfc550a63a6b7396791ca4f00df17beb56342d2447b3f106c306f525579
+    permissions:
+      contents: write # only used to commit new baselines
+    env:
+      UPDATE: ${{ inputs.update == true || contains(github.event.pull_request.labels.*.name, 'visual-change') }}
+      STORYBOOK_DISABLE_TELEMETRY: 1
+      ELECTRON_SKIP_BINARY_DOWNLOAD: 1 # Storybook needs no Electron
+    steps:
+      # checkout needs git to make a real clone that can be pushed back.
+      - run: command -v git || (apt-get update && apt-get install -y --no-install-recommends git)
+      - uses: actions/checkout@v4
+        with:
+          # A labelled pull request commits to its own branch, not to the merge commit.
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - name: Compare every story with its baseline
+        if: env.UPDATE != 'true'
+        run: npm run test:visual
+        env: { LERNLAB_VISUAL_COMPARE: 1 }
+      - name: Make new baselines
+        if: env.UPDATE == 'true'
+        run: npm run test:visual
+        env: { LERNLAB_UPDATE_BASELINES: 1 }
+      - name: Commit the new baselines
+        if: env.UPDATE == 'true'
+        shell: bash
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git add apps/desktop/visual/baselines
+          if git diff --cached --quiet; then echo "Baselines unchanged."; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "test: update visual baselines"
+          git push
+      - name: Keep the screenshots and diffs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-results
+          path: |
+            apps/desktop/visual-results/
+            apps/desktop/visual/baselines/
+          if-no-files-found: ignore

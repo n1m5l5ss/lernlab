@@ -11,20 +11,27 @@
   },
   "homepage": "https://github.com/",
   "scripts": {
-    "build": "vite build",
-    "build:electron": "vite build && tsx electron/build.ts",
+    "build": "tsx ../../scripts/whats-new.ts && vite build",
+    "build:electron": "npm run build && tsx electron/build.ts",
     "desktop": "npm run build:electron && electron .",
     "dist": "npm run build:electron && electron-builder --publish never",
     "dist:mac": "npm run build:electron && electron-builder --mac --publish never",
     "dist:win": "npm run build:electron && electron-builder --win --publish never",
     "dist:linux": "npm run build:electron && electron-builder --linux --publish never",
-    "test": "tsx --no-warnings --test \"server/*.test.ts\" \"backend/*.test.ts\" \"electron/*.test.ts\" \"src/*.test.ts\"",
-    "typecheck": "tsc --noEmit"
+    "test": "tsx --no-warnings --import ./test/css-modules.mjs --test \"server/*.test.ts\" \"backend/*.test.ts\" \"electron/*.test.ts\" \"src/*.test.ts\" \"src/components/*.test.ts\"",
+    "typecheck": "tsc --noEmit",
+    "e2e": "tsx --no-warnings --test --test-concurrency=1 \"e2e/*.e2e.ts\"",
+    "storybook": "storybook dev --port 6006 --no-open",
+    "build-storybook": "storybook build --output-dir storybook-static --quiet",
+    "visual": "npm run build-storybook && tsx --no-warnings --test visual/stories.visual.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@hono/node-server": "2.1.9",
     "@lernlab/core": "*",
     "@lernlab/storage-sqlite": "*",
+    "@lernlab/ui": "*",
+    "@storybook/react-vite": "10.6.6",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -36,9 +43,11 @@
     "esbuild": "^0.28.2",
     "hono": "4.13.19",
     "i18next": "26.7.2",
+    "playwright-core": "1.65.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "react-i18next": "17.1.13",
+    "storybook": "10.6.6",
     "vite": "8.3.8"
   },
   "build": {
@@ -77,7 +86,10 @@
           ]
         }
       ],
+      "artifactName": "${productName}-${version}-${arch}.${ext}",
       "icon": "build/icon.png",
+      "identity": "-",
+      "hardenedRuntime": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "LernLab listens when you practise speaking out loud."
       }
@@ -89,8 +101,9 @@
       "icon": "build/icon.png"
     },
     "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "linux": {
       "target": [

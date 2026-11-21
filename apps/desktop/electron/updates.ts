@@ -8,7 +8,15 @@ import type { AppUpdater } from 'electron-updater/out/AppUpdater';
 import { AppImageUpdater } from 'electron-updater/out/AppImageUpdater';
 import { DebUpdater } from 'electron-updater/out/DebUpdater';
 import { NsisUpdater } from 'electron-updater/out/NsisUpdater';
-import { DAY_MS, FIRST_CHECK_DELAY_MS, shouldCheck, updaterOptions, type UpdatePrefs } from './update-policy';
+import {
+  DAY_MS,
+  FIRST_CHECK_DELAY_MS,
+  readyUpdate,
+  shouldCheck,
+  updaterOptions,
+  type ReadyUpdate,
+  type UpdatePrefs,
+} from './update-policy';
 
 function createUpdater(): AppUpdater | null {
   if (process.platform === 'win32') return new NsisUpdater();
@@ -28,7 +36,7 @@ type Deps = {
   setLastCheck: (time: number) => void;
 };
 
-let ready: { version: string } | null = null;
+let ready: ReadyUpdate | null = null;
 let autoUpdater: AppUpdater | null = null;
 
 export function setupUpdates(deps: Deps) {
@@ -51,7 +59,7 @@ export function setupUpdates(deps: Deps) {
   updater.on('update-downloaded', async (info) => {
     // Installing also happens on a normal quit, so take the backup now as well.
     await deps.backup().catch(() => {});
-    ready = { version: info.version };
+    ready = readyUpdate(info);
     deps.window()?.webContents.send('lernlab:update-ready', ready);
   });
 

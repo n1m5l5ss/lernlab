@@ -27,10 +27,25 @@ export function xpFor(format: Format, correct: boolean, combo: number): number {
   if (!correct) return 1; // showing up still counts a little
   const base = Math.round(10 * XP_WEIGHT[format]);
   // Timed arcade rounds pay a flat rate: speed-tapping must never out-earn real recall.
-  if (format === 'gender' || format === 'rain' || format === 'match' || format === 'truefalse' || format === 'blitz')
-    return base;
+  if (ARCADE_FORMATS.includes(format)) return base;
   const comboBonus = Math.min(10, Math.max(0, combo - 1) * 2);
   return base + comboBonus;
+}
+
+/** True for the practice-only arcade formats: flat XP, never an FSRS grade. */
+export const ARCADE_FORMATS: readonly Format[] = ['gender', 'rain', 'match', 'truefalse', 'blitz'];
+
+/** The timer setting (Off / Relaxed / Normal / Challenge), read from the Blitz seconds it stores. */
+export type TimerLevel = 'off' | 'relaxed' | 'normal' | 'challenge';
+export function timerLevel(s: { blitzSeconds?: number }): TimerLevel {
+  const b = s.blitzSeconds ?? 8;
+  return b === 0 ? 'off' : b >= 15 ? 'relaxed' : b <= 5 ? 'challenge' : 'normal';
+}
+const PACE: Record<TimerLevel, number> = { off: 0, relaxed: 1.5, normal: 1, challenge: 0.75 };
+
+/** How long a timed arcade round lasts under the timer setting; 0 means no clock. */
+export function arcadeSeconds(base: number, s: { blitzSeconds?: number }): number {
+  return Math.round(base * PACE[timerLevel(s)]);
 }
 
 export const BONUS = { perfectBlock: 20, dailyGoal: 25, bossWin: 30 };
@@ -85,6 +100,25 @@ export function addDays(key: string, n: number): string {
   const dt = new Date(y, m - 1, d + n, 12);
   return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`;
 }
+
+/** The Monday of the week a day key falls in. */
+export function weekStart(day: string): string {
+  const [y, m, d] = day.split('-').map(Number);
+  return addDays(day, -((new Date(y, m - 1, d, 12).getDay() + 6) % 7));
+}
+
+/** This week, Monday to Sunday, around `today` (a day key): which days had a session. Weekly consistency, not a streak. */
+export function weekDays(today: string, studied: Set<string>): { day: string; studied: boolean; today: boolean }[] {
+  const [y, m, d] = today.split('-').map(Number);
+  const fromMonday = (new Date(y, m - 1, d, 12).getDay() + 6) % 7;
+  return Array.from({ length: 7 }, (_, i) => {
+    const day = addDays(today, i - fromMonday);
+    return { day, studied: studied.has(day), today: day === today };
+  });
+}
+
+/** Rough minutes to clear today's work: about 8 s per review and 30 s per new card (meet, recognise, recall). */
+export const estimateMinutes = (due: number, fresh: number) => Math.max(1, Math.round((due * 8 + fresh * 30) / 60));
 
 export function daysBetween(a: string, b: string): number {
   const [y1, m1, d1] = a.split('-').map(Number);
@@ -159,4 +193,17 @@ export function recordSession(s: StreakState, today: string, goalMetNow: boolean
   }
   st.longest = Math.max(st.longest, st.current);
   return st;
+}
+
+/** What one finished session did to the streak, so the summary can say it: a freeze earned, repair progress or a repair done. */
+export type StreakChange = { freezeEarned: boolean; repaired: boolean; repairDone: number | null };
+
+export function streakChange(before: StreakState, after: StreakState): StreakChange {
+  const repaired = !!before.repair && !after.repair && after.current >= before.repair.value;
+  return {
+    freezeEarned: after.freezes > before.freezes,
+    repaired,
+    repairDone:
+      after.repair && after.repair.sessionsDone > (before.repair?.sessionsDone ?? 0) ? after.repair.sessionsDone : null,
+  };
 }

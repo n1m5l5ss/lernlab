@@ -33,7 +33,7 @@ The app runs as four separate parts. Only the data process touches the database,
 | Renderer | UI only, at `contextIsolation: true`, `sandbox: true`, `nodeIntegration: false` | Touch files, network or the database directly |
 | Data process | The only database connection, all domain work, imports and backups | Know about windows or React |
 
-**Why a separate data process?** `node:sqlite` is synchronous. In the main process, a slow query or a 10,000-card import would freeze the whole app. **Today (#7):** this is in place. `apps/desktop/backend/process.ts` is the data process; main only routes requests (`electron/main.ts`). Requests are checked by small hand-written validators in `backend/validate.ts` rather than zod (no new dependency yet), in the data process only. The web dev mode (`npm start`) runs the same handler table over HTTP on localhost; the desktop app never starts that server, and a test checks its bundles contain no server code.
+**Why a separate data process?** `node:sqlite` is synchronous. In the main process, a slow query or a 10,000-card import would freeze the whole app. **Today (#7):** this is in place. `apps/desktop/backend/process.ts` is the data process; main only routes requests (`electron/main.ts`). Requests are checked by small hand-written validators in `backend/validate.ts` rather than zod (no new dependency yet), in the data process only. **Today (#56):** main hands the data process one end of a `MessageChannelMain` at start; requests and replies go over that port as typed messages (`backend/data-protocol.ts`), checked on arrival on both sides. Requests made while the data process starts or restarts wait for its `ready` message. After a crash main restarts it with backoff (0.5 s to 8 s, five tries, `electron/data-restart.ts`) and the window shows "Reconnecting…" (`src/DataStatus.tsx`); a request that was running when it crashed returns `data_process_exit` rather than being sent twice. The web dev mode (`npm start`) runs the same handler table over HTTP on localhost; the desktop app never starts that server, and a test checks its bundles contain no server code.
 
 ## 2. Packages
 
@@ -68,6 +68,8 @@ docs/adr/        architecture decision records
 | `renderer` | `shared`, `ui` |
 | `ui` | nothing internal; design tokens only |
 
+**Today (#56):** instead of dependency-cruiser (no new dependency), `apps/desktop/electron/no-sql.test.ts` walks the import graph of every main-process file with esbuild and fails if it reaches `node:sqlite`, `packages/storage-sqlite` or core's database modules (`db`, `host`, `migrate`, `migrations/`). Pure helpers main needs live in modules without database code (for example `@lernlab/core/releasenotes`).
+
 ## 3. Domain core (`packages/core`)
 
 - **Entities:** `Deck`, `Card` (front, back, fields, media refs, tags), `CardState` (FSRS due, stability, difficulty, reps, lapses), `ReviewLog`, `Attempt`, `SessionPlan`, `Block`, `Exercise`.
@@ -93,13 +95,17 @@ docs/adr/        architecture decision records
 
 - **Pragmas:** `journal_mode=WAL`, `synchronous=NORMAL`, `foreign_keys=ON`, `busy_timeout=5000`, `temp_store=MEMORY`, `cache_size=-20000`. Run `PRAGMA optimize` on close.
 - **Indexes:** `cards(deck_id, due)` for the due queue, `cards(note_id)`, `review_logs(card_id, reviewed_at)`, `attempts(day, card_id)`.
+- **Today (#56):** `openDb` sets all the pragmas above; `PRAGMA optimize` runs hourly in the data process and when the database is closed. The prototype schema has no `cards`, `notes` or `review_logs` tables yet: cards are `items` (with `items(deck_id)`), their schedule is `srs`, and answers are `attempts`. Migration `003-study-indexes` adds `srs(due)` for the due queue and `attempts(day, item_id)` (replacing `attempts(day)`). Migration `004-deck-stats-indexes` (#130) adds `items(deck_id, suspended, kind)` (replacing `items(deck_id)`), `srs(introduced_day)`, `items(ord)`, `items(tags)` and a partial index on starred cards, for the deck list and stats. `appState` counts every deck in one grouped query (`deckStats`) and keeps the counts per connection until the data changes (`whileUnchanged` in `db.ts`: `total_changes()` for this connection's writes, `data_version` for other connections' commits).
 - **FSRS state** is stored in columns, not JSON, so it can be sorted and filtered.
 - **Statements:** prepared statements are cached per process, and SQL is never built from strings.
 - **Imports** run in transactions of 1,000–5,000 rows, followed by `ANALYZE`.
 - **Migrations:** numbered files `packages/core/src/migrations/NNN-name.ts`, tracked in a `schema_version` table (#8). Each runs forward-only in its own transaction. Before any pending migration runs on an existing database, a `VACUUM INTO` backup is written to `backups/`; if a migration fails, the backup is put back and the app explains what happened and quits. `001-v02-schema` brings v0.1 and v0.2 prototype databases up to date.
 - **Backups:**
-  - **Triggers:** before migrating, before every import, and once a day. The command is `VACUUM INTO 'backups/lernlab-YYYYMMDD-vN.db'`.
-  - **Retention:** keep 7 daily and 4 weekly copies.
+  - **Triggers:** before migrating, before an app update, before deleting a deck or cards, before a restore, an "import everything", when the user clicks "Back up now", and once a day (the data process checks 10 s after start and then every hour). The command is `VACUUM INTO 'backups/lernlab-YYYYMMDD[-HHMMSS][-label]-vN.db'`; the label says why (`daily`, `before-update`, `before-delete`, `before-restore`, `before-import`). Code: `packages/storage-sqlite/src/backups.ts`.
+  - **Retention:** only `daily` copies are pruned, to the newest 7. Every other backup is kept until the user removes it.
+  - **Restore:** Settings lists each backup with its date and its deck, card and answer counts, read from the file read-only. Restoring backs up the current database, closes it, copies the backup in and reopens it (running migrations if the backup is older; a backup from a newer version is refused).
+  - **Export everything:** one zip with `manifest.json`, `lernlab.db` (a `VACUUM INTO` snapshot), `media/` and `progress/`. Importing it treats the zip as untrusted: only those paths with plain file names are accepted, the unpacked size is capped, and the database must be a LernLab database this version can open. The current data is backed up first.
+  - **Delete all my data:** the screen warns that everything, backups included, is deleted permanently and cannot be undone, and the user types a confirmation word. Then the database, `media/`, `progress/` and `backups/` are removed and an empty database is created. No backup is kept; "Export everything" is the way to keep a copy first.
   - **Health check:** `PRAGMA quick_check` runs at startup, in the background.
 - **Media store:** files are content-addressed (`media/<sha256>.<ext>`), so the same image used in two decks is stored once.
 
@@ -109,7 +115,10 @@ docs/adr/        architecture decision records
 - TanStack Query holds data from IPC (caching and invalidation).
 - Zustand holds tiny UI state. The session state comes from core's reducer.
 - Styles come from design tokens only (`packages/ui/tokens`). CSS Modules scope every component. A lint rule bans raw hex colours outside the tokens.
+- **Today (#11):** `packages/ui/tokens.css` is generated from `docs/design/tokens.json` (`npm run tokens -w @lernlab/ui`; a test fails when it is stale). The theme is a setting (system, light, dark); the renderer sets `data-theme` on `<html>` and main mirrors it in `nativeTheme` and `config.json`, so the window opens in the right colours. `src/Shell.tsx` is the sidebar frame; screens are hash routes (`#/decks`, `src/routes.ts`) and focus moves to each screen's heading. Main saves the window's size and position in `config.json` and never reopens it off-screen (`electron/window-state.ts`). Session and summary fill the window, without the sidebar.
+- **Fonts and display settings (#59):** `packages/ui/fonts.css` loads the bundled woff2 fonts in `packages/ui/fonts/` (Atkinson Hyperlegible Next; Noto Sans Telugu, Devanagari, Arabic; each with its OFL licence). Vite copies them into `dist/assets/` with relative URLs, so they load from `file://` in Electron and over HTTP in web dev mode; nothing is fetched online. The Text size and Reduced motion settings set `data-text-size` and `data-motion` on `<html>` (`src/display.ts`); `tokens.css` turns them into `--text-scale` (every `--text-*` token scales) and the reduced `--motion-*` values. Inline font sizes use `textPx()` so they scale too.
 - All visible text comes from `t('key')` via i18next.
+- **Right to left (#36):** `setLanguage` sets `<html dir>` from the language (`src/direction.ts`), so Arabic, Hebrew and Urdu flip the layout. CSS uses logical properties (`margin-inline-start`, `inset-inline`, `text-align: start`); `src/rtl.test.ts` fails on new `left`/`right` CSS or inline styles (mark a deliberate one `rtl-ignore`). Icons that point the way text runs get `className="icon-dir"`. Settings → Language → "Pseudo right-to-left" (`ar-XB`, generated from `en.json`) checks every screen without a real translation.
 - Every card field gets its `lang` attribute.
 - Accessibility is built in from the start: an `aria-live` region announces feedback, focus is managed per screen, and everything works from the keyboard.
 
@@ -120,6 +129,7 @@ docs/adr/        architecture decision records
 3. The renderer paints the app shell, then asks for `home.summary`.
 4. Show the window on `ready-to-show`, so there is no white flash.
 5. Deferred work: the update check (after 30 s), backups, `PRAGMA optimize`.
+6. **Daily reminder (#34), off by default.** Main looks at the clock once a minute (`@lernlab/core/reminder`: local "HH:MM", once per date, DST-safe, an hour of grace) and only then asks the data process (`reminder.status`) whether you already studied today; it never opens the database. The notification's words come from `locales/en.json`; clicking it starts a session (`#start`). "Open at login" starts the window minimised: a Windows Run entry with `--hidden`, a macOS login item (`wasOpenedAtLogin` keeps the window hidden) or a Linux `~/.config/autostart/lernlab.desktop` (`electron/reminders.ts`). Reminders only arrive while LernLab is running.
 
 ## 8. Errors, logging and crash safety
 

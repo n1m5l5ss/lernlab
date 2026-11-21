@@ -8,6 +8,7 @@ LernLab is a free, open-source desktop flashcard app for any subject. It makes s
 - `docs/TESTING.md` — test layers, performance budgets
 - `docs/RELEASING.md` — branches, PR titles, versions, changelog
 - `docs/design/` — mockups, `tokens.json`, design rules
+- `docs/design/style.md` — the visual style: colours, type, spacing, motion, icons, sounds
 - `docs/FORMAT.md` — deck files
 - `docs/research.md` — learning-science research
 
@@ -31,7 +32,7 @@ The repo is an npm workspace. It holds the **v0.2 prototype**, which is a workin
   - `server/`: web dev mode only (`npm start`): the same handlers over HTTP on localhost. The desktop app never starts it.
 - `tsconfig.base.json`, `eslint.config.js`, `.prettierrc.json`: one shared config for every package.
 
-The rest of the Foundation epic (#8–#11) adds migrations and backups, CI, the translation system and the app shell. **Don't redesign screens until the mockups in `docs/design/` are approved (issue #1).**
+The rest of the Foundation epic (#8–#11) adds migrations and backups, CI, the translation system and the app shell. **The mockups in `docs/design/` are approved (issue #1); build screens to match them.**
 
 ## Commands
 ```bash

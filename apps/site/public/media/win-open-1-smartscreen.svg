@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-labelledby="t">
+  <title id="t">Drawing of the blue SmartScreen box Windows protected your PC, with the More info link marked</title>
+  <style>
+    .desk{fill:#F1EDE7}.blue{fill:#2F5BB7}.on{fill:#FFFFFF}.btn{fill:none;stroke:#FFFFFF;stroke-width:1.5}
+    .ring{fill:none;stroke:#FFFFFF;stroke-width:3}.u{stroke:#FFFFFF}.badge{fill:#2F5BB7;stroke:#F1EDE7;stroke-width:3}
+    text{font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+    @media (prefers-color-scheme: dark){
+      .desk{fill:#1A1917}.blue{fill:#8FA8F0}.on{fill:#1A1917}.btn{stroke:#1A1917}.ring{stroke:#1A1917}.u{stroke:#1A1917}
+      .badge{fill:#8FA8F0;stroke:#1A1917}
+    }
+  </style>
+  <rect class="desk" width="480" height="300" rx="12"/>
+  <rect class="blue" x="52" y="22" width="408" height="256" rx="6"/>
+  <text class="on" x="76" y="66" font-size="22" font-weight="700">Windows protected your PC</text>
+  <text class="on" x="76" y="102" font-size="12">Microsoft Defender SmartScreen prevented an</text>
+  <text class="on" x="76" y="120" font-size="12">unrecognised app from starting. Running this</text>
+  <text class="on" x="76" y="138" font-size="12">app might put your PC at risk.</text>
+  <text class="on" x="76" y="170" font-size="13" font-weight="700">More info</text>
+  <path class="u" d="M76 175h63"/>
+  <rect class="ring" x="66" y="152" width="84" height="32" rx="8"/>
+  <rect class="btn" x="340" y="230" width="100" height="30" rx="3"/>
+  <text class="on" x="390" y="250" font-size="12" text-anchor="middle">Don't run</text>
+  <circle class="badge" cx="34" cy="168" r="15"/>
+  <text class="on" x="34" y="173" font-size="14" font-weight="700" text-anchor="middle">1</text>
+</svg>

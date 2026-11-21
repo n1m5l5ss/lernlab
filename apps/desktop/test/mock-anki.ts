@@ -7,6 +7,16 @@ const notes = JSON.parse(readFileSync(resolve(import.meta.dirname, 'fixture-note
 // 0.1 s of silence as an MP3 frame is overkill for tests; any bytes will do.
 const FAKE_MP3 = Buffer.from('ID3fake-audio').toString('base64');
 
+/** Every deck the notes use, with its parent decks, as Anki lists them. */
+const deckNames = [
+  ...new Set(
+    notes.flatMap((n: { deck: string }) => n.deck.split('::').map((_, i, parts) => parts.slice(0, i + 1).join('::'))),
+  ),
+] as string[];
+const inDeck = (deck: string) => (n: { deck: string }) => n.deck === deck || n.deck.startsWith(`${deck}::`);
+/** The deck name in a query like deck:"Lang::German", with Anki's backslash escapes undone. */
+const queryDeck = (q: string) => (q.match(/deck:"((?:[^"\\]|\\.)*)"/)?.[1] ?? '').replace(/\\(.)/g, '$1');
+
 export function startMockAnki(port = 8799): Promise<Server> {
   const server = createServer((req, res) => {
     let body = '';
@@ -15,10 +25,15 @@ export function startMockAnki(port = 8799): Promise<Server> {
       const { action, params } = JSON.parse(body || '{}');
       let result: any = null;
       if (action === 'version') result = 6;
-      else if (action === 'findNotes')
-        result = notes
-          .filter((n: any) => n.deck.startsWith(params.query.match(/deck:"([^"]+)"/)[1]))
-          .map((n: any) => n.noteId);
+      else if (action === 'findNotes') result = notes.filter(inDeck(queryDeck(params.query))).map((n: any) => n.noteId);
+      else if (action === 'deckNames') result = deckNames;
+      else if (action === 'getDeckStats')
+        result = Object.fromEntries(
+          (params.decks as string[]).map((name, i) => [
+            i + 1,
+            { name, total_in_deck: notes.filter(inDeck(name)).length },
+          ]),
+        );
       else if (action === 'notesInfo')
         result = notes.filter((n: any) => params.notes.includes(n.noteId)).map(({ deck, ...n }: any) => n);
       else if (action === 'cardsInfo')

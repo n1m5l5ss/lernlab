@@ -10,7 +10,8 @@
   },
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "bench"
   ],
   "scripts": {
     "start": "npm run build && npm run serve",
@@ -25,6 +26,12 @@
     "dist:linux": "npm run --workspace apps/desktop dist:linux",
     "import": "tsx --no-warnings apps/desktop/server/cli-import.ts",
     "test": "npm run test --workspaces --if-present",
+    "test:e2e": "npm run build:electron && npm run --workspace apps/desktop e2e",
+    "bench": "npm run bench --workspace bench",
+    "bench:startup": "npm run startup --workspace bench --",
+    "bench:budgets": "npm run budgets --workspace bench --",
+    "test:visual": "npm run --workspace apps/desktop visual",
+    "storybook": "npm run --workspace apps/desktop storybook",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "lint": "eslint .",
     "format": "prettier --write .",
@@ -38,7 +45,8 @@
     "prettier": "3.10.1",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.73.0"
+    "typescript-eslint": "8.73.0",
+    "vitest": "5.0.5"
   },
   "repository": {
     "type": "git",

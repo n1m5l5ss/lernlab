@@ -23,6 +23,8 @@ export type Ctx = {
   t: TextTeacher;
   /** Seconds per multiple-choice/true-false question (0 = untimed). */
   timer: number;
+  /** True while the leave dialog is open: round clocks stop. */
+  paused: boolean;
   item: (id: number) => Item;
   pool: Item[];
   answer: (a: AnswerInput) => number;
@@ -35,7 +37,7 @@ export type Ctx = {
   settings: { sound: boolean; teacherVoice: boolean; questionTimer?: number; blitzSeconds?: number };
 };
 
-/** A shrinking bar for timed questions; calls onTimeout once. */
+/** A shrinking bar for timed questions; calls onTimeout once. It stops while `running` is false. */
 import { createElement, useState as useS, useEffect as useE } from 'react';
 export function QuestionTimer({
   seconds,
@@ -49,12 +51,14 @@ export function QuestionTimer({
   const [left, setLeft] = useS(seconds * 1000);
   const cb = useRef(onTimeout);
   cb.current = onTimeout;
+  const spent = useRef(0); // carried over a pause, so the clock resumes where it stopped
   useE(() => {
     if (!running || !seconds) return;
-    const start = performance.now();
+    const start = performance.now() - spent.current;
     let raf = 0;
     const tick = () => {
-      const l = seconds * 1000 - (performance.now() - start);
+      spent.current = performance.now() - start;
+      const l = seconds * 1000 - spent.current;
       setLeft(Math.max(0, l));
       if (l <= 0) cb.current();
       else raf = requestAnimationFrame(tick);

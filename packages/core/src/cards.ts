@@ -2,6 +2,10 @@
 import { acceptedAnswers, stripHtml } from './text';
 import type { Item } from './types';
 
+/** The alt text for a card's image: its description, or '' (a decorative image) when it has none. */
+export const imageAltOf = (item: Pick<Item, 'image' | 'extra'>): string =>
+  item.image ? (item.extra?.imageAlt ?? '') : '';
+
 const SHORT = (s: string) => s.length > 0 && s.length <= 40 && s.split(/\s+/).length <= 6;
 
 /**
@@ -104,37 +108,44 @@ export function parseCloze(text: string): { before: string; answer: string; hint
 /** Plain-text version of a cloze card (all gaps filled), for lists and match games. */
 export const clozeText = (text: string) => text.replace(/\{\{c\d+::(.*?)(?:::.*?)?\}\}/g, '$1');
 
-const ALLOWED = new Set([
+/** The safe list: the only tags a card may keep (decks are shared files). Listed in docs/FORMAT.md. */
+export const SAFE_TAGS = [
   'b',
   'strong',
   'i',
   'em',
   'u',
-  'br',
+  's',
+  'mark',
   'sup',
   'sub',
+  'small',
   'code',
   'pre',
+  'br',
+  'p',
+  'div',
+  'span',
   'ul',
   'ol',
   'li',
-  'p',
-  'small',
-  'span',
-  'div',
-  'mark',
-  's',
-]);
+] as const;
+const ALLOWED = new Set<string>(SAFE_TAGS);
+const BARE_TAG = new RegExp(`<(?!/?(?:${SAFE_TAGS.join('|')})>)`, 'gi');
 
-/** Shared decks are untrusted: keep a few formatting tags, drop every attribute and everything else. */
+/**
+ * Shared decks are untrusted: keep the safe-list tags without any attribute and drop every other tag.
+ * Any `<` left that is not one of those bare tags becomes `&lt;`, so no tag can be rebuilt from pieces.
+ */
 export function sanitizeHtml(html: string): string {
   return html
     .replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, '')
-    .replace(/<\/?([a-z0-9]+)(\s[^>]*)?>/gi, (tag, name: string) => {
+    .replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi, (tag, name: string) => {
       const n = name.toLowerCase();
       if (!ALLOWED.has(n)) return '';
       return tag.startsWith('</') ? `</${n}>` : n === 'br' ? '<br>' : `<${n}>`;
-    });
+    })
+    .replace(BARE_TAG, '&lt;');
 }
 
 /** Light Markdown for CSV authors: **bold**, *italic*, `code`. */

@@ -1,3 +1,4 @@
+// Export a deck as a .lernpack (cards and media) or a CSV. Both import back to the same cards.
 import type { Row } from './host';
 import type { ItemRow } from './schema';
 import { getDb, type DB } from './db';
@@ -6,16 +7,33 @@ import { writeLernpack } from './formats/lernpack';
 import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
 
-function deckCards(deckId: number, d: DB): NormalizedCard[] {
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers` and `imageAlt` are stored under. */
+const FROM_EXTRA = {
+  choices: 'choices',
+  correct: 'correct',
+  steps: 'steps',
+  alt: 'altAnswers',
+  imageAlt: 'imageAlt',
+} as const;
+
+function deckCards(deckId: number, deckName: string, d: DB): NormalizedCard[] {
   return d
     .prepare('SELECT * FROM items WHERE deck_id = ? ORDER BY ord')
     .all(deckId)
     .map((row: Row) => {
       const r = row as unknown as ItemRow;
+      const extra: Record<string, string> = JSON.parse(r.extra ?? '{}');
+      const fields: Partial<NormalizedCard> = {};
+      for (const [key, field] of Object.entries(FROM_EXTRA)) {
+        if (extra[key]) fields[field] = extra[key];
+        delete extra[key];
+      }
       return {
         sourceId: String(r.id),
+        type: ['mcq', 'order', 'cloze'].includes(r.kind) ? r.kind : undefined,
         front: r.target,
         back: r.meaning,
+        ...fields,
         example: r.sentence_html || undefined,
         exampleTranslation: r.sentence_meaning || undefined,
         explanation: r.grammar || undefined,
@@ -25,10 +43,11 @@ function deckCards(deckId: number, d: DB): NormalizedCard[] {
         video: r.video || undefined,
         category: r.category || undefined,
         tags: JSON.parse(r.tags),
-        subdeck: r.deck,
+        // The deck's own name is not a sub-deck, so a copy imported under another name stays whole.
+        subdeck: r.deck && r.deck !== deckName ? r.deck : undefined,
         group: r.grp || undefined,
         rank: Number(r.rank) || undefined,
-        extra: Object.keys(JSON.parse(r.extra ?? '{}')).length ? JSON.parse(r.extra!) : undefined,
+        extra: Object.keys(extra).length ? extra : undefined,
       };
     });
 }
@@ -40,8 +59,9 @@ export function exportDeck(
 ): { name: string; data: Uint8Array; type: string } {
   const deck = getDeck(deckId, d);
   if (!deck) throw new UserError('deck_not_found', 'Deck not found');
-  const cards = deckCards(deckId, d);
+  const cards = deckCards(deckId, deck.name, d);
   const safe = deck.name.replace(/[^\w\- ]+/g, '_');
+  // A plain CSV holds media file names, not the files: those travel in a .lernpack.
   if (format === 'csv')
     return { name: `${safe}.csv`, data: new TextEncoder().encode(cardsToCsv(cards)), type: 'text/csv' };
   const media: Record<string, Uint8Array> = {};

@@ -1,5 +1,5 @@
 // Import decks from any supported source into the library. Progress on existing cards is always kept.
-import { unzipSync, strFromU8 } from 'fflate';
+// Every importer returns an ImportReport (documented in docs/FORMAT.md, "Import report").
 import { basename, extname } from './paths';
 import { getDb, setMeta, type DB } from './db';
 import {
@@ -9,22 +9,69 @@ import {
   storeMedia,
   upsertCards,
   type Deck,
+  type DeckSettings,
   type NormalizedCard,
-  type UpsertResult,
+  type SkipCode,
 } from './library';
-import { csvToCards } from './formats/csv';
-import { readLernpack } from './formats/lernpack';
+import { csvToCards, pastedToCards } from './formats/csv';
+import { lernpackMedia, readLernpack } from './formats/lernpack';
 import { readApkg } from './formats/apkg';
+import { jsonToCard, parseJson } from './formats/json';
+import { IMPORT_LIMITS, isNestedZip, listZip, mediaProblem, readZip, type MediaProblem } from './formats/zip';
 import { UserError } from './errors';
 
+export { IMPORT_LIMITS } from './formats/zip';
+
 export type ImportOptions = { deckId?: number; deckName?: string; language?: string | null };
-export type ImportResult = UpsertResult & { format: string; media: number; mediaMissing: number };
+
+export type ImportFormat = 'lernpack' | 'apkg' | 'csv+media' | 'json' | 'csv' | 'tsv' | 'paste' | 'anki';
+export type ImportWarningCode = MediaProblem | 'nested_zip_ignored' | 'encoding_guessed';
+
+/** What an import did. Every code has a message under errors.<code> in locales/*.json. */
+export type ImportReport = {
+  deck: Deck;
+  format: ImportFormat;
+  /** New cards. */
+  added: number;
+  /** Cards that were already in the deck (matched by id): their text changed, their progress was kept. */
+  updated: number;
+  /** Cards in the deck after the import. */
+  total: number;
+  /** Rows that were not imported: `row` is the line in a CSV/TSV/JSONL file, otherwise the card's position (from 1). */
+  skipped: { row: number; code: SkipCode }[];
+  /** All skipped rows; `skipped` lists at most REPORT_LIST_MAX of them. */
+  skippedCount: number;
+  /** Media files saved. */
+  media: number;
+  /** How many media files cards refer to that were not found. */
+  mediaMissing: number;
+  /** Their names (at most REPORT_LIST_MAX). */
+  missingMedia: string[];
+  /** Files that were left out, with the reason. */
+  warnings: { code: ImportWarningCode; file?: string }[];
+};
+/** Older name of ImportReport. */
+export type ImportResult = ImportReport;
+
+export const REPORT_LIST_MAX = 500;
+
+/** Every code an import report can hold, for the translation check. */
+export const IMPORT_REPORT_CODES: readonly (SkipCode | ImportWarningCode)[] = [
+  'row_no_front',
+  'row_duplicate',
+  'row_invalid',
+  'media_unsupported',
+  'media_too_large',
+  'media_wrong_type',
+  'nested_zip_ignored',
+  'encoding_guessed',
+];
 
 function pickDeck(
   fallbackName: string,
   opts: ImportOptions,
   language: string | null = null,
-  settings = {},
+  settings: DeckSettings = {},
   d: DB = getDb(),
 ): Deck {
   if (opts.deckId) {
@@ -37,58 +84,121 @@ function pickDeck(
   );
 }
 
-/** Save media and drop references to files that don't exist. */
-function attachMedia(cards: NormalizedCard[], media: Record<string, Uint8Array>) {
-  const renamed: Record<string, string> = {};
-  let stored = 0;
-  for (const [name, data] of Object.entries(media)) {
-    renamed[name] = storeMedia(name, data);
-    stored++;
-  }
-  let missing = 0;
-  for (const c of cards) {
-    for (const k of ['image', 'audio', 'video'] as const) {
+const MEDIA_FIELDS = ['image', 'audio', 'video'] as const;
+const isRemote = (v: string) => /^https?:\/\//.test(v); // remote media is allowed (shown when online)
+
+/** File names (and their base names) the cards refer to. */
+export function mediaRefs(cards: NormalizedCard[]): Set<string> {
+  const refs = new Set<string>();
+  for (const c of cards)
+    for (const k of MEDIA_FIELDS) {
       const v = c[k];
-      if (!v) continue;
-      if (/^https?:\/\//.test(v)) continue; // remote media is allowed (shown when online)
-      const key = renamed[v] ?? renamed[basename(v)];
+      if (v && !isRemote(v)) refs.add(v).add(basename(v));
+    }
+  return refs;
+}
+
+type Parsed = {
+  format: ImportFormat;
+  cards: NormalizedCard[];
+  /** Line or position of each card in the source, for the report. Defaults to position. */
+  lines?: number[];
+  invalid?: number[];
+  media?: Record<string, Uint8Array>;
+  mediaMissing?: string[];
+  warnings?: ImportReport['warnings'];
+};
+
+/** Save media, point cards at the saved files, and write the cards. Media that fails a check is left out. */
+function finish(p: Parsed, deck: () => Deck, d: DB): ImportReport {
+  if (p.cards.length > IMPORT_LIMITS.cards)
+    throw new UserError('too_many_cards', 'Too many cards in one file', { max: IMPORT_LIMITS.cards });
+  const warnings = [...(p.warnings ?? [])];
+  const media = p.media ?? {};
+  const saved: Record<string, string> = {};
+  for (const [name, data] of Object.entries(media)) {
+    const problem = mediaProblem(name, data);
+    if (problem) warnings.push({ code: problem, file: name });
+    else saved[name] = storeMedia(name, data);
+  }
+  const missing = new Set(p.mediaMissing ?? []);
+  for (const c of p.cards)
+    for (const k of MEDIA_FIELDS) {
+      const v = c[k];
+      if (!v || isRemote(v)) continue;
+      const key = saved[v] ?? saved[basename(v)];
       if (key) c[k] = key;
       else {
         c[k] = undefined;
-        missing++;
+        if (!media[v] && !media[basename(v)]) missing.add(v);
       }
     }
-  }
-  return { stored, missing };
+  const res = upsertCards(deck(), p.cards, d);
+  const skipped = [
+    ...(p.invalid ?? []).map((row) => ({ row, code: 'row_invalid' as const })),
+    ...res.skipped.map((s) => ({ row: p.lines?.[s.index] ?? s.index + 1, code: s.code })),
+  ].sort((a, b) => a.row - b.row);
+  return {
+    deck: res.deck,
+    format: p.format,
+    added: res.added,
+    updated: res.updated,
+    total: res.total,
+    skipped: skipped.slice(0, REPORT_LIST_MAX),
+    skippedCount: skipped.length,
+    media: Object.keys(saved).length,
+    mediaMissing: missing.size,
+    missingMedia: [...missing].slice(0, REPORT_LIST_MAX),
+    warnings: warnings.slice(0, REPORT_LIST_MAX),
+  };
 }
+
+/** Text in UTF-8, UTF-16 (with a byte order mark) or, failing UTF-8, Windows-1252 (old Excel exports). */
+function decodeText(data: Uint8Array): { text: string; guessed: boolean } {
+  if (data[0] === 0xff && data[1] === 0xfe) return { text: new TextDecoder('utf-16le').decode(data), guessed: false };
+  if (data[0] === 0xfe && data[1] === 0xff) return { text: new TextDecoder('utf-16be').decode(data), guessed: false };
+  try {
+    return { text: new TextDecoder('utf-8', { fatal: true }).decode(data), guessed: false };
+  } catch {
+    return { text: new TextDecoder('windows-1252').decode(data), guessed: true };
+  }
+}
+
+const notInMacFolder = (n: string) => !n.startsWith('__MACOSX');
 
 export function importFile(
   fileName: string,
   data: Uint8Array,
   opts: ImportOptions = {},
   d: DB = getDb(),
-): ImportResult {
+): ImportReport {
   const ext = extname(fileName).toLowerCase();
   const base = basename(fileName, ext);
-  const isZip = data[0] === 0x50 && data[1] === 0x4b;
 
-  if (isZip) {
-    const entries = unzipSync(data, {
-      filter: (f) =>
-        /(^|\/)(manifest\.json|collection\.anki2|collection\.anki21b?|media)$/.test(f.name) ||
-        /\.(csv|tsv|txt)$/i.test(f.name),
-    });
-    const names = Object.keys(entries);
+  if (data[0] === 0x50 && data[1] === 0x4b) {
+    const names = listZip(data).map((e) => e.name);
+    const nested = names.filter((n) => isNestedZip(n) && notInMacFolder(n));
+    const warnings: ImportReport['warnings'] = nested.map((file) => ({
+      code: 'nested_zip_ignored',
+      file: basename(file),
+    }));
     if (names.some((n) => n.endsWith('manifest.json'))) {
       const pack = readLernpack(data);
       const g = pack.manifest.deck;
-      const deck = pickDeck(g.name || base, opts, g.language ?? null, g.goal ? { goal: g.goal } : {}, d);
-      if (g.description && !deck.description)
-        d.prepare('UPDATE decks SET description = ? WHERE id = ?').run(g.description, deck.id);
-      const m = attachMedia(pack.cards, pack.media);
-      return { ...upsertCards(deck, pack.cards, d), format: 'lernpack', media: m.stored, mediaMissing: m.missing };
+      const want = mediaRefs(pack.cards);
+      const media = lernpackMedia(data, (f) => want.has(f) && !isNestedZip(f));
+      return finish(
+        { format: 'lernpack', ...pack, media, warnings },
+        () => {
+          const deck = pickDeck(g.name || base, opts, g.language ?? null, g.goal ? { goal: g.goal } : {}, d);
+          if (g.description && !deck.description)
+            d.prepare('UPDATE decks SET description = ? WHERE id = ?').run(g.description, deck.id);
+          return deck;
+        },
+        d,
+      );
     }
-    if (names.some((n) => /collection\.anki/.test(n))) {
+    if (names.some((n) => /(^|\/)collection\.anki/.test(n))) {
       const apkg = readApkg(data);
       const root = apkg.decks.length
         ? apkg.decks
@@ -98,59 +208,77 @@ export function importFile(
                 apkg.decks.filter((x) => x.startsWith(b)).length - apkg.decks.filter((x) => x.startsWith(a)).length,
             )[0]
         : base;
-      const deck = pickDeck(root.replace(/^Lang$/, base), opts, null, {}, d);
-      const m = attachMedia(apkg.cards, apkg.media);
-      return { ...upsertCards(deck, apkg.cards, d), format: 'apkg', media: m.stored, mediaMissing: m.missing };
+      return finish({ format: 'apkg', ...apkg }, () => pickDeck(root.replace(/^Lang$/, base), opts, null, {}, d), d);
     }
     // A zip with a CSV plus its images/audio.
-    const all = unzipSync(data);
-    const csvName = Object.keys(all).find((n) => /\.(csv|tsv|txt)$/i.test(n) && !n.startsWith('__MACOSX'));
+    const csvName = names.find((n) => /\.(csv|tsv|txt)$/i.test(n) && notInMacFolder(n));
     if (!csvName)
       throw new UserError(
         'unsupported_zip',
         'Unsupported zip: expected a .lernpack, an Anki .apkg, or a zip with a CSV and media files',
       );
-    const { cards } = csvToCards(strFromU8(all[csvName]));
-    const media = Object.fromEntries(
-      Object.entries(all)
-        .filter(([n]) => n !== csvName && !n.endsWith('/') && !n.startsWith('__MACOSX'))
-        .map(([n, v]) => [basename(n), v]),
-    );
-    const deck = pickDeck(basename(csvName, extname(csvName)) || base, opts, null, {}, d);
-    const m = attachMedia(cards, media);
-    return { ...upsertCards(deck, cards, d), format: 'csv+media', media: m.stored, mediaMissing: m.missing };
-  }
-
-  const text = new TextDecoder().decode(data);
-  if (ext === '.json' || /^\s*[[{]/.test(text)) {
-    const j = JSON.parse(text);
-    const cards: NormalizedCard[] = (Array.isArray(j) ? j : (j.cards ?? [])).map(
-      (c: NormalizedCard & { id?: string }) => ({
-        ...c,
-        sourceId: c.sourceId ?? c.id,
-      }),
-    );
-    const deck = pickDeck(
-      j.deck?.name ?? base,
-      opts,
-      j.deck?.language ?? null,
-      j.deck?.goal ? { goal: j.deck.goal } : {},
+    const decoded = decodeText(readZip(data, (n) => n === csvName)[csvName]);
+    const { cards, lines } = csvToCards(decoded.text);
+    if (decoded.guessed) warnings.push({ code: 'encoding_guessed', file: basename(csvName) });
+    const want = mediaRefs(cards);
+    const files = readZip(data, (n) => n !== csvName && notInMacFolder(n) && !isNestedZip(n) && want.has(basename(n)));
+    const media = Object.fromEntries(Object.entries(files).map(([n, v]) => [basename(n), v]));
+    return finish(
+      { format: 'csv+media', cards, lines, media, warnings },
+      () => pickDeck(basename(csvName, extname(csvName)) || base, opts, null, {}, d),
       d,
     );
-    const m = attachMedia(cards, {});
-    return { ...upsertCards(deck, cards, d), format: 'json', media: 0, mediaMissing: m.missing };
   }
-  const { cards } = csvToCards(text);
+  if (['.zip', '.apkg', '.colpkg', '.lernpack'].includes(ext))
+    throw new UserError('zip_damaged', 'This file is damaged or not a complete zip file');
+
+  const { text, guessed } = decodeText(data);
+  if (text.includes('\0')) throw new UserError('not_text', 'Not a text file');
+  const warnings: ImportReport['warnings'] = guessed ? [{ code: 'encoding_guessed', file: fileName }] : [];
+  const json = ext === '.json' || /^\s*[[{]/.test(text) ? parseJson(text) : undefined;
+  if (ext === '.json' && json === undefined)
+    throw new UserError('bad_json', 'This JSON file could not be read: check that it is valid JSON');
+  if (json !== undefined) {
+    const j = json as { cards?: unknown; deck?: { name?: unknown; language?: unknown; goal?: unknown } } | null;
+    const list = Array.isArray(j) ? j : Array.isArray(j?.cards) ? j.cards : [];
+    if (!list.length)
+      throw new UserError('no_cards', 'No cards found. Use one card per line: front, back (comma or tab separated).');
+    const cards: NormalizedCard[] = [];
+    const lines: number[] = [];
+    const invalid: number[] = [];
+    list.forEach((raw: unknown, i: number) => {
+      const card = jsonToCard(raw);
+      if (card) {
+        cards.push(card);
+        lines.push(i + 1);
+      } else invalid.push(i + 1);
+    });
+    const g = Array.isArray(j) ? {} : (j?.deck ?? {});
+    const name = typeof g.name === 'string' ? g.name : base;
+    const language = typeof g.language === 'string' ? g.language : null;
+    const goal = g.goal && typeof g.goal === 'object' ? { goal: g.goal as DeckSettings['goal'] } : {};
+    return finish(
+      { format: 'json', cards, lines, invalid, warnings },
+      () => pickDeck(name, opts, language, goal, d),
+      d,
+    );
+  }
+  const { cards, lines } = csvToCards(text);
   if (!cards.length)
     throw new UserError('no_cards', 'No cards found. Use one card per line: front, back (comma or tab separated).');
-  const deck = pickDeck(base, opts, null, {}, d);
-  const m = attachMedia(cards, {});
-  return {
-    ...upsertCards(deck, cards, d),
-    format: ext === '.tsv' || text.includes('\t') ? 'tsv' : 'csv',
-    media: 0,
-    mediaMissing: m.missing,
-  };
+  const format = ext === '.tsv' || text.includes('\t') ? 'tsv' : 'csv';
+  return finish({ format, cards, lines, warnings }, () => pickDeck(base, opts, null, {}, d), d);
+}
+
+/** Cards pasted as text, with custom separators between term and definition and between cards. */
+export function importPasted(
+  text: string,
+  opts: ImportOptions & { deckName: string; fieldSep?: string; cardSep?: string },
+  d: DB = getDb(),
+): ImportReport {
+  const cards = pastedToCards(text, opts.fieldSep || '\t', opts.cardSep || '\n');
+  if (!cards.length) throw new UserError('no_cards', 'No cards found in the pasted text');
+  return finish({ format: 'paste', cards }, () => pickDeck(opts.deckName, opts, opts.language ?? null, {}, d), d);
 }
 
 /** A running Anki desktop. The desktop app implements this with the AnkiConnect add-on. */
@@ -169,16 +297,20 @@ export type AnkiNote = {
   cards: number[];
 };
 
+/** How far a live Anki import is: reading notes, then copying media files. */
+export type AnkiProgress = { step: 'notes' } | { step: 'media'; done: number; total: number };
+
 /** Live import from a running Anki desktop. */
 export async function importFromAnki(
   anki: AnkiSource,
   source: string,
   opts: ImportOptions = {},
-  onProgress?: (msg: string) => void,
+  onProgress?: (p: AnkiProgress) => void,
   d: DB = getDb(),
-): Promise<ImportResult> {
-  onProgress?.(`Reading notes from Anki deck "${source}"…`);
+): Promise<ImportReport> {
+  onProgress?.({ step: 'notes' });
   const notes = await anki.notesInDeck(source);
+  if (!notes.length) throw new UserError('anki_deck_empty', 'This Anki deck has no notes', { deck: source });
   const deckOf = await anki.cardDecks(notes.map((n) => n.cards[0]).filter(Boolean));
   const fieldMapped = notes.map((n) => {
     const f = (...names: string[]) => {
@@ -245,13 +377,11 @@ export async function importFromAnki(
   const media: Record<string, Uint8Array> = {};
   const files = [...new Set(ordered.flatMap((c) => [c.audio, c.image]).filter(Boolean) as string[])];
   for (const [i, file] of files.entries()) {
-    if (i % 50 === 0) onProgress?.(`Copying media ${i + 1}/${files.length}…`);
+    if (i % 20 === 0) onProgress?.({ step: 'media', done: i, total: files.length });
     const buf = await anki.mediaFile(file).catch(() => null);
     if (buf) media[file] = buf;
   }
-  const m = attachMedia(ordered, media);
-  const res = upsertCards(deck, ordered, d);
+  const report = finish({ format: 'anki', cards: ordered, media }, () => deck, d);
   setMeta(d, 'lastImport', { source, at: new Date().toISOString(), notes: ordered.length });
-  onProgress?.(`Done: ${res.total} cards (${res.added} new, ${res.updated} updated), ${m.stored} media files.`);
-  return { ...res, format: 'anki', media: m.stored, mediaMissing: m.missing };
+  return report;
 }

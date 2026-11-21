@@ -7,14 +7,54 @@ import { basename, extname } from './paths';
 import { sha1Hex } from './sha1';
 import { stripHtml, splitArticle } from './text';
 import { markdownLite, sanitizeHtml } from './cards';
-import type { ItemKind } from './types';
+import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 
 export type DeckSettings = {
   newPerDay?: number;
   goal?: { label: string; words: number; hoursLow?: number; hoursHigh?: number; tag?: string };
+  /** The day of the exam or deadline this deck works towards (YYYY-MM-DD). */
+  examDate?: string;
   ankiSource?: string;
+  /** The system voice that reads this deck's cards aloud (its voiceURI); none means the best match. */
+  voice?: string;
+  /** Reading-aloud speed, 0.5–1.5 (1 is normal). */
+  rate?: number;
 };
+
+/**
+ * Deck settings from the screen, checked: only known fields, in range. A field set to null or ''
+ * is cleared (returned as undefined, which drops it when merged and saved).
+ */
+export function cleanDeckSettings(input: Record<string, unknown>): Partial<Record<keyof DeckSettings, unknown>> {
+  const out: Partial<Record<keyof DeckSettings, unknown>> = {};
+  if ('newPerDay' in input) {
+    const n = Math.round(Number(input.newPerDay));
+    if (Number.isFinite(n)) out.newPerDay = Math.max(0, Math.min(999, n));
+  }
+  if ('goal' in input) {
+    const g = input.goal as Record<string, unknown> | null;
+    const label = typeof g?.label === 'string' ? g.label.trim().slice(0, 100) : '';
+    const words = Math.max(0, Math.min(1_000_000, Math.round(Number(g?.words)) || 0));
+    out.goal = label
+      ? { label, words, ...(typeof g?.tag === 'string' ? { tag: g.tag.slice(0, 100) } : {}) }
+      : undefined;
+  }
+  if ('examDate' in input) {
+    const v = input.examDate;
+    const ok = typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(`${v}T12:00:00`));
+    out.examDate = ok ? v : undefined;
+  }
+  if ('voice' in input) {
+    const v = typeof input.voice === 'string' ? input.voice.trim().slice(0, 300) : '';
+    out.voice = v || undefined;
+  }
+  if ('rate' in input) {
+    const n = input.rate === null || input.rate === '' ? NaN : Number(input.rate);
+    out.rate = Number.isFinite(n) ? Math.round(Math.max(0.5, Math.min(1.5, n)) * 20) / 20 : undefined;
+  }
+  return out;
+}
 
 export type Deck = {
   id: number;
@@ -35,6 +75,8 @@ export type NormalizedCard = {
   explanation?: string; // rule / longer explanation (shown in lessons and after answers)
   notes?: string;
   image?: string; // media file name
+  /** Text alternative for the image (its alt text), for screen readers. Plain text; '' clears a stored one. */
+  imageAlt?: string;
   audio?: string;
   video?: string; // mp4/webm/gif
   category?: string; // for category-sort rounds (e.g. "der"/"die"/"das", "IaaS"/"PaaS"/"SaaS")
@@ -206,17 +248,77 @@ export const mediaKind = (f: string) => {
 
 const clean = (s: string | undefined) => sanitizeHtml(markdownLite(String(s ?? '').trim()));
 
-export type UpsertResult = { deck: Deck; added: number; updated: number; total: number };
+/**
+ * A card as it is stored and studied: formatting cleaned to the safe list, kind detected. The card
+ * editor's preview uses this too, so what you see is what you get. Null for a card with no front.
+ */
+export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: NormalizedCard, id = 0): Item | null {
+  const front = clean(c.front);
+  const back = clean(c.back);
+  if (!stripHtml(front) && !/\{\{c\d+::/.test(front)) return null;
+  const tags = (c.tags ?? []).map((t) => t.trim()).filter(Boolean);
+  const kind = detectKind(stripHtml(front), stripHtml(back), tags, deck.language, c);
+  const extra: Record<string, string> = { ...(c.extra ?? {}) };
+  if (c.choices) extra.choices = sanitizeHtml(c.choices);
+  if (c.correct) extra.correct = c.correct;
+  if (c.steps) extra.steps = sanitizeHtml(c.steps);
+  if (c.altAnswers) extra.alt = c.altAnswers;
+  // The image description lives in extra (no migration); it goes when the image goes.
+  const imageAlt = stripHtml(c.imageAlt ?? extra.imageAlt ?? '');
+  if (imageAlt && c.image) extra.imageAlt = imageAlt;
+  else delete extra.imageAlt;
+  const { article, word } = splitArticle(stripHtml(front));
+  const example = clean(c.example);
+  const isNoun = kind === 'noun';
+  return {
+    id,
+    deckId: deck.id,
+    lang: deck.language,
+    deck: c.subdeck ?? deck.name,
+    kind,
+    target: kind === 'cloze' ? front : stripHtml(front),
+    article: isNoun ? article : null,
+    word: isNoun ? word : stripHtml(front),
+    meaning: ['cloze', 'mcq', 'order'].includes(kind) ? back : stripHtml(back),
+    sentenceHtml: example,
+    sentence: stripHtml(example),
+    sentenceMeaning: stripHtml(c.exampleTranslation ?? ''),
+    grammar: clean(c.explanation),
+    notes: clean(c.notes),
+    audio: c.audio || null,
+    image: c.image || null,
+    video: c.video || null,
+    category: (c.category ?? (isNoun ? article : null)) || null,
+    rank: c.rank ?? 0,
+    tags,
+    group: c.group || null,
+    extra,
+  };
+}
+
+/** Why a card in an import was not saved. Each code has a message under errors.<code> in the language files. */
+export type SkipCode = 'row_no_front' | 'row_duplicate' | 'row_invalid';
+/** `index` is the card's position in the list given to upsertCards (0-based). */
+export type UpsertResult = {
+  deck: Deck;
+  added: number;
+  updated: number;
+  total: number;
+  skipped: { index: number; code: SkipCode }[];
+};
 
 /** Insert or update cards in a deck. Progress (srs/item_state) is untouched for existing cards. */
 export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()): UpsertResult {
   const now = new Date().toISOString();
   let added = 0;
   let updated = 0;
+  const skipped: UpsertResult['skipped'] = [];
+  const seen = new Set<number>();
   const maxOrd = Number(d.prepare('SELECT COALESCE(MAX(ord), -1) AS n FROM items WHERE deck_id = ?').get(deck.id)!.n);
   const ranked = cards.map((c, i) => ({ c, i })).sort((a, b) => (a.c.rank || 1e9) - (b.c.rank || 1e9) || a.i - b.i);
   tx(d, () => {
     const exists = d.prepare('SELECT ord FROM items WHERE id = ?');
+    const inDeck = d.prepare('SELECT 1 FROM items WHERE id = ? AND deck_id = ?');
     const up = d.prepare(`
       INSERT INTO items (id, deck_id, deck, kind, target, article, word, meaning, sentence_html, sentence, sentence_meaning,
         grammar, notes, audio, image, video, category, rank, tags, grp, ord, extra, updated_at)
@@ -226,74 +328,51 @@ export function upsertCards(deck: Deck, cards: NormalizedCard[], d: DB = getDb()
         sentence=excluded.sentence, sentence_meaning=excluded.sentence_meaning, grammar=excluded.grammar, notes=excluded.notes,
         audio=excluded.audio, image=excluded.image, video=excluded.video, category=excluded.category, rank=excluded.rank,
         tags=excluded.tags, grp=excluded.grp, extra=excluded.extra, updated_at=excluded.updated_at`);
-    ranked.forEach(({ c }, i) => {
-      const front = clean(c.front);
-      const back = clean(c.back);
-      if (!stripHtml(front) && !/\{\{c\d+::/.test(front)) return;
-      const tags = (c.tags ?? []).map((t) => t.trim()).filter(Boolean);
-      const kind = detectKind(stripHtml(front), stripHtml(back), tags, deck.language, c);
-      const extra: Record<string, string> = { ...(c.extra ?? {}) };
-      if (c.choices) extra.choices = c.choices;
-      if (c.correct) extra.correct = c.correct;
-      if (c.steps) extra.steps = c.steps;
-      if (c.altAnswers) extra.alt = c.altAnswers;
-      const { article, word } = splitArticle(stripHtml(front));
+    ranked.forEach(({ c, i: index }, i) => {
+      const item = cardToItem(deck, c);
+      if (!item) return skipped.push({ index, code: 'row_no_front' });
+      // An exported card carries its own id as text: back in the same deck, it updates that card.
+      const own = typeof c.sourceId === 'string' && /^\d{1,16}$/.test(c.sourceId) ? Number(c.sourceId) : NaN;
       const id =
         typeof c.sourceId === 'number'
           ? c.sourceId
-          : stableId(`${deck.name}\u0000${c.sourceId ?? `${front}\u0000${back}`}`);
+          : Number.isSafeInteger(own) && inDeck.get(own, deck.id)
+            ? own
+            : stableId(`${deck.name}\u0000${c.sourceId ?? `${clean(c.front)}\u0000${clean(c.back)}`}`);
+      if (seen.has(id)) return skipped.push({ index, code: 'row_duplicate' });
+      seen.add(id);
       const prev = exists.get(id);
       prev ? updated++ : added++;
-      const example = clean(c.example);
-      const isNoun = kind === 'noun';
       up.run(
         id,
         deck.id,
-        c.subdeck ?? deck.name,
-        kind,
-        kind === 'cloze' ? front : stripHtml(front),
-        isNoun ? article : null,
-        isNoun ? word : stripHtml(front),
-        ['cloze', 'mcq', 'order'].includes(kind) ? back : stripHtml(back),
-        example,
-        stripHtml(example),
-        stripHtml(c.exampleTranslation ?? ''),
-        clean(c.explanation),
-        clean(c.notes),
-        c.audio || null,
-        c.image || null,
-        c.video || null,
-        (c.category ?? (isNoun ? article : null)) || null,
-        c.rank ?? 0,
-        JSON.stringify(tags),
-        c.group || null,
+        item.deck,
+        item.kind,
+        item.target,
+        item.article,
+        item.word,
+        item.meaning,
+        item.sentenceHtml,
+        item.sentence,
+        item.sentenceMeaning,
+        item.grammar,
+        item.notes,
+        item.audio,
+        item.image,
+        item.video,
+        item.category,
+        item.rank,
+        JSON.stringify(item.tags),
+        item.group,
         prev ? Number(prev.ord) : maxOrd + 1 + i,
-        JSON.stringify(extra),
+        JSON.stringify(item.extra),
         now,
       );
     });
   });
   const total = Number(d.prepare('SELECT COUNT(*) AS n FROM items WHERE deck_id = ?').get(deck.id)!.n);
-  return { deck, added, updated, total };
-}
-
-export function deckCounts(d: DB = getDb()) {
-  const rows = d
-    .prepare(
-      `
-    SELECT i.deck_id AS id, COUNT(*) AS cards,
-      SUM(CASE WHEN s.item_id IS NULL THEN 1 ELSE 0 END) AS fresh,
-      SUM(CASE WHEN st.mastery >= 3 THEN 1 ELSE 0 END) AS learned
-    FROM items i LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
-    WHERE i.suspended = 0 GROUP BY i.deck_id`,
-    )
-    .all();
-  return Object.fromEntries(
-    rows.map((r: Row) => [
-      Number(r.id),
-      { cards: Number(r.cards), fresh: Number(r.fresh), learned: Number(r.learned) },
-    ]),
-  );
+  skipped.sort((a, b) => a.index - b.index);
+  return { deck, added, updated, total, skipped };
 }
 
 export function readMedia(file: string): Uint8Array | null {

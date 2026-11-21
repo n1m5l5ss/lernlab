@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
 import { xpFor } from '@lernlab/core/game';
 import { teacherFor, type Line } from '@lernlab/core/teacher';
-import { sendAttempt, sendOverride } from './api';
-import { say, sfx } from './audio';
+import { api, sendAttempt, sendOverride } from './api';
+import { hasVoice, onNoVoice, say, setSound, setSpeechPrefs, sfx } from './audio';
+import { formatLanguage } from './i18n';
 import { useKeys, type AnswerInput, type BlockResult, type Ctx } from './ctx';
 import {
   Choice,
@@ -23,6 +24,11 @@ import {
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { mcFor, recallFor } from './plan';
 import { agendaText, bubbleFor, textTeacher, type Bubble } from './lines';
+import { blockKey, needsRescue, playableOnly, requeue } from './session-logic';
+import { Button, ProgressBar } from './components';
+
+/** Where the learner is inside the current block, for the progress bar and "5 of 12". */
+type Step = { done: number; total: number } | null;
 
 export type SessionResult = {
   sessionId: string;
@@ -36,6 +42,9 @@ export type SessionResult = {
   perfectBlocks: number;
   startedAt: string;
   missed: number[];
+  practice: boolean;
+  /** New cards met in this session. */
+  introduced: number;
 };
 
 const RECALL = new Set(['typed', 'cloze', 'flip', 'mcq', 'order']);
@@ -45,10 +54,12 @@ function ExerciseBlock({
   block,
   ctx: ctxIn,
   onDone,
+  onStep,
 }: {
   block: Extract<Block, { exercises: Exercise[] }>;
   ctx: Ctx;
   onDone: (r: BlockResult) => void;
+  onStep: (s: Step) => void;
 }) {
   let ctx = ctxIn;
   const [queue, setQueue] = useState<Exercise[]>(block.exercises);
@@ -65,13 +76,14 @@ function ExerciseBlock({
     let q = queue;
     if (!r.correct && 'itemId' in ex && RECALL.has(ex.type) && !tally.current.requeued.has(ex.itemId)) {
       tally.current.requeued.add(ex.itemId);
-      q = [...queue];
-      q.splice(Math.min(q.length, i + 4), 0, recallFor(ctx.item(ex.itemId)));
+      q = requeue(queue, i, recallFor(ctx.item(ex.itemId)));
       setQueue(q);
     }
     if (i + 1 >= q.length) onDone({ correct: tally.current.correct, total: tally.current.total });
     else setI(i + 1);
   };
+
+  useEffect(() => onStep({ done: i, total: queue.length }), [i, queue.length]);
 
   const ex = queue[i];
   if (!ex) return null;
@@ -113,15 +125,18 @@ function BlitzBlock({
   block,
   ctx,
   onDone,
+  onStep,
 }: {
   block: Extract<Block, { kind: 'blitz' }>;
   ctx: Ctx;
   onDone: (r: BlockResult) => void;
+  onStep: (s: Step) => void;
 }) {
   const { t } = useTranslation();
   const [i, setI] = useState(0);
   const tally = useRef({ correct: 0, total: 0 });
   const ex = block.exercises[i];
+  useEffect(() => onStep({ done: i, total: block.exercises.length }), [i]);
   const next = (r: { correct: boolean }) => {
     tally.current.total++;
     if (r.correct) tally.current.correct++;
@@ -156,8 +171,41 @@ export function Session({
   onQuit: () => void;
 }) {
   const { t: tr, i18n } = useTranslation();
-  const [blocks, setBlocks] = useState<Block[]>(plan.blocks);
+  // Each deck's voice and speed, and the "no voice" note, are set up while rendering: the exercise inside
+  // reads its card aloud in an effect, and a child's effects run before ours.
+  // The language with no voice; false once the learner closed the note (it stays closed this session).
+  const [noVoice, setNoVoice] = useState<string | false | null>(null);
+  const noteNoVoice = useCallback((lang: string) => setNoVoice((v) => (v === false ? v : lang)), []);
+  const speechFor = useRef<SessionPlan | null>(null);
+  const stopListening = useRef<(() => void) | null>(null);
+  if (speechFor.current !== plan) {
+    setSpeechPrefs(plan.speech);
+    speechFor.current = plan;
+  }
+  stopListening.current ??= onNoVoice(noteNoVoice);
+  useEffect(() => {
+    stopListening.current ??= onNoVoice(noteNoVoice);
+    return () => {
+      stopListening.current?.();
+      stopListening.current = null;
+    };
+  }, []);
+  // Listening and dictation the computer can't play (no recording, no voice for the language) are left out.
+  const [blocks, setBlocks] = useState<Block[]>(() =>
+    plan.blocks
+      .map((b) => {
+        if (!('exercises' in b)) return b;
+        const it = (id: number) => plan.items[id] ?? plan.extras[id];
+        const exercises = playableOnly(b.exercises, (id) => !!it(id)?.audio || hasVoice(it(id)?.lang));
+        return { ...b, exercises } as Block;
+      })
+      .filter((b) => !('exercises' in b) || b.exercises.length > 0),
+  );
   const [bi, setBi] = useState(0);
+  // Nothing left to play (e.g. a listening-only plan with no voices): go back home instead of showing an empty session.
+  useEffect(() => {
+    if (blocks.length === 0) onQuit();
+  }, [blocks.length, onQuit]);
   const [xp, setXp] = useState(0);
   const [combo, setCombo] = useState(0);
   const [bubble, setBubble] = useState<Bubble>(() => {
@@ -165,8 +213,19 @@ export function Session({
     return plan.agendaTarget ? { main: plan.agendaTarget, gloss: agenda } : { main: agenda, gloss: '' };
   });
   const [floats, setFloats] = useState<{ id: number; xp: number }[]>([]);
+  const [step, setStep] = useState<Step>(null);
+  const [paused, setPaused] = useState(false);
+  const [sound, setSoundOn] = useState(settings.sound);
+  const leaveDialog = useRef<HTMLDialogElement>(null);
   const started = useRef({ at: Date.now(), iso: new Date().toISOString() });
-  const totals = useRef({ answers: 0, correct: 0, perfectBlocks: 0, bestGender: 0, bossWon: null as boolean | null });
+  const totals = useRef({
+    answers: 0,
+    introduced: 0,
+    correct: 0,
+    perfectBlocks: 0,
+    bestGender: 0,
+    bossWon: null as boolean | null,
+  });
   const missed = useRef(new Set<number>());
   const responseTimes = useRef<number[]>([]);
   const slowStreak = useRef(0);
@@ -184,7 +243,7 @@ export function Session({
   const show = useCallback(
     (b: Bubble) => {
       setBubble(b);
-      if (voice) say(b.main, 1, plan.lang ?? 'en');
+      if (voice) say(b.main, 1, plan.lang ?? 'en', plan.deckId);
     },
     [voice],
   );
@@ -194,7 +253,7 @@ export function Session({
   );
 
   useEffect(() => {
-    if (voice) say(bubble.main, 1, plan.lang ?? 'en');
+    if (voice) say(bubble.main, 1, plan.lang ?? 'en', plan.deckId);
   }, []);
 
   // Attention: nudge after 20 s idle; a long tab switch or several slow answers triggers an action round.
@@ -228,6 +287,7 @@ export function Session({
     (a: AnswerInput): number => {
       const ms = performance.now() - a.shownAt;
       const counts = a.format !== 'intro';
+      if (!counts) totals.current.introduced++;
       let gained = 0;
       if (counts && !a.silent) {
         const ok = a.correct && !a.articleError;
@@ -271,6 +331,7 @@ export function Session({
         given: a.given,
         xp: gained,
         genderOnly: a.genderOnly,
+        practice: plan.practice,
       });
       return gained;
     },
@@ -278,7 +339,7 @@ export function Session({
   );
 
   const override = useCallback((itemId: number) => {
-    sendOverride(itemId);
+    if (!plan.practice) sendOverride(itemId); // practice never touches today's real grade
     missed.current.delete(itemId);
     totals.current.correct++;
   }, []);
@@ -287,6 +348,7 @@ export function Session({
     lang: plan.lang,
     t,
     timer: settings.questionTimer ?? 0,
+    paused,
     item,
     pool,
     answer,
@@ -309,7 +371,7 @@ export function Session({
 
     let rest = blocks.slice(bi + 1);
     // Struggling (under 60%)? Insert a quick recognition rescue round on the missed words.
-    if (b.kind === 'drill' && r.total >= 3 && r.correct / r.total < 0.6) {
+    if (b.kind === 'drill' && needsRescue(r)) {
       const ids = [...missed.current].slice(-5);
       if (ids.length >= 2 && pool.length >= 4)
         rest = [
@@ -356,6 +418,7 @@ export function Session({
     }
     const nb = [...blocks.slice(0, bi + 1), ...rest];
     setBlocks(nb);
+    setStep(null);
     if (bi + 1 >= nb.length) return finish();
     const n = nb[bi + 1];
     teacher(n.teacher);
@@ -375,61 +438,157 @@ export function Session({
       perfectBlocks: totals.current.perfectBlocks,
       startedAt: started.current.iso,
       missed: [...missed.current],
+      practice: plan.practice,
+      introduced: totals.current.introduced,
     });
   };
 
+  // Esc asks before leaving. Every answer is already saved; leaving early still counts the session.
+  const keepButton = useRef<HTMLButtonElement>(null);
+  const askLeave = () => {
+    leaveDialog.current?.showModal();
+    setPaused(true);
+    keepButton.current?.focus(); // the safe choice is the default
+  };
+  const leave = () => {
+    leaveDialog.current?.close();
+    if (totals.current.answers > 0) finish();
+    else onQuit();
+  };
+  const toggleSound = () => {
+    setSoundOn(!sound);
+    setSound(!sound);
+    void api.saveSettings({ sound: !sound });
+  };
   useKeys((e) => {
-    if (e.key === 'Escape') onQuit();
+    if (e.key === 'Escape' && !leaveDialog.current?.open) {
+      e.preventDefault();
+      askLeave();
+    }
   });
+  // Each new block names itself to screen readers, unless an exercise already put focus in its answer field.
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const blockId = blocks[bi]?.id;
+  useEffect(() => {
+    if (!document.activeElement || document.activeElement === document.body) titleRef.current?.focus();
+  }, [blockId]);
 
   const b = blocks[bi];
+  if (!b) return null;
+  const title = tr(`session.blocks.${blockKey(b.title)}`, { defaultValue: '' });
   return (
-    <div className="wrap">
-      <div className="topbar">
-        <button className="x" onClick={onQuit} title={tr('session.stop')} aria-label={tr('session.stop')}>
-          ✕
+    <div className="session">
+      <ProgressBar
+        variant="session"
+        label={tr('session.blockProgress')}
+        value={step?.done ?? 0}
+        max={step?.total ?? 1}
+      />
+      <header className="session-head">
+        <button className="session-leave" onClick={askLeave}>
+          <svg
+            aria-hidden="true"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          >
+            <path d="M6 6l12 12M18 6L6 18" />
+          </svg>
+          {tr('session.end')} <kbd>{tr('keys.esc')}</kbd>
         </button>
-        <div className="segs">
-          {blocks.map((x, i) => (
-            <i key={x.id} className={i < bi ? 'done' : i === bi ? 'now' : ''} />
-          ))}
+        <h1 ref={titleRef} tabIndex={-1} className="session-title">
+          {title}
+        </h1>
+        <div className="session-meta">
+          {step && <span>{tr('session.step', { n: Math.min(step.done + 1, step.total), total: step.total })}</span>}
+          {combo >= 2 && <span className="session-combo">{tr('session.combo', { count: combo })}</span>}
+          <span className="session-xp" title={tr('session.xpLabel')}>
+            {tr('session.xp', { xp })}
+            {floats.map((f) => (
+              <span key={f.id} className="xpfloat" aria-hidden="true">
+                {tr('session.xpFloat', { xp: f.xp })}
+              </span>
+            ))}
+          </span>
+          <button
+            className="session-sound"
+            aria-pressed={sound}
+            aria-label={tr('session.sound')}
+            title={tr('session.sound')}
+            onClick={toggleSound}
+          >
+            <svg
+              aria-hidden="true"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M4 9v6h4l5 4V5L8 9z" />
+              {sound ? <path d="M16 9a4 4 0 010 6M18.5 6.5a8 8 0 010 11" /> : <path d="M16 9l5 6M21 9l-5 6" />}
+            </svg>
+          </button>
         </div>
-        <span className={`pill combo ${combo >= 3 ? 'hot' : ''}`} key={combo}>
-          {tr('session.combo', { count: combo })}
-        </span>
-        <span className="pill" title={tr('session.xpLabel')}>
-          {tr('session.xp', { xp })}
-        </span>
-      </div>
-      <div className="teacher" style={{ marginBottom: 18 }}>
-        <div className="avatar" aria-hidden="true">
-          {tr('home.teacherInitial')}
-        </div>
-        <div className="bubble" aria-live="polite">
-          <div>{bubble.main}</div>
-          {bubble.gloss && bubble.gloss !== bubble.main && <div className="en">{bubble.gloss}</div>}
-        </div>
-      </div>
-      <div className="stage" key={b.id}>
-        {b.kind === 'gender' ? (
-          <GenderSprint block={b} ctx={ctx} onDone={blockDone} />
-        ) : b.kind === 'match' ? (
-          <MatchPairs block={b} ctx={ctx} onDone={blockDone} />
-        ) : b.kind === 'rain' ? (
-          <WordRain block={b} ctx={ctx} onDone={blockDone} />
-        ) : b.kind === 'boss' ? (
-          <Boss block={b} ctx={ctx} onDone={blockDone} />
+      </header>
+      <p className="session-coach" aria-live="polite">
+        {bubble.main}
+        {bubble.gloss && bubble.gloss !== bubble.main && <span className="muted"> · {bubble.gloss}</span>}
+      </p>
+      {noVoice && (
+        <p className="session-novoice" role="status">
+          <span>{tr('session.noVoice', { language: formatLanguage(noVoice) })}</span>
+          <Button variant="ghost" onClick={() => setNoVoice(false)}>
+            {tr('session.noVoiceDismiss')}
+          </Button>
+        </p>
+      )}
+      <main className="stage" key={b.id}>
+        {b.kind === 'gender' || b.kind === 'match' || b.kind === 'rain' || b.kind === 'boss' ? (
+          <div className="panel ex-card round">
+            {b.kind === 'gender' ? (
+              <GenderSprint block={b} ctx={ctx} onDone={blockDone} />
+            ) : b.kind === 'match' ? (
+              <MatchPairs block={b} ctx={ctx} onDone={blockDone} />
+            ) : b.kind === 'rain' ? (
+              <WordRain block={b} ctx={ctx} onDone={blockDone} />
+            ) : (
+              <Boss block={b} ctx={ctx} onDone={blockDone} />
+            )}
+          </div>
         ) : b.kind === 'blitz' ? (
-          <BlitzBlock block={b} ctx={ctx} onDone={blockDone} />
+          <div className="panel ex-card" aria-live="polite">
+            <BlitzBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
+          </div>
         ) : (
-          <ExerciseBlock block={b} ctx={ctx} onDone={blockDone} />
+          <div className="panel ex-card" aria-live="polite">
+            <ExerciseBlock block={b} ctx={ctx} onDone={blockDone} onStep={setStep} />
+          </div>
         )}
-      </div>
-      {floats.map((f) => (
-        <div key={f.id} className="xpfloat" style={{ right: 'max(160px, calc(50vw - 300px))', top: 70 }}>
-          {tr('session.xpFloat', { xp: f.xp })}
+      </main>
+      <dialog
+        ref={leaveDialog}
+        className="panel session-dialog"
+        aria-labelledby="leave-title"
+        onClose={() => setPaused(false)}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <h2 id="leave-title">{tr('session.leaveTitle')}</h2>
+        <p className="muted">{tr('session.leaveBody')}</p>
+        <div className="session-dialog-actions">
+          <Button onClick={leave}>{tr('session.leave')}</Button>
+          <Button ref={keepButton} variant="primary" onClick={() => leaveDialog.current?.close()}>
+            {tr('session.keepGoing')}
+          </Button>
         </div>
-      ))}
+      </dialog>
     </div>
   );
 }

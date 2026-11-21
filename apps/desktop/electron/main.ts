@@ -7,28 +7,65 @@ import {
   globalShortcut,
   ipcMain,
   Menu,
+  MessageChannelMain,
+  type MessagePortMain,
+  nativeTheme,
   net,
   protocol,
+  screen,
   session,
   shell,
   utilityProcess,
   type UtilityProcess,
   type WebFrameMain,
 } from 'electron';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
 import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { windowBackground, type Theme } from '@lernlab/ui/tokens';
 import { setupUpdates } from './updates';
+import { themeOf } from './theme';
+import { applyPrefs, setupReminders, type ReminderStatus } from './reminders';
+import { reminderPrefsOf, startedAtLogin } from './reminder-policy';
+import { MIN_SIZE, restoreWindow, type WindowState } from './window-state';
+import { HOME_SELECTOR, isSmokeTest, SMOKE_FAIL, SMOKE_OK, waitFor } from './smoke';
+import { planRestart } from './data-restart';
+import { startupMarks } from './perf';
+import {
+  parseDataMessage,
+  type ConnectMessage,
+  type DataRequest,
+  type DataResult,
+  type DataStatus,
+} from '../backend/data-protocol';
+
+// Startup marks for the performance check (perf.ts); they do nothing unless LERNLAB_PERF=1.
+const perfMark = startupMarks();
+
+// Installer smoke test (see smoke.ts): a fresh, throw-away profile, so it never touches real data.
+const smoke = isSmokeTest(process.argv);
+if (smoke) app.setPath('userData', mkdtempSync(join(tmpdir(), 'lernlab-smoke-')));
 
 const configFile = () => join(app.getPath('userData'), 'config.json');
-const readConfig = (): { dataDir?: string; lastUpdateCheck?: number } => {
+type Config = {
+  dataDir?: string;
+  lastUpdateCheck?: number;
+  /** The local date the daily reminder was last checked, so it shows at most once a day. */
+  lastReminder?: string;
+  theme?: Theme;
+  window?: WindowState;
+};
+const readConfig = (): Config => {
   try {
     return JSON.parse(readFileSync(configFile(), 'utf8'));
   } catch {
     return {};
   }
 };
+const writeConfig = (patch: Partial<Config>) =>
+  writeFileSync(configFile(), JSON.stringify({ ...readConfig(), ...patch }, null, 2));
 const dataDir = () => readConfig().dataDir || join(app.getPath('userData'), 'data');
 
 let win: BrowserWindow | null = null;
@@ -46,50 +83,92 @@ const isAppUrl = (url: string) => normalizeUrl(url) === appUrl;
 
 /* ── Data process: the only place with the database ── */
 
-type Result = { ok: true; value: unknown } | { ok: false; error: { code: string; message: string } };
-let data: UtilityProcess | null = null;
+// Main talks to it over a MessageChannel port with typed, checked messages (backend/data-protocol.ts).
+// Requests made while it starts or restarts wait for it; the window is told while it reconnects.
+type Result = DataResult;
+/** The port to the running data process, once it has opened the database; null while (re)starting. */
+let data: MessagePortMain | null = null;
 let nextId = 1;
-let restarts = 0;
+let crashes = 0;
+let dataStatus: DataStatus = 'ok';
 const pending = new Map<number, (r: Result) => void>();
+/** Requests waiting for the data process to be ready. */
+const waiting: DataRequest[] = [];
+const failure = (code: string): Result => ({ ok: false, error: { code, message: 'Please try again.' } });
+
+function setDataStatus(status: DataStatus) {
+  if (status === dataStatus) return;
+  dataStatus = status;
+  if (win && !win.isDestroyed()) win.webContents.send('lernlab:data-status', status);
+}
 
 function startDataProcess() {
-  const child = utilityProcess.fork(join(__dirname, 'data.cjs'), [], {
+  const child: UtilityProcess = utilityProcess.fork(join(__dirname, 'data.cjs'), [], {
     serviceName: 'LernLab data',
     env: { ...process.env, LERNLAB_DATA: dataDir(), LERNLAB_AUTO_ANKI: '0' },
   });
-  child.on('message', (msg: { id: number; result: Result } | { fatal: string }) => {
-    if ('fatal' in msg) return fatal(msg.fatal);
+  const startedAt = Date.now();
+  const { port1: port, port2 } = new MessageChannelMain();
+  child.postMessage({ type: 'connect' } satisfies ConnectMessage, [port2]);
+  port.on('message', ({ data: raw }) => {
+    const msg = parseDataMessage(raw);
+    if (!msg) return console.error('Main: dropped a malformed message from the data process.');
+    if (msg.type === 'fatal') return fatal(msg.message);
+    if (msg.type === 'ready') {
+      data = port;
+      setDataStatus('ok');
+      waiting.splice(0).forEach((req) => port.postMessage(req));
+      return;
+    }
     pending.get(msg.id)?.(msg.result);
     pending.delete(msg.id);
   });
+  port.start();
   child.on('exit', (code) => {
     data = null;
-    for (const done of pending.values())
-      done({ ok: false, error: { code: 'data_process_exit', message: 'Please try again.' } });
-    pending.clear();
-    if (app.isReady() && !quitting && restarts < 5) {
-      console.error(`Data process exited (${code}); restarting.`);
-      setTimeout(startDataProcess, 500 * 2 ** restarts++);
+    port.close();
+    // A request that was running may or may not have finished: say so instead of sending it twice.
+    // Requests still waiting were never sent; they go to the restarted process.
+    const queued = new Set(waiting.map((req) => req.id));
+    for (const id of [...pending.keys()]) if (!queued.has(id)) settle(id, failure('data_process_exit'));
+    if (!app.isReady() || quitting) return;
+    const next = planRestart(crashes, Date.now() - startedAt);
+    if (!next) {
+      console.error(`Data process exited (${code}) again; giving up.`);
+      for (const req of waiting.splice(0)) settle(req.id, failure('data_process_down'));
+      return setDataStatus('failed');
     }
+    console.error(`Data process exited (${code}); restarting in ${next.delayMs} ms.`);
+    crashes = next.crashes;
+    setDataStatus('reconnecting');
+    setTimeout(startDataProcess, next.delayMs);
   });
-  child.once('spawn', () => (restarts = 0));
-  data = child;
+}
+
+function settle(id: number, result: Result) {
+  pending.get(id)?.(result);
+  pending.delete(id);
 }
 
 /** The data could not be opened (e.g. a failed update, already rolled back). Explain and quit. */
 function fatal(message: string) {
   quitting = true;
+  if (smoke) {
+    console.error(`${SMOKE_FAIL} ${message}`);
+    return app.exit(1);
+  }
   dialog.showErrorBox('LernLab could not open your data', message);
   app.exit(1);
 }
 
-/** Send one request to the data process. Never throws. */
+/** Send one request to the data process, waiting while it (re)starts. Never throws. */
 function callData(channel: string, input: unknown): Promise<Result> {
   return new Promise((resolve) => {
-    if (!data) return resolve({ ok: false, error: { code: 'data_process_down', message: 'Please try again.' } });
-    const id = nextId++;
-    pending.set(id, resolve);
-    data.postMessage({ id, channel, input });
+    if (dataStatus === 'failed') return resolve(failure('data_process_down'));
+    const req: DataRequest = { id: nextId++, channel, input };
+    pending.set(req.id, resolve);
+    if (data) data.postMessage(req);
+    else waiting.push(req);
   });
 }
 
@@ -141,6 +220,7 @@ async function importDeckFile(path: string) {
 
 function startSession() {
   if (!win) return;
+  if (win.isMinimized()) win.restore();
   win.show();
   win.focus();
   win.webContents.executeJavaScript("location.hash = 'start'");
@@ -178,7 +258,7 @@ function buildMenu() {
                 message: 'Choose where LernLab keeps your decks and progress (e.g. a synced folder).',
               });
               if (r.canceled || !r.filePaths[0]) return;
-              writeFileSync(configFile(), JSON.stringify({ ...readConfig(), dataDir: r.filePaths[0] }, null, 2));
+              writeConfig({ dataDir: r.filePaths[0] });
               app.relaunch();
               app.exit(0);
             },
@@ -210,17 +290,37 @@ function buildMenu() {
   );
 }
 
+/** Follow the theme setting; remembered in config.json so the next start opens in the right colours. */
+function applyTheme(theme: Theme | null) {
+  if (!theme || theme === nativeTheme.themeSource) return;
+  nativeTheme.themeSource = theme;
+  win?.setBackgroundColor(windowBackground(nativeTheme.shouldUseDarkColors));
+  writeConfig({ theme });
+}
+
+// Windows shows notifications only for an app with an AppUserModelID (the installer's appId).
+if (process.platform === 'win32') app.setAppUserModelId('dev.lernlab.app');
+
 async function main() {
   await app.whenReady();
+  perfMark('app-ready');
+  nativeTheme.themeSource = readConfig().theme ?? 'system';
   const dir = dataDir();
   mkdirSync(dir, { recursive: true });
   startDataProcess();
 
-  ipcMain.handle('lernlab:invoke', (e, channel: unknown, input: unknown): Promise<Result> | Result => {
+  ipcMain.handle('lernlab:invoke', async (e, channel: unknown, input: unknown): Promise<Result> => {
     if (!trusted(e.senderFrame) || typeof channel !== 'string')
       return { ok: false, error: { code: 'forbidden', message: 'Not allowed' } };
-    return callData(channel, input);
+    const result = await callData(channel, input);
+    if (result.ok) {
+      applyTheme(themeOf(channel, result.value));
+      const reminder = reminderPrefsOf(channel, result.value);
+      if (reminder) applyPrefs(reminder);
+    }
+    return result;
   });
+  ipcMain.handle('lernlab:data-status', (e): DataStatus | null => (trusted(e.senderFrame) ? dataStatus : null));
 
   const mediaDir = join(dir, 'media');
   protocol.handle('lernlab-media', (req) => {
@@ -233,12 +333,18 @@ async function main() {
   session.defaultSession.setPermissionRequestHandler((_wc, permission, cb) => cb(permission === 'media'));
 
   buildMenu();
+  const place = restoreWindow(
+    readConfig().window,
+    screen.getAllDisplays().map((d) => d.workArea),
+  );
   win = new BrowserWindow({
-    width: 1200,
-    height: 860,
-    minWidth: 720,
-    minHeight: 560,
-    backgroundColor: '#12142a',
+    x: place.x,
+    y: place.y,
+    width: place.width,
+    height: place.height,
+    minWidth: MIN_SIZE.width,
+    minHeight: MIN_SIZE.height,
+    backgroundColor: windowBackground(nativeTheme.shouldUseDarkColors),
     title: 'LernLab',
     show: false,
     webPreferences: {
@@ -248,7 +354,26 @@ async function main() {
       preload: join(__dirname, 'preload.cjs'),
     },
   });
-  win.once('ready-to-show', () => win!.show());
+  // Opened automatically at login: stay out of the way. Windows and Linux show the window minimised
+  // in the taskbar; macOS keeps it hidden and the Dock icon opens it (see reminders.ts).
+  const atLogin = startedAtLogin(
+    process.argv,
+    process.platform === 'darwin' && app.getLoginItemSettings().wasOpenedAtLogin,
+  );
+  win.once('ready-to-show', () => {
+    perfMark('ready-to-show');
+    if (place.maximized) win!.maximize();
+    if (!atLogin) win!.show();
+    else if (process.platform !== 'darwin') {
+      win!.showInactive();
+      win!.minimize();
+    }
+  });
+  // Remember size and position for the next start (normal bounds, so un-maximizing restores them too).
+  win.on('close', () => {
+    if (win && !win.isFullScreen())
+      writeConfig({ window: { bounds: win.getNormalBounds(), maximized: win.isMaximized() } });
+  });
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };
@@ -261,6 +386,7 @@ async function main() {
   });
   await win.loadFile(join(distDir, 'index.html'));
   ready = true;
+  if (smoke) return runSmokeTest(win);
 
   // One shortcut from anywhere straight into a session: the "zero friction" start.
   globalShortcut.register('CommandOrControl+Shift+L', startSession);
@@ -275,10 +401,19 @@ async function main() {
       const s = res.ok ? (res.value as { settings?: { autoUpdate?: boolean; betaUpdates?: boolean } }).settings : {};
       return { autoUpdate: s?.autoUpdate !== false, betaUpdates: s?.betaUpdates === true };
     },
-    backup: () => callData('backup.create', undefined),
+    backup: () => callData('backup.create', { reason: 'update' }),
     lastCheck: () => readConfig().lastUpdateCheck,
-    setLastCheck: (time) =>
-      writeFileSync(configFile(), JSON.stringify({ ...readConfig(), lastUpdateCheck: time }, null, 2)),
+    setLastCheck: (time) => writeConfig({ lastUpdateCheck: time }),
+  });
+
+  void setupReminders({
+    status: async () => {
+      const res = await callData('reminder.status', undefined);
+      return res.ok ? (res.value as ReminderStatus) : null;
+    },
+    startSession,
+    lastShown: () => readConfig().lastReminder,
+    setLastShown: (date) => writeConfig({ lastReminder: date }),
   });
 }
 
@@ -290,7 +425,25 @@ app.on('activate', () => {
 });
 app.on('will-quit', () => globalShortcut.unregisterAll());
 
+/** Skip the welcome (it adds the sample deck), reload, and pass once Home is on screen. */
+async function runSmokeTest(w: BrowserWindow) {
+  const finished = await callData('welcome.finish', { choice: 'language' });
+  if (!finished.ok) return fatal(finished.error.message);
+  w.webContents.reload();
+  const shown = await waitFor(
+    () => w.webContents.executeJavaScript(`!!document.querySelector(${JSON.stringify(HOME_SELECTOR)})`),
+    { timeoutMs: 60_000, intervalMs: 250 },
+  );
+  console.log(shown ? `${SMOKE_OK} ${app.getVersion()}` : `${SMOKE_FAIL} Home did not appear within 60 s`);
+  quitting = true;
+  app.exit(shown ? 0 : 1);
+}
+
 main().catch((e) => {
+  if (smoke) {
+    console.error(`${SMOKE_FAIL} ${String(e?.stack ?? e)}`);
+    return app.exit(1);
+  }
   dialog.showErrorBox('LernLab could not start', String(e?.stack ?? e));
   app.exit(1);
 });

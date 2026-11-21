@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/n1m5l5ss/lernlab/blob/main/docs/schema/manifest.schema.json",
+  "title": "LernLab deck package manifest (.lernpack format version 1)",
+  "description": "manifest.json at the root of a .lernpack zip (or inside its single top folder). See docs/FORMAT.md. Readers must ignore keys they do not know, so this schema allows additional properties.",
+  "type": "object",
+  "required": ["format", "version", "deck"],
+  "properties": {
+    "format": {
+      "description": "Always the string \"lernpack\".",
+      "const": "lernpack"
+    },
+    "version": {
+      "description": "Format version. This schema describes version 1. A reader refuses a package whose version is higher than the one it knows.",
+      "type": "integer",
+      "const": 1
+    },
+    "deck": {
+      "description": "The deck the cards belong to.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "Deck name. Readers fall back to the file name when it is missing or empty.",
+          "type": "string"
+        },
+        "language": {
+          "description": "Language code (de, ja, ko, fr, ...) for a language deck, or null for any other subject.",
+          "type": ["string", "null"]
+        },
+        "description": {
+          "description": "Short description of the deck.",
+          "type": "string"
+        },
+        "goal": {
+          "description": "Optional study goal, for example an exam and the number of words it needs.",
+          "type": "object",
+          "required": ["label", "words"],
+          "properties": {
+            "label": { "description": "Name of the goal, e.g. \"Goethe B1\".", "type": "string" },
+            "words": { "description": "Number of cards or words the goal needs.", "type": "integer", "minimum": 0 },
+            "hoursLow": { "description": "Lower estimate of study hours.", "type": "number", "minimum": 0 },
+            "hoursHigh": { "description": "Upper estimate of study hours.", "type": "number", "minimum": 0 },
+            "tag": { "description": "Tag that marks the cards counting towards the goal.", "type": "string" }
+          }
+        }
+      }
+    },
+    "cards": {
+      "description": "Number of cards in the package. Informational: readers count the cards file.",
+      "type": "integer",
+      "minimum": 0
+    },
+    "created": {
+      "description": "When the package was written (ISO 8601, UTC).",
+      "type": "string",
+      "format": "date-time"
+    },
+    "generator": {
+      "description": "The program that wrote the package, e.g. \"LernLab\".",
+      "type": "string"
+    }
+  }
+}

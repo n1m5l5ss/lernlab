@@ -1,5 +1,5 @@
 // Safe rendering of card text (decks are shared files: only a few formatting tags survive) and media.
-import { sanitizeHtml } from '@lernlab/core/cards';
+import { imageAltOf, sanitizeHtml } from '@lernlab/core/cards';
 import type { Item } from '@lernlab/core/types';
 import { mediaUrl } from './bridge';
 
@@ -15,9 +15,11 @@ export function Media({ item, size = 'md' }: { item: Item; size?: 'sm' | 'md' | 
   return (
     <div className="media" style={{ maxHeight: max }}>
       {item.video ? (
-        <video src={src(item.video)} autoPlay muted loop playsInline style={{ maxHeight: max }} />
+        // Controls let people pause the looping video (WCAG 2.2.2).
+        <video src={src(item.video)} autoPlay muted loop playsInline controls style={{ maxHeight: max }} />
       ) : (
-        <img src={src(item.image!)} alt="" style={{ maxHeight: max }} />
+        // The card's image description, or alt="" (decorative) when it has none.
+        <img src={src(item.image!)} alt={imageAltOf(item)} style={{ maxHeight: max }} />
       )}
     </div>
   );

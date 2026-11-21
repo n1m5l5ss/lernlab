@@ -1,0 +1,24 @@
+/* SegmentedControl: the chosen option sits on the surface, bold and outlined, not marked by colour alone. */
+.segmented {
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-subtle);
+}
+.segmented button {
+  flex: 1;
+  white-space: nowrap;
+  min-height: 36px;
+  padding: 0 var(--space-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--color-text-muted);
+}
+.segmented button[aria-checked='true'] {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+  font-weight: 700;
+}

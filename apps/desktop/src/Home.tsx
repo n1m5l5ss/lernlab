@@ -1,17 +1,23 @@
+// Home (mockup: docs/design/images/Home-light.png): one obvious next step, Start, with today's work above it.
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SessionLength } from '@lernlab/core/types';
-import { teacherFor } from '@lernlab/core/teacher';
+import { estimateMinutes } from '@lernlab/core/game';
+import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { useKeys } from './ctx';
-import { bubbleFor } from './lines';
+import { Button, ProgressBar, SegmentedControl, Select } from './components';
+import { formatDate, formatNumber } from './i18n';
+import { LENGTHS } from './lengths';
+import { dayDate, MotivationIcon } from './Motivation';
+import { parseSourceValue, sourceValue } from './sources';
 import { UpdateNote } from './UpdateNote';
+import { markOnce, MARKS } from './perf';
 
-const LENGTHS: { key: SessionLength; minutes: number }[] = [
-  { key: 'mini', minutes: 4 },
-  { key: 'standard', minutes: 12 },
-  { key: 'long', minutes: 20 },
-];
+type AppState = OutputOf<'state.get'>;
+
+/** Day keys are read at noon so no time zone moves them to another day. */
+const noon = (day: string) => new Date(`${day}T12:00:00`);
 
 export function Home({
   state,
@@ -19,172 +25,179 @@ export function Home({
   refresh,
   goDecks,
 }: {
-  state: any;
-  onStart: (l: SessionLength) => void;
+  state: AppState;
+  onStart: (l: SessionLength, practice: boolean) => void;
   refresh: () => void;
   goDecks: () => void;
 }) {
   const { t } = useTranslation();
   const [length, setLength] = useState<SessionLength>(state.settings.sessionLength);
-  const deck = state.decks.find((d: any) => d.id === state.activeDeck);
+  const [practice, setPractice] = useState(false);
+  const canStart = state.decks.length > 0;
+  // Home has its data and Start works: the end of the startup path (docs/TESTING.md, performance budgets).
+  useEffect(() => markOnce(MARKS.homeInteractive), []);
   useKeys(
     (e) => {
-      if (e.key === 'Enter' && deck && !(e.target as HTMLElement).closest('select')) onStart(length);
+      // Enter starts, unless a control has focus and Enter means something there.
+      if (e.key === 'Enter' && canStart && !(e.target as HTMLElement).closest('select, a, button, input, textarea'))
+        onStart(length, practice);
     },
     [length, state],
   );
 
-  if (!state.decks.length) {
+  if (!canStart) {
     return (
-      <div className="card col center" style={{ padding: 40 }}>
-        <div style={{ fontSize: 44 }}>👋</div>
-        <h2 style={{ margin: 0 }}>{t('home.welcomeTitle')}</h2>
+      <section className="panel home-empty" aria-labelledby="home-empty-title">
+        <h2 id="home-empty-title">{t('home.welcomeTitle')}</h2>
         <p className="muted">{t('home.welcomeBody')}</p>
         <div>
-          <button className="btn primary" onClick={goDecks}>
+          <Button variant="primary" onClick={goDecks}>
             {t('home.welcomeAction')}
-          </button>
+          </Button>
         </div>
-      </div>
+      </section>
     );
   }
 
-  const teacher = teacherFor(deck?.language);
   const s = state.streak;
   const lvl = state.level;
-  const greet = bubbleFor(
-    state.missedYesterday ? teacher.missedDay() : state.today.goalMet ? teacher.goalMet() : teacher.start(),
-    t,
-  );
-  const pct = (a: number, b: number) => `${b ? Math.min(100, Math.round((a / b) * 100)) : 0}%`;
+  const goal = state.goal;
+  const daysStudied = state.week.filter((d) => d.studied).length;
 
   return (
-    <div className="col" style={{ gap: 16 }}>
-      <div className="row">
-        <div className="teacher grow">
-          <div className="avatar" aria-hidden="true">
-            {t('home.teacherInitial')}
-          </div>
-          <div className="bubble">
-            <div>{greet.main}</div>
-            {greet.gloss && <div className="en">{greet.gloss}</div>}
-          </div>
-        </div>
-        <select
-          value={state.activeDeck ?? ''}
-          onChange={async (e) => {
-            await api.activate(Number(e.target.value));
-            refresh();
-          }}
-          title={t('home.deckPicker')}
-          aria-label={t('home.deckPicker')}
-        >
-          {state.decks.map((d: any) => (
-            <option key={d.id} value={d.id}>
-              {t('home.deckOption', { name: d.name, count: d.due })}
-            </option>
-          ))}
-        </select>
-      </div>
+    <div className="home">
       <UpdateNote />
-      <div className="hero">
-        <div className="card">
-          <button className="start" onClick={() => onStart(length)}>
-            {t('home.start')} <span className="kbd">{t('home.startKey')}</span>
-          </button>
-          <div className="lengths">
-            {LENGTHS.map((l) => (
-              <button key={l.key} className={length === l.key ? 'on' : ''} onClick={() => setLength(l.key)}>
-                {t(`home.length.${l.key}`)}
-                <br />
-                <span className="small">{t('home.minutes', { count: l.minutes })}</span>
-              </button>
-            ))}
+      <section className="panel home-session" aria-label={t('home.sessionLabel')}>
+        <div className="home-numbers">
+          <div>
+            <span className="home-number">{formatNumber(state.due)}</span>
+            <span className="muted">{t('home.reviewsDue', { count: state.due })}</span>
           </div>
-          <div className="row small muted" style={{ marginTop: 12, justifyContent: 'space-between' }}>
-            <span>{t('home.deckLine', { deck: deck?.name, due: state.due, newCount: state.newLeftToday })}</span>
-            <span>
-              {state.today.goalMet ? t('home.goalDone') : t('home.goal', { count: state.settings.dailyGoalSessions })}
+          <div>
+            <span className="home-number">{formatNumber(state.newLeftToday)}</span>
+            <span className="muted">{t('home.newCards', { count: state.newLeftToday })}</span>
+          </div>
+          <div>
+            <span className="home-number">
+              {t('home.estimate', { count: estimateMinutes(state.due, state.newLeftToday) })}
             </span>
+            <span className="muted">{t('home.estimated')}</span>
           </div>
         </div>
-        <div className="statgrid">
-          <div className="stat">
-            <b>{state.studyDaysMonth}</b>
-            <span>{t('home.studyDays')}</span>
-          </div>
-          <div className="stat">
-            <b>{t('home.streak', { count: s.current })}</b>
-            <span>{t('home.freezes', { count: s.freezes })}</span>
-          </div>
-          <div className="stat">
-            <b>{state.wordsProducible}</b>
-            <span>{t('home.knownFromMemory')}</span>
-          </div>
-          <div className="stat">
-            <b>{t('home.level', { level: lvl.level })}</b>
-            <span>{t('home.xp', { xp: state.totalXp })}</span>
-            <div className="bar" style={{ marginTop: 6 }}>
-              <i style={{ width: pct(lvl.into, lvl.span) }} />
-            </div>
-          </div>
-        </div>
-      </div>
-      {s.repair && (
-        <div className="card" style={{ borderColor: 'var(--accent)' }}>
-          <b>{t('home.repairTitle')}</b>{' '}
-          {t('home.repairBody', { deadline: s.repair.deadline, days: s.repair.value, done: s.repair.sessionsDone })}
-        </div>
-      )}
-      <div className="card">
-        <div className="row">
-          <b className="grow">
-            {state.goal
-              ? t('home.roadTo', { goal: state.goal.label })
-              : t('home.deckProgress', { deck: deck?.name ?? t('home.deckFallback') })}
-          </b>
-          <span className="muted small">
-            {state.goal
-              ? t('home.knownCount', { known: state.goal.known, total: state.goal.total })
-              : t('home.knownCount', { known: state.wordsProducible, total: state.itemCount })}
-          </span>
-        </div>
-        <div className="bar green" style={{ marginTop: 8 }}>
-          <i
-            style={{
-              width: state.goal ? pct(state.goal.known, state.goal.total) : pct(state.wordsProducible, state.itemCount),
+        <div className="home-choices">
+          <Select
+            id="home-deck"
+            label={t('home.deckPicker')}
+            className="home-field home-deck"
+            value={sourceValue(state.source)}
+            onChange={async (e) => {
+              const source = parseSourceValue(e.target.value);
+              if (!source) return;
+              await api.chooseSource(source);
+              refresh();
             }}
-          />
+          >
+            {state.decks.map((d) => (
+              <option key={d.id} value={`deck:${d.id}`}>
+                {d.name}
+              </option>
+            ))}
+            {state.source.kind === 'decks' && (
+              <option value={sourceValue(state.source)}>
+                {t('home.source.decks', { count: state.source.deckIds.length })}
+              </option>
+            )}
+            <option value="all">{t('home.allDecks')}</option>
+            {state.starredCount > 0 && (
+              <option value="starred">{t('home.source.starred', { count: state.starredCount })}</option>
+            )}
+            {state.hardestCount > 0 && (
+              <option value="hardest">{t('home.source.hardest', { count: state.hardestCount })}</option>
+            )}
+            {state.tags.length > 0 && (
+              <optgroup label={t('home.source.tags')}>
+                {state.tags.map((tag) => (
+                  <option key={tag} value={`tag:${tag}`}>
+                    {t('home.source.tag', { tag })}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+          </Select>
+          <div className="home-field">
+            <span id="home-length">{t('home.sessionLength')}</span>
+            <SegmentedControl
+              labelledBy="home-length"
+              className="home-segmented"
+              value={length}
+              onChange={setLength}
+              options={LENGTHS.map((l) => ({ value: l.key, label: t('home.lengthMinutes', { count: l.minutes }) }))}
+            />
+          </div>
         </div>
-        <div className="row small muted" style={{ marginTop: 8 }}>
-          <span>{t('home.met', { introduced: state.introduced, total: state.itemCount })}</span>
-          <span className="grow" />
-          <span>{t('home.today', { xp: state.today.xp, minutes: state.today.minutes })}</span>
-        </div>
-      </div>
-      <Achievements got={state.achievements} />
-    </div>
-  );
-}
-
-function Achievements({ got }: { got: Record<string, string> }) {
-  const { t } = useTranslation();
-  const [all, setAll] = useState<string[]>([]);
-  useEffect(() => {
-    api
-      .stats()
-      .then((s) => setAll(s.achievements))
-      .catch(() => {});
-  }, []);
-  return (
-    <div className="card">
-      <b>{t('home.badges')}</b>
-      <div className="badges" style={{ marginTop: 10 }}>
-        {all.map((k) => (
-          <span key={k} className={`badge ${got[k] ? 'on' : ''}`} title={t(`badges.${k}.desc`)}>
-            {got[k] ? '🏅' : '🔒'} {t(`badges.${k}.title`)}
+        <label className="home-practice">
+          <input type="checkbox" role="switch" checked={practice} onChange={(e) => setPractice(e.target.checked)} />
+          <span>
+            <b>{t('home.practice')}</b> <span className="muted">{t('home.practiceHint')}</span>
           </span>
-        ))}
+        </label>
+        <Button variant="primary" className="home-start" onClick={() => onStart(length, practice)}>
+          {practice ? t('home.startPractice') : t('home.startStudying')} <kbd>{t('home.startKey')}</kbd>
+        </Button>
+      </section>
+      {s.repair && (
+        <p className="panel home-repair">
+          <MotivationIcon kind="repair" />
+          <span>
+            <b>{t('home.repairTitle')}</b>{' '}
+            {t('home.repairBody', {
+              deadline: dayDate(s.repair.deadline),
+              count: s.repair.value,
+              done: s.repair.sessionsDone,
+            })}
+          </span>
+        </p>
+      )}
+      <div className="home-tiles">
+        <section className="panel home-tile" aria-labelledby="home-week">
+          <h2 id="home-week">{t('home.thisWeek')}</h2>
+          <p className="home-tile-value">{t('home.daysOfWeek', { count: daysStudied })}</p>
+          <ol className="week">
+            {state.week.map((d) => (
+              <li key={d.day} className={`${d.studied ? 'on' : ''} ${d.today ? 'today' : ''}`}>
+                <i aria-hidden="true" />
+                <span aria-hidden="true">{formatDate(noon(d.day), { weekday: 'narrow' })}</span>
+                <span className="sr-only">
+                  {t(d.studied ? 'home.dayStudied' : 'home.dayNotStudied', {
+                    day: formatDate(noon(d.day), { weekday: 'long' }),
+                  })}
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="home-freezes muted">
+            <MotivationIcon kind="freeze" off={!s.freezes} />
+            {s.freezes ? t('home.freezes', { count: s.freezes }) : t('home.freezesNone')}
+          </p>
+        </section>
+        <section className="panel home-tile" aria-labelledby="home-level">
+          <h2 id="home-level">{t('home.levelTitle', { level: lvl.level })}</h2>
+          <p className="home-tile-value">{t('home.xpOf', { xp: lvl.into, next: lvl.span })}</p>
+          <ProgressBar labelledBy="home-level" value={lvl.into} max={lvl.span} />
+        </section>
+        <section className="panel home-tile" aria-labelledby="home-goal">
+          <h2 id="home-goal">{goal ? t('home.goalTitle', { goal: goal.label }) : t('home.knownTitle')}</h2>
+          <p className="home-tile-value">
+            {goal
+              ? t('home.knownOf', { known: goal.known, total: goal.total })
+              : t('home.knownOf', { known: state.wordsProducible, total: state.itemCount })}
+          </p>
+          <ProgressBar
+            labelledBy="home-goal"
+            value={goal ? goal.known : state.wordsProducible}
+            max={goal ? goal.total : state.itemCount}
+          />
+        </section>
       </div>
     </div>
   );

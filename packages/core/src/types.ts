@@ -123,6 +123,10 @@ export type SessionPlan = {
   items: Record<number, Item>; // every item referenced in the plan
   extras: Record<number, Item>; // distractor pool for client-generated exercises
   counts: { due: number; fresh: number; grammar: string | null };
+  /** Practice mode: any cards in the source, no new-card lessons, and nothing changes the schedule. */
+  practice: boolean;
+  /** Each deck's reading-aloud choices (system voice and speed), by deck id. */
+  speech: Record<number, { voice?: string; rate?: number }>;
 };
 
 export type Attempt = {
@@ -139,6 +143,8 @@ export type Attempt = {
   xp: number;
   /** Gender sprint: was the article right? (tracked separately from the word itself) */
   genderOnly?: boolean;
+  /** Practice mode: recorded for history and XP, but never touches the schedule. */
+  practice?: boolean;
 };
 
 export type DaySummary = {

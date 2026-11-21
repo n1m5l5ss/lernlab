@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-labelledby="t">
+  <title id="t">Drawing of System Settings, Privacy and Security, with the Open Anyway button marked</title>
+  <style>
+    .desk{fill:#F1EDE7}.panel{fill:#FFFFFF;stroke:#E4DED6}.side{fill:#F1EDE7}.ink{fill:#1F1D1A}.muted{fill:#5C574F}
+    .line{stroke:#E4DED6}.dot{fill:#E4DED6}.sel{fill:#2F5BB7}.btn{fill:#F1EDE7;stroke:#8A847B}
+    .mark{fill:none;stroke:#2F5BB7;stroke-width:3}.badge{fill:#2F5BB7}.on{fill:#FFFFFF}
+    text{font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+    @media (prefers-color-scheme: dark){
+      .desk{fill:#1A1917}.panel{fill:#24221F;stroke:#3A3732}.side{fill:#2D2B27}.ink{fill:#ECE9E4}.muted{fill:#A8A39B}
+      .line{stroke:#3A3732}.dot{fill:#3A3732}.sel{fill:#8FA8F0}.btn{fill:#2D2B27;stroke:#807B73}
+      .mark{stroke:#8FA8F0}.badge{fill:#8FA8F0}.on{fill:#1A1917}
+    }
+  </style>
+  <rect class="desk" width="480" height="300" rx="12"/>
+  <rect class="panel" x="16" y="16" width="448" height="268" rx="12"/>
+  <path class="side" d="M17 28a11 11 0 0 1 11-11h120v266H28a11 11 0 0 1-11-11z"/>
+  <circle class="dot" cx="32" cy="32" r="5"/><circle class="dot" cx="48" cy="32" r="5"/><circle class="dot" cx="64" cy="32" r="5"/>
+  <text class="muted" x="28" y="70" font-size="12">Appearance</text>
+  <text class="muted" x="28" y="96" font-size="12">Notifications</text>
+  <text class="muted" x="28" y="122" font-size="12">Focus</text>
+  <rect class="sel" x="22" y="134" width="122" height="26" rx="6"/>
+  <text class="on" x="28" y="151" font-size="11" font-weight="700">Privacy &amp; Security</text>
+  <text class="muted" x="28" y="182" font-size="12">Desktop &amp; Dock</text>
+  <text class="muted" x="28" y="208" font-size="12">Displays</text>
+  <text class="ink" x="156" y="44" font-size="15" font-weight="700">Privacy &amp; Security</text>
+  <text class="muted" x="156" y="70" font-size="11">Scroll down to Security</text>
+  <path class="line" d="M156 82h292"/>
+  <text class="ink" x="156" y="108" font-size="13" font-weight="700">Security</text>
+  <text class="muted" x="156" y="132" font-size="11">Allow applications from</text>
+  <text class="ink" x="156" y="148" font-size="11">App Store &amp; Known Developers</text>
+  <path class="line" d="M156 162h292"/>
+  <text class="ink" x="156" y="186" font-size="12">“LernLab” was blocked to protect</text>
+  <text class="ink" x="156" y="202" font-size="12">your Mac.</text>
+  <rect class="btn" x="350" y="216" width="98" height="30" rx="8"/>
+  <text class="ink" x="399" y="236" font-size="12" font-weight="700" text-anchor="middle">Open Anyway</text>
+  <rect class="mark" x="344" y="210" width="110" height="42" rx="11"/>
+  <circle class="badge" cx="318" cy="231" r="14"/>
+  <text class="on" x="318" y="236" font-size="14" font-weight="700" text-anchor="middle">2</text>
+</svg>

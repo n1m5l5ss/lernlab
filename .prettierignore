@@ -1,6 +1,9 @@
 node_modules/
 dist/
 dist-electron/
+apps/desktop/e2e-results/
+apps/desktop/storybook-static/
+apps/desktop/visual-results/
 release/
 data/
 examples/
@@ -13,3 +16,4 @@ CHANGELOG.md
 docs/design/
 apps/desktop/test/fixture-notes.json
 scripts/backlog.json
+packages/ui/tokens.css

@@ -1,0 +1,21 @@
+/* Input and Select: the label, hint and error around the control. The control itself keeps the shared
+   .input look from styles.css, which many screens still use on bare inputs. */
+.field-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.field-hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  font-weight: 400;
+}
+.field-error {
+  flex-basis: 100%;
+  color: var(--color-incorrect);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.field-text ~ [aria-invalid='true'] {
+  border-color: var(--color-incorrect);
+}

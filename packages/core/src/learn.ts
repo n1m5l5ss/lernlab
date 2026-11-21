@@ -6,6 +6,7 @@ import { getDb, getMeta, tx, type DB } from './db';
 import { gradeFor, dayKey } from './game';
 import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from './types';
 import { qa } from './cards';
+import { DEFAULT_REMINDER_TIME } from './reminder';
 
 export type Settings = {
   deck: string;
@@ -25,6 +26,18 @@ export type Settings = {
   autoUpdate: boolean;
   /** Also get beta releases. */
   betaUpdates: boolean;
+  /** Colour theme: follow the system (default), or always light or dark. */
+  theme: 'system' | 'light' | 'dark';
+  /** Scales the whole interface: normal, large (115%) or larger (130%). */
+  textSize: 'normal' | 'large' | 'larger';
+  /** Turn off animations even when the computer does not ask for reduced motion. */
+  reducedMotion: boolean;
+  /** A gentle daily notification (desktop app only). Off by default. */
+  reminder: boolean;
+  /** When the reminder shows, "HH:MM" in local time. */
+  reminderTime: string;
+  /** Start LernLab, minimised, when you log in to the computer (desktop app only). */
+  launchAtLogin: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -33,13 +46,19 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyGoalSessions: 1,
   sessionLength: 'standard',
   retention: 0.9,
-  sound: true,
+  sound: false, // off until the learner turns it on (docs/design/tokens.json, sound.defaultOn)
   teacherVoice: true,
   blitzSeconds: 8,
   questionTimer: 0,
   uiLanguage: 'en',
   autoUpdate: true,
   betaUpdates: false,
+  theme: 'system',
+  textSize: 'normal',
+  reducedMotion: false,
+  reminder: false,
+  reminderTime: DEFAULT_REMINDER_TIME,
+  launchAtLogin: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
@@ -59,7 +78,87 @@ const scheduler = (retention: number) =>
   fsrs(generatorParameters({ request_retention: retention, enable_fuzz: true, enable_short_term: false }));
 
 export const ITEM_SELECT = 'SELECT i.*, dk.language AS lang FROM items i JOIN decks dk ON dk.id = i.deck_id';
-const dk = (deckId?: number | null, alias = 'i') => (deckId ? ` AND ${alias}.deck_id = ${Number(deckId)}` : '');
+/** What a session covers. "all" is every deck; "hardest" is the cards you lapse on most. */
+export type StudySource =
+  | { kind: 'deck'; deckId: number }
+  | { kind: 'decks'; deckIds: number[] }
+  | { kind: 'all' }
+  | { kind: 'tag'; tag: string }
+  | { kind: 'starred' }
+  | { kind: 'hardest' };
+
+/** Which cards a query covers: one deck id, nothing (every deck), or a study source compiled to SQL. */
+export type Scope = number | null | undefined | { where: string; source: StudySource };
+
+const idList = (ids: number[]) => (ids.length ? ` AND i.id IN (${ids.map(Number).join(',')})` : ' AND 0');
+const dk = (scope: Scope) =>
+  scope == null ? '' : typeof scope === 'number' ? (scope ? ` AND i.deck_id = ${Number(scope)}` : '') : scope.where;
+
+/** How many of the hardest cards a "hardest" session draws from. */
+export const HARDEST_LIMIT = 20;
+
+/** The cards you lapse on most (then those you miss most in games), hardest first. */
+export function hardestCards(limit: number, d: DB = getDb()): { id: number; lapses: number; wrong: number }[] {
+  return d
+    .prepare(
+      `SELECT s.item_id, s.lapses, COALESCE(st.wrong, 0) AS wrong FROM srs s JOIN items i ON i.id = s.item_id
+       LEFT JOIN item_state st ON st.item_id = s.item_id
+       WHERE i.suspended = 0 AND s.reps > 0 AND (s.lapses > 0 OR COALESCE(st.wrong, 0) > 0)
+       ORDER BY s.lapses DESC, COALESCE(st.wrong, 0) DESC, s.item_id LIMIT ?`,
+    )
+    .all(limit)
+    .map((r: Row) => ({ id: Number(r.item_id), lapses: Number(r.lapses), wrong: Number(r.wrong) }));
+}
+
+/** Turn a study source into a query scope. Only numbers are written into SQL; tags are matched in code. */
+export function scopeFor(source: StudySource, d: DB = getDb()): Scope {
+  switch (source.kind) {
+    case 'deck':
+      return source.deckId;
+    case 'all':
+      return null;
+    case 'decks':
+      return { source, where: ` AND i.deck_id IN (${[0, ...source.deckIds.map(Number)].join(',')})` };
+    case 'starred':
+      return { source, where: ' AND i.starred = 1' };
+    case 'tag': {
+      const want = source.tag.trim().toLowerCase();
+      const ids = d
+        .prepare('SELECT id, tags FROM items')
+        .all()
+        .filter((r: Row) => (JSON.parse(r.tags as string) as string[]).some((t) => t.toLowerCase() === want))
+        .map((r: Row) => Number(r.id));
+      return { source, where: idList(ids) };
+    }
+    case 'hardest':
+      return { source, where: idList(hardestCards(HARDEST_LIMIT, d).map((c) => c.id)) };
+  }
+}
+
+/** The study source a stored value describes, or null when it isn't one. */
+export function asStudySource(v: unknown): StudySource | null {
+  if (!v || typeof v !== 'object') return null;
+  const o = v as Record<string, unknown>;
+  const id = (x: unknown) => Number.isInteger(x) && (x as number) > 0;
+  switch (o.kind) {
+    case 'deck':
+      return id(o.deckId) ? { kind: 'deck', deckId: o.deckId as number } : null;
+    case 'decks':
+      return Array.isArray(o.deckIds) && o.deckIds.length && o.deckIds.length <= 500 && o.deckIds.every(id)
+        ? { kind: 'decks', deckIds: o.deckIds as number[] }
+        : null;
+    case 'tag':
+      return typeof o.tag === 'string' && o.tag.trim() && o.tag.length <= 100
+        ? { kind: 'tag', tag: o.tag.trim() }
+        : null;
+    case 'all':
+    case 'starred':
+    case 'hardest':
+      return { kind: o.kind };
+    default:
+      return null;
+  }
+}
 
 export function rowToItem(row: Row): Item {
   const r = row as unknown as ItemRow;
@@ -106,11 +205,44 @@ export function introduce(itemId: number, d: DB = getDb(), now = new Date()) {
   d.prepare(`INSERT OR IGNORE INTO item_state(item_id) VALUES (?)`).run(itemId);
 }
 
+/** One row in the attempts log, and the answer's XP on today's total. */
+function logAttempt(d: DB, a: Attempt, now: Date, grade: number | null, practice: boolean) {
+  const day = dayKey(now);
+  d.prepare(
+    `INSERT INTO attempts(ts, day, session_id, item_id, format, correct, near_miss, article_error, used_hint,
+       response_ms, given, xp, grade, practice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).run(
+    now.toISOString(),
+    day,
+    a.sessionId,
+    a.itemId,
+    a.genderOnly ? 'gender' : a.format,
+    a.correct ? 1 : 0,
+    a.nearMiss ? 1 : 0,
+    a.articleError ? 1 : 0,
+    a.usedHint ? 1 : 0,
+    Math.round(a.responseMs),
+    a.given ?? null,
+    a.xp,
+    grade,
+    practice ? 1 : 0,
+  );
+  d.prepare(`INSERT INTO days(day, xp) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET xp = xp + excluded.xp`).run(
+    day,
+    a.xp,
+  );
+}
+
 export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
   const day = dayKey(now);
   return tx(d, () => {
     const item = d.prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(a.itemId);
     if (!item) return { grade: null };
+    if (a.practice) {
+      // Practice is logged (history, XP) but never introduces a card, moves the mastery ladder or grades FSRS.
+      logAttempt(d, a, now, null, true);
+      return { grade: null };
+    }
     d.prepare(`INSERT OR IGNORE INTO item_state(item_id) VALUES (?)`).run(a.itemId);
 
     // Intro introduces a card; so does a first attempt on a question card (a pretest – guessing first helps).
@@ -164,28 +296,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
       }
     }
 
-    d.prepare(
-      `INSERT INTO attempts(ts, day, session_id, item_id, format, correct, near_miss, article_error, used_hint,
-         response_ms, given, xp, grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    ).run(
-      now.toISOString(),
-      day,
-      a.sessionId,
-      a.itemId,
-      a.genderOnly ? 'gender' : a.format,
-      a.correct ? 1 : 0,
-      a.nearMiss ? 1 : 0,
-      a.articleError ? 1 : 0,
-      a.usedHint ? 1 : 0,
-      Math.round(a.responseMs),
-      a.given ?? null,
-      a.xp,
-      grade,
-    );
-    d.prepare(`INSERT INTO days(day, xp) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET xp = xp + excluded.xp`).run(
-      day,
-      a.xp,
-    );
+    logAttempt(d, a, now, grade, false);
     return { grade };
   });
 }
@@ -222,9 +333,9 @@ function reviveCard(c: Omit<Card, 'due' | 'last_review'> & { due: string; last_r
   return { ...c, due: new Date(c.due), last_review: c.last_review ? new Date(c.last_review) : undefined };
 }
 
-export function allItems(d: DB = getDb(), deckId?: number | null): Item[] {
+export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
   return d
-    .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(deckId)} ORDER BY i.ord`)
+    .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
     .all()
     .map(rowToItem);
 }
@@ -236,11 +347,11 @@ export function endOfDay(now = new Date()): Date {
   return new Date(y, m - 1, dd + 1, 4, 0, 0);
 }
 
-export function dueItemIds(d: DB = getDb(), now = new Date(), limit = 500, deckId?: number | null): number[] {
+export function dueItemIds(d: DB = getDb(), now = new Date(), limit = 500, scope?: Scope): number[] {
   return d
     .prepare(
       `SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id
-       WHERE i.suspended = 0 AND s.reps > 0 AND s.due <= ? AND (s.last_graded_day IS NULL OR s.last_graded_day != ?)${dk(deckId)}
+       WHERE i.suspended = 0 AND s.reps > 0 AND s.due <= ? AND (s.last_graded_day IS NULL OR s.last_graded_day != ?)${dk(scope)}
        ORDER BY s.due LIMIT ?`,
     )
     .all(endOfDay(now).toISOString(), dayKey(now), limit)
@@ -248,78 +359,78 @@ export function dueItemIds(d: DB = getDb(), now = new Date(), limit = 500, deckI
 }
 
 /** Introduced today but not yet graded: these must be recalled before the session ends. */
-export function learningTodayIds(d: DB = getDb(), now = new Date(), deckId?: number | null): number[] {
+export function learningTodayIds(d: DB = getDb(), now = new Date(), scope?: Scope): number[] {
   return d
     .prepare(
-      `SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id WHERE s.reps = 0 AND s.introduced_day = ?${dk(deckId)}`,
+      `SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id WHERE s.reps = 0 AND s.introduced_day = ?${dk(scope)}`,
     )
     .all(dayKey(now))
     .map((r: Row) => Number(r.item_id));
 }
 
-export function introducedTodayCount(d: DB = getDb(), now = new Date(), deckId?: number | null): number {
+export function introducedTodayCount(d: DB = getDb(), now = new Date(), scope?: Scope): number {
   return Number(
     d
       .prepare(
-        `SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE s.introduced_day = ?${dk(deckId)}`,
+        `SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE s.introduced_day = ?${dk(scope)}`,
       )
       .get(dayKey(now))!.n,
   );
 }
 
-export function newItemIds(d: DB = getDb(), limit: number, kinds?: string[], deckId?: number | null): number[] {
+export function newItemIds(d: DB = getDb(), limit: number, kinds?: string[], scope?: Scope): number[] {
   const kindFilter = kinds ? `AND i.kind IN (${kinds.map(() => '?').join(',')})` : `AND i.kind != 'grammar'`;
   return d
     .prepare(
       `SELECT i.id FROM items i LEFT JOIN srs s ON s.item_id = i.id
-       WHERE s.item_id IS NULL AND i.suspended = 0 ${kindFilter}${dk(deckId)} ORDER BY i.ord LIMIT ?`,
+       WHERE s.item_id IS NULL AND i.suspended = 0 ${kindFilter}${dk(scope)} ORDER BY i.ord LIMIT ?`,
     )
     .all(...(kinds ?? []), limit)
     .map((r: Row) => Number(r.id));
 }
 
-export function learnedIds(d: DB = getDb(), limit = 200, deckId?: number | null): number[] {
+export function learnedIds(d: DB = getDb(), limit = 200, scope?: Scope): number[] {
   return d
     .prepare(
-      `SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id WHERE i.suspended = 0${dk(deckId)}
+      `SELECT s.item_id FROM srs s JOIN items i ON i.id = s.item_id WHERE i.suspended = 0${dk(scope)}
        ORDER BY s.reps DESC, s.item_id LIMIT ?`,
     )
     .all(limit)
     .map((r: Row) => Number(r.item_id));
 }
 
-export function leechIds(d: DB = getDb(), limit = 6, deckId?: number | null): number[] {
+export function leechIds(d: DB = getDb(), limit = 6, scope?: Scope): number[] {
   return d
     .prepare(
       `SELECT st.item_id FROM item_state st JOIN srs s ON s.item_id = st.item_id JOIN items i ON i.id = st.item_id
-       WHERE st.wrong > 0${dk(deckId)} ORDER BY (st.wrong * 1.0 / (st.seen + 1)) DESC, s.lapses DESC LIMIT ?`,
+       WHERE st.wrong > 0${dk(scope)} ORDER BY (st.wrong * 1.0 / (st.seen + 1)) DESC, s.lapses DESC LIMIT ?`,
     )
     .all(limit)
     .map((r: Row) => Number(r.item_id));
 }
 
 /** Next grammar group to teach: the first group with untaught items, at most one new group per day. */
-export function nextGrammarGroup(d: DB = getDb(), now = new Date(), deckId?: number | null): string | null {
+export function nextGrammarGroup(d: DB = getDb(), now = new Date(), scope?: Scope): string | null {
   const taughtToday = d
     .prepare(
-      `SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.grp IS NOT NULL AND s.introduced_day = ?${dk(deckId)}`,
+      `SELECT COUNT(*) AS n FROM srs s JOIN items i ON i.id = s.item_id WHERE i.grp IS NOT NULL AND s.introduced_day = ?${dk(scope)}`,
     )
     .get(dayKey(now))!.n;
   if (Number(taughtToday) > 0) return null;
   const row = d
     .prepare(
       `SELECT i.grp FROM items i LEFT JOIN srs s ON s.item_id = i.id
-       WHERE i.kind = 'grammar' AND s.item_id IS NULL AND i.grp IS NOT NULL AND i.suspended = 0${dk(deckId)}
+       WHERE i.kind = 'grammar' AND s.item_id IS NULL AND i.grp IS NOT NULL AND i.suspended = 0${dk(scope)}
        ORDER BY i.ord LIMIT 1`,
     )
     .get();
   return row ? (row.grp as string | null) : null;
 }
 
-export function grammarItemIds(group: string, d: DB = getDb(), deckId?: number | null): number[] {
+export function grammarItemIds(group: string, d: DB = getDb(), scope?: Scope): number[] {
   return d
     .prepare(
-      `SELECT i.id FROM items i WHERE i.grp = ? AND i.kind = 'grammar' AND i.suspended = 0${dk(deckId)} ORDER BY i.ord`,
+      `SELECT i.id FROM items i WHERE i.grp = ? AND i.kind = 'grammar' AND i.suspended = 0${dk(scope)} ORDER BY i.ord`,
     )
     .all(group)
     .map((r: Row) => Number(r.id));
@@ -341,4 +452,116 @@ export function srsInfo(ids: number[], d: DB = getDb()): Record<number, { reps: 
     )
     .all(...ids);
   return Object.fromEntries(rows.map((r: Row) => [Number(r.id), { reps: Number(r.reps), mastery: Number(r.mastery) }]));
+}
+
+/** The source the learner last chose: a deck, all decks, several decks, a tag, starred or hardest cards. */
+export function currentSource(d: DB = getDb()): StudySource {
+  const chosen = asStudySource(getMeta(d, 'studySource', null));
+  if (chosen) return chosen;
+  const deckId = activeDeckId(d);
+  return deckId ? { kind: 'deck', deckId } : { kind: 'all' };
+}
+
+/** New cards for a session: up to `cap`, and never more than each deck's own new-card limit for today. */
+export function freshPerDeck(d: DB, now: Date, scope: Scope, cap: number, deckOf?: (id: number) => number): number[] {
+  const left = new Map<number, number>();
+  const budget = (deck: number) => {
+    if (!left.has(deck)) left.set(deck, Math.max(0, deckNewPerDay(deck, d) - introducedTodayCount(d, now, deck)));
+    return left.get(deck)!;
+  };
+  const out: number[] = [];
+  const ids = cap ? newItemIds(d, 1000, undefined, scope) : [];
+  if (!ids.length) return out;
+  if (!deckOf) {
+    // One query for every card's deck, not one per card.
+    const decks = new Map<number, number>();
+    for (const r of d.prepare(`SELECT id, deck_id FROM items WHERE id IN (${ids.map(Number).join(',')})`).all())
+      decks.set(Number(r.id), Number(r.deck_id));
+    deckOf = (id) => decks.get(id)!;
+  }
+  for (const id of ids) {
+    const deck = deckOf(id);
+    if (budget(deck) <= 0) continue;
+    left.set(deck, budget(deck) - 1);
+    out.push(id);
+    if (out.length >= cap) break;
+  }
+  return out;
+}
+
+/** Counts for one deck: the deck list, and the totals on Home when a deck (or every deck) is chosen. */
+export type DeckStats = {
+  /** Cards that are not suspended, of them never studied, and of them known (mastery 3 or more). */
+  cards: number;
+  fresh: number;
+  learned: number;
+  /** All the cards dueItemIds would give: due by the end of today and not graded today. */
+  due: number;
+  /** Never-studied, non-grammar cards that are not suspended (what newItemIds can pick). */
+  freshWords: number;
+  /** Cards introduced today, suspended or not (they count against the deck's new-card limit). */
+  introducedToday: number;
+  /** Cards ever introduced, and known words (not grammar), suspended or not. */
+  introduced: number;
+  words: number;
+};
+
+/**
+ * The counts for every deck in one pass over the cards, instead of a due query and a new-card query per
+ * deck. It groups by deck, suspended and kind, the order of the items_deck_state index, so SQLite reads
+ * that index without sorting. The conditions are those of dueItemIds, freshPerDeck, introducedTodayCount
+ * and wordsProducible; test/deck-stats.test.ts checks that both give the same numbers.
+ */
+export function deckStats(d: DB = getDb(), now = new Date()): Map<number, DeckStats> {
+  const today = dayKey(now);
+  const rows = d
+    .prepare(
+      `SELECT i.deck_id AS deck, i.suspended, i.kind, COUNT(*) AS n, COUNT(s.item_id) AS introduced,
+         COUNT(CASE WHEN st.mastery >= 3 THEN 1 END) AS known,
+         COUNT(CASE WHEN s.reps > 0 AND s.due <= ? AND (s.last_graded_day IS NULL OR s.last_graded_day != ?)
+           THEN 1 END) AS due,
+         COUNT(CASE WHEN s.introduced_day = ? THEN 1 END) AS introducedToday
+       FROM items i LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
+       GROUP BY i.deck_id, i.suspended, i.kind`,
+    )
+    .all(endOfDay(now).toISOString(), today, today);
+  const out = new Map<number, DeckStats>();
+  for (const r of rows) {
+    const deck = Number(r.deck);
+    let s = out.get(deck);
+    if (!s) {
+      s = { cards: 0, fresh: 0, learned: 0, due: 0, freshWords: 0, introducedToday: 0, introduced: 0, words: 0 };
+      out.set(deck, s);
+    }
+    const [n, introduced, known] = [Number(r.n), Number(r.introduced), Number(r.known)];
+    const grammar = r.kind === 'grammar';
+    s.introduced += introduced;
+    s.introducedToday += Number(r.introducedToday);
+    if (!grammar) s.words += known;
+    if (Number(r.suspended) !== 0) continue;
+    s.cards += n;
+    s.fresh += n - introduced;
+    s.learned += known;
+    s.due += Number(r.due);
+    if (!grammar) s.freshWords += n - introduced;
+  }
+  return out;
+}
+
+/** New cards left today in one deck: what freshPerDeck(d, now, deckId, cap) would give, counted. */
+export function newTodayFor(s: DeckStats | undefined, newPerDay: number, cap = 1000): number {
+  return s ? Math.min(Math.max(0, newPerDay - s.introducedToday), s.freshWords, cap, 1000) : 0;
+}
+
+/** How many cards a "hardest" session draws from: the size of the hardest scope, without sorting. */
+export function hardestCount(d: DB = getDb()): number {
+  return Number(
+    d
+      .prepare(
+        `SELECT COUNT(*) AS n FROM (SELECT 1 FROM srs s JOIN items i ON i.id = s.item_id
+           LEFT JOIN item_state st ON st.item_id = s.item_id
+           WHERE i.suspended = 0 AND s.reps > 0 AND (s.lapses > 0 OR COALESCE(st.wrong, 0) > 0) LIMIT ?)`,
+      )
+      .get(HARDEST_LIMIT)!.n,
+  );
 }

@@ -73,8 +73,8 @@ The first public release, 1.0, has 29 features. The prototype already has 12 of 
 | Study | Hands-free audio mode (listen and answer out loud) | 2.0 | New |
 | Cards | Decks: create, edit, delete, sub-decks, deck goal and exam date | 1.0 | Partial: no sub-decks |
 | Cards | Card editor: basic, cloze, multiple choice, ordering; rich text; image, GIF, audio, video | 1.0 | Done |
-| Cards | Card browser: search, filter, bulk tag, move, suspend, delete | 1.0 | Partial: no bulk actions |
-| Cards | Duplicate warning while adding or importing | 1.0 | Partial: import only |
+| Cards | Card browser: search, filter, bulk tag, move, suspend, delete | 1.0 | Done |
+| Cards | Duplicate warning while adding or importing | 1.0 | Done |
 | Cards | Read cards aloud with the computer's built-in voices when there is no audio file | 1.0 | Partial |
 | Cards | Record your own audio on a card | 1.x | New |
 | Import | CSV/TSV, pasted lists (Quizlet export), JSON, deck file with media, Anki .apkg | 1.0 | Done |
@@ -240,7 +240,7 @@ A user downloads one file for their system from the website or GitHub Releases, 
 | macOS | Apple Developer Program, required for signing and notarisation | $99 a year |
 | Linux | Not required | Free |
 
-Recommendation: launch 1.0 with Windows signed through SignPath. On the Mac, either pay Apple's $99 or ship unsigned with clear "right-click → Open" instructions. This decision is open (see Open questions).
+Decision (owner, Nov 21, 2026): launch 1.0 unsigned on Windows and macOS, with an illustrated first-open guide for each on the website and in the README. Nothing that costs money. Signing through SignPath Foundation is prepared in the release workflow but switched off; it can be turned on later by applying and adding the secret (see [CODE_SIGNING.md](CODE_SIGNING.md)).
 
 ## Interface languages and accessibility
 
@@ -371,7 +371,7 @@ The backlog has 13 epics and 52 tickets: 42 for release 1.0 and 10 for 1.x. Each
 | T36 | Right-to-left layout check with a test language file | E7 Languages & a11y | 1.0 | S |
 | T37 | Installers for Windows, Mac and Linux built by GitHub Actions on version tags | E8 Release | 1.0 | M |
 | T38 | Auto-update from GitHub Releases | E8 Release | 1.0 | M |
-| T39 | Code signing: SignPath for Windows; Apple decision | E8 Release | 1.0 | M |
+| T39 | Code signing: unsigned with first-open guides; SignPath prepared for later | E8 Release | 1.0 | M |
 | T40 | End-to-end tests that click through the real app | E8 Release | 1.0 | M |
 | T41 | Landing page with download buttons, screenshots, short video | E9 Community | 1.0 | M |
 | T42 | README, CONTRIBUTING, user guide, 3 example decks | E9 Community | 1.0 | S |
@@ -405,7 +405,7 @@ None of these names has been checked yet. Ticket T03 checks the GitHub name, dom
 - [x] Branches: `main` + `dev`, decided Nov 20, 2026
 - [ ] Approve the mockups (issue #1)
 - [ ] Product name?
-- [ ] Mac signing: pay $99 a year for Apple, or ship unsigned for 1.0?
+- [x] Signing: ship unsigned on Windows and macOS for 1.0, with first-open guides; no paid certificates, decided Nov 21, 2026
 - [ ] License: MIT for code, Creative Commons for shared decks?
 - [x] Repo owner: personal account (`n1m5l5ss`), decided Nov 20, 2026
 - [ ] Reuse the prototype engine (recommended) or start fresh?

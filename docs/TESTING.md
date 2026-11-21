@@ -35,11 +35,19 @@ LernLab is built test-first. For every ticket, write the failing test first, the
    - Changing a baseline needs a pull request with the `visual-change` label and the before/after images.
 4. **Token contrast test.** A unit test computes the contrast of every text and background token pair. It fails below 4.5:1 for text, or 3:1 for icons and borders.
 
+How this runs today (issue #55):
+
+- **Stories** sit next to each component: `apps/desktop/src/components/*.stories.tsx`. `npm run storybook` opens them at http://localhost:6006 with Theme and Direction switches in the toolbar. A story covers one variant, a disabled state, or long Telugu or CJK text; theme, direction, hover and focus are added by the visual check.
+- **`npm run test:visual`** builds Storybook and, for every story in light and dark, left to right and right to left, runs axe-core (fails on serious or critical) and screenshots the default, hover and keyboard-focus states. It is separate from `npm test`, which stays fast. On a laptop it only runs axe and saves the screenshots to `apps/desktop/visual-results/`; it compares them only in CI.
+- **CI** (`.github/workflows/visual.yml`) runs it in `mcr.microsoft.com/playwright:v1.65.1-noble`, pinned by digest, against `apps/desktop/visual/baselines/`. Diffs are in the run's `visual-results` artifact. The `visual-change` label makes the job commit new baselines to the pull request, where the Files tab shows each image before and after. That commit is made with GitHub's own token, so it starts no new CI run: once the images are approved, remove the label (which re-runs this comparison) and push the next commit, or re-run the CI workflow, to get the other checks on the new head.
+- **Scoped styles:** Sidebar, SegmentedControl, ProgressBar and the field label, hint and error use CSS Modules (`*.module.css`). Button, Card, Feedback and the `.input` control still share global classes in `styles.css`, because screens not yet converted use those classes directly; they move into modules as those screens move to the components.
+- **No raw colours:** ESLint fails on hex, `rgb()` and `hsl()` colours in TypeScript, and `packages/ui/src/raw-colours.test.ts` does the same for every stylesheet. Only `packages/ui/tokens.css`, generated from `docs/design/tokens.json`, holds colours, plus a short, shrinking allow-list of old game styles.
+
 ## Performance budgets
 
 Users judge a desktop app by how fast it reacts to them, not by server throughput. A 300 ms stutter between cards breaks concentration.
 
-Reference machine: a 4-core laptop with an SSD and 8 GB of RAM. Budgets are calibrated in the first two weeks, then locked.
+Reference machines: GitHub's free hosted runners for Windows, macOS and Linux (owner decision, 2026-11-21: no paid or personal hardware). The budgets below are locked; the measurements behind them are under [Calibration](#calibration).
 
 | Metric | P50 | P95 |
 |---|---|---|
@@ -65,6 +73,37 @@ Reference machine: a 4-core laptop with an SSD and 8 GB of RAM. Budgets are cali
 - **Interaction latency:** a Playwright script plays a 50-card session and reads `PerformanceObserver` event and long-task entries through a test hook.
 - **Where it runs:** pull requests on Linux; nightly on all three systems.
 
+### How it is built (#54)
+
+Everything lives in `bench/` (an npm workspace) and `.github/workflows/perf.yml`:
+
+- `bench/fixtures.ts` builds the 10k and 100k fixture databases through the real importer: 10 decks, about 60% of the cards studied (due dates ±60 days, three logged attempts each), a year of study days. They are generated into `bench/fixtures/generated/` (gitignored) and rebuilt when the schema or the generator changes.
+- `bench/db.bench.ts` (`npm run bench`, vitest bench) calls the real core functions on the real `node:sqlite` host: due queue (`dueItemIds`), save a review (`recordAttempt`), deck list and stats (`appState`, what `state.get` returns) at 10k and 100k cards, and importing 10k cards (100k with `BENCH_FULL=1`).
+- `bench/startup.ts` (`npm run bench:startup`, needs `npm run build:electron`, and `xvfb-run -a` on Linux without a screen) launches the built app 10 times and plays sessions until 50 cards are answered. With `LERNLAB_PERF=1` the main process keeps its marks (`app-ready`, `ready-to-show`; `electron/perf.ts`) in a global that Playwright reads; the window sets User Timing marks (`first-render`, `home-interactive`; `src/perf.ts`). Without that variable the main process records nothing. Key press or click → next frame is measured in the window (the event's time to a task queued from the next `requestAnimationFrame`), long tasks with a `longtask` `PerformanceObserver`. A block runs from its first exercise to the next block or to the session summary, whichever comes first: the Summary and Home screens between sessions are not study time and don't count. Each long task is logged with its length and the screen it happened on.
+- `bench/compare.ts` (pull requests) copies this branch's benchmark code into the `dev` checkout, runs both 5 times interleaved, takes each run's median and then the median of the runs. Changes smaller than 0.05 ms (database) or 30 ms (startup) never fail, so timer noise on a 70 µs query can't block a pull request. Key-press latency is shown in the table but not gated.
+- `bench/budgets.ts` (`npm run bench:budgets`, nightly) checks P50 and P95 against the table above and fails when one is over.
+
+### Calibration
+
+**Locked on 2026-11-21** from the first budgets run on GitHub's hosted runners (perf.yml, run 44879831850, `dev` at c3e5e40). The budget table above stays as it is: every number below is inside it except one. GitHub's runners are shared virtual machines, usually slower than a recent laptop, so a budget met there is met on most users' machines.
+
+| Metric (P50 / P95) | Windows | macOS | Linux |
+|---|---|---|---|
+| Start → Home on screen | 345 / 381 ms | 765 / 1,123 ms (first run: 1,058 / 1,655 ms) | 412 / 434 ms |
+| Key press → next frame | 13 / 15 ms | 14 / 29 ms | 14 / 15 ms |
+| Long tasks per block | 0 / 1 | 0 / 1 (first runs: 0 / 3, see below) | 0 / 0 |
+| Due queue, 100k | 0.07 / 0.11 ms | 0.06 / 0.13 ms | 0.06 / 0.08 ms |
+| Save a review, 100k | 0.37 / 0.56 ms | 0.22 / 0.51 ms | 0.24 / 0.40 ms |
+| Deck list / stats, 100k | 0.69 / 0.75 ms | 0.60 / 0.71 ms | 0.66 / 0.75 ms |
+| Import 10k (no media) | 1,783 / 2,888 ms | 367 / 517 ms | 532 / 635 ms |
+| Import 100k (no media) | 12.6 / 14.2 s | 5.2 / 6.2 s | 5.5 / 7.0 s |
+
+- **macOS long tasks** were 3 per block (P95) in the first two runs. The cause was the measurement, not studying (#137). A session's last block was counted until the next session started, so it took in the Summary screen, Home and the next start. With blocks ending at the summary, macOS is 0 / 1. The remaining long tasks come in the first seconds after the window opens (Windows 484 and 1,240 ms, macOS 238 and 128 ms), while the app loads and the first session starts. The 1,240 ms one on Windows is worth a look: it is a real one-off stall when studying starts. One 93 ms task happened during a macOS block. The budget was not loosened.
+- **Windows import** is the closest to its budget (10k: 89% of P50, 72% of P95; 100k: 84% of P50). It is the first thing to speed up if the budget is ever tightened.
+- The macOS start-up time varies a lot between runner machines, but both runs are inside the budget.
+
+Deck list / stats was 955 / 1,129 ms at 100k cards before #130: `appState` ran the due and new-card queries once per deck. It now counts every deck in one grouped query over the `items(deck_id, suspended, kind)` index and keeps the counts until the data changes, so `deck-stats` measures a repeat call and `deck-stats-changed` the first call after a write.
+
 ## Commands
 
 ```bash
@@ -74,3 +113,13 @@ npm run test:e2e       # packaged app, Playwright
 npm run bench          # performance benchmarks
 npm run test:all       # everything CI runs
 ```
+
+## End-to-end tests today
+
+`npm run test:e2e` builds the app, then Playwright's `_electron` starts it and clicks through it like a user (`apps/desktop/e2e/*.e2e.ts`, run by `node:test`; `npm test` never starts them):
+
+- **Study loop:** first start → welcome → sample deck → a full 5-minute session → summary → progress, then a restart that opens Home and keeps the streak.
+- **Looking after cards:** import a CSV, find and edit a card, switch to the dark theme, back up, then a restart that keeps all of it.
+- **Accessibility:** axe (`@axe-core/playwright`, WCAG 2.0–2.2 A and AA) checks every main screen in the light and the dark theme. A serious or critical violation fails the test. A rule may be switched off only in `AXE_DISABLED` in `apps/desktop/e2e/app.ts`, with the reason.
+
+Each test uses a fresh, throw-away profile (`--user-data-dir`). Screenshots go to `apps/desktop/e2e-results/`, which CI keeps as an artifact. CI runs the tests on Windows, macOS and Linux (under `xvfb-run`) against the app it has just built, not the installer: the installers are smoke-tested in `release.yml`. To test a packaged build, set `LERNLAB_E2E_APP` to its executable.

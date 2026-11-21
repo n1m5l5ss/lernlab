@@ -31,5 +31,22 @@ jobs:
       - run: npm run format:check
       - run: npm test
       - run: npm run build:electron
-      # Added by later tickets: coverage gate (#6), visual + axe (#2/#11),
-      # packaged e2e (#40), performance comparison (#54).
+      # End-to-end (#40) with axe (#35): Playwright clicks through the app just built (apps/desktop/e2e).
+      # Linux runners have no screen, so xvfb lends one.
+      - name: End-to-end tests
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            xvfb-run -a npm run e2e --workspace apps/desktop
+          else
+            npm run e2e --workspace apps/desktop
+          fi
+      - name: Keep the end-to-end screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots-${{ matrix.os }}
+          path: apps/desktop/e2e-results/
+          if-no-files-found: ignore
+      # Added by later tickets: coverage gate (#6), visual (#2/#11). The performance check (#54) is perf.yml.

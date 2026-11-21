@@ -1,0 +1,65 @@
+name: Website
+
+# Builds the landing page (apps/site) and publishes it on GitHub Pages (issue #41).
+# Runs when the website changes on main, after each release (so the download links name the new
+# installers), or by hand (Actions → Website → Run workflow).
+# One-time setup: Settings → Pages → Source: "GitHub Actions", and let `main` deploy to the
+# github-pages environment (Settings → Environments → github-pages → Deployment branches).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/site/**'
+      - 'packages/ui/tokens.css'
+      - 'apps/desktop/package.json'
+      - 'package.json'
+      - '.github/workflows/pages.yml'
+  # A release made by release-please builds its installers inside the release-please run; a tag pushed
+  # by hand runs "Build installers" on its own. Either way the newest release may have changed.
+  workflow_run:
+    workflows: [release-please, Build installers]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time; never cancel one halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm test --workspace apps/site
+      # The newest published release (drafts and pre-releases are skipped), so each button links to a
+      # file that exists. Before the first release, the links follow the version in package.json.
+      - name: Read the newest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release view --repo "$GITHUB_REPOSITORY" --json tagName,assets > release.json || rm -f release.json
+      - run: npm run build --workspace apps/site -- --release "$GITHUB_WORKSPACE/release.json"
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/site/dist
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
