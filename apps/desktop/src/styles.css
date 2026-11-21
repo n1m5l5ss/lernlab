@@ -2134,6 +2134,80 @@ kbd {
   color: var(--color-text-muted);
 }
 
+/* ── If-then study plan (#204): on Welcome, in Settings, and the habit note on Home ── */
+.welcome-plan {
+  margin: 0 0 var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+.welcome-plan summary {
+  min-height: var(--size-min-target);
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  cursor: pointer;
+}
+.welcome-plan summary::before {
+  content: '▸';
+  margin-inline-end: var(--space-2);
+  color: var(--color-text-muted);
+}
+.welcome-plan[open] summary::before {
+  content: '▾';
+}
+[dir='rtl'] .welcome-plan:not([open]) summary::before {
+  content: '◂';
+}
+.welcome-plan summary::-webkit-details-marker {
+  display: none;
+}
+.welcome-plan summary:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.plan-fields .input {
+  flex: 0 1 320px;
+  width: auto;
+  min-width: 0;
+}
+.plan-preview {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-accent-tint);
+  border-radius: var(--radius-control);
+}
+.plan-preview figcaption {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.plan-preview blockquote {
+  margin: var(--space-1) 0 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.plan-suggest {
+  padding-top: var(--space-4);
+}
+.habit-note {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  line-height: var(--line-body);
+}
+.habit-note-hide {
+  min-height: var(--size-min-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
 /* Motivation (issue #30): level-up and badge moments on the summary, badges and streak on Progress, freezes on Home.
    Quiet surfaces, one accent; moments rise in once at the end of a block, and only fade under reduced motion. */
 .motivation-icon {

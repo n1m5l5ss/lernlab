@@ -53,6 +53,13 @@ import {
   studiedToday,
 } from '@lernlab/core/progress';
 import { cleanReminderTime } from '@lernlab/core/reminder';
+import {
+  cleanPlanMinutes,
+  cleanPlanText,
+  recentSessionStarts,
+  studyPlanOf,
+  usualStudyTime,
+} from '@lernlab/core/studyplan';
 import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
@@ -649,9 +656,12 @@ export const handlers = {
       time: s.reminderTime,
       launchAtLogin: s.launchAtLogin,
       language: s.uiLanguage,
+      plan: studyPlanOf(s),
       studiedToday: studiedToday(),
     };
   }),
+  /** The hour you usually start studying ("HH:00"), from local sessions only, or null without a clear pattern. */
+  'plan.suggestTime': h(v.none, () => ({ time: usualStudyTime(recentSessionStarts(getDb())) })),
   /** A copy of the database in backups/: "Back up now", and before an app update is installed. */
   'backup.create': h(v.optional(v.object({ reason: v.optional(v.oneOf('update')) })), (input) => ({
     file: basename(backupAppDb(undefined, input?.reason === 'update' ? 'before-update' : undefined)),
@@ -688,6 +698,10 @@ export const handlers = {
     next.reducedMotion = next.reducedMotion === true;
     next.reminder = next.reminder === true;
     next.reminderTime = cleanReminderTime(next.reminderTime);
+    next.planAfter = cleanPlanText(next.planAfter);
+    next.planMinutes = cleanPlanMinutes(next.planMinutes);
+    next.planBackup = cleanPlanText(next.planBackup);
+    next.habitNote = next.habitNote !== false;
     next.launchAtLogin = next.launchAtLogin === true;
     next.aiAssistant = next.aiAssistant === true;
     next.remoteMedia = next.remoteMedia === true;

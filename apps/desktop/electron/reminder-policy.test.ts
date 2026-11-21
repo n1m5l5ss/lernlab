@@ -43,6 +43,20 @@ test('the notification text comes from the language file and takes turns', () =>
   assert.equal(reminderText(undefined, -1).body, n.bodies[1]);
 });
 
+test('with an if-then plan, the notification says your own sentence', () => {
+  const plan = { after: 'finish dinner', minutes: 10, backup: '' };
+  assert.deepEqual(reminderText('en', 0, plan), {
+    title: en.settings.reminders.notification.title,
+    body: "After I finish dinner, I'll study for 10 minutes.",
+  });
+  assert.equal(reminderText('en', 3, plan).body, reminderText('en', 0, plan).body, 'the same sentence every day');
+  assert.equal(
+    reminderText('xx', 0, { after: 'lunch', minutes: 5, backup: "I'm tired" }).body,
+    "After I lunch, I'll study for 5 minutes. If I'm tired, I'll do one 5-minute session.",
+  );
+  assert.ok(en.settings.reminders.notification.bodies.includes(reminderText('en', 0, null).body), 'no plan: as before');
+});
+
 test('reminder wording is friendly: no guilt, loss or pressure', () => {
   const n = en.settings.reminders;
   const words = [n.notification.title, ...n.notification.bodies, n.daily, n.dailyHint].join(' ').toLowerCase();

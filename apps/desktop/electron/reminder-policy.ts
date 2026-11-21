@@ -1,6 +1,7 @@
 // The daily reminder and "open at login" in the main process. Pure functions, so they can be tested
 // without Electron; reminders.ts does the Electron calls.
 import en from '../../../locales/en.json';
+import type { StudyPlan } from '@lernlab/core/studyplan';
 
 /** Passed when LernLab starts at login (Windows and Linux), so it opens minimised. */
 export const HIDDEN_ARG = '--hidden';
@@ -44,14 +45,37 @@ export function linuxAutostartEntry(exec: string): string {
   ].join('\n');
 }
 
-type Strings = { settings: { reminders: { notification: { title: string; bodies: string[] } } } };
+type Strings = {
+  settings: { reminders: { notification: { title: string; bodies: string[] } } };
+  plan: Record<string, string>;
+};
 const LOCALES: Record<string, Strings> = { en };
 
 /**
  * The notification's words, in the interface language (English until more locales land). Several
  * friendly lines take turns by date, so it never reads like a nag; none of them mention streaks or loss.
  */
-export function reminderText(language: string | undefined, dayNumber: number): { title: string; body: string } {
-  const n = (LOCALES[language ?? 'en'] ?? LOCALES.en).settings.reminders.notification;
+export function reminderText(
+  language: string | undefined,
+  dayNumber: number,
+  plan: StudyPlan | null = null,
+): { title: string; body: string } {
+  const lang = LOCALES[language ?? 'en'] ? (language ?? 'en') : 'en';
+  const n = LOCALES[lang].settings.reminders.notification;
+  if (plan) return { title: n.title, body: planText(lang, plan) };
   return { title: n.title, body: n.bodies[Math.abs(Math.trunc(dayNumber)) % n.bodies.length] };
+}
+
+/**
+ * Your if-then plan (#204) in your words: the translated sentence with what you typed put in, the same
+ * keys the app shows with i18next ("plan.sentence_one/_other", "plan.backupSentence").
+ */
+function planText(lang: string, plan: StudyPlan): string {
+  const p = LOCALES[lang].plan;
+  const fill = (s: string, vars: Record<string, string>) =>
+    s.replace(/\{\{(\w+)\}\}/g, (_, k: string) => vars[k] ?? '');
+  const form = new Intl.PluralRules(lang).select(plan.minutes);
+  const count = new Intl.NumberFormat(lang).format(plan.minutes);
+  const main = fill(p[`sentence_${form}`] ?? p.sentence_other, { after: plan.after, count });
+  return plan.backup ? `${main} ${fill(p.backupSentence, { backup: plan.backup })}` : main;
 }

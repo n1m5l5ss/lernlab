@@ -6,6 +6,7 @@ import { gradeFor, dayKey } from './game';
 import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from './types';
 import { qa } from './cards';
 import { DEFAULT_REMINDER_TIME } from './reminder';
+import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 
@@ -37,6 +38,13 @@ export type Settings = {
   reminder: boolean;
   /** When the reminder shows, "HH:MM" in local time. */
   reminderTime: string;
+  /** If-then plan (#204): "After I ___ (planAfter), I'll study for ___ (planMinutes) minutes". Plain text; '' = no plan. */
+  planAfter: string;
+  planMinutes: number;
+  /** Optional backup plan: "If ___ (planBackup), I'll do one 5-minute session". Plain text; '' = none. */
+  planBackup: string;
+  /** Show the short note on habits (one missed day barely matters) next to the streak on Home. */
+  habitNote: boolean;
   /** Start LernLab, minimised, when you log in to the computer (desktop app only). */
   launchAtLogin: boolean;
   /** Let an AI assistant the user connects (MCP, #148) read their data and propose changes. Off by default. */
@@ -63,6 +71,10 @@ export const DEFAULT_SETTINGS: Settings = {
   reducedMotion: false,
   reminder: false,
   reminderTime: DEFAULT_REMINDER_TIME,
+  planAfter: '',
+  planMinutes: DEFAULT_PLAN_MINUTES,
+  planBackup: '',
+  habitNote: true,
   launchAtLogin: false,
   aiAssistant: false,
   remoteMedia: false,

@@ -24,6 +24,8 @@ export const api = {
   progress: () => call('progress.get'),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),
   appInfo: () => call('app.info'),
+  /** The hour you usually study, from local sessions (#204). */
+  suggestPlanTime: () => call('plan.suggestTime'),
   aiRequests: () => call('aiRequests.list'),
   acceptAiRequest: (id: string, request: Record<string, unknown>) => call('aiRequests.accept', { id, request }),
   declineAiRequest: (id: string) => call('aiRequests.decline', { id }),

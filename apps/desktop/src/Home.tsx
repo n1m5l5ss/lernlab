@@ -12,6 +12,7 @@ import { LENGTHS } from './lengths';
 import { dayDate, MotivationIcon } from './Motivation';
 import { parseSourceValue, sourceValue } from './sources';
 import { UpdateNote } from './UpdateNote';
+import { HabitNote } from './StudyPlan';
 import { markOnce, MARKS } from './perf';
 
 type AppState = OutputOf<'state.get'>;
@@ -179,6 +180,9 @@ export function Home({
             <MotivationIcon kind="freeze" off={!s.freezes} />
             {s.freezes ? t('home.freezes', { count: s.freezes }) : t('home.freezesNone')}
           </p>
+          {state.settings.habitNote && (
+            <HabitNote onHide={() => void api.saveSettings({ habitNote: false }).then(refresh, () => refresh())} />
+          )}
         </section>
         <section className="panel home-tile" aria-labelledby="home-level">
           <h2 id="home-level">{t('home.levelTitle', { level: lvl.level })}</h2>
