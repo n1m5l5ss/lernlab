@@ -20,6 +20,12 @@ const ICONS: Record<Route, ReactNode> = {
   ),
   cards: <path d="M4 6h16M4 12h16M4 18h10" />,
   progress: <path d="M4 20V10M10 20V4M16 20v-7M22 20H2" />,
+  requests: (
+    <>
+      <path d="M4 5h16v11H9l-5 4z" />
+      <path d="M9 10.5l2 2 4-4" />
+    </>
+  ),
   settings: (
     <>
       <circle cx="12" cy="12" r="3" />
@@ -30,14 +36,28 @@ const ICONS: Record<Route, ReactNode> = {
 
 const MAIN_ROUTES: Route[] = ['home', 'decks', 'cards', 'progress'];
 
-export function Shell({ route, kicker, children }: { route: Route; kicker?: string; children: ReactNode }) {
+/**
+ * `requests`: how many AI requests wait (#148). The "AI requests" place shows while the assistant is on or
+ * something waits; undefined hides it.
+ */
+export function Shell({
+  route,
+  kicker,
+  requests,
+  children,
+}: {
+  route: Route;
+  kicker?: string;
+  requests?: number;
+  children: ReactNode;
+}) {
   const { t } = useTranslation();
   const heading = useRef<HTMLHeadingElement>(null);
   const first = useRef(true);
   const item = (r: Route): SidebarItem => ({
     key: r,
     href: hashFor(r),
-    label: t(`nav.${r}`),
+    label: r === 'requests' && requests ? t('nav.requestsWaiting', { count: requests }) : t(`nav.${r}`),
     icon: ICONS[r],
     current: r === route,
     iconClassName: r === 'cards' ? 'icon-dir' : undefined,
@@ -62,7 +82,12 @@ export function Shell({ route, kicker, children }: { route: Route; kicker?: stri
       <a className="skip-link" href="#main" onClick={(e) => (e.preventDefault(), heading.current?.focus())}>
         {t('nav.skip')}
       </a>
-      <Sidebar label={t('nav.label')} title={t('app.name')} items={MAIN_ROUTES.map(item)} footer={[item('settings')]} />
+      <Sidebar
+        label={t('nav.label')}
+        title={t('app.name')}
+        items={[...MAIN_ROUTES, ...(requests === undefined ? [] : (['requests'] as const))].map(item)}
+        footer={[item('settings')]}
+      />
       <main id="main" className="shell-main">
         <div className="shell-content">
           {kicker && <p className="page-kicker">{kicker}</p>}

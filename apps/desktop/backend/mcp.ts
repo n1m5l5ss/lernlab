@@ -22,68 +22,12 @@ import {
   weakCards,
 } from '@lernlab/core/assistant';
 import { getDeck } from '@lernlab/core/library';
-import { InvalidInput, v, type Check } from './validate';
+import { InvalidInput } from './validate';
+import { f, type Input, type Json, type Shape } from './fields';
+import { addAiRequest, listAiRequests } from '@lernlab/storage-sqlite/airequests';
+import type { AiRequestBody } from '@lernlab/core/airequests';
+import { asRequest, checkBody, REQUEST_BODIES } from './ai-requests';
 import pkg from '../package.json';
-
-/* ── Inputs: one definition gives both the check and the JSON Schema the assistant sees ── */
-
-type Json = Record<string, unknown>;
-type Field<T> = { check: Check<T>; schema: Json; optional?: true };
-type Shape = Record<string, Field<unknown>>;
-type Input<S extends Shape> = { [K in keyof S]: S[K] extends Field<infer T> ? T : never };
-
-const int =
-  (min: number, max: number): Check<number> =>
-  (value, path = '') => {
-    const n = v.number(value, path);
-    if (!Number.isInteger(n) || n < min || n > max)
-      throw new InvalidInput(`${path || 'input'} must be a whole number from ${min} to ${max}`);
-    return n;
-  };
-const date: Check<string> = (value, path = '') => {
-  const s = v.string(10)(value, path);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) throw new InvalidInput(`${path || 'input'} must be a date (YYYY-MM-DD)`);
-  return s;
-};
-
-export const f = {
-  id: (description: string): Field<number> => ({ check: v.id, schema: { type: 'integer', minimum: 1, description } }),
-  int: (min: number, max: number, description: string): Field<number> => ({
-    check: int(min, max),
-    schema: { type: 'integer', minimum: min, maximum: max, description },
-  }),
-  text: (max: number, description: string): Field<string> => ({
-    check: v.string(max),
-    schema: { type: 'string', maxLength: max, description },
-  }),
-  date: (description: string): Field<string> => ({
-    check: date,
-    schema: { type: 'string', format: 'date', description },
-  }),
-  oneOf: <T extends string>(options: readonly T[], description: string): Field<T> => ({
-    check: v.oneOf(...options),
-    schema: { type: 'string', enum: options, description },
-  }),
-  list: <T>(item: Field<T>, max: number, description: string): Field<T[]> => ({
-    check: v.array(item.check, max),
-    schema: { type: 'array', items: item.schema, maxItems: max, description },
-  }),
-  object: <S extends Shape>(shape: S, description?: string): Field<Input<S>> => ({
-    check: v.object(Object.fromEntries(Object.entries(shape).map(([k, x]) => [k, x.check]))) as Check<Input<S>>,
-    schema: {
-      type: 'object',
-      properties: Object.fromEntries(Object.entries(shape).map(([k, x]) => [k, x.schema])),
-      required: Object.keys(shape).filter((k) => !shape[k].optional),
-      additionalProperties: false,
-      ...(description && { description }),
-    },
-  }),
-  optional: <T>(x: Field<T>): Field<T | undefined> => ({
-    check: v.optional(x.check),
-    schema: x.schema,
-    optional: true,
-  }),
-};
 
 /* ── Tools ── */
 
@@ -110,6 +54,22 @@ const range = (d: DB, p: { period: (typeof PERIODS)[number]; date?: string }, no
     throw new InvalidInput((e as Error).message);
   }
 };
+
+/** Save a proposal for the user to review. It is checked again with the same validators before saving. */
+function propose(body: AiRequestBody) {
+  const checked = checkBody(body.kind, body);
+  const { id } = addAiRequest(checked as unknown as Record<string, unknown>);
+  return {
+    requestId: id,
+    status: 'waiting',
+    message:
+      'Nothing has changed yet. The user reviews this in LernLab → AI requests and can edit, accept or decline it.',
+  };
+}
+const summary = (r: AiRequestBody) =>
+  r.kind === 'create_deck'
+    ? `New deck "${r.deck.name}" with ${r.cards.length} cards`
+    : `${r.cards.length} cards for deck ${r.deckId}`;
 
 export const TOOLS = {
   get_overview: tool(
@@ -192,6 +152,28 @@ export const TOOLS = {
       return { recorded: false, cards: quizCards(db, input, now) };
     },
   ),
+  propose_new_deck: tool(
+    'Propose a new deck with cards, e.g. made from a PDF, a web page or notes the user gave you. Nothing is saved: the user reviews, edits and accepts it in LernLab → AI requests. Accepted cards start as new cards.',
+    REQUEST_BODIES.create_deck,
+    (input) => propose({ kind: 'create_deck', ...input }),
+  ),
+  propose_cards: tool(
+    'Propose cards to add to an existing deck. Nothing is saved until the user accepts them in LernLab → AI requests. Accepted cards start as new cards.',
+    REQUEST_BODIES.add_cards,
+    (input, { db }) => {
+      needDeck(db, input.deckId);
+      return propose({ kind: 'add_cards', ...input });
+    },
+  ),
+  list_requests: tool(
+    'Your proposals that are still waiting for the user in LernLab → AI requests (accepted or declined ones are gone).',
+    {},
+    () =>
+      listAiRequests()
+        .map(asRequest)
+        .filter((r) => r !== null)
+        .map((r) => ({ id: r.id, kind: r.kind, createdAt: r.createdAt, note: r.note ?? null, summary: summary(r) })),
+  ),
 };
 
 export type ToolName = keyof typeof TOOLS;
@@ -241,7 +223,7 @@ export function createMcpServer(deps: McpDeps): Server {
     {
       capabilities: { tools: {} },
       instructions:
-        "LernLab is the user's flashcard app. These tools read their decks, cards and study history. Quizzing in the chat is never recorded and never changes their schedule.",
+        "LernLab is the user's flashcard app. These tools read their decks, cards and study history. Changes are only proposals: the user accepts or declines each one in LernLab. Quizzing in the chat is never recorded and never changes their schedule.",
     },
   );
   server.setRequestHandler(ListToolsRequestSchema, () => ({ tools: toolList() }));

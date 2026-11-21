@@ -15,6 +15,7 @@ import { Browse } from './Browse';
 import { Badges } from './Badges';
 import { StreakPanel } from './Motivation';
 import { Shell } from './Shell';
+import { AiRequests } from './AiRequests';
 import { Welcome } from './Welcome';
 import { WhatsNew } from './WhatsNew';
 import { formatDate, setLanguage } from './i18n';
@@ -196,6 +197,7 @@ export function App() {
     <Shell
       route={route}
       kicker={route === 'home' ? formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }) : undefined}
+      requests={state.settings.aiAssistant || state.aiRequests > 0 ? state.aiRequests : undefined}
     >
       {route === 'home' && <Home state={state} onStart={start} refresh={refresh} goDecks={() => go('decks')} />}
       {route === 'decks' && (
@@ -216,6 +218,7 @@ export function App() {
           <Badges got={state.achievements} />
         </div>
       )}
+      {route === 'requests' && <AiRequests assistantOn={state.settings.aiAssistant} refresh={refresh} />}
       {route === 'settings' && <Settings state={state} onSaved={refresh} />}
     </Shell>
   );

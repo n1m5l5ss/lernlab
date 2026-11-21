@@ -211,6 +211,17 @@ In the desktop app, **File → Use a different data folder…** moves LernLab to
 
 **Settings → Your data → Delete all my data** removes every deck, card, answer, setting and media file. Type `DELETE` to confirm. One last backup stays in the `backups` folder; delete that folder too to remove everything.
 
+## Your AI assistant
+
+LernLab has no AI of its own, but you can connect one you already use (Claude Desktop, or another app that supports MCP). Turn it on in **Settings → AI assistant**, then follow [AI-ASSISTANTS.md](AI-ASSISTANTS.md). Ask it how your month went, which cards you keep forgetting, or to quiz you in the chat (a chat quiz is never recorded and never changes when cards come back).
+
+### AI requests
+
+When you ask the assistant for cards, for example from a PDF or a web page, it cannot add them itself. Its proposals appear under **AI requests** in the sidebar, one card each, with the assistant's note on where they come from:
+
+- Edit the deck name and any card, untick the cards you don't want, then click **Add N cards**. The cards start as new cards.
+- **Decline** removes the request. Nothing is changed.
+
 ## Settings
 
 - **Language and display**: interface language, theme (**Match my computer**, **Light** or **Dark**), text size and **Reduce motion**.

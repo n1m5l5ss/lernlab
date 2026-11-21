@@ -1,0 +1,90 @@
+// The "AI requests" list (#148): what an assistant proposes waits in ai-requests/ until the user accepts
+// (possibly edited) or declines it. Files there are untrusted: anything malformed is ignored.
+import { test, after } from 'node:test';
+import assert from 'node:assert/strict';
+import { mkdirSync, mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { cleanupTempDir } from '../test/test-utils';
+
+const dir = mkdtempSync(join(tmpdir(), 'lernlab-ai-requests-'));
+process.env.LERNLAB_DATA = dir;
+const { handle } = await import('./handlers');
+const store = await import('@lernlab/storage-sqlite/airequests');
+type Channel = import('./handlers').Channel;
+type OutputOf<C extends Channel> = import('./handlers').OutputOf<C>;
+after(() => cleanupTempDir(dir));
+
+const ok = async <C extends Channel>(channel: C, input?: unknown): Promise<OutputOf<C>> => {
+  const r = await handle(channel, input);
+  assert.ok(r.ok, `${channel} failed: ${!r.ok && r.error.message}`);
+  return r.value as OutputOf<C>;
+};
+const fails = async (channel: Channel, input: unknown) => {
+  const r = await handle(channel, input);
+  return !r.ok && r.error.code;
+};
+
+test('a proposed deck is listed, edited by the user and accepted; its cards start new', async () => {
+  const { id } = store.addAiRequest({
+    kind: 'create_deck',
+    deck: { name: 'Planets' },
+    cards: [
+      { front: 'Mars', back: 'Red planet' },
+      { front: 'Venus', back: 'Hottest planet' },
+    ],
+    note: 'From the astronomy PDF',
+  });
+  assert.equal((await ok('state.get')).aiRequests, 1);
+  const { requests } = await ok('aiRequests.list');
+  assert.equal(requests[0].note, 'From the astronomy PDF');
+  // The user renames the deck, fixes a card and leaves one out.
+  const result = await ok('aiRequests.accept', {
+    id,
+    request: { deck: { name: 'Solar system' }, cards: [{ front: 'Mars', back: 'The red planet' }] },
+  });
+  assert.equal(result.added, 1);
+  const found = await ok('cards.find', { deckId: result.deckId });
+  assert.deepEqual(
+    found.rows.map((r) => [r.front, r.back, r.state]),
+    [['Mars', 'The red planet', 'new']],
+  );
+  assert.equal((await ok('state.get')).aiRequests, 0, 'an accepted request is gone');
+  assert.equal(await fails('aiRequests.accept', { id }), 'request_not_found');
+});
+
+test('declining changes nothing; edits are checked like the assistant input', async () => {
+  const deck = await ok('decks.create', { name: 'Moons' });
+  const { id } = store.addAiRequest({ kind: 'add_cards', deckId: deck.id, cards: [{ front: 'Io', back: 'Jupiter' }] });
+  assert.equal(
+    await fails('aiRequests.accept', { id, request: { deckId: deck.id, cards: [{ front: 1, back: 'x' }] } }),
+    'invalid_input',
+  );
+  assert.equal((await ok('aiRequests.decline', { id })).ok, true);
+  assert.equal((await ok('cards.find', { deckId: deck.id })).total, 0);
+  assert.equal((await ok('aiRequests.list')).requests.length, 0);
+});
+
+test('malformed or foreign files in ai-requests/ are ignored, and ids cannot name other files', async () => {
+  mkdirSync(store.aiRequestsDir(), { recursive: true });
+  const bad = '00000000-0000-4000-8000-00000000000b';
+  writeFileSync(
+    join(store.aiRequestsDir(), `${bad}.json`),
+    JSON.stringify({ id: bad, createdAt: 'x', kind: 'drop_db' }),
+  );
+  writeFileSync(join(store.aiRequestsDir(), 'notes.json'), '{}');
+  writeFileSync(join(store.aiRequestsDir(), '00000000-0000-4000-8000-00000000000c.json'), 'not json');
+  assert.equal((await ok('aiRequests.list')).requests.length, 0);
+  assert.equal(await fails('aiRequests.accept', { id: bad }), 'request_not_found');
+  assert.equal(await fails('aiRequests.accept', { id: '../lernlab' }), 'request_not_found');
+  assert.equal((await ok('aiRequests.decline', { id: '../../lernlab.db' })).ok, false);
+  assert.ok(readdirSync(dir).includes('lernlab.db'));
+});
+
+test('at most AI_REQUESTS_MAX wait at once', () => {
+  for (const f of readdirSync(store.aiRequestsDir())) store.removeAiRequest(f.replace(/\.json$/, ''));
+  const card = { kind: 'add_cards', deckId: 1, cards: [] };
+  const extra = store.AI_REQUESTS_MAX - store.countAiRequests();
+  for (let i = 0; i < extra; i++) store.addAiRequest(card);
+  assert.throws(() => store.addAiRequest(card), /already waiting/);
+});
