@@ -66,10 +66,25 @@ function propose(body: AiRequestBody) {
       'Nothing has changed yet. The user reviews this in LernLab → AI requests and can edit, accept or decline it.',
   };
 }
-const summary = (r: AiRequestBody) =>
-  r.kind === 'create_deck'
-    ? `New deck "${r.deck.name}" with ${r.cards.length} cards`
-    : `${r.cards.length} cards for deck ${r.deckId}`;
+function summary(r: AiRequestBody): string {
+  switch (r.kind) {
+    case 'create_deck':
+      return `New deck "${r.deck.name}" with ${r.cards.length} cards`;
+    case 'add_cards':
+      return `${r.cards.length} cards for deck ${r.deckId}`;
+    case 'edit_card':
+      return `Fix card ${r.cardId}: ${Object.keys(r.changes).join(', ')}`;
+    case 'merge_cards':
+      return `Merge cards ${r.mergeIds.join(', ')} into card ${r.keepId}`;
+    case 'organise_cards':
+      return `${r.action.kind} ${r.cardIds.length} cards`;
+  }
+}
+const needCards = (d: DB, ids: number[]) => {
+  for (const id of ids)
+    if (!d.prepare('SELECT 1 FROM items WHERE id = ?').get(id))
+      throw new UserError('card_not_found', `There is no card with id ${id}.`);
+};
 
 export const TOOLS = {
   get_overview: tool(
@@ -163,6 +178,33 @@ export const TOOLS = {
     (input, { db }) => {
       needDeck(db, input.deckId);
       return propose({ kind: 'add_cards', ...input });
+    },
+  ),
+  propose_card_fix: tool(
+    'Propose a fix to one card (a typo, a clearer answer, a better example, tags). Only the fields you give change; its learning progress stays. Nothing changes until the user accepts it in LernLab → AI requests.',
+    REQUEST_BODIES.edit_card,
+    (input, { db }) => {
+      needCards(db, [input.cardId]);
+      if (!Object.keys(input.changes).length) throw new InvalidInput('changes must change at least one field');
+      return propose({ kind: 'edit_card', ...input });
+    },
+  ),
+  propose_merge: tool(
+    'Propose merging duplicate cards: keep one (optionally with changes); the others are suspended and tagged "merged" (never deleted). Nothing changes until the user accepts it in LernLab → AI requests.',
+    REQUEST_BODIES.merge_cards,
+    (input, { db }) => {
+      needCards(db, [input.keepId, ...input.mergeIds]);
+      if (!input.mergeIds.some((id) => id !== input.keepId)) throw new InvalidInput('mergeIds must name other cards');
+      return propose({ kind: 'merge_cards', ...input });
+    },
+  ),
+  propose_organise: tool(
+    'Propose tagging, untagging, starring, unstarring, suspending, unsuspending or moving cards to another deck. Nothing changes until the user accepts it in LernLab → AI requests.',
+    REQUEST_BODIES.organise_cards,
+    (input, { db }) => {
+      needCards(db, input.cardIds);
+      if (input.action.kind === 'move') needDeck(db, input.action.deckId);
+      return propose({ kind: 'organise_cards', ...input });
     },
   ),
   list_requests: tool(

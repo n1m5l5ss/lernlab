@@ -8,26 +8,157 @@ import type { AiRequest } from '@lernlab/core/airequests';
 import { api } from './api';
 import { formatDate } from './i18n';
 import { Button, Card, Input } from './components';
-import { acceptedBody, draftOf, editCard, keptCards, toggleCard } from './requests-logic';
+import {
+  CHANGE_FIELDS,
+  acceptedBody,
+  draftOf,
+  editCard,
+  editChange,
+  keptCards,
+  keptIds,
+  toggleCard,
+  toggleId,
+  type Draft,
+} from './requests-logic';
 
 type List = OutputOf<'aiRequests.list'>;
 type Deck = List['decks'][number];
+type Snapshot = List['cards'][number];
+/** Rows shown for a merge or tidy-up; the rest are included and counted. */
+const ROWS_SHOWN = 200;
 
-function RequestCard({ request, decks, done }: { request: AiRequest; decks: Deck[]; done: (msg: string) => void }) {
+/** One proposed request's title. */
+function useTitle(request: AiRequest, decks: Deck[], cards: Map<number, Snapshot>, count: number) {
+  const { t } = useTranslation();
+  const deckName = (id: number) => decks.find((d) => d.id === id)?.name ?? `#${id}`;
+  const front = (id: number) => cards.get(id)?.front ?? `#${id}`;
+  switch (request.kind) {
+    case 'create_deck':
+      return t('requests.newDeck', { name: request.deck.name });
+    case 'add_cards':
+      return t('requests.addCards', { deck: deckName(request.deckId) });
+    case 'edit_card':
+      return t('requests.fixCard', { front: front(request.cardId) });
+    case 'merge_cards':
+      return t('requests.mergeCards', { front: front(request.keepId) });
+    case 'organise_cards': {
+      const a = request.action;
+      return t(`requests.organise.${a.kind}`, {
+        count,
+        tag: 'tag' in a ? a.tag : '',
+        deck: 'deckId' in a ? deckName(a.deckId) : '',
+      });
+    }
+  }
+}
+
+/** The proposed field changes: each field as it is now, and the proposal, which the user can edit. */
+function Changes({
+  p,
+  draft,
+  setDraft,
+  now,
+}: {
+  p: string;
+  draft: Draft;
+  setDraft: (d: Draft) => void;
+  now?: Snapshot;
+}) {
+  const { t } = useTranslation();
+  const fields = CHANGE_FIELDS.filter((f) => draft.changes[f] !== undefined);
+  if (!fields.length) return null;
+  return (
+    <div className="request-fields">
+      {fields.map((field) => {
+        const before = now ? (field === 'tags' ? now.tags.join(' ') : now[field]) : '';
+        return (
+          <div key={field} className="request-field">
+            <label htmlFor={`${p}-${field}`}>{t(`requests.field.${field}`)}</label>
+            <p className="request-now">{before ? t('requests.now', { text: before }) : t('requests.nowEmpty')}</p>
+            <input
+              id={`${p}-${field}`}
+              className="input"
+              value={draft.changes[field]}
+              onChange={(e) => setDraft(editChange(draft, field, e.target.value))}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/** Existing cards a merge or tidy-up touches, each with a checkbox to leave it out. */
+function CardChecklist({
+  draft,
+  setDraft,
+  cards,
+  label,
+}: {
+  draft: Draft;
+  setDraft: (d: Draft) => void;
+  cards: Map<number, Snapshot>;
+  label: string;
+}) {
+  const { t } = useTranslation();
+  const more = draft.ids.length - ROWS_SHOWN;
+  return (
+    <>
+      <ul className="request-checklist" aria-label={label}>
+        {draft.ids.slice(0, ROWS_SHOWN).map((id, i) => {
+          const c = cards.get(id);
+          return (
+            <li key={id} className={draft.keepIds[i] ? undefined : 'off'}>
+              <input
+                type="checkbox"
+                id={`req-card-${id}-${i}`}
+                checked={draft.keepIds[i]}
+                onChange={() => setDraft(toggleId(draft, i))}
+              />
+              <label htmlFor={`req-card-${id}-${i}`}>
+                {c ? (
+                  <>
+                    <b>{c.front}</b> <span>{c.back}</span>
+                  </>
+                ) : (
+                  t('requests.missingCard', { id })
+                )}
+              </label>
+            </li>
+          );
+        })}
+      </ul>
+      {more > 0 && <p className="settings-hint">{t('requests.more', { count: more })}</p>}
+    </>
+  );
+}
+
+function RequestCard({
+  request,
+  decks,
+  cards,
+  done,
+}: {
+  request: AiRequest;
+  decks: Deck[];
+  cards: Map<number, Snapshot>;
+  done: (msg: string) => void;
+}) {
   const { t } = useTranslation();
   const [draft, setDraft] = useState(() => draftOf(request));
   const [busy, setBusy] = useState(false);
   const body = acceptedBody(request, draft);
-  const deckName =
-    request.kind === 'add_cards' ? (decks.find((d) => d.id === request.deckId)?.name ?? `#${request.deckId}`) : '';
+  const chosen = keptIds(draft).length;
+  const title = useTitle(request, decks, cards, request.kind === 'organise_cards' ? chosen : 0);
   const p = `req-${request.id}`;
+  const adds = request.kind === 'create_deck' || request.kind === 'add_cards';
 
   const act = async (accept: boolean) => {
     setBusy(true);
     try {
       if (accept && body) {
         const r = await api.acceptAiRequest(request.id, body);
-        done(t('requests.accepted', { count: r.added }));
+        done(adds ? t('requests.accepted', { count: r.added }) : t('requests.changed', { count: r.updated }));
       } else {
         await api.declineAiRequest(request.id);
         done(t('requests.declined'));
@@ -38,14 +169,19 @@ function RequestCard({ request, decks, done }: { request: AiRequest; decks: Deck
     }
   };
 
+  const acceptLabel =
+    request.kind === 'edit_card'
+      ? t('requests.acceptFix')
+      : request.kind === 'merge_cards'
+        ? t('requests.acceptMerge', { count: chosen })
+        : request.kind === 'organise_cards'
+          ? t('requests.acceptOrganise', { count: chosen })
+          : t('requests.accept', { count: keptCards(draft).length });
+
   return (
     <Card as="section" className="request" aria-labelledby={`${p}-title`}>
       <div className="request-head">
-        <h2 id={`${p}-title`}>
-          {request.kind === 'create_deck'
-            ? t('requests.newDeck', { name: request.deck.name })
-            : t('requests.addCards', { deck: deckName })}
-        </h2>
+        <h2 id={`${p}-title`}>{title}</h2>
         <span className="request-when">
           {formatDate(request.createdAt, { dateStyle: 'medium', timeStyle: 'short' })}
         </span>
@@ -64,36 +200,61 @@ function RequestCard({ request, decks, done }: { request: AiRequest; decks: Deck
           onChange={(e) => setDraft({ ...draft, deckName: e.target.value })}
         />
       )}
-      <ol className="request-cards" aria-label={t('requests.cards', { count: draft.cards.length })}>
-        {draft.cards.map((c, i) => (
-          <li key={i} className={draft.keep[i] ? undefined : 'off'}>
-            <input
-              type="checkbox"
-              checked={draft.keep[i]}
-              aria-label={t('requests.keep', { front: c.front })}
-              onChange={() => setDraft(toggleCard(draft, i))}
-            />
-            <input
-              className="input"
-              value={c.front}
-              aria-label={t('requests.front', { n: i + 1 })}
-              onChange={(e) => setDraft(editCard(draft, i, { front: e.target.value }))}
-            />
-            <input
-              className="input"
-              value={c.back}
-              aria-label={t('requests.back', { n: i + 1 })}
-              onChange={(e) => setDraft(editCard(draft, i, { back: e.target.value }))}
-            />
-          </li>
-        ))}
-      </ol>
+      {adds && (
+        <ol className="request-cards" aria-label={t('requests.cards', { count: draft.cards.length })}>
+          {draft.cards.map((c, i) => (
+            <li key={i} className={draft.keep[i] ? undefined : 'off'}>
+              <input
+                type="checkbox"
+                checked={draft.keep[i]}
+                aria-label={t('requests.keep', { front: c.front })}
+                onChange={() => setDraft(toggleCard(draft, i))}
+              />
+              <input
+                className="input"
+                value={c.front}
+                aria-label={t('requests.front', { n: i + 1 })}
+                onChange={(e) => setDraft(editCard(draft, i, { front: e.target.value }))}
+              />
+              <input
+                className="input"
+                value={c.back}
+                aria-label={t('requests.back', { n: i + 1 })}
+                onChange={(e) => setDraft(editCard(draft, i, { back: e.target.value }))}
+              />
+            </li>
+          ))}
+        </ol>
+      )}
+      {request.kind === 'edit_card' && (
+        <Changes p={p} draft={draft} setDraft={setDraft} now={cards.get(request.cardId)} />
+      )}
+      {request.kind === 'merge_cards' && (
+        <>
+          <h3 className="request-sub">{t('requests.keepCard')}</h3>
+          <p className="request-kept">
+            <b>{cards.get(request.keepId)?.front ?? `#${request.keepId}`}</b>{' '}
+            <span>{cards.get(request.keepId)?.back}</span>
+          </p>
+          <Changes p={p} draft={draft} setDraft={setDraft} now={cards.get(request.keepId)} />
+          <h3 className="request-sub">{t('requests.duplicates')}</h3>
+          <CardChecklist draft={draft} setDraft={setDraft} cards={cards} label={t('requests.duplicates')} />
+        </>
+      )}
+      {request.kind === 'organise_cards' && (
+        <CardChecklist
+          draft={draft}
+          setDraft={setDraft}
+          cards={cards}
+          label={t('requests.cards', { count: draft.ids.length })}
+        />
+      )}
       <div className="request-actions">
         <Button onClick={() => act(false)} disabled={busy}>
           {t('requests.decline')}
         </Button>
         <Button variant="primary" onClick={() => act(true)} disabled={busy || !body}>
-          {t('requests.accept', { count: keptCards(draft).length })}
+          {acceptLabel}
         </Button>
       </div>
     </Card>
@@ -120,6 +281,7 @@ export function AiRequests({ assistantOn, refresh }: { assistantOn: boolean; ref
     load();
     refresh();
   };
+  const cards = new Map((list?.cards ?? []).map((c) => [c.id, c]));
 
   return (
     <div className="requests">
@@ -134,7 +296,7 @@ export function AiRequests({ assistantOn, refresh }: { assistantOn: boolean; ref
         </Card>
       )}
       {list?.requests.map((r) => (
-        <RequestCard key={r.id} request={r} decks={list.decks} done={done} />
+        <RequestCard key={r.id} request={r} decks={list.decks} cards={cards} done={done} />
       ))}
     </div>
   );

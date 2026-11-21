@@ -89,7 +89,7 @@ import pkg from '../package.json';
 import bundledNotes from './whats-new.json';
 import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
-import { applyAiRequest } from '@lernlab/core/airequests';
+import { applyAiRequest, cardSnapshots, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
 import { asRequest, checkBody } from './ai-requests';
 
@@ -443,12 +443,17 @@ export const handlers = {
   }),
 
   /* ── AI requests (#148): changes an AI assistant proposed; nothing changes until the user accepts one ── */
-  'aiRequests.list': h(v.none, () => ({
-    requests: listAiRequests()
+  /** Waiting requests, the decks, and the cards they are about as they are now (to compare with the proposal). */
+  'aiRequests.list': h(v.none, () => {
+    const requests = listAiRequests()
       .map(asRequest)
-      .filter((r) => r !== null),
-    decks: listDecks().map(({ id, name }) => ({ id, name })),
-  })),
+      .filter((r) => r !== null);
+    return {
+      requests,
+      decks: listDecks().map(({ id, name }) => ({ id, name })),
+      cards: cardSnapshots([...new Set(requests.flatMap((r) => requestCardIds(r).slice(0, SNAPSHOT_MAX)))]),
+    };
+  }),
   /** Accept one request, as the user may have edited it (`request`: the same shape, checked again). */
   'aiRequests.accept': h(v.object({ id: v.string(40), request: v.optional(v.record) }), ({ id, request }) => {
     const stored = asRequest(getAiRequest(id));

@@ -65,6 +65,49 @@ test('declining changes nothing; edits are checked like the assistant input', as
   assert.equal((await ok('aiRequests.list')).requests.length, 0);
 });
 
+test('a fix comes with the card as it is now; the user can change it and leave cards out of a tidy-up', async () => {
+  const deck = await ok('decks.create', { name: 'Rivers' });
+  const add = store.addAiRequest({
+    kind: 'add_cards',
+    deckId: deck.id,
+    cards: [
+      { front: 'Nile', back: 'Afrika' },
+      { front: 'Rhine', back: 'Europe' },
+    ],
+  });
+  await ok('aiRequests.accept', { id: add.id });
+  const [nile, rhine] = (await ok('cards.find', { deckId: deck.id })).rows.map((r) => r.id);
+
+  const fix = store.addAiRequest({ kind: 'edit_card', cardId: nile, changes: { back: 'Africa' }, note: 'Typo' });
+  const tidy = store.addAiRequest({ kind: 'organise_cards', cardIds: [nile, rhine], action: { kind: 'star' } });
+  const list = await ok('aiRequests.list');
+  assert.deepEqual(
+    list.cards.map((c) => [c.id, c.back, c.starred]),
+    [
+      [nile, 'Afrika', false],
+      [rhine, 'Europe', false],
+    ],
+  );
+  // The user writes the fix their own way, and stars only the Rhine.
+  await ok('aiRequests.accept', { id: fix.id, request: { cardId: nile, changes: { back: 'Africa (Egypt)' } } });
+  const done = await ok('aiRequests.accept', { id: tidy.id, request: { cardIds: [rhine], action: { kind: 'star' } } });
+  assert.equal(done.updated, 1);
+  const rows = (await ok('cards.find', { deckId: deck.id })).rows;
+  assert.deepEqual(
+    rows.map((r) => [r.back, r.starred]),
+    [
+      ['Africa (Egypt)', false],
+      ['Europe', true],
+    ],
+  );
+  const bad = store.addAiRequest({ kind: 'organise_cards', cardIds: [nile], action: { kind: 'star' } });
+  assert.equal(
+    await fails('aiRequests.accept', { id: bad.id, request: { cardIds: [nile], action: { kind: 'delete' } } }),
+    'invalid_input',
+  );
+  await ok('aiRequests.decline', { id: bad.id });
+});
+
 test('malformed or foreign files in ai-requests/ are ignored, and ids cannot name other files', async () => {
   mkdirSync(store.aiRequestsDir(), { recursive: true });
   const bad = '00000000-0000-4000-8000-00000000000b';
