@@ -9,3 +9,5 @@ apps/desktop/e2e-results/
 
 # Generated benchmark fixtures (bench/fixtures.ts)
 bench/fixtures/generated/
+apps/desktop/storybook-static/
+apps/desktop/visual-results/

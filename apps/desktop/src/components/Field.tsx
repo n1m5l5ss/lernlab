@@ -3,6 +3,7 @@
 // a Settings row can put the control beside them through the wrapper's className.
 import type { ComponentPropsWithRef, ReactNode } from 'react';
 import { cx, fieldIds } from './logic';
+import styles from './Field.module.css';
 
 type FieldProps = {
   id: string;
@@ -21,17 +22,17 @@ type FrameProps = Omit<FieldProps, 'controlClassName'> & { hintId?: string; erro
 function FieldFrame({ id, label, hint, error, className, hintId, errorId, children }: FrameProps) {
   return (
     <div className={cx('field-control', className)}>
-      <span className="field-text">
+      <span className={styles['field-text']}>
         <label htmlFor={id}>{label}</label>
         {hint && (
-          <span id={hintId} className="field-hint">
+          <span id={hintId} className={styles['field-hint']}>
             {hint}
           </span>
         )}
       </span>
       {children}
       {error && (
-        <span id={errorId} className="field-error" role="alert">
+        <span id={errorId} className={styles['field-error']} role="alert">
           {error}
         </span>
       )}

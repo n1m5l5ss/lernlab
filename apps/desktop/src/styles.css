@@ -106,44 +106,6 @@ input {
   display: flex;
   height: 100vh;
 }
-.sidebar {
-  flex: 0 0 232px;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-  padding: var(--space-5) var(--space-4);
-  border-inline-end: 1px solid var(--color-border);
-  overflow-y: auto;
-}
-.sidebar-name {
-  font-size: var(--text-subhead);
-  font-weight: 700;
-  padding: var(--space-2) var(--space-3) var(--space-5);
-}
-.nav-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  min-height: var(--size-min-target);
-  padding: 0 var(--space-3);
-  border-radius: var(--radius-control);
-  color: var(--color-text);
-  text-decoration: none;
-}
-.nav-link:hover {
-  background: var(--color-subtle);
-}
-.nav-link[aria-current='page'] {
-  background: var(--color-accent-tint);
-  color: var(--color-accent);
-  font-weight: 700;
-}
-.nav-link[href='#/settings']:not([aria-current]) {
-  color: var(--color-text-muted);
-}
-.nav-link svg {
-  flex: none;
-}
 .shell-main {
   flex: 1;
   min-width: 0;
@@ -163,17 +125,6 @@ input {
   outline: none;
 }
 @media (max-width: 860px) {
-  .sidebar {
-    flex-basis: 76px;
-    padding-inline: var(--space-3);
-  }
-  .sidebar-name {
-    display: none;
-  }
-  .nav-link {
-    font-size: 0;
-    justify-content: center;
-  }
   .shell-main {
     padding: var(--space-6) var(--space-5);
   }
@@ -1050,29 +1001,8 @@ kbd {
   border: 1px solid currentColor;
   border-radius: var(--radius-control);
 }
-.segmented {
-  display: flex;
-  gap: var(--space-1);
-  padding: var(--space-1);
-  border-radius: var(--radius-control);
-  background: var(--color-subtle);
-}
-.segmented button {
-  flex: 1;
-  white-space: nowrap;
-  min-height: 36px;
-  padding: 0 var(--space-4);
-  border: 1px solid transparent;
-  border-radius: var(--radius-control);
-  background: none;
-  color: var(--color-text-muted);
-}
-.segmented button[aria-checked='true'] {
-  background: var(--color-surface);
-  border-color: var(--color-border);
-  color: var(--color-text);
-  font-weight: 700;
-}
+/* Legacy: the decorative bars Decks, Progress and Summary still draw by hand. The component's own
+   copy is in components/ProgressBar.module.css; drop this once they use <ProgressBar>. */
 .meter {
   height: 8px;
   border-radius: var(--radius-pill);
@@ -1140,7 +1070,7 @@ kbd {
 .home-deck {
   flex: 1 1 260px;
 }
-.home .segmented {
+.home-segmented {
   min-height: var(--size-min-target);
 }
 .btn.home-start {
@@ -1219,18 +1149,6 @@ kbd {
 .session {
   min-height: 100vh;
   padding: var(--space-6) var(--space-7) var(--space-8);
-}
-.session-bar {
-  position: fixed;
-  inset: 0 0 auto;
-  height: var(--size-progress-bar);
-  background: var(--color-subtle);
-}
-.session-bar > i {
-  display: block;
-  height: 100%;
-  background: var(--color-accent);
-  transition: width var(--motion-card) var(--motion-ease-enter);
 }
 .session-head {
   display: grid;
@@ -2675,28 +2593,11 @@ h1.session-title:focus,
   }
 }
 
-/* ---- Base components (#59): apps/desktop/src/components. Their looks live above (.btn, .card, .feedback,
-   .input, .segmented, .meter, .session-bar, .sidebar); these rules are only for the label, hint and error
-   that Input and Select draw around the control. ---- */
-.field-text {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-.field-hint {
-  color: var(--color-text-muted);
-  font-size: var(--text-caption);
-  font-weight: 400;
-}
-.field-error {
-  flex-basis: 100%;
-  color: var(--color-incorrect);
-  font-size: var(--text-caption);
-  font-weight: 700;
-}
-.input[aria-invalid='true'] {
-  border-color: var(--color-incorrect);
-}
+/* ---- Base components (#59): apps/desktop/src/components. Sidebar, SegmentedControl, ProgressBar and the
+   label/hint/error of Input and Select keep their styles in a CSS Module next to the component. Button,
+   Card, Feedback and the .input control still use the shared .btn, .card, .feedback and .input rules
+   above, because many screens put those classes on bare elements and add screen-level overrides
+   (.btn.home-start, .btn .kbd, .feedback .ans). They move into modules as those screens are converted. ---- */
 /* In a Settings row the label sits beside a control as wide as its content. */
 .settings-row > .input {
   width: auto;

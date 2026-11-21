@@ -2,6 +2,7 @@
 // the bottom. The current place is marked aria-current="page" and shown bold on a tint, not by colour alone.
 import type { ReactNode } from 'react';
 import { cx } from './logic';
+import styles from './Sidebar.module.css';
 
 export type SidebarItem = {
   key: string;
@@ -14,9 +15,13 @@ export type SidebarItem = {
   iconClassName?: string;
 };
 
-function SidebarLink({ item }: { item: SidebarItem }) {
+function SidebarLink({ item, footer = false }: { item: SidebarItem; footer?: boolean }) {
   return (
-    <a className="nav-link" href={item.href} aria-current={item.current ? 'page' : undefined}>
+    <a
+      className={cx(styles['nav-link'], footer && styles.footer)}
+      href={item.href}
+      aria-current={item.current ? 'page' : undefined}
+    >
       <svg
         aria-hidden="true"
         className={item.iconClassName}
@@ -48,14 +53,14 @@ export type SidebarProps = {
 
 export function Sidebar({ label, title, items, footer = [], className }: SidebarProps) {
   return (
-    <nav className={cx('sidebar', className)} aria-label={label}>
-      {title && <div className="sidebar-name">{title}</div>}
+    <nav className={cx(styles.sidebar, className)} aria-label={label}>
+      {title && <div className={styles['sidebar-name']}>{title}</div>}
       {items.map((item) => (
         <SidebarLink key={item.key} item={item} />
       ))}
       <div className="grow" />
       {footer.map((item) => (
-        <SidebarLink key={item.key} item={item} />
+        <SidebarLink key={item.key} item={item} footer />
       ))}
     </nav>
   );

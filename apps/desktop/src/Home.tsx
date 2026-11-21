@@ -128,6 +128,7 @@ export function Home({
             <span id="home-length">{t('home.sessionLength')}</span>
             <SegmentedControl
               labelledBy="home-length"
+              className="home-segmented"
               value={length}
               onChange={setLength}
               options={LENGTHS.map((l) => ({ value: l.key, label: t('home.lengthMinutes', { count: l.minutes }) }))}
