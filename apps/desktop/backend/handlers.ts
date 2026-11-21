@@ -34,6 +34,7 @@ import {
   deleteDeck,
   getDeck,
   LANGUAGES,
+  listDecks,
   mediaKind,
   stableId,
   storeMedia,
@@ -88,6 +89,9 @@ import pkg from '../package.json';
 import bundledNotes from './whats-new.json';
 import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
+import { applyAiRequest } from '@lernlab/core/airequests';
+import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
+import { asRequest, checkBody } from './ai-requests';
 
 /** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
 export { UserError as AppError } from '@lernlab/core/errors';
@@ -245,6 +249,8 @@ export const handlers = {
   'state.get': h(v.none, () => ({
     ...appState(),
     importing: importStatus.running,
+    /** Changes an AI assistant proposed, waiting for the user (#148). */
+    aiRequests: countAiRequests(),
     languages: LANGUAGES,
     welcome: needsWelcome(getDb()),
     /** "What's new in X.Y.Z" on the first launch after an update, or null (issue #58). */
@@ -435,6 +441,26 @@ export const handlers = {
     }
     return { ok: true };
   }),
+
+  /* ── AI requests (#148): changes an AI assistant proposed; nothing changes until the user accepts one ── */
+  'aiRequests.list': h(v.none, () => ({
+    requests: listAiRequests()
+      .map(asRequest)
+      .filter((r) => r !== null),
+    decks: listDecks().map(({ id, name }) => ({ id, name })),
+  })),
+  /** Accept one request, as the user may have edited it (`request`: the same shape, checked again). */
+  'aiRequests.accept': h(v.object({ id: v.string(40), request: v.optional(v.record) }), ({ id, request }) => {
+    const stored = asRequest(getAiRequest(id));
+    if (!stored) throw new AppError('request_not_found', 'This request is no longer waiting.');
+    const edited = request
+      ? { ...checkBody(stored.kind, request), id: stored.id, createdAt: stored.createdAt }
+      : stored;
+    const result = applyAiRequest(edited);
+    removeAiRequest(id);
+    return result;
+  }),
+  'aiRequests.decline': h(v.object({ id: v.string(40) }), ({ id }) => ({ ok: removeAiRequest(id) })),
 
   /* ── Import / media ── */
   'import.preview': h(

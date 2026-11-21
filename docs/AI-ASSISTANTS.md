@@ -7,13 +7,14 @@ Ask it things like:
 - "How did my studying go this month? Which cards do I keep forgetting?"
 - "Quiz me on ten of my hardest Spanish cards." (A quiz in the chat is never recorded and never changes when cards come back.)
 - "What was my retention in October compared with September?"
+- "Make Spanish cards from this PDF chapter." (The cards wait for you in LernLab under **AI requests**.)
 
 ## Before you start: privacy
 
 - **It is off until you turn it on.** In LernLab, open **Settings → AI assistant** and turn on **Let an AI assistant use LernLab**. While it is off, LernLab refuses every request from an assistant.
 - **LernLab itself stays offline.** The assistant starts LernLab on your computer and talks to it directly (over "stdio"); nothing listens on the network.
 - **What the assistant reads goes to its AI company.** Your decks, cards, answers and study history that the assistant reads are sent to the company that runs the assistant (for example Anthropic for Claude), under that company's privacy terms. Turn the switch off when you don't want that.
-- **It cannot delete anything.** It opens your data read-only.
+- **It cannot change or delete anything itself.** It opens your data read-only. What it proposes (new decks and cards) waits in LernLab under **AI requests**; nothing changes until you accept it there, and you can edit it first.
 
 ## Claude Desktop (verified setup)
 
@@ -117,5 +118,12 @@ Not checked yet:
 | `get_session_history` | Your sessions: when, how long, and which modes and games |
 | `get_weak_cards` | The cards you forget most, with accuracy and leech flags |
 | `quiz_cards` | Cards for a quiz in the chat (nothing is recorded) |
+| `propose_new_deck` | Proposes a new deck with cards (for example from a PDF or a link you gave it). It waits under **AI requests** |
+| `propose_cards` | Proposes cards for one of your decks. They wait under **AI requests** |
+| `list_requests` | The assistant's proposals that you haven't accepted or declined yet |
+
+## AI requests
+
+Everything the assistant proposes shows up in LernLab under **AI requests** in the sidebar, with its note on where it comes from. Edit the deck name or any card, untick what you don't want, then accept; or decline. Accepted cards start as new cards, and their text is cleaned like any imported deck. At most 100 requests wait at once.
 
 Mock exam results are worked out from the answers each exam recorded. LernLab does not save an exam's mode or the pass mark it had, so the assistant sees the deck's pass mark as it is now.

@@ -48,6 +48,9 @@ const sample = (): Record<keyof typeof TOOLS, unknown> => ({
   get_session_history: { period: 'all' },
   get_weak_cards: { deckId },
   quiz_cards: { from: 'random', count: 2 },
+  propose_new_deck: { deck: { name: 'Rivers', language: 'en' }, cards: [{ front: 'Nile', back: 'Africa' }] },
+  propose_cards: { deckId, cards: [{ front: 'Ecuador', back: 'Quito' }], note: 'From the atlas PDF' },
+  list_requests: {},
 });
 
 before(async () => {
@@ -66,6 +69,7 @@ test('off by default: every tool refuses until the user turns it on', async () =
     const r = await callTool(name, args, deps);
     assert.equal(!r.ok && r.code, 'assistant_off', name);
   }
+  assert.equal((await ok('state.get')).aiRequests, 0, 'nothing was proposed while off');
 });
 
 test('every tool answers once it is on', async () => {
@@ -92,6 +96,13 @@ test('every tool answers once it is on', async () => {
   assert.equal(results.get_weak_cards[0].front, 'Peru');
   assert.equal(results.quiz_cards.recorded, false);
   assert.equal(results.quiz_cards.cards.length, 2);
+  assert.equal(results.propose_new_deck.status, 'waiting');
+  assert.deepEqual(
+    // Requests made in the same millisecond have no set order.
+    results.list_requests.map((r: { summary: string }) => r.summary).sort(),
+    ['New deck "Rivers" with 1 cards', `1 cards for deck ${deckId}`].sort(),
+  );
+  assert.equal((await ok('cards.find', { q: 'Quito' })).total, 0, 'a proposal changes nothing');
 });
 
 test('input is checked with the app validators; unknown tools and missing things are errors, not throws', async () => {
@@ -109,6 +120,13 @@ test('input is checked with the app validators; unknown tools and missing things
   assert.equal(await code('get_stats', { period: 'day' }), 'invalid_input');
   assert.equal(await code('get_stats', { period: 'decade' }), 'invalid_input');
   assert.equal(await code('quiz_cards', { from: 'due', count: 0 }), 'invalid_input');
+  assert.equal(await code('propose_cards', { deckId: 999, cards: [] }), 'deck_not_found');
+  assert.equal(
+    await code('propose_cards', { deckId, cards: [{ front: 'x'.repeat(2001), back: '' }] }),
+    'invalid_input',
+  );
+  const many = Array.from({ length: 501 }, () => ({ front: 'a', back: 'b' }));
+  assert.equal(await code('propose_new_deck', { deck: { name: 'Big' }, cards: many }), 'invalid_input');
 });
 
 test('no tool deletes, and the connection it gets cannot write at all', async () => {
