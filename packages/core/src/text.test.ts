@@ -78,3 +78,9 @@ test('stripHtml decodes &amp; last, so escaped entities stay as text', () => {
   assert.equal(stripHtml('Tom &amp; Jerry'), 'Tom & Jerry');
   assert.equal(stripHtml('1 &lt; 2'), '1 < 2');
 });
+
+test('stripHtml keeps a bare less-than sign and drops an unclosed tag', () => {
+  assert.equal(stripHtml('1 < 2 and 3 > 2'), '1 < 2 and 3 > 2');
+  assert.equal(stripHtml('one<br>two<br/>three'), 'one two three');
+  assert.equal(stripHtml('safe<img src=x onerror=alert(1)'), 'safe');
+});
