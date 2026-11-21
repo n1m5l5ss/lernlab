@@ -68,7 +68,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026). An older reader studies a numeric card as a basic card, and a code card as a basic card without its code.
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden.
 
 ### manifest.json
 
@@ -112,6 +112,7 @@ Each line is one card. Only `front` is required.
 {"id":"serverless","type":"mcq","front":"Which TWO services are serverless?","choices":"Amazon EC2|AWS Lambda|AWS Fargate|Amazon RDS","correct":"2|3","explanation":"Lambda and Fargate need no server management."}
 {"id":"tcp","type":"order","front":"Order the TCP handshake","steps":"SYN|SYN-ACK|ACK"}
 {"id":"loop","type":"code","front":"What does this print?","code":"for i in range(3):\n    print(i)","codeLang":"python","back":"0\n1\n2"}
+{"id":"heart-aorta","type":"occlusion","front":"Label the heart","back":"Aorta","image":"heart.png","imageAlt":"A diagram of the heart","occlusion":"0.4,0.05,0.2,0.1","occlusionGroup":"heart","occlusionMode":"all"}
 {"id":"mito","front":"The {{c1::mitochondrion}} is the powerhouse of the cell","back":"Biology 101"}
 {"id":"sohn","front":"der Sohn","back":"son","example":"Mein <b>Sohn</b> ist zehn.","exampleTranslation":"My son is ten.","audio":"sohn.mp3","category":"der"}
 ```
@@ -119,7 +120,7 @@ Each line is one card. Only `front` is required.
 | Field | Meaning |
 |---|---|
 | `id` | Stable id so updates keep progress. Write a string; readers also accept a number |
-| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card |
+| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card |
 | `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
@@ -134,6 +135,9 @@ Each line is one card. Only `front` is required.
 | `tolerance` | Numeric card: how far off a typed number may be, `0.05` (in the card's unit) or `1%` (optional, added after v1 was published) |
 | `code` | Code card: the code as plain text, with its line breaks and indentation (optional, added after v1 was published; older readers ignore it) |
 | `codeLang` | Code card: the code's language, e.g. `python` (optional, added after v1 was published) |
+| `occlusion` | Occlusion card: the box hidden on the image, `x,y,w,h` as fractions of the image's width and height (optional, added after v1 was published; older readers ignore it) |
+| `occlusionGroup` | Occlusion card: the same text on every box of one picture (optional, added after v1 was published; default: the image's file name) |
+| `occlusionMode` | Occlusion card: `one` (default) or `all` (optional, added after v1 was published) |
 | `image` | Image file name inside `media/` (or an `https://` URL). GIFs work as images |
 | `imageAlt` | Description of the image, in plain text, read out by screen readers (its alt text). Write what a picture question needs to be answered (optional, added after v1 was published; older readers ignore it) |
 | `audio` | Audio file name inside `media/` (or an `https://` URL) |
@@ -193,6 +197,19 @@ A code card (`type: code`) holds a snippet in `code` and its language in `codeLa
 
 `altAnswers` are other accepted answers, compared the same way.
 
+## Image occlusion cards
+
+An occlusion card (`type: occlusion`) hides one part of a picture: you name the hidden part. A picture with five labelled parts is five cards, one per box, each with its own schedule. Each card holds:
+
+- `image`: the picture (required; without it the card is a basic card), and `imageAlt`, its description for screen readers;
+- `occlusion`: its box as `x,y,w,h`, four numbers from 0 to 1 that are fractions of the image's width and height (`0.4,0.05,0.2,0.1` is a box starting 40% from the left and 5% from the top, a fifth of the width wide and a tenth of the height high), so the box fits the picture at any size. Readers keep a box inside the image and round to 4 decimals; a box that does not read as four numbers with a positive size makes a basic card;
+- `back`: the box's label, the answer you type (plain text);
+- `front`: the question shown above the picture (`Label the heart`), the same on every box;
+- `occlusionGroup`: the boxes of one picture share it, so each card can show its siblings. Without it, the boxes of one deck with the same image file are one picture;
+- `occlusionMode`: `one` hides only the asked box and shows the other boxes with their labels; `all` hides every box and marks the asked one. It is the same on every box of a picture.
+
+Suspending, editing or deleting one box leaves its siblings as they are (a suspended box is still drawn on the picture). Occlusion cards are recall only: they are typed, graded like any card, and kept out of the choice games, picture quizzes, listening and speaking. Exported to Anki, an occlusion card is a basic note with the whole image.
+
 ## CSV / TSV
 
 - One card per row, UTF-8. Comma, tab or semicolon is detected automatically.
@@ -218,6 +235,7 @@ Recognised column names (case-insensitive):
 | `tolerance` | tol |
 | `code` | snippet, source code: a code card's code (quote it to keep line breaks; a line starting with `#` inside quotes is code, not a comment) |
 | `code_lang` | code language, programming language |
+| `occlusion`, `occlusion_group`, `occlusion_mode` | occlusion box, occlusion group, occlusion mode: an occlusion card's box (quote it: it has commas), group and mode |
 | `image`, `audio`, `video` | picture, sound, gif |
 | `image_alt` | image alt, image description, alt text: the image's description for screen readers |
 | `deck` | subdeck, chapter, section, topic |
@@ -249,7 +267,7 @@ Decks → a deck's options → **Export for Anki** saves `<deck>.apkg`, which An
 
 - **The package.** A zip with `collection.anki2` (Anki's legacy collection, schema version 11, which every Anki version imports), a `media` file (JSON: zip entry `"0"`, `"1"`… → file name) and the media files the cards use. LernLab writes it in `packages/core/src/formats/apkgwrite.ts`.
 - **Note types.** `Basic (LernLab)` with the fields `Front`, `Back`, `Example`, `Example translation`, `Explanation`, `Notes`, `Image`, `Audio`, `Video`, and `Cloze (LernLab)` with `Text`, `Back` and the same extra fields. Their ids are fixed, so exporting again reuses them in Anki.
-- **Cards.** A plain card is one Basic note. A cloze card is one Cloze note, with one Anki card per gap number (`{{c1::…}}`, `{{c2::…}}`). Multiple-choice and ordering cards become Basic notes whose back shows the right choices or the steps in order. Plain text (including a code card's output and a number answer) is HTML-escaped, with its line breaks kept; formatted fields keep their HTML. Tags keep their names, with spaces turned into `_` (Anki tags have no spaces).
+- **Cards.** A plain card is one Basic note. A cloze card is one Cloze note, with one Anki card per gap number (`{{c1::…}}`, `{{c2::…}}`). Multiple-choice and ordering cards become Basic notes whose back shows the right choices or the steps in order. An image occlusion card becomes a Basic note with the whole image and the box's label as the back (Anki's own occlusion notes are not written). Plain text (including a code card's output and a number answer) is HTML-escaped, with its line breaks kept; formatted fields keep their HTML. Tags keep their names, with spaces turned into `_` (Anki tags have no spaces).
 - **Media.** The image goes in as `<img src="…">` (with its description as `alt`), audio and video as `[sound:…]`.
 - **Decks.** The deck keeps its name; sub-decks (`Deck::Sub`) become Anki sub-decks.
 - **Schedule.** Cards arrive in Anki as new cards. LernLab's FSRS progress and review history are not exported.

@@ -8,7 +8,7 @@ import { writeApkg } from './formats/apkgwrite';
 import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
 
-/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `tolerance`, `code` and `codeLang` are stored under. */
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
 const FROM_EXTRA = {
   choices: 'choices',
   correct: 'correct',
@@ -18,6 +18,9 @@ const FROM_EXTRA = {
   tolerance: 'tolerance',
   code: 'code',
   codeLang: 'codeLang',
+  occlusion: 'occlusion',
+  occlusionGroup: 'occlusionGroup',
+  occlusionMode: 'occlusionMode',
 } as const;
 
 function deckCards(deckId: number, deckName: string, d: DB): NormalizedCard[] {
@@ -34,7 +37,7 @@ function deckCards(deckId: number, deckName: string, d: DB): NormalizedCard[] {
       }
       return {
         sourceId: String(r.id),
-        type: ['mcq', 'order', 'cloze', 'numeric', 'code'].includes(r.kind) ? r.kind : undefined,
+        type: ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind) ? r.kind : undefined,
         front: r.target,
         back: r.meaning,
         ...fields,

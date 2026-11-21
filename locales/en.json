@@ -468,7 +468,8 @@
         "mcq": "Multiple choice / multi-select question",
         "order": "Put steps in order",
         "numeric": "Number answer (with tolerance and unit)",
-        "code": "Code (output, missing token or line order)"
+        "code": "Code (output, missing token or line order)",
+        "occlusion": "Image occlusion (hide parts of a picture)"
       },
       "question": "Question",
       "prompt": "Prompt",
@@ -493,6 +494,23 @@
       "codeOutput": "Output (optional)",
       "codeOutputPlaceholder": "What the code prints",
       "codeHelp": "With an output, you predict it. With a gap like {{open}}range{{close}} in the code, you type the missing token. With neither, you put the lines in order. Code is never run.",
+      "occlusion": {
+        "title": "Question",
+        "titlePlaceholder": "Label the parts of the heart",
+        "mode": "Hide",
+        "modes": {
+          "one": "Hide one: only the asked box is hidden, the others show their labels",
+          "all": "Hide all: every box is hidden, the asked one is marked"
+        },
+        "needsImage": "Add an image below, then draw a box over each part to learn.",
+        "help": "Drag on the picture to draw a box, or press Add box. Tab to a box: the arrow keys move it, Shift + arrow keys resize it, Delete removes it. Each box becomes its own card.",
+        "helpEdit": "This card is the highlighted box. Drag it, or use the arrow keys (Shift to resize). The other boxes are their own cards.",
+        "add": "Add box",
+        "box": "Box {{n}}: {{label}}",
+        "label": "Box {{n}} label (the answer)",
+        "labelPlaceholder": "Aorta",
+        "remove": "Remove box {{n}}"
+      },
       "extra": "Extra (shown after)",
       "back": "Back",
       "backPlaceholder": "Definition or answer",
@@ -557,7 +575,8 @@
         "steps": "Add at least two steps, or this card is studied as a basic card.",
         "number": "Start the answer with a number, like 9.81 m/s^2, or this card is studied as a basic card.",
         "tolerance": "Write the tolerance as a number like 0.05 or a percentage like 1%, or it is left out.",
-        "code": "Add the output, a gap like {{open}}token{{close}} in the code, or at least two lines to put in order."
+        "code": "Add the output, a gap like {{open}}token{{close}} in the code, or at least two lines to put in order.",
+        "occlusion": "Add an image, draw at least one box and give each box a label."
       },
       "add": "Add card",
       "starred": "★ Starred",
@@ -1038,6 +1057,11 @@
       "orderTitle": "Put the lines of code in order",
       "language": "{{lang}} code",
       "plain": "Code"
+    },
+    "occlusion": {
+      "title": "Name the hidden part",
+      "askedOne": "Box {{n}} of {{count}} is hidden; the other boxes show their labels.",
+      "askedAll": "All {{count}} boxes are hidden; box {{n}} is the one asked."
     }
   },
   "check": {

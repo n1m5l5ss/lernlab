@@ -47,7 +47,7 @@ function question(item: Item, pool: Item[]): ExamQuestion | null {
 export function buildExam(deckId: number, d: DB = getDb()): Exam {
   const deck: Deck | null = getDeck(deckId, d);
   const settings = examSettings(deck?.settings.exam);
-  const pool = allItems(d, deckId).filter((i) => !['grammar', 'order'].includes(i.kind));
+  const pool = allItems(d, deckId).filter((i) => !['grammar', 'order', 'occlusion'].includes(i.kind));
   const questions: ExamQuestion[] = [];
   for (const item of shuffle(pool)) {
     if (questions.length >= settings.questions) break;

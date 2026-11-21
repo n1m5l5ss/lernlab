@@ -32,6 +32,11 @@ export function qa(item: Item): {
     const back = stripHtml(item.meaning);
     return { prompt: item.target, answer: back, accepted: withAlts([back]), requireArticle: false, typeable: true };
   }
+  if (item.kind === 'occlusion') {
+    // Name the hidden box: its label is always typed, whatever its length (occlusion.ts).
+    const back = stripHtml(item.meaning);
+    return { prompt: item.target, answer: back, accepted: withAlts([back]), requireArticle: false, typeable: true };
+  }
   if (item.kind === 'code') {
     // Asked by codeExercise (exercises.ts); the answer is the output, or the code itself.
     const answer = item.meaning || (item.extra?.code ?? '');

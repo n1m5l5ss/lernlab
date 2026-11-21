@@ -2930,3 +2930,147 @@ textarea.input.code-input {
   color: var(--color-correct);
   font-weight: 600;
 }
+
+/* Image occlusion (#44): the masked picture in a card, and the box editor. Masks use tokens only. */
+.occl {
+  display: flex;
+  justify-content: center;
+  margin: var(--space-2) 0 var(--space-4);
+}
+.occl-frame {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  line-height: 0;
+  touch-action: none;
+}
+.occl-frame.drawable {
+  cursor: crosshair;
+}
+.occl-frame img {
+  display: block;
+  max-width: 100%;
+  max-height: 360px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--color-border);
+  background: var(--color-subtle);
+  user-select: none;
+}
+.occl-box {
+  position: absolute;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0;
+  border: 2px dashed var(--color-accent);
+  border-radius: var(--radius-control);
+  font: inherit;
+  line-height: var(--line-heading);
+}
+.occl-label {
+  max-width: 100%;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-caption);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.occl-box.hidden {
+  border: 2px solid var(--color-surface);
+  background: var(--color-border-strong);
+}
+.occl-box.asked {
+  border: 2px solid var(--color-surface);
+  outline: 3px solid var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 700;
+  font-size: var(--text-subhead);
+}
+.occl-box.edit {
+  border-style: solid;
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  cursor: move;
+}
+.occl-box.edit:disabled {
+  border: 2px dashed var(--color-border-strong);
+  background: none;
+  color: var(--color-text-muted);
+  cursor: default;
+}
+.occl-box.edit.selected,
+.occl-box.edit:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 1px;
+}
+.occl-num {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  padding: 0 var(--space-1);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.occl-box.edit:disabled .occl-num {
+  background: var(--color-border-strong);
+}
+.occl-handle {
+  position: absolute;
+  right: 0; /* rtl-ignore: the picture never flips, so resizing is always from its bottom-right corner */
+  bottom: 0;
+  width: var(--space-3);
+  height: var(--space-3);
+  background: var(--color-accent);
+  cursor: nwse-resize;
+}
+.occl-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-3);
+}
+.occl-section .occl-frame {
+  align-self: flex-start;
+}
+.occl-mode {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+.occl-mode legend {
+  margin: var(--space-3) 0 var(--space-1);
+  padding: 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.occl-mode label {
+  gap: var(--space-2);
+  align-items: flex-start;
+  margin: var(--space-1) 0;
+}
+.occl-editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  align-items: flex-start;
+}
+.occl-labels {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.occl-labels li.selected .lbl {
+  color: var(--color-accent);
+}

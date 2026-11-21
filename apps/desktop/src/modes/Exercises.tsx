@@ -777,9 +777,11 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
           <div className="blocktitle">
             {ex.code !== undefined
               ? t('ex.code.outputTitle')
-              : ctx.lang
-                ? t('ex.typed.titleLanguage')
-                : t('ex.typed.title')}
+              : item.kind === 'occlusion'
+                ? t('ex.occlusion.title')
+                : ctx.lang
+                  ? t('ex.typed.titleLanguage')
+                  : t('ex.typed.title')}
           </div>
           {ex.prompt === item.target && <Media item={item} size="sm" />}
           <div className="prompt" style={{ fontSize: ex.prompt.length > 70 ? textPx(22) : undefined }}>
