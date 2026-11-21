@@ -8,6 +8,7 @@ LernLab is a free, open-source desktop flashcard app for any subject. It makes s
 - `docs/TESTING.md` — test layers, performance budgets
 - `docs/RELEASING.md` — branches, PR titles, versions, changelog
 - `docs/design/` — mockups, `tokens.json`, design rules
+- `docs/design/style.md` — the visual style: colours, type, spacing, motion, icons, sounds
 - `docs/FORMAT.md` — deck files
 - `docs/research.md` — learning-science research
 

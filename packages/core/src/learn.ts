@@ -46,7 +46,7 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyGoalSessions: 1,
   sessionLength: 'standard',
   retention: 0.9,
-  sound: true,
+  sound: false, // off until the learner turns it on (docs/design/tokens.json, sound.defaultOn)
   teacherVoice: true,
   blitzSeconds: 8,
   questionTimer: 0,

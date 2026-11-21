@@ -13,12 +13,19 @@ function parse(colour: string): { rgb: Rgb; alpha: number } {
   throw new Error(`Not a colour: ${colour}`);
 }
 
+const hexOf = (rgb: number[]) => `#${rgb.map((c) => Math.round(c).toString(16).padStart(2, '0')).join('')}`;
+
 /** The opaque colour seen when `colour` is drawn on the opaque `background`. */
 export function over(colour: string, background: string): string {
+  return tint(colour, 1, background);
+}
+
+/** `colour` at `alpha` (times its own alpha) over the opaque `background`, like `color-mix(in srgb, colour N%, background)`. */
+export function tint(colour: string, alpha: number, background: string): string {
   const top = parse(colour);
+  const a = top.alpha * alpha;
   const base = parse(background).rgb;
-  const mixed = top.rgb.map((c, i) => Math.round(c * top.alpha + base[i] * (1 - top.alpha)));
-  return `#${mixed.map((c) => c.toString(16).padStart(2, '0')).join('')}`;
+  return hexOf(top.rgb.map((c, i) => Math.round(c * a + base[i] * (1 - a))));
 }
 
 /** Relative luminance (WCAG 2.2, 1.4.3). */
