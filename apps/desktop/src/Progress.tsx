@@ -57,6 +57,7 @@ export function Progress({ onStudyHardest }: { onStudyHardest: () => void }) {
 
       <StudyDays p={p} />
       <Retention p={p} />
+      <Calibration p={p} />
       <Hardest p={p} onStudy={onStudyHardest} />
     </div>
   );
@@ -233,6 +234,72 @@ function Retention({ p }: { p: Journey }) {
           {t('progress.retention.target', { percent: formatPercent(r.target) })}
         </span>
         <span aria-hidden="true">{t('progress.retention.thisWeek')}</span>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * How sure you were (1–5) against how often those cards were right at their next review (#205): one bar per
+ * rating, its height the share right. A rating shows a bar once it has enough reviews behind it.
+ */
+function Calibration({ p }: { p: Journey }) {
+  const { t } = useTranslation();
+  const c = p.calibration;
+  const [hi, lo] = c.lead;
+  const lead = !hi
+    ? t('progress.calibration.empty')
+    : lo
+      ? t('progress.calibration.lead', {
+          high: formatNumber(hi.confidence),
+          highPercent: formatPercent(hi.rate!),
+          low: formatNumber(lo.confidence),
+          lowPercent: formatPercent(lo.rate!),
+        })
+      : t('progress.calibration.leadOne', { level: formatNumber(hi.confidence), percent: formatPercent(hi.rate!) });
+  return (
+    <section className="panel journey-panel" aria-labelledby="journey-calibration">
+      <h2 id="journey-calibration">{t('progress.calibration.title')}</h2>
+      <p className="journey-lead">{lead}</p>
+      <div className="journey-chart calib-chart">
+        <ol className="journey-bars">
+          {c.levels.map((l) => (
+            <li key={l.confidence}>
+              {l.rate === null && hi && (
+                <span className="calib-few" aria-hidden="true">
+                  {t('progress.calibration.few')}
+                </span>
+              )}
+              {l.rate !== null && (
+                <>
+                  <span className="journey-bar-value" style={{ bottom: `${l.rate * 100}%` }} aria-hidden="true">
+                    {formatPercent(l.rate)}
+                  </span>
+                  <i style={{ height: `${Math.max(l.rate * 100, 1)}%` }} />
+                </>
+              )}
+              <span className="sr-only">
+                {l.rate === null
+                  ? t('progress.calibration.levelFew', { level: formatNumber(l.confidence), count: l.rated })
+                  : t('progress.calibration.level', {
+                      level: formatNumber(l.confidence),
+                      percent: formatPercent(l.rate),
+                      count: l.rated,
+                    })}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <ol className="calib-axis" aria-hidden="true">
+        {c.levels.map((l) => (
+          <li key={l.confidence}>{formatNumber(l.confidence)}</li>
+        ))}
+      </ol>
+      <div className="journey-foot journey-spread">
+        <span>{t('progress.calibration.low')}</span>
+        <span>{t('progress.calibration.axis')}</span>
+        <span>{t('progress.calibration.high')}</span>
       </div>
     </section>
   );

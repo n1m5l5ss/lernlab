@@ -15,7 +15,8 @@ installNodeHost();
 const { importFile } = await import('../src/importer');
 const { recordAttempt } = await import('../src/learn');
 const { getDb } = await import('../src/db');
-const { isConfidence, rateConfidence } = await import('../src/confidence');
+const { CALIBRATION_MIN, calibration, calibrationCounts, isConfidence, rateConfidence } =
+  await import('../src/confidence');
 after(() => cleanupTempDir(dir));
 
 const rows = Array.from({ length: 12 }, (_, i) => `Question ${i},answer ${i}`).join('\n');
@@ -85,4 +86,66 @@ test('a bad rating is refused', () => {
   attempt(card, true);
   assert.throws(() => rateConfidence('s1', card, 9, getDb()), { code: 'invalid_confidence' });
   assert.deepEqual(confidences(card), [[null, 0]]);
+});
+
+test("calibration counts each rated answer against the card's next real review on a later day", () => {
+  const day3 = new Date(2026, 10, 26, 10);
+  const rate = (card: number, c: number) => {
+    recordAttempt(
+      { sessionId: 's1', itemId: card, format: 'intro', correct: true, responseMs: 900, xp: 1 },
+      getDb(),
+      day1,
+    );
+    attempt(card, true);
+    rateConfidence('s1', card, c, getDb());
+  };
+  const [a, b, c, e, f, g] = ids.slice(3, 9);
+  rate(a, 5);
+  rate(b, 5);
+  rate(c, 4);
+  rate(e, 4);
+  rate(f, 2); // not reviewed again yet: not counted
+  rate(g, 5);
+  attempt(g, false); // later the same day: not its next review
+  attempt(a, true, day3, { session: 's2' });
+  attempt(b, false, day3, { session: 's2' });
+  attempt(c, true, day3, { session: 's2' });
+  attempt(e, true, day3, { session: 's2', practice: true }); // practice is not a review
+  attempt(e, false, day3, { session: 's2' });
+  attempt(e, true, day3, { session: 's2' }); // a second answer that day: only the graded first one counts
+  const before = state(a);
+  assert.deepEqual(calibrationCounts(getDb()), [
+    { confidence: 4, rated: 2, right: 1 },
+    { confidence: 5, rated: 2, right: 1 },
+  ]);
+  assert.deepEqual(state(a), before, 'reading it changes nothing');
+});
+
+test('calibration shows a share only once a rating has enough answers, and leads with the surest ones', () => {
+  const none = calibration([]);
+  assert.equal(none.levels.length, 5);
+  assert.ok(none.levels.every((l) => l.rate === null && l.rated === 0));
+  assert.deepEqual(none.lead, []);
+  const n = CALIBRATION_MIN;
+  const r = calibration([
+    { confidence: 5, rated: 2 * n, right: 2 * n - 1 },
+    { confidence: 4, rated: n, right: Math.round(n / 2) },
+    { confidence: 3, rated: n, right: 1 },
+    { confidence: 1, rated: n - 1, right: 0 },
+  ]);
+  assert.deepEqual(
+    r.levels.map((l) => [l.confidence, l.rated, l.rate]),
+    [
+      [1, n - 1, null],
+      [2, 0, null],
+      [3, n, 1 / n],
+      [4, n, Math.round(n / 2) / n],
+      [5, 2 * n, (2 * n - 1) / (2 * n)],
+    ],
+  );
+  assert.deepEqual(
+    r.lead.map((l) => l.confidence),
+    [5, 4],
+  );
+  assert.equal(r.rated, 5 * n - 1);
 });

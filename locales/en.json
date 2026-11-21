@@ -845,6 +845,20 @@
       "missed_one": "missed {{count}} time",
       "missed_other": "missed {{count}} times",
       "empty": "No hard cards yet. Cards you forget show up here."
+    },
+    "calibration": {
+      "title": "How sure you were",
+      "lead": "Cards you rated {{high}} were right {{highPercent}} of the time at their next review; rated {{low}}, {{lowPercent}}.",
+      "leadOne": "Cards you rated {{level}} were right {{percent}} of the time at their next review.",
+      "empty": "After an answer, tap how sure you were, from 1 to 5. Once those cards come back for review, this shows how often each rating turned out right.",
+      "level_one": "Rated {{level}}: right {{percent}} of the time at the next review ({{count}} card)",
+      "level_other": "Rated {{level}}: right {{percent}} of the time at the next review ({{count}} cards)",
+      "levelFew_one": "Rated {{level}}: not enough reviews yet ({{count}} card)",
+      "levelFew_other": "Rated {{level}}: not enough reviews yet ({{count}} cards)",
+      "low": "1: guessing",
+      "axis": "Bars: share right at the next review",
+      "high": "5: certain",
+      "few": "Too few yet"
     }
   },
   "summary": {

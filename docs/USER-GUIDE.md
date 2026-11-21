@@ -184,6 +184,7 @@ The **…** button on a deck in **Decks** opens the deck settings: its name, the
 - **Your decks**: for each deck, cards learned and left, your pace, and when you will finish at that pace. A deck whose cards have other ways to ask also shows **Questions answered**: the share of recall, apply and analyse questions over the last 12 weeks. When nearly all of it is recall, it suggests a mock exam, which mixes in the other questions;
 - **Study days**: a calendar of the last year;
 - **Memory**: the share of reviews you recalled, week by week, against your target;
+- **How sure you were**: for each rating from 1 to 5, how often those cards were right at their next review ("Cards you rated 5 were right 93% of the time at their next review; rated 4, 61%"). A rating shows a bar once 5 of its cards have come back. It shows whether your feeling of knowing can be trusted: if your 5s are often wrong, study a bit longer before you move on;
 - your hardest cards, with **Study these** to start a session with them;
 - your streak, your streak freezes and your badges.
 
