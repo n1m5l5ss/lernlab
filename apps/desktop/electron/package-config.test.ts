@@ -27,3 +27,25 @@ test('macOS gets one dmg each for Apple Silicon and Intel; Linux gets an AppImag
   assert.match(mac.artifactName ?? '', /\$\{arch\}/);
   assert.deepEqual(pkg.build.linux.target, ['AppImage', 'deb']);
 });
+
+test('macOS is ad-hoc signed for free, with no paid Apple certificate (docs/CODE_SIGNING.md)', () => {
+  // A downloaded Apple-silicon app with a broken signature is reported as "damaged"; an ad-hoc
+  // signature gets the normal "Open Anyway" path instead. Hardened runtime would reject Electron's
+  // own frameworks under an ad-hoc signature, and it only matters for notarisation.
+  const mac: { identity?: string | null; hardenedRuntime?: boolean } = pkg.build.mac;
+  assert.equal(mac.identity, '-');
+  assert.equal(mac.hardenedRuntime, false);
+});
+
+test('Windows is signed by SignPath in CI, not with a certificate inside electron-builder', () => {
+  const win: Record<string, unknown> = pkg.build.win;
+  for (const key of [
+    'certificateFile',
+    'certificatePassword',
+    'signtoolOptions',
+    'azureSignOptions',
+    'publisherName',
+  ]) {
+    assert.equal(win[key], undefined, key);
+  }
+});

@@ -53,7 +53,7 @@ Each release also carries `latest*.yml` and `.blockmap` files for auto-update.
 
 **Smoke test.** Before uploading, each runner installs its installers the way a user would (runs the Windows setup silently, mounts both dmgs, runs the AppImage and installs the deb) and starts the app with `--smoke-test`. In that mode the app uses a fresh, throw-away data folder, skips the welcome, waits until Home is on screen, prints `LERNLAB_SMOKE_OK` and quits; anything else fails the run (`apps/desktop/electron/smoke.ts`). On a Linux computer: `npm run dist:linux`, then `xvfb-run -a release/linux-unpacked/lernlab --no-sandbox --smoke-test` (or without `xvfb-run` on a desktop).
 
-**Signing.** Builds are unsigned until #39. The workflow already passes these repository secrets to electron-builder when they exist, and the release-please and beta workflows hand them on with `secrets: inherit`: `MAC_CSC_LINK` and `MAC_CSC_KEY_PASSWORD` (Developer ID certificate, base64 `.p12`), `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD` and `APPLE_TEAM_ID` (notarisation), `WIN_CSC_LINK` and `WIN_CSC_KEY_PASSWORD` (Windows certificate). With none set, the builds are unsigned and still pass.
+**Signing.** See the [code signing policy](CODE_SIGNING.md). Windows is signed for free by SignPath Foundation: once the repository has the secret `SIGNPATH_API_TOKEN` and the variable `SIGNPATH_ORGANIZATION_ID`, the Windows job builds the app folder, has SignPath sign `LernLab.exe`, builds the installer from it, has SignPath sign the installer, and rewrites `latest.yml` for the signed file (`apps/desktop/electron/signed-installer.ts`). Each request waits for the owner's approval in SignPath. Without them, Windows builds unsigned and the run still passes. The release-please and beta workflows hand the secret on with `secrets: inherit`. macOS is ad-hoc signed only (no paid Apple certificate), and Linux isn't signed.
 
 Pull requests opened by a workflow (the release PR and the `main → dev` sync) don't trigger `pull_request` runs, because GitHub doesn't let `GITHUB_TOKEN` start other workflows that way. The release-please workflow therefore starts `ci` and `pr-title` on them with `workflow_dispatch`, which `GITHUB_TOKEN` may do. The check runs land on the PR's head commit under the same names, so the required checks pass without a personal token or an admin bypass.
 
@@ -71,7 +71,7 @@ The landing page lives in `apps/site`: plain HTML and CSS in `public/`, and a sm
 - The app looks for a new version 30 s after it starts, and then at most once a day (`apps/desktop/electron/updates.ts`). It reads `latest*.yml` from the newest GitHub Release, downloads in the background and installs on the next restart. Home shows a quiet "Restart now" note, never a session.
 - Before installing, the data process copies the database to `backups/`.
 - **Settings:** "Update automatically" (on by default) and "Get beta updates" (off). Every build publishes `latest*.yml` (`detectUpdateChannel` is off), and beta testers take the newest release including pre-releases. Turning beta off never downgrades: the app waits for the next stable release.
-- **Platforms:** Windows (NSIS) and Linux (AppImage, deb) update themselves. macOS needs a signed app first (#39), so the Mac build doesn't update itself yet.
+- **Platforms:** Windows (NSIS) and Linux (AppImage, deb) update themselves. The Mac app doesn't: electron-updater only installs updates into an app signed with a paid Apple Developer ID, which LernLab doesn't have ([CODE_SIGNING.md](CODE_SIGNING.md#macos-unsigned-by-choice)), so the Mac build never checks for updates and Mac users download each new version from the website.
 
 ## Version numbers (SemVer)
 
@@ -95,8 +95,8 @@ The landing page lives in `apps/site`: plain HTML and CSS in `public/`, and a sm
 |---|---|
 | Pull request into `dev` or `main` | lint, type check, unit + property tests, coverage gate, component tests, visual + accessibility tests, Linux packaged end-to-end smoke test, performance comparison, bundle size, PR-title check |
 | Push to `dev` | the above + end-to-end tests on all 3 systems + unsigned nightly build artifact |
-| "Beta release" workflow on `dev` | signed builds for all 3 systems → GitHub pre-release |
-| Release PR merged (release-please calls "Build installers"); or a tag `vX.Y.Z` pushed by hand (draft release) | tag check, tests, builds for all 3 systems, installer smoke tests → GitHub Release (stable channel); signed and notarised once #39 adds the secrets |
+| "Beta release" workflow on `dev` | builds for all 3 systems (Windows signed through SignPath once set up) → GitHub pre-release |
+| Release PR merged (release-please calls "Build installers"); or a tag `vX.Y.Z` pushed by hand (draft release) | tag check, tests, builds for all 3 systems, installer smoke tests → GitHub Release (stable channel); Windows signed through SignPath once set up, macOS ad-hoc signed ([CODE_SIGNING.md](CODE_SIGNING.md)) |
 
 ## Branch protection (set once in GitHub → Settings → Rules → Rulesets)
 

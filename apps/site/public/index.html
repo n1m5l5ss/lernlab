@@ -327,6 +327,7 @@
               >
               <code class="file" data-file="mac-x64">LernLab-x64.dmg</code>
             </div>
+            <p class="requires"><a href="#mac-guide">How to open it the first time</a></p>
           </section>
           <section class="system" data-system-card="linux" aria-labelledby="sys-linux">
             <h3 id="sys-linux">Linux</h3>
@@ -350,6 +351,100 @@
           </section>
         </div>
 
+        <section class="mac-guide" id="mac-guide" aria-labelledby="mac-guide-title" tabindex="-1" data-mac-guide>
+          <h3 id="mac-guide-title">Opening LernLab on a Mac for the first time</h3>
+          <div class="mac-why" data-mac-why>
+            <p>
+              <strong>macOS will warn you once, and that's expected.</strong> LernLab isn't signed with a paid Apple
+              developer certificate, which costs 99 dollars a year. It is free and open source, and the file you get
+              here is the same file published on <a href="https://github.com/n1m5l5ss/lernlab/releases">GitHub</a>,
+              built in public from the source code.
+            </p>
+            <p>
+              Want to be sure? You can
+              <a href="https://github.com/n1m5l5ss/lernlab/blob/main/docs/CODE_SIGNING.md#check-a-download-yourself"
+                >check the download</a
+              >
+              against the checksum GitHub shows for it. Opening LernLab takes one extra step the first time, about a
+              minute.
+            </p>
+          </div>
+          <div class="mac-choice" data-mac-choice hidden>
+            <p>Do you want to download LernLab and see the steps?</p>
+            <div class="actions">
+              <a class="btn primary" data-mac-continue href="https://github.com/n1m5l5ss/lernlab/releases/latest"
+                >Continue: download and show me how</a
+              >
+              <button type="button" class="btn" data-mac-cancel>No thanks, I won't install it</button>
+            </div>
+          </div>
+          <div class="mac-cancelled" data-mac-cancelled hidden tabindex="-1">
+            <p>
+              <strong>Nothing was downloaded or installed.</strong> If you downloaded LernLab before and don't want it,
+              drag the file (it starts with “LernLab” and ends in .dmg, usually in Downloads) to the Bin. That's all.
+            </p>
+          </div>
+          <div class="mac-steps" data-mac-steps>
+            <h4 id="mac-steps-title" data-mac-steps-title tabindex="-1">Steps for macOS 15 Sequoia and later</h4>
+            <ol class="steps">
+              <li>
+                <p>
+                  Open the downloaded .dmg and drag <strong>LernLab</strong> into <strong>Applications</strong>. Open
+                  LernLab. macOS says “LernLab” Not Opened. Press <strong>Done</strong> (not Move to Trash).
+                </p>
+                <img
+                  src="media/mac-open-1-warning.svg"
+                  width="480"
+                  height="300"
+                  alt="The message “LernLab” Not Opened: Apple could not verify LernLab is free of malware. It has two buttons, Done and Move to Trash; Done is marked."
+                />
+              </li>
+              <li>
+                <p>
+                  Open the Apple menu → <strong>System Settings</strong> → <strong>Privacy &amp; Security</strong>.
+                  Scroll down to Security. Next to “LernLab” was blocked to protect your Mac, press
+                  <strong>Open Anyway</strong>. The button stays there for about an hour after you tried to open it.
+                </p>
+                <img
+                  src="media/mac-open-2-settings.svg"
+                  width="480"
+                  height="300"
+                  alt="System Settings with Privacy & Security chosen in the sidebar. Under Security it says LernLab was blocked to protect your Mac, and the Open Anyway button next to it is marked."
+                />
+              </li>
+              <li>
+                <p>
+                  macOS asks once more: press <strong>Open Anyway</strong>, then type your Mac's password (or use Touch
+                  ID). LernLab opens, and from now on it opens like any other app.
+                </p>
+                <img
+                  src="media/mac-open-3-confirm.svg"
+                  width="480"
+                  height="300"
+                  alt="The question Open LernLab? with the Open Anyway button marked, followed by a box asking for your password to allow it."
+                />
+              </li>
+            </ol>
+            <h4>macOS 14 Sonoma and earlier</h4>
+            <p>
+              The steps above work too, or use the shortcut: in <strong>Applications</strong>, Control-click (or
+              right-click) LernLab, choose <strong>Open</strong>, then press <strong>Open</strong> in the message.
+            </p>
+            <img
+              src="media/mac-open-older.svg"
+              width="480"
+              height="300"
+              alt="The Applications folder with LernLab Control-clicked. In the menu that appears, Open is marked."
+            />
+            <p class="requires">
+              The Mac app can't update itself without a paid certificate, so download new versions from this page. Still
+              stuck? <a href="https://github.com/n1m5l5ss/lernlab#install">See the install guide</a> or
+              <a href="https://github.com/n1m5l5ss/lernlab/issues">ask for help</a>.
+            </p>
+          </div>
+        </section>
+        <!-- /mac-guide -->
+
         <div class="first-open">
           <h3>The first time you open it</h3>
           <p>
@@ -361,8 +456,8 @@
               <strong>Windows:</strong> if SmartScreen says “Windows protected your PC”, choose More info → Run anyway.
             </li>
             <li>
-              <strong>macOS:</strong> drag LernLab into Applications and open it. If macOS can't check it, go to System
-              Settings → Privacy &amp; Security and press Open Anyway.
+              <strong>macOS:</strong> drag LernLab into Applications and open it. macOS asks you to allow it once in
+              System Settings: <a href="#mac-guide">see the steps with pictures</a>.
             </li>
             <li><strong>Linux:</strong> make the AppImage executable and run it, or install the .deb.</li>
           </ul>

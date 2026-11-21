@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { DAY_MS, readyUpdate, shouldCheck, updaterOptions } from './update-policy';
 
 const on = { autoUpdate: true, betaUpdates: false };
@@ -47,4 +48,15 @@ test('the "Update ready" note carries the release notes from the GitHub Release,
     fixed: ['Older fix'],
   });
   assert.deepEqual(readyUpdate({ version: '0.5.0', releaseNotes: null }).notes, { added: [], fixed: [] });
+});
+
+test('macOS never offers an update: an unsigned Mac app cannot install one (docs/CODE_SIGNING.md)', () => {
+  // electron-updater's MacUpdater needs a Developer ID signature, and LernLab's Mac build is only
+  // ad-hoc signed, so the Mac app creates no updater at all; Mac users download new versions themselves.
+  const source = readFileSync(new URL('./updates.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /MacUpdater'|from 'electron-updater'/);
+  const start = source.indexOf('function createUpdater');
+  const create = source.slice(start, source.indexOf('\n}\n', start));
+  assert.doesNotMatch(create, /darwin/);
+  assert.match(create, /return null;/);
 });

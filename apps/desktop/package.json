@@ -83,6 +83,8 @@
       ],
       "artifactName": "${productName}-${version}-${arch}.${ext}",
       "icon": "build/icon.png",
+      "identity": "-",
+      "hardenedRuntime": false,
       "extendInfo": {
         "NSMicrophoneUsageDescription": "LernLab listens when you practise speaking out loud."
       }

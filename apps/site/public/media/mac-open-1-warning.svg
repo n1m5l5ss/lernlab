@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 300" width="480" height="300" role="img" aria-labelledby="t">
+  <title id="t">Drawing of the macOS message “LernLab” Not Opened, with the Done button marked</title>
+  <style>
+    .desk{fill:#F1EDE7}.panel{fill:#FFFFFF;stroke:#E4DED6}.ink{fill:#1F1D1A}.muted{fill:#5C574F}
+    .btn{fill:#F1EDE7;stroke:#8A847B}.mark{fill:none;stroke:#2F5BB7;stroke-width:3}.badge{fill:#2F5BB7}.on{fill:#FFFFFF}
+    .icon{fill:#2F5BB7}
+    text{font-family:system-ui,-apple-system,'Segoe UI',sans-serif}
+    @media (prefers-color-scheme: dark){
+      .desk{fill:#1A1917}.panel{fill:#24221F;stroke:#3A3732}.ink{fill:#ECE9E4}.muted{fill:#A8A39B}
+      .btn{fill:#2D2B27;stroke:#807B73}.mark{stroke:#8FA8F0}.badge{fill:#8FA8F0}.on{fill:#1A1917}.icon{fill:#8FA8F0}
+    }
+  </style>
+  <rect class="desk" width="480" height="300" rx="12"/>
+  <rect class="panel" x="110" y="22" width="260" height="256" rx="14"/>
+  <rect class="icon" x="216" y="40" width="48" height="48" rx="11"/>
+  <path class="on" d="M231 52h6v18h12v6h-18z"/>
+  <text class="ink" x="240" y="112" font-size="15" font-weight="700" text-anchor="middle">“LernLab” Not Opened</text>
+  <text class="muted" x="240" y="136" font-size="12" text-anchor="middle">Apple could not verify “LernLab” is free</text>
+  <text class="muted" x="240" y="152" font-size="12" text-anchor="middle">of malware that may harm your Mac or</text>
+  <text class="muted" x="240" y="168" font-size="12" text-anchor="middle">compromise your privacy.</text>
+  <rect class="btn" x="130" y="188" width="220" height="32" rx="8"/>
+  <text class="ink" x="240" y="209" font-size="13" font-weight="700" text-anchor="middle">Done</text>
+  <rect class="btn" x="130" y="228" width="220" height="32" rx="8"/>
+  <text class="ink" x="240" y="249" font-size="13" text-anchor="middle">Move to Trash</text>
+  <rect class="mark" x="124" y="182" width="232" height="44" rx="11"/>
+  <circle class="badge" cx="392" cy="204" r="14"/>
+  <text class="on" x="392" y="209" font-size="14" font-weight="700" text-anchor="middle">1</text>
+  <path class="mark" d="M378 204h-18"/>
+</svg>
