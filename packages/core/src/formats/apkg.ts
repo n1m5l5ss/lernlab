@@ -133,6 +133,15 @@ export function readApkg(buf: Uint8Array): ApkgResult {
     throw damaged();
   }
   try {
+    // The collection is a database someone else wrote. A view (say an endless WITH RECURSIVE named `notes`),
+    // a trigger or a virtual table could make a plain SELECT run forever, so only real tables are read.
+    db.exec('PRAGMA trusted_schema = OFF');
+    const odd = db
+      .prepare(
+        "SELECT 1 FROM sqlite_master WHERE type IN ('view', 'trigger') OR upper(sql) LIKE 'CREATE VIRTUAL%' LIMIT 1",
+      )
+      .get();
+    if (odd) throw damaged();
     // Note types → ordered field names. Newer collections keep them in tables, older ones in col.models JSON.
     const fieldNames = new Map<number, string[]>();
     const deckNames = new Map<number, string>();
@@ -242,9 +251,22 @@ export function readApkg(buf: Uint8Array): ApkgResult {
       const used = new Set(cards.flatMap((c) => [c.audio, c.image, c.video]).filter(Boolean));
       const wanted = new Map(Object.entries(names).filter(([, name]) => used.has(name)));
       const entries = readZip(buf, (n) => wanted.has(n));
+      // zstd inside the zip hides the real size from the zip checks, so cap each file by its kind and all
+      // of them together: a 2 KB package must not unpack to gigabytes.
+      let total = 0;
       for (const [k, name] of wanted) {
-        if (entries[k]) media[name] = unzstd(entries[k], IMPORT_LIMITS.video);
-        else mediaMissing.push(name);
+        if (!entries[k]) {
+          mediaMissing.push(name);
+          continue;
+        }
+        const kind = mediaKind(name);
+        const data = unzstd(entries[k], kind ? IMPORT_LIMITS[kind] : IMPORT_LIMITS.image);
+        total += data.length;
+        if (total > IMPORT_LIMITS.unpackedBytes)
+          throw new UserError('zip_too_big', 'The file unpacks to too much data', {
+            mb: Math.round(IMPORT_LIMITS.unpackedBytes / 1024 / 1024),
+          });
+        media[name] = data;
       }
     }
     return {

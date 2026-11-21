@@ -31,7 +31,12 @@ export const isDesktop = () => typeof window !== 'undefined' && !!window.lernlab
 
 const http: Bridge = {
   async invoke(channel, input) {
-    const res = await fetch(`/api/invoke/${channel}`, { method: 'POST', body: toWire(input) });
+    const res = await fetch(`/api/invoke/${channel}`, {
+      method: 'POST',
+      // JSON is required by the web dev server (server/guard.ts): other websites can't send it.
+      headers: { 'Content-Type': 'application/json' },
+      body: toWire(input),
+    });
     return fromWire(await res.text()) as Result<unknown>;
   },
 };

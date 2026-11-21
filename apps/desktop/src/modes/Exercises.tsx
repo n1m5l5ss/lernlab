@@ -5,6 +5,7 @@ import type { Exercise, Item } from '@lernlab/core/types';
 import { similarity, normalize, stripHtml, type CheckResult } from '@lernlab/core/text';
 import { hasMath } from '@lernlab/core/math';
 import { GAP } from '@lernlab/core/code';
+import { replaceClozes } from '@lernlab/core/cards';
 import { hear, playMedia, say, recognizer, sfx } from '../audio';
 import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
@@ -54,9 +55,7 @@ const MicIcon = () => (
 export function Article({ item }: { item: Item }) {
   if (!item.article || item.kind !== 'noun')
     return (
-      <Rich
-        html={item.kind === 'cloze' ? item.target.replace(/\{\{c\d+::(.*?)(?:::.*?)?\}\}/g, '<b>$1</b>') : item.target}
-      />
+      <Rich html={item.kind === 'cloze' ? replaceClozes(item.target, (c) => `<b>${c.answer}</b>`) : item.target} />
     );
   return (
     <>

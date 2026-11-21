@@ -3,6 +3,7 @@
 // The rules are documented in docs/FORMAT.md ("Code cards").
 import type { CheckResult } from './text';
 import type { Item } from './types';
+import { clozes, replaceClozes } from './cards';
 
 export type TokenKind = 'keyword' | 'string' | 'comment' | 'number';
 export type Token = { kind: TokenKind | null; text: string };
@@ -200,7 +201,6 @@ export function checkCode(input: string, accepted: string[]): CheckResult {
 
 /** Where the gap goes in fill-the-token code. A private-use character, so it never clashes with real code. */
 export const GAP = '';
-const GAPS = /\{\{c\d+::([\s\S]*?)(?:::([\s\S]*?))?\}\}/g;
 
 export type CodeTask =
   | { mode: 'fill'; lang: string; code: string; answer: string; hint: string }
@@ -216,12 +216,12 @@ export function codeTask(item: Pick<Item, 'kind' | 'meaning' | 'extra'>): CodeTa
   if (item.kind !== 'code') return null;
   const code = item.extra?.code ?? '';
   const lang = item.extra?.codeLang ?? '';
-  const gap = new RegExp(GAPS.source).exec(code);
+  const gap = clozes(code, true).next().value;
   if (gap) {
-    const reveal = (s: string) => s.replace(GAPS, '$1');
-    const before = reveal(code.slice(0, gap.index));
-    const after = reveal(code.slice(gap.index + gap[0].length));
-    return { mode: 'fill', lang, code: before + GAP + after, answer: gap[1], hint: gap[2] ?? '' };
+    const reveal = (s: string) => replaceClozes(s, undefined, true);
+    const before = reveal(code.slice(0, gap.start));
+    const after = reveal(code.slice(gap.end));
+    return { mode: 'fill', lang, code: before + GAP + after, answer: gap.answer, hint: gap.hint ?? '' };
   }
   if (item.meaning.trim()) return { mode: 'output', lang, code, answer: item.meaning };
   const lines = code.split('\n').filter((l) => l.trim());
