@@ -69,3 +69,30 @@ export function summaryFacts(
       .slice(0, MISSED_SHOWN),
   };
 }
+
+/** Most new cards the tomorrow check asks about. */
+export const TOMORROW_SHOWN = 12;
+
+/**
+ * "Will you know this tomorrow?" (#205): the new cards met in this session, each with its question only (the
+ * answer stays hidden: a judgement from the question alone predicts recall better). None in practice mode.
+ */
+export function tomorrowCards(
+  result: { practice: boolean; newCards: number[] },
+  items: Record<number, Item>,
+  qa: (item: Item) => { prompt: string },
+): { id: number; prompt: string }[] {
+  if (result.practice) return [];
+  return [...new Set(result.newCards)]
+    .filter((id) => items[id])
+    .slice(0, TOMORROW_SHOWN)
+    .map((id) => ({ id, prompt: qa(items[id]).prompt }));
+}
+
+type Group = { cards: number; reviewed: number; right: number };
+/** How the last check held up: each answer (yes, unsure, no) whose cards have come back, with how many were right. */
+export function tomorrowReport(groups: Record<'yes' | 'unsure' | 'no', Group>) {
+  return (['yes', 'unsure', 'no'] as const)
+    .filter((answer) => groups[answer].reviewed > 0)
+    .map((answer) => ({ answer, reviewed: groups[answer].reviewed, right: groups[answer].right }));
+}

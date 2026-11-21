@@ -552,3 +552,30 @@ test('how sure you were is saved with your answer, 1 to 5 only, and the rating c
     assert.equal(!bad.ok && bad.error.code, 'invalid_input');
   }
 });
+
+test('"Will you know this tomorrow?" answers are yes, unsure or no for known cards (#205)', async () => {
+  const deck = await ok('decks.create', { name: 'Tomorrow', language: null });
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { front: 'Osmosis', back: 'water through a membrane' },
+  });
+  assert.deepEqual(await ok('tomorrow.save', { answers: [{ itemId: id, answer: 'unsure' }] }), { cards: 1 });
+  for (const answers of [[{ itemId: id, answer: 'maybe' }], [{ itemId: 'x', answer: 'yes' }], 'yes']) {
+    const bad = await handle('tomorrow.save', { answers });
+    assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  }
+  const tooMany = Array.from({ length: 101 }, () => ({ itemId: id, answer: 'yes' }));
+  assert.equal((await handle('tomorrow.save', { answers: tooMany })).ok, false);
+  const fin = await ok('session.finish', {
+    sessionId: 'tm',
+    length: 'mini',
+    seconds: 60,
+    answers: 1,
+    correct: 1,
+    bossWon: null,
+    bestGenderCombo: 0,
+    perfectBlocks: 0,
+    startedAt: new Date().toISOString(),
+  });
+  assert.equal(fin.tomorrowCheck, null, 'nothing to report on the day of the check');
+});

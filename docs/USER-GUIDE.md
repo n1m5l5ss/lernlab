@@ -123,9 +123,9 @@ Some things to know:
 - **Hint** (`Tab`) shows the first letter and the length of the answer. Press it again to **Show answer**; then type the answer once to fix it in memory.
 - **Other ways to ask.** A card with extra questions (see [Edit cards](#edit-cards)) is asked in a new way at each review, with its level shown next to the block title: **Recall**, **Apply** or **Analyse**. The answer is the same, and it still counts once a day.
 - **Show answer** on a flip card turns it over. Then say how you did: **Didn't know**, **Partly** or **Knew it**.
-- **How sure were you?** After a typed, fill-the-gap, flip or ordering answer, a quiet row asks how sure you were, from **1** (guessing) to **5** (certain). It is optional: press **Continue** to skip it. After a typed or ordering answer, a tap or the keys `1`–`5` rate and go on in one step; on a flip card (where `1`–`3` say how you did) click a number before you rate the card. It is never timed, never asked for a card brought back or in practice mode, and it never changes when a card is next due or the XP you earn. Turn it off in **Settings → Studying**.
+- **How sure were you?** After about 1 in 4 typed, fill-the-gap, flip or ordering answers (so sessions stay quick), a quiet row asks how sure you were, from **1** (guessing) to **5** (certain). Which answers ask is fixed by the card, the day and its place in the round. It is optional: press **Continue** to skip it. When the row shows, a correct answer waits for you instead of moving on by itself; after a typed or ordering answer, a tap or the keys `1`–`5` rate and go on in one step; on a flip card (where `1`–`3` say how you did) click a number before you rate the card. It is never timed, never asked for a card brought back or in practice mode, and it never changes when a card is next due or the XP you earn. Turn it off in **Settings → Studying**.
 - **New cards are never timed.** Timers only appear on cards you already know.
-- **Missed cards come back.** A card you miss comes back after 4 to 6 other cards, until you get it right once. A new card comes back until you have recalled it twice in the session. Once a card has done that, it doesn't come back again in this session, and no card comes back more than 3 times, so a hard card never holds you up. These extra tries are practice: they never change when the card is next due. If the session ends first, that's fine: the card comes back on another day.
+- **Missed cards come back.** A card you miss comes back after 4 to 6 other cards, until you get it right once. A new card comes back until you have recalled it twice in the session. Once a card has done that, it doesn't come back again in this session, and no card comes back more than 3 times, so a hard card never holds you up. These extra tries are practice: they never change when the card is next due. If the session ends first, that's fine: the card comes back on another day. A card you got wrong but rated 4 or 5 (**How sure were you?**) always comes back once later in the session, even if it is asked again in a later block anyway: confident mistakes are the easiest to fix, right after you see the answer.
 - **Guess first.** When today's new cards start a new topic (a tag, a sub-deck, or a whole new deck, where you haven't seen any of its cards yet), you get 5 to 8 of its questions first, mostly the cards you are about to learn. Type a guess if you like, or just think of one, then press **Show answer** (`Enter`); on a multiple-choice question, pick a choice (or press its number). Wrong guesses are expected and help you learn: guessing first helps you remember those answers later. There is no timer, and nothing you guess is marked or changes when a card is next due. **Skip to the new cards** ends the round at any time. Language decks don't get this round, because you can't guess a foreign word; neither do ordering cards.
 - **Games never count as knowing a card.** Only a real attempt to remember (typing, saying, choosing the answer to a question) moves a card's schedule, and only the first one each day.
 - To stop, press **End session** or `Esc`. Every answer so far is saved, and the session still counts for today.
@@ -133,6 +133,8 @@ Some things to know:
 ### The summary
 
 At the end you see how many answers you recalled, how many new cards you started, the XP you earned, and your days this week. Cards you missed are listed: they come back tomorrow. Press **One more round** (`Space`) or **Done** (`Enter`).
+
+After a session in which you met new cards, **Will you know these tomorrow?** shows each new card's question, without the answer. Answer **Yes**, **Not sure** or **No** for any you like; each answer is saved at once, and you can skip them all. At the end of your next session on a later day, once some of those cards have come back, the summary shows how your guesses held up ("You said yes to 4 cards that came back: you knew 3"). Cards you were not sure about come first in the next warm-up. None of this changes when a card is next due; it stays on your computer.
 
 ### Practice without changing the schedule
 
@@ -259,7 +261,7 @@ When you ask the assistant for cards (for example from a PDF or a web page), to 
 ## Settings
 
 - **Language and display**: interface language, theme (**Match my computer**, **Light** or **Dark**), text size and **Reduce motion**.
-- **Studying**: daily goal, default session length, timers (**Off**, **Relaxed**, **Normal**, **Challenge**), new cards per day, target memory retention, **Ask how sure I was** (on by default), sound effects, and the teacher's voice for language decks.
+- **Studying**: daily goal, default session length, timers (**Off**, **Relaxed**, **Normal**, **Challenge**), new cards per day, target memory retention, **Ask how sure I was** (on by default: about 1 answer in 4 asks; off: never), sound effects, and the teacher's voice for language decks.
 - **Study plan**: your if-then plan and backup plan, a preview of what the reminder will say, the hour you usually study, and the habit note on Home. See [Study plan](#study-plan).
 - **Reminders** (desktop app): a daily reminder at a time you choose, and opening LernLab when you log in.
 - **Your data**: the data folder, backups, restore, export, import and delete.
@@ -271,7 +273,7 @@ When you ask the assistant for cards (for example from a PDF or a web page), to 
 | Key | What it does |
 |---|---|
 | `1`–`4` | Choose an answer |
-| `1`–`5` | After a typed or ordering answer: how sure you were (rates and continues) |
+| `1`–`5` | When **How sure were you?** shows after a typed or ordering answer: rate and continue |
 | `Enter` | Start a session on Home; check or continue in a session; **Done** on the summary |
 | `Space` | Flip a card or replay audio; **One more round** on the summary |
 | `Tab` | Show a hint, then the answer, when you type an answer |

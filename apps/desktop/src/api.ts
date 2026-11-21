@@ -20,6 +20,8 @@ export const api = {
   examStart: (deckId: number) => call('exam.start', { deckId }),
   examSubmit: (body: InputOf<'exam.submit'>) => call('exam.submit', body),
   stats: () => call('stats.get'),
+  /** "Will you know this tomorrow?" answers for today's new cards (#205). */
+  saveTomorrow: (answers: InputOf<'tomorrow.save'>['answers']) => call('tomorrow.save', { answers }),
   summary: () => call('summary.today'),
   progress: () => call('progress.get'),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),

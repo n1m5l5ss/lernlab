@@ -98,6 +98,7 @@ import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
 import { LEVELS } from '@lernlab/core/variants';
 import { rateConfidence } from '@lernlab/core/confidence';
+import { reportTomorrowCheck, saveTomorrowCheck, TOMORROW_ANSWERS, TOMORROW_MAX } from '@lernlab/core/tomorrow';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
 import { asRequest, checkBody } from './ai-requests';
@@ -630,7 +631,15 @@ export const handlers = {
       perfectBlocks: v.number,
       startedAt: v.string(40),
     }),
-    (f) => finishSession(f),
+    // With how yesterday's "Will you know this tomorrow?" guesses held up, once their cards came back (#205).
+    (f) => ({ ...finishSession(f), tomorrowCheck: reportTomorrowCheck() }),
+  ),
+  /** "Will you know this tomorrow?" answers for today's new cards (#205). Stored only; no schedule change. */
+  'tomorrow.save': h(
+    v.object({
+      answers: v.array(v.object({ itemId: v.id, answer: v.oneOf(...TOMORROW_ANSWERS) }), TOMORROW_MAX),
+    }),
+    ({ answers }) => saveTomorrowCheck(answers),
   ),
   /** Exam simulator: questions from one deck, with the deck's exam settings. */
   'exam.start': h(v.object({ deckId: v.id }), ({ deckId }) => {

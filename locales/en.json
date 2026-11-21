@@ -284,7 +284,7 @@
       "cancel": "Keep it off"
     },
     "confidence": "Ask how sure I was",
-    "confidenceHint": "After an answer, one optional tap from 1 to 5. It never changes when a card comes back; Progress shows how well it matches what you really recall."
+    "confidenceHint": "After about 1 answer in 4, one optional tap from 1 to 5. It never changes when a card comes back; Progress shows how well it matches what you really recall."
   },
   "home": {
     "welcomeTitle": "Welcome to LernLab",
@@ -850,7 +850,7 @@
       "title": "How sure you were",
       "lead": "Cards you rated {{high}} were right {{highPercent}} of the time at their next review; rated {{low}}, {{lowPercent}}.",
       "leadOne": "Cards you rated {{level}} were right {{percent}} of the time at their next review.",
-      "empty": "After an answer, tap how sure you were, from 1 to 5. Once those cards come back for review, this shows how often each rating turned out right.",
+      "empty": "When asked after an answer, tap how sure you were, from 1 to 5. Once those cards come back for review, this shows how often each rating turned out right.",
       "level_one": "Rated {{level}}: right {{percent}} of the time at the next review ({{count}} card)",
       "level_other": "Rated {{level}}: right {{percent}} of the time at the next review ({{count}} cards)",
       "levelFew_one": "Rated {{level}}: not enough reviews yet ({{count}} card)",
@@ -900,7 +900,24 @@
     "againKey": "Space",
     "done": "Done",
     "doneKey": "Enter",
-    "practice": "That was practice: your review schedule did not change."
+    "practice": "That was practice: your review schedule did not change.",
+    "tomorrow": {
+      "title": "Will you know these tomorrow?",
+      "lead": "Just the question, no answer: picture tomorrow and decide. Next time you will see how your guesses held up. Skip any you like.",
+      "yes": "Yes",
+      "unsure": "Not sure",
+      "no": "No",
+      "saved": "Saved. Cards you are not sure about come first in your next warm-up.",
+      "reportTitle": "How your guesses from {{date}} held up",
+      "report": {
+        "yes_one": "You said yes to {{count}} card that came back: you knew {{right}}.",
+        "yes_other": "You said yes to {{count}} cards that came back: you knew {{right}}.",
+        "unsure_one": "Not sure about {{count}} card: you knew {{right}}.",
+        "unsure_other": "Not sure about {{count}} cards: you knew {{right}}.",
+        "no_one": "You said no to {{count}} card: you knew {{right}}.",
+        "no_other": "You said no to {{count}} cards: you knew {{right}}."
+      }
+    }
   },
   "exam": {
     "kicker": "Mock exam",
@@ -1147,7 +1164,9 @@
       "toCards": "Meet the new cards",
       "choices": "Choices",
       "gap": "?"
-    }
+    },
+    "confidentMiss": "Confident mistakes are the easiest to fix. That one comes back in a moment.",
+    "confidentMissBack": "The one you were sure of is back. Another go, just for practice."
   },
   "keys": {
     "enter": "Enter",

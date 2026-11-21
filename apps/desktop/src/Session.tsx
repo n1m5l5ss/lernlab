@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
-import { xpFor } from '@lernlab/core/game';
+import { dayKey, xpFor } from '@lernlab/core/game';
 import type { Confidence } from '@lernlab/core/confidence';
 import { teacherFor, type Line } from '@lernlab/core/teacher';
 import { api, sendAttempt, sendConfidence, sendOverride } from './api';
@@ -32,7 +32,9 @@ import {
   answerKind,
   asRepeat,
   asksConfidence,
+  asksConfidenceHere,
   blockKey,
+  isConfidentMiss,
   needsRescue,
   plannedRecalls,
   playableOnly,
@@ -57,6 +59,8 @@ export type SessionResult = {
   practice: boolean;
   /** New cards met in this session. */
   introduced: number;
+  /** Their ids, for "Will you know this tomorrow?" on the summary (#205). */
+  newCards: number[];
 };
 
 /** Blocks of single exercises can bring cards back; games and blitz rounds can't. */
@@ -94,6 +98,19 @@ function ExerciseBlock({
   const tally = useRef({ correct: 0, total: 0 });
   const repeats = useRef(new WeakSet<Exercise>());
   const grammarIds = useMemo(() => block.exercises.map((e) => ('itemId' in e ? e.itemId : 0)).filter(Boolean), []);
+  const { t: tr } = useTranslation();
+  // How sure the learner was of each card's real answer in this block (#205): a confident miss comes back once.
+  const sure = useRef(new Map<number, Confidence>());
+  const today = useMemo(() => dayKey(), []);
+  const rate = useMemo(
+    () =>
+      confidence &&
+      ((itemId: number, value: Confidence) => {
+        sure.current.set(itemId, value);
+        confidence(itemId, value);
+      }),
+    [confidence],
+  );
 
   const next = (r: { correct: boolean }) => {
     const ex = queue[i];
@@ -102,8 +119,11 @@ function ExerciseBlock({
       if (r.correct) tally.current.correct++;
     }
     const id = 'itemId' in ex ? ex.itemId : 0;
-    if (id) relearn.answered(id, answerKind(ex.type), r.correct, { fresh: block.kind === 'learn' });
+    // Only a real answer can be a confident miss: a card brought back is never rated.
+    const surprise = !!id && !repeats.current.has(ex) && isConfidentMiss(r.correct, sure.current.get(id));
+    if (id) relearn.answered(id, answerKind(ex.type), r.correct, { fresh: block.kind === 'learn', surprise });
     else relearn.skip(1);
+    if (surprise) ctx.teacher(tr('session.confidentMiss'));
     let q = queue;
     const ahead = plannedRecalls(queue.slice(i + 1));
     const back = relearn.due((itemId) => (ahead.get(itemId) ?? 0) + (plannedLater.get(itemId) ?? 0), {
@@ -112,6 +132,7 @@ function ExerciseBlock({
     });
     const item = back === null ? undefined : ctx.item(back);
     if (back !== null && item) {
+      if (relearn.isSurprise(back) && back !== id) ctx.teacher(tr('session.confidentMissBack'));
       relearn.shown(back);
       const again = recallFor(item);
       repeats.current.add(again);
@@ -129,7 +150,8 @@ function ExerciseBlock({
   const k = `${block.id}-${i}`;
   // Timers only on review blocks: time pressure while first learning a card hurts memory.
   if (block.kind !== 'drill') ctx = { ...ctx, timer: 0 };
-  if (confidence) ctx = { ...ctx, confidence };
+  // About 1 in 4 recall answers ask how sure you were; the others move on exactly as before.
+  if (rate && 'itemId' in ex && asksConfidenceHere(ex.itemId, today, i)) ctx = { ...ctx, confidence: rate };
   if (repeats.current.has(ex)) ctx = asRepeat<AnswerInput, Ctx>(ctx);
   switch (ex.type) {
     case 'intro':
@@ -276,6 +298,7 @@ export function Session({
     bossWon: null as boolean | null,
   });
   const missed = useRef(new Set<number>());
+  const newCards = useRef(new Set<number>());
   const relearn = useRef(new Relearn());
   const responseTimes = useRef<number[]>([]);
   const slowStreak = useRef(0);
@@ -337,7 +360,10 @@ export function Session({
     (a: AnswerInput): number => {
       const ms = performance.now() - a.shownAt;
       const counts = a.format !== 'intro';
-      if (!counts) totals.current.introduced++;
+      if (!counts) {
+        totals.current.introduced++;
+        newCards.current.add(a.itemId);
+      }
       let gained = 0;
       if (counts && !a.silent) {
         const ok = a.correct && !a.articleError;
@@ -502,6 +528,7 @@ export function Session({
       missed: [...missed.current],
       practice: plan.practice,
       introduced: totals.current.introduced,
+      newCards: [...newCards.current],
     });
   };
 

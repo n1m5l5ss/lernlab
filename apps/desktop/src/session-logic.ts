@@ -10,12 +10,14 @@ export const MAX_REPEATS = 3;
 
 /** What an answered exercise was: meeting a new card, a real recall attempt, or anything else (recognition, games). */
 export type AnswerKind = 'meet' | 'recall' | 'other';
-type Track = { need: number; repeats: number; dueAt: number | null; missed: boolean };
+/** `surprise`: a confident miss (#205) still waiting for its one guaranteed comeback. */
+type Track = { need: number; repeats: number; dueAt: number | null; missed: boolean; surprise?: boolean };
 
 /**
  * Successive relearning inside one session. A missed card comes back after 4–6 other exercises until it is
  * recalled once; a new card comes back until it has NEW_CARD_RECALLS correct recalls. Once a card meets its
  * target it is not brought back again, and no card is brought back more than MAX_REPEATS times.
+ * A confident miss (a wrong answer rated 4 or 5, #205) comes back once without waiting for a recall planned later.
  * The runner shows these extra showings as practice: only the first recall of the day changes the schedule.
  */
 export class Relearn {
@@ -29,8 +31,16 @@ export class Relearn {
     return RETRY_GAP.min + Math.floor(this.rand() * (RETRY_GAP.max - RETRY_GAP.min + 1));
   }
 
-  /** One exercise was answered. `fresh`: a recall of a card met for the first time in this session. */
-  answered(itemId: number, kind: AnswerKind, correct: boolean, { fresh = false }: { fresh?: boolean } = {}) {
+  /**
+   * One exercise was answered. `fresh`: a recall of a card met for the first time in this session.
+   * `surprise`: a confident miss, sure to come back once.
+   */
+  answered(
+    itemId: number,
+    kind: AnswerKind,
+    correct: boolean,
+    { fresh = false, surprise = false }: { fresh?: boolean; surprise?: boolean } = {},
+  ) {
     this.step++;
     let c = this.cards.get(itemId);
     if (kind === 'meet') {
@@ -46,6 +56,7 @@ export class Relearn {
     }
     c.need = correct ? Math.max(0, c.need - 1) : Math.max(1, c.need);
     c.missed = !correct;
+    if (surprise && !correct) c.surprise = true;
     c.dueAt = c.need > 0 && c.repeats < MAX_REPEATS ? this.step + this.gap() : null;
   }
 
@@ -64,7 +75,7 @@ export class Relearn {
     let best: number | null = null;
     let at = Infinity;
     for (const [id, c] of this.cards) {
-      if (c.dueAt === null || planned(id) >= c.need) continue;
+      if (c.dueAt === null || (planned(id) >= c.need && !c.surprise)) continue;
       const ready = c.dueAt <= this.step || (end?.ending && c.missed && id !== end.last);
       if (ready && c.dueAt < at) {
         best = id;
@@ -80,8 +91,17 @@ export class Relearn {
     if (!c) return;
     c.repeats++;
     c.dueAt = null;
+    c.surprise = false;
+  }
+
+  /** A confident miss waiting for its comeback (ask before `shown`). */
+  isSurprise(itemId: number) {
+    return !!this.cards.get(itemId)?.surprise;
   }
 }
+
+/** A wrong answer you were sure of (rated 4 or 5): the easiest kind to fix once you see the answer (#205). */
+export const isConfidentMiss = (correct: boolean, confidence: number | undefined) => !correct && (confidence ?? 0) >= 4;
 
 /** Under 60% right in a review block (of at least 3 answers) brings an easier rescue round. */
 export const needsRescue = (r: { correct: number; total: number }) => r.total >= 3 && r.correct / r.total < 0.6;
@@ -143,5 +163,24 @@ export const asksConfidence = (b: { on: boolean | undefined; practice: boolean; 
   b.on !== false && !b.practice && b.kind !== 'blitz';
 
 /** The keys 1 to 5 as a confidence rating. */
+/** Share of recall answers that ask "How sure were you?", so sessions stay quick. */
+export const CONFIDENCE_SHARE = 0.25;
+
+/**
+ * Whether this recall answer asks "How sure were you?": about 1 in 4, picked by the card, the day and the
+ * exercise's place in its block (FNV-1a hash), so the same answer is always asked or not, and tests can tell.
+ */
+export function asksConfidenceHere(itemId: number, day: string, index: number): boolean {
+  let h = 0x811c9dc5;
+  for (const ch of `${itemId}|${day}|${index}`) {
+    h ^= ch.charCodeAt(0);
+    h = Math.imul(h, 0x01000193);
+  }
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  return (h >>> 0) / 0x100000000 < CONFIDENCE_SHARE;
+}
+
 export const confidenceKey = (key: string): Confidence | null =>
   /^[1-5]$/.test(key) ? (Number(key) as Confidence) : null;

@@ -1322,6 +1322,41 @@ kbd {
 .summary-missed li b {
   font-size: var(--text-subhead);
 }
+/* "Will you know these tomorrow?" (#205): each new card's question with a yes / not sure / no choice. */
+.tomorrow h2,
+.tomorrow-report h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-body);
+}
+.tomorrow > p {
+  margin: 0 0 var(--space-2);
+}
+.tomorrow ul,
+.tomorrow-report ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tomorrow li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+.tomorrow-q {
+  flex: 1 1 16rem;
+  min-width: 0;
+  font-weight: 600;
+}
+.tomorrow-choice {
+  flex: 0 0 auto;
+}
+.tomorrow-report li + li {
+  margin-top: var(--space-1);
+}
 .summary-actions {
   display: flex;
   justify-content: flex-end;
