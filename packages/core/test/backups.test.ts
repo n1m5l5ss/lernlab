@@ -171,16 +171,18 @@ test('a restored database with views, triggers or virtual tables is refused befo
   assert.equal(deckCount(), 2);
 });
 
-test('the AI assistant is off after any restore, so the user turns it on again knowingly (#176)', () => {
-  const on = () => setMeta(getDb(), 'settings', { ...getSettings(), aiAssistant: true });
+test('the AI assistant and internet media are off after any restore, so the user turns them on again knowingly (#176)', () => {
+  const on = () => setMeta(getDb(), 'settings', { ...getSettings(), aiAssistant: true, remoteMedia: true });
   on();
   importAllData(exportAllData().data);
   assert.equal(getSettings().aiAssistant, false, 'import everything');
+  assert.equal(getSettings().remoteMedia, false, 'import everything: internet media');
   assert.equal(deckCount(), 2);
   on();
   const copy = basename(storage.backupAppDb(undefined, 'before-update', day(12)));
   restoreBackup(copy);
   assert.equal(getSettings().aiAssistant, false, 'restore a backup');
+  assert.equal(getSettings().remoteMedia, false, 'restore a backup: internet media');
 });
 
 test('a data export that compresses too well (a zip bomb) is refused (#176)', () => {

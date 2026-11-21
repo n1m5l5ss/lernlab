@@ -154,7 +154,7 @@ function swapIn(source: string, safety: string) {
 function assistantOff(d: DB) {
   const saved: unknown = getMeta(d, 'settings', {});
   const settings = saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
-  setMeta(d, 'settings', { ...settings, aiAssistant: false });
+  setMeta(d, 'settings', { ...settings, aiAssistant: false, remoteMedia: false });
 }
 
 /** Restore a backup from backups/. The current data is backed up first; returns that backup's name. */

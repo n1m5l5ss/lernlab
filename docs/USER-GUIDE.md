@@ -195,7 +195,7 @@ To make one yourself, go to **Settings → Your data** and press **Back up now**
 
 Your data as it is now is backed up first, so you can change your mind.
 
-After a restore or an import of all your data, the AI assistant is off. Turn it on again in Settings if you want it. A backup or zip that holds anything LernLab never makes itself is refused, and your data stays as it was.
+After a restore or an import of all your data, the AI assistant and **Allow pictures and sounds from the internet** are off. Turn them on again in Settings if you want them. A backup or zip that holds anything LernLab never makes itself is refused, and your data stays as it was.
 
 ### Move to another computer
 
@@ -214,7 +214,7 @@ In the desktop app, **File → Use a different data folder…** moves LernLab to
 
 ### Delete everything
 
-**Settings → Your data → Delete all my data** removes every deck, card, answer, setting and media file. Type `DELETE` to confirm. One last backup stays in the `backups` folder; delete that folder too to remove everything.
+**Settings → Your data → Delete all my data** removes every deck, card, answer, setting and media file. Type `DELETE` to confirm. Your backups are deleted too, so this can't be undone.
 
 ## Your AI assistant
 
