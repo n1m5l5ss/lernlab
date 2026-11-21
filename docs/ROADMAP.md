@@ -41,7 +41,7 @@ Priorities come from a review of Quizlet, Anki, Duolingo, Memrise, Brainscape, K
 Each item is a GitHub issue; finished ones ship in the next minor release.
 
 - [x] **Anki import with scheduling history:** replay the review log into FSRS (#48).
-- [ ] **Exam simulator:** timed and tutor modes, flag and review, score by tag (#43). Tutor answers count toward the schedule; timed answers are practice.
+- [x] **Exam simulator:** timed and tutor modes, flag and review, score by tag (#43). Tutor answers count toward the schedule; timed answers are practice.
 - [ ] **Image occlusion:** hide labels on a diagram, for medicine and anatomy (#44).
 - [ ] **Math cards:** LaTeX rendering and answers (#45).
 - [ ] **Code cards:** syntax highlighting, predict the output (#46).

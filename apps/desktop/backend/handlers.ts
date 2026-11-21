@@ -57,6 +57,8 @@ import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
 import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
+import { buildExam, recordExam, type Exam } from '@lernlab/core/examplan';
+import { EXAM_MODES } from '@lernlab/core/exam';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
 import { lastSeenVersion, markVersionSeen, whatsNewToShow, type ReleaseNotes } from '@lernlab/core/whatsnew';
 import type { Attempt, Format, SessionLength } from '@lernlab/core/types';
@@ -130,6 +132,9 @@ const columnMapping: Check<ColumnMapping> = (value, path = 'mapping') => {
   }
   return { header: m.header, fields };
 };
+
+/** Exams being taken, by id, until they are handed in. Only the last few are kept. */
+const exams = new Map<string, Exam>();
 
 /* ── Anki import runs in the background; the window polls its status ── */
 
@@ -535,6 +540,28 @@ export const handlers = {
       startedAt: v.string(40),
     }),
     (f) => finishSession(f),
+  ),
+  /** Exam simulator: questions from one deck, with the deck's exam settings. */
+  'exam.start': h(v.object({ deckId: v.id }), ({ deckId }) => {
+    if (!getDeck(deckId)) throw new AppError('deck_not_found', 'Deck not found');
+    const exam = buildExam(deckId, getDb());
+    exams.set(exam.id, exam);
+    for (const id of [...exams.keys()].slice(0, -5)) exams.delete(id);
+    return exam;
+  }),
+  /** Hand an exam in: scored by topic. Tutor answers count toward reviews; timed ones are practice. */
+  'exam.submit': h(
+    v.object({
+      examId: v.string(100),
+      mode: v.oneOf(...EXAM_MODES),
+      answers: v.array(v.object({ itemId: v.id, chosen: v.array(v.number, 20), ms: v.number }), 200),
+    }),
+    ({ examId, mode, answers }) => {
+      const exam = exams.get(examId);
+      if (!exam) throw new AppError('exam_not_found', 'Exam not found');
+      exams.delete(examId);
+      return recordExam(exam.id, exam.questions, answers, exam.settings.passMark, mode, getDb());
+    },
   ),
 
   /* ── Progress ── */

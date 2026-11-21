@@ -10,6 +10,7 @@ import { Summary } from './Summary';
 import { Settings } from './Settings';
 import { Progress } from './Progress';
 import { Decks } from './Decks';
+import { Exam } from './Exam';
 import { Browse } from './Browse';
 import { Badges } from './Badges';
 import { StreakPanel } from './Motivation';
@@ -26,6 +27,7 @@ type AppState = OutputOf<'state.get'>;
 /** The study session and its summary fill the window; everything else sits in the shell. */
 type FullScreen =
   | { name: 'play'; plan: SessionPlan }
+  | { name: 'exam'; deckId: number }
   | {
       name: 'summary';
       result: SessionResult;
@@ -168,6 +170,16 @@ export function App() {
         }}
       />
     );
+  if (full?.name === 'exam')
+    return (
+      <Exam
+        deckId={full.deckId}
+        onDone={() => {
+          go('decks');
+          refresh();
+        }}
+      />
+    );
   if (full?.name === 'summary')
     return (
       <Summary
@@ -193,6 +205,7 @@ export function App() {
           onStudy={() => go('home')}
           onPractice={() => start(state.settings.sessionLength, true)}
           onBrowse={() => go('cards')}
+          onExam={(deckId) => setFull({ name: 'exam', deckId })}
         />
       )}
       {route === 'cards' && <Browse state={state} refresh={refresh} />}

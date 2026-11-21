@@ -7,6 +7,7 @@ import { api } from './api';
 import { ImportPanel } from './ImportPanel';
 import { onVoicesChanged, systemVoices, tryVoice } from './audio';
 import { formatDate, formatLanguage, formatNumber } from './i18n';
+import { examSettings, type ExamSettings } from '@lernlab/core/exam';
 import { MAX_RATE, MIN_RATE, clampRate, voicesFor } from './voice-logic';
 
 type AppState = OutputOf<'state.get'>;
@@ -18,6 +19,7 @@ type Props = {
   onStudy: () => void;
   onPractice: () => void;
   onBrowse: (deckId: number) => void;
+  onExam: (deckId: number) => void;
 };
 type Form = {
   id?: number;
@@ -29,6 +31,9 @@ type Form = {
   examDate: string;
   voice: string;
   rate: string;
+  examQuestions: string;
+  examMinutes: string;
+  examPassMark: string;
 };
 
 const formFor = (d?: DeckRow): Form => ({
@@ -41,9 +46,15 @@ const formFor = (d?: DeckRow): Form => ({
   goalLabel: d?.settings.goal?.label ?? '',
   goalWords: d?.settings.goal?.words ? String(d.settings.goal.words) : '',
   examDate: d?.settings.examDate ?? '',
+  ...examForm(examSettings(d?.settings.exam)),
+});
+const examForm = (e: ExamSettings) => ({
+  examQuestions: String(e.questions),
+  examMinutes: String(e.minutes),
+  examPassMark: String(e.passMark),
 });
 
-export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) {
+export function Decks({ state, refresh, onStudy, onPractice, onBrowse, onExam }: Props) {
   const { t } = useTranslation();
   const [editing, setEditing] = useState<Form | null>(null);
   const [showImport, setShowImport] = useState(!state.decks.length);
@@ -118,6 +129,15 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse }: Props) 
           {d && (
             <button className="btn ghost" onClick={() => api.activate(d.id).then(() => onBrowse(d.id))}>
               {t('decks.browse')}
+            </button>
+          )}
+          {d && d.cards > 0 && (
+            <button
+              className="btn ghost"
+              aria-label={t('decks.examNamed', { name: d.name })}
+              onClick={() => onExam(d.id)}
+            >
+              {t('decks.exam')}
             </button>
           )}
         </div>
@@ -302,6 +322,7 @@ function DeckEditor({
       examDate: f.examDate,
       voice: f.voice,
       rate: Number(f.rate),
+      exam: { questions: f.examQuestions, minutes: f.examMinutes, passMark: f.examPassMark },
     };
     try {
       if (f.id) await api.updateDeck(f.id, { name: f.name, language: f.language || null, settings });
@@ -346,6 +367,15 @@ function DeckEditor({
         })}
         {field('examDate', t('decks.editor.examDate'), { type: 'date' })}
       </div>
+      <fieldset className="deck-voice">
+        <legend>{t('decks.editor.examTitle')}</legend>
+        <p className="small muted">{t('decks.editor.examHint')}</p>
+        <div className="deck-editor-row">
+          {field('examQuestions', t('decks.editor.examQuestions'), { type: 'number', min: 1, max: 200 })}
+          {field('examMinutes', t('decks.editor.examMinutes'), { type: 'number', min: 1, max: 300 })}
+          {field('examPassMark', t('decks.editor.examPassMark'), { type: 'number', min: 1, max: 100 })}
+        </div>
+      </fieldset>
       <VoicePicker
         language={f.language}
         voice={f.voice}

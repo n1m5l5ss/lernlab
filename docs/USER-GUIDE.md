@@ -113,6 +113,17 @@ At the end you see how many answers you recalled, how many new cards you started
 
 Tick **Practice** on Home, then press **Start practice**. A practice session lets you cram any cards, for example before a test. Your review schedule stays the same. On the Decks screen, a deck with nothing due shows **Practice** instead of **Study**.
 
+### Take a mock exam
+
+On the **Decks** screen, press **Exam** on a deck. The questions come from that deck's cards, and the deck's tags become the topics in your score. In the deck's settings you can set the number of **Questions**, the **Minutes (timed mode)** and the **Pass mark (%)**.
+
+Choose how to take it:
+
+- **Tutor:** no clock. You check each answer and see the explanation straight away. When you hand it in, it counts like normal study: your first answer of the day to a question card decides when that card comes back. Questions made from flashcards, and new cards past today's limit, are practice only.
+- **Timed:** one clock for the whole exam, like the real thing. You see your answers at the end, and the exam is handed in when time runs out. Timed mode is practice: it never changes when your cards come back.
+
+During the exam you can **Flag for review**, go back with **Previous**, and see unanswered and flagged questions under **Review** before you **Hand in**. The result shows your score, whether you passed, the **Score by topic** and your **Weak areas**.
+
 ### Streaks
 
 Studying on a day keeps your streak going. The day starts at 4 a.m., so a late-night session still counts for the day before.
