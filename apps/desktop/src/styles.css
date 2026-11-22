@@ -4027,3 +4027,27 @@ textarea.input.code-input {
   display: block;
   margin-top: var(--space-3);
 }
+/* AI requests: study aids. Lists show the card's entries now above one line per proposed entry. */
+.request-now-list {
+  padding-inline-start: var(--space-5);
+}
+.request-lines {
+  min-height: 0;
+  resize: vertical;
+  font: inherit;
+}
+.request-choices {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  gap: var(--space-3);
+}
+.request-choices legend {
+  padding: 0 var(--space-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.request-extra {
+  grid-column: 2 / -1;
+}

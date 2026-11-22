@@ -298,10 +298,11 @@ LernLab has no AI of its own, but you can connect one you already use (Claude De
 
 ### AI requests
 
-When you ask the assistant for cards (for example from a PDF or a web page), to fix or merge cards, to tag, star, suspend or move them, to change your goals, to plan a deck toward an exam, or to export a deck, it cannot do it itself. Its proposals appear under **AI requests** in the sidebar, one card each, with the assistant's note on where they come from:
+When you ask the assistant for cards (for example from a PDF or a web page), to fix or merge cards, to add study aids to your cards, to tag, star, suspend or move them, to change your goals, to plan a deck toward an exam, or to export a deck, it cannot do it itself. Its proposals appear under **AI requests** in the sidebar, one card each, with the assistant's note on where they come from:
 
 - Edit the deck name and any card, untick the cards you don't want, then click **Add N cards**. The cards start as new cards.
 - A fix shows each field as it is now above the proposed text. Change the text if you like, then click **Save the fix**. The card keeps its progress.
+- Study aids for a card you already have are a fix too: other ways to ask its question, why each wrong choice of a multiple-choice card is wrong, key points and a model explanation for an explain card, what to learn first, a memory aid and key terms. Each field shows what the card has now above the suggestion, one entry per line (corrections: one row per wrong choice). Suggestions are cleaned to plain text and cut to the same limits as an imported deck. Accepting never counts as a review and never changes when the card comes back.
 - A merge shows the card to keep and its duplicates. The duplicates you leave ticked are suspended and tagged `merged`, never deleted; find them in the card browser by that tag.
 - Tagging, starring, suspending or moving cards lists the cards it touches. Untick any you want left alone.
 - New goals or a study plan show what you have now next to the proposed values. Change any value, then click **Use these goals** or **Save the plan**.

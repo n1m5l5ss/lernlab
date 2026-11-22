@@ -9,6 +9,7 @@ import { getDeck, LANGUAGES, listDecks } from './library';
 import { KNOWN_MASTERY } from './browse';
 import { stripHtml } from './text';
 import { examSettings } from './exam';
+import { cardSnapshots } from './airequests';
 import { recallProbability, type CardInput } from './scheduler';
 
 /** Periods the assistant can ask about. "day" needs a date; week, month and year may take one (else the current one). */
@@ -202,6 +203,22 @@ export function memoryForecast(d: DB, id: number, now = new Date()) {
 }
 
 /** Everything about one card: its fields, tags, star, media, schedule and the exact wrong answers given. */
+/** A card's choices and study aids as plain text, in the shape propose_card_fix takes them. */
+function studyAids(d: DB, id: number) {
+  const [{ choices, correct, variants, corrections, keyPoints, requires, mnemonic, keyTerms }] = cardSnapshots([id], d);
+  const cut = (list: string[]) => list.map((s) => plain(s, 500));
+  return {
+    choices: cut(choices),
+    correctChoices: correct.map((i) => i + 1),
+    variants: cut(variants),
+    corrections: cut(corrections),
+    keyPoints: cut(keyPoints),
+    requires: cut(requires),
+    mnemonic: plainOrNull(mnemonic, 300),
+    keyTerms: cut(keyTerms),
+  };
+}
+
 export function cardDetails(d: DB, id: number, now = new Date()) {
   const r = d.prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(id);
   if (!r) return null;
@@ -235,6 +252,7 @@ export function cardDetails(d: DB, id: number, now = new Date()) {
     tags: plainTags(item.tags),
     starred: !!r.starred,
     suspended: !!r.suspended,
+    ...studyAids(d, id),
     media: {
       image: plainOrNull(item.image, 300),
       imageAlt: plainOrNull(item.extra.imageAlt, 500),

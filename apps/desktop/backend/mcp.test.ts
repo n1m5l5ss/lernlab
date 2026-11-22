@@ -162,6 +162,44 @@ test('input is checked with the app validators; unknown tools and missing things
   assert.equal(await code('propose_new_deck', { deck: { name: 'Big' }, cards: many }), 'invalid_input');
 });
 
+test('study aids: get_card shows them, a proposal is cleaned, and aids that do not fit the card are refused', async () => {
+  await setAssistant(true);
+  const call = async (name: string, args: unknown) => {
+    const r = await callTool(name, args, deps);
+    return r.ok ? (JSON.parse(JSON.stringify(r.value)) as Record<string, unknown>) : r.code;
+  };
+  const card = (await call('get_card', { id: cardId })) as Record<string, unknown>;
+  assert.deepEqual([card.variants, card.corrections, card.keyPoints, card.choices], [[], [], [], []]);
+  assert.equal(await call('propose_card_fix', { cardId, changes: { corrections: ['x'] } }), 'invalid_input');
+  assert.equal(await call('propose_card_fix', { cardId, changes: { keyPoints: ['a', 'b'] } }), 'invalid_input');
+  assert.equal(await call('propose_card_fix', { cardId, changes: { keyPoints: ['a'] } }), 'invalid_input');
+  assert.equal(await call('propose_card_fix', { cardId, changes: { keyTerms: ['Quito'] } }), 'invalid_input');
+  assert.equal(await call('propose_card_fix', { cardId, changes: { variants: ['v'.repeat(600)] } }), 'invalid_input');
+  assert.equal(
+    await call('propose_merge', { keepId: cardId, mergeIds: [otherId], changes: { corrections: ['x'] } }),
+    'invalid_input',
+  );
+  const waiting = (await ok('state.get')).aiRequests;
+  const made = (await call('propose_card_fix', {
+    cardId,
+    changes: {
+      variants: ['apply: Which capital lies on the <b>Rímac</b>?'],
+      mnemonic: 'Lima beans',
+      keyTerms: ['Lima'],
+    },
+  })) as { requestId: string };
+  assert.equal((await ok('state.get')).aiRequests, waiting + 1);
+  const stored = (await ok('aiRequests.list')).requests.find((r) => r.id === made.requestId);
+  assert.ok(stored?.kind === 'edit_card');
+  assert.deepEqual(stored.changes, {
+    variants: ['apply: Which capital lies on the Rímac?'],
+    mnemonic: 'Lima beans',
+    keyTerms: ['Lima'],
+  });
+  assert.deepEqual(((await call('get_card', { id: cardId })) as { variants: string[] }).variants, [], 'not saved');
+  await ok('aiRequests.decline', { id: made.requestId });
+});
+
 test('no tool deletes, and the connection it gets cannot write at all', async () => {
   assert.ok(Object.keys(TOOLS).every((name) => !/delete|remove|drop/i.test(name)));
   const db = openAppDbReadonly();

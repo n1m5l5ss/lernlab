@@ -1,5 +1,6 @@
 // The AI requests screen (#148): the user's edits to a proposal, and what is sent back when they accept it.
 import {
+  AID_LISTS,
   GOAL_SESSIONS,
   NEW_PER_DAY_MAX,
   requestCardIds,
@@ -19,8 +20,22 @@ export const CHANGE_FIELDS = [
   'notes',
   'category',
   'tags',
+  'variants',
+  'corrections',
+  'keyPoints',
+  'requires',
+  'mnemonic',
+  'keyTerms',
 ] as const;
 export type ChangeField = (typeof CHANGE_FIELDS)[number];
+/** Fields that are lists: typed one entry per line. */
+export type ListField = keyof typeof AID_LISTS;
+export const isListField = (field: ChangeField): field is ListField => Object.hasOwn(AID_LISTS, field);
+/** The entries typed in a list field. Corrections keep their blanks: the line says which choice it is for. */
+export const listOf = (field: ListField, text: string): string[] => {
+  const lines = text.split('\n').map((l) => l.trim());
+  return field === 'corrections' ? lines : lines.filter(Boolean);
+};
 
 /**
  * What the user can change before accepting: the deck name (new decks), each proposed card and which to keep,
@@ -70,7 +85,12 @@ export function draftOf(r: AiRequest): Draft {
     deckName: r.kind === 'create_deck' ? r.deck.name : '',
     cards,
     keep: cards.map(() => true),
-    changes: Object.fromEntries(Object.entries(changes).map(([k, v]) => [k, fieldText(v)])),
+    changes: Object.fromEntries(
+      Object.entries(changes).map(([k, v]) => [
+        k,
+        Array.isArray(v) && isListField(k as ChangeField) ? v.join('\n') : fieldText(v),
+      ]),
+    ),
     ids,
     keepIds: ids.map(() => true),
     values: valuesOf(r),
@@ -89,7 +109,12 @@ function cleanChanges(text: Draft['changes']): CardChanges | null {
     const value = text[field];
     if (value === undefined) continue;
     if (field === 'tags') out.tags = value.split(/\s+/).filter(Boolean);
-    else if ((field === 'front' || field === 'back') && !value.trim()) return null;
+    else if (isListField(field)) {
+      const list = listOf(field, value).slice(0, AID_LISTS[field]);
+      // An explain card needs at least two key points.
+      if (field === 'keyPoints' && list.length < 2) return null;
+      out[field] = list;
+    } else if ((field === 'front' || field === 'back') && !value.trim()) return null;
     else out[field] = value;
   }
   return out;
@@ -179,6 +204,14 @@ export const toggleId = (d: Draft, i: number): Draft => ({
   ...d,
   keepIds: d.keepIds.map((k, j) => (j === i ? !k : k)),
 });
+
+/** Change the correction of one choice (corrections are typed one per choice). */
+export const editCorrection = (d: Draft, choice: number, text: string): Draft => {
+  const lines = (d.changes.corrections ?? '').split('\n');
+  while (lines.length <= choice) lines.push('');
+  lines[choice] = text.replace(/\n/g, ' ');
+  return editChange(d, 'corrections', lines.join('\n'));
+};
 
 /** Change one proposed field as typed. */
 export const editChange = (d: Draft, field: ChangeField, text: string): Draft => ({

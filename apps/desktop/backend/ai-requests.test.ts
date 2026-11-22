@@ -134,6 +134,107 @@ test('goals and a study plan show the current values and change on accept; an ex
   assert.equal((await ok('aiRequests.accept', { id: exp.id })).deckId, deck.id);
 });
 
+test('study aids for a card: listed clean with the card as it is now, saved only on accept, schedule untouched', async () => {
+  const deck = await ok('decks.create', { name: 'Chemistry' });
+  const add = store.addAiRequest({
+    kind: 'add_cards',
+    deckId: deck.id,
+    cards: [
+      { front: 'What is a catalyst?', back: 'It speeds up a reaction without being used up' },
+      { front: 'Which is a noble gas?', back: '', type: 'mcq', choices: 'Oxygen|Neon|Chlorine', correct: '2' },
+    ],
+  });
+  await ok('aiRequests.accept', { id: add.id });
+  const [basic, mcq] = (await ok('cards.find', { deckId: deck.id })).rows.map((r) => r.id);
+  await ok('attempt.record', {
+    sessionId: 'aids',
+    itemId: basic,
+    format: 'intro',
+    correct: true,
+    responseMs: 900,
+    xp: 1,
+  });
+  const { getDb } = await import('@lernlab/core/db');
+  const progress = () =>
+    JSON.stringify([
+      getDb().prepare('SELECT * FROM srs ORDER BY item_id').all(),
+      getDb().prepare('SELECT COUNT(*) AS n FROM attempts').get(),
+    ]);
+  const before = progress();
+
+  // As a file anyone could have written: scripts, markup, far too many and far too long entries.
+  const aids = store.addAiRequest({
+    kind: 'edit_card',
+    cardId: basic,
+    changes: {
+      variants: ['apply: Why add platinum to a car exhaust?<script>alert(1)</script>', '<img src=x onerror=alert(1)>'],
+      mnemonic: '<b>Cat</b>alyst: the cat watches, never joins',
+      keyTerms: ['speeds up', '<i>used up</i>'],
+      requires: ['#reactions'],
+      corrections: ['does not fit this card'],
+    },
+  });
+  const fix = store.addAiRequest({
+    kind: 'edit_card',
+    cardId: mcq,
+    changes: { corrections: ['Oxygen reacts readily', '', '<u>Chlorine</u> is a halogen', 'x', 'y'] },
+  });
+  for (const bad of [
+    { variants: 'apply: not a list' },
+    { variants: Array.from({ length: 9 }, (_, i) => `recall: q${i}`) },
+    { variants: ['x'.repeat(521)] },
+    { keyPoints: Array.from({ length: 6 }, (_, i) => `p${i}`) },
+    { mnemonic: 'm'.repeat(301) },
+    { requires: [{ front: 'x' }] },
+  ]) {
+    const r = store.addAiRequest({ kind: 'edit_card', cardId: basic, changes: bad });
+    assert.equal(
+      (await ok('aiRequests.list')).requests.find((x) => x.id === r.id),
+      undefined,
+      JSON.stringify(bad),
+    );
+    store.removeAiRequest(r.id);
+  }
+
+  const list = await ok('aiRequests.list');
+  const shown = list.requests.find((r) => r.id === aids.id);
+  assert.ok(shown?.kind === 'edit_card');
+  assert.deepEqual(shown.changes.variants, ['apply: Why add platinum to a car exhaust?']);
+  assert.equal(shown.changes.mnemonic, 'Catalyst: the cat watches, never joins');
+  assert.deepEqual(shown.changes.keyTerms, ['speeds up', 'used up']);
+  assert.ok(!/[<>]/.test(JSON.stringify(list.requests)));
+  const now = list.cards.find((c) => c.id === mcq)!;
+  assert.deepEqual([now.choices, now.correct, now.corrections], [['Oxygen', 'Neon', 'Chlorine'], [1], []]);
+  assert.deepEqual(list.cards.find((c) => c.id === basic)!.variants, [], 'nothing is written before accepting');
+  assert.equal(progress(), before);
+
+  // The learner rewrites one variant and accepts; the other card's proposal is declined.
+  await ok('aiRequests.accept', {
+    id: aids.id,
+    request: { cardId: basic, changes: { ...shown.changes, variants: ['analyse: Why is a catalyst not a reactant?'] } },
+  });
+  await ok('aiRequests.decline', { id: fix.id });
+  const after = (await ok('aiRequests.list')).cards;
+  assert.equal(after.length, 0);
+  const { cardSnapshots } = await import('@lernlab/core/airequests');
+  const [b, m] = cardSnapshots([basic, mcq]);
+  assert.deepEqual(b.variants, ['analyse: Why is a catalyst not a reactant?']);
+  assert.equal(b.mnemonic, 'Catalyst: the cat watches, never joins');
+  assert.deepEqual(b.keyTerms, ['speeds up', 'used up']);
+  assert.deepEqual(b.requires, ['#reactions']);
+  assert.deepEqual(m.corrections, [], 'declined: unchanged');
+  assert.equal(progress(), before, 'accepting study aids is not a review');
+
+  const again = store.addAiRequest({
+    kind: 'edit_card',
+    cardId: mcq,
+    changes: { corrections: ['Oxygen reacts readily', 'the right one', 'Chlorine is a halogen'] },
+  });
+  await ok('aiRequests.accept', { id: again.id });
+  assert.deepEqual(cardSnapshots([mcq])[0].corrections, ['Oxygen reacts readily', '', 'Chlorine is a halogen']);
+  assert.equal(progress(), before);
+});
+
 test('malformed or foreign files in ai-requests/ are ignored, and ids cannot name other files', async () => {
   mkdirSync(store.aiRequestsDir(), { recursive: true });
   const bad = '00000000-0000-4000-8000-00000000000b';

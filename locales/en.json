@@ -71,7 +71,13 @@
       "explanation": "Explanation",
       "notes": "Notes",
       "category": "Category",
-      "tags": "Tags (separated by spaces)"
+      "tags": "Tags (separated by spaces)",
+      "variants": "Other ways to ask (one per line, starting with recall:, apply: or analyse:)",
+      "corrections": "Why each wrong choice is wrong",
+      "keyPoints": "Key points (one per line, 2 to 5)",
+      "requires": "Learn first (one card front or #tag per line)",
+      "mnemonic": "Memory aid",
+      "keyTerms": "Key terms (one per line)"
     },
     "now": "Now: {{text}}",
     "nowEmpty": "Now: empty",
@@ -107,7 +113,14 @@
     "acceptPlan": "Save the plan",
     "acceptExport": "Export…",
     "saved": "Saved.",
-    "exported": "Exported."
+    "exported": "Exported.",
+    "nowList": "Now:",
+    "wrongChoice": "Wrong choice: {{choice}}",
+    "extra": {
+      "requires": "Learn first: {{text}}",
+      "mnemonic": "Memory aid: {{text}}",
+      "keyTerms": "Key terms: {{text}}"
+    }
   },
   "common": {
     "save": "Save",
