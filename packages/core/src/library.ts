@@ -301,9 +301,12 @@ const clean = (s: string | undefined) => sanitizeHtml(markdownLite(String(s ?? '
 export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: NormalizedCard, id = 0): Item | null {
   const front = clean(c.front);
   const back = clean(c.back);
-  if (!stripHtml(front) && !/\{\{c\d+::/.test(front)) return null;
+  // Stripped once: an import runs this for every card (bench "import 10k").
+  const frontText = stripHtml(front);
+  const backText = stripHtml(back);
+  if (!frontText && !/\{\{c\d+::/.test(front)) return null;
   const tags = (c.tags ?? []).map((t) => t.trim()).filter(Boolean);
-  const kind = detectKind(stripHtml(front), stripHtml(back), tags, deck.language, c);
+  const kind = detectKind(frontText, backText, tags, deck.language, c);
   const extra: Record<string, string> = { ...(c.extra ?? {}) };
   if (c.choices) extra.choices = sanitizeHtml(c.choices);
   if (c.correct) extra.correct = c.correct;
@@ -348,10 +351,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   if (mnemonic) extra.mnemonic = mnemonic;
   else delete extra.mnemonic;
   // Key terms of a plain-text answer (keyterms.ts): the ones marked in the back, or else the card's field.
-  const marked = markedTerms(back);
-  const keyTerms = ['code', 'cloze', 'mcq', 'order'].includes(kind)
-    ? ''
-    : cleanKeyTerms(marked.length ? marked.join('|') : (c.keyTerms ?? extra.keyTerms), stripHtml(back));
+  const marked = back.includes('<mark>') ? markedTerms(back) : [];
+  const givenTerms = marked.length ? marked.join('|') : (c.keyTerms ?? extra.keyTerms);
+  const keyTerms =
+    !givenTerms || ['code', 'cloze', 'mcq', 'order'].includes(kind) ? '' : cleanKeyTerms(givenTerms, backText);
   if (keyTerms) extra.keyTerms = keyTerms;
   else delete extra.keyTerms;
   const variants = cleanVariants(c.variants ?? extra.variants);
@@ -381,7 +384,7 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   delete extra.occlusionMode;
   if (kind === 'occlusion' && box)
     Object.assign(extra, { occlusion: formatBox(box), occlusionGroup: group, occlusionMode: mode });
-  const { article, word } = splitArticle(stripHtml(front));
+  const { article, word } = splitArticle(frontText);
   const example = clean(c.example);
   const isNoun = kind === 'noun';
   return {
@@ -390,9 +393,9 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
     lang: deck.language,
     deck: c.subdeck ?? deck.name,
     kind,
-    target: kind === 'cloze' ? front : stripHtml(front),
+    target: kind === 'cloze' ? front : frontText,
     article: isNoun ? article : null,
-    word: isNoun ? word : stripHtml(front),
+    word: isNoun ? word : frontText,
     // A code card's back is its expected output: plain text with its line breaks (shown as text, never as HTML).
     meaning:
       kind === 'code'
@@ -400,10 +403,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
         : ['cloze', 'mcq', 'order'].includes(kind)
           ? back
           : // A back that is only the key points (what older readers get) is no model explanation of its own.
-            keyPoints && stripHtml(back) === stripHtml(keyPointsAsBack(parseKeyPoints(keyPoints)))
+            keyPoints && backText === stripHtml(keyPointsAsBack(parseKeyPoints(keyPoints)))
             ? ''
             : // A worked example without a back: its answer is the last step's result (older readers get it too).
-              stripHtml(back) || (workedSteps ? parseWorkedSteps(workedSteps).at(-1)!.result : ''),
+              backText || (workedSteps ? parseWorkedSteps(workedSteps).at(-1)!.result : ''),
     sentenceHtml: example,
     sentence: stripHtml(example),
     sentenceMeaning: stripHtml(c.exampleTranslation ?? ''),
