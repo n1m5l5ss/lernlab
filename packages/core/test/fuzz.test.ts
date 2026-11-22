@@ -24,11 +24,14 @@ const { readApkg } = await import('../src/formats/apkg');
 const { writeApkg } = await import('../src/formats/apkgwrite');
 const { listZip, unsafeZipPath } = await import('../src/formats/zip');
 const { sanitizeHtml, SAFE_TAGS } = await import('../src/cards');
+const { cardToItem } = await import('../src/library');
+const { KEY_TERMS_MAX, KEY_TERM_MAX_LENGTH, answerSource, keyTermsOf, markAnswer } = await import('../src/keyterms');
 const { cleanVariants, parseVariants, VARIANTS_MAX, VARIANT_MAX_LENGTH } = await import('../src/variants');
 const { cleanCorrections, correctionHtml, parseCorrections, CORRECTION_MAX_LENGTH } =
   await import('../src/misconceptions');
 const { cleanKeyPoints, keyPointHtml, parseKeyPoints, KEY_POINTS_MAX, KEY_POINT_MAX_LENGTH } =
   await import('../src/explain');
+const { cleanTwin, TWIN_MAX_LENGTH } = await import('../src/twin');
 const { UserError } = await import('../src/errors');
 const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
@@ -152,6 +155,28 @@ test('question variants: any text gives a few plain-text questions, and cleaning
   );
 });
 
+test('key terms: any back and any terms give a plain answer, a few terms and safe HTML, and editing is stable', () => {
+  const deck = { id: 1, name: 'D', language: null };
+  fc.assert(
+    fc.property(hostileText, hostileText, (back, terms) => {
+      const item = cardToItem(deck, { front: 'Q', back, keyTerms: terms });
+      if (!item) return;
+      const list = keyTermsOf(item);
+      assert.ok(list.length <= KEY_TERMS_MAX);
+      for (const t of list) assert.ok(t && t.length <= KEY_TERM_MAX_LENGTH && !t.includes('|'));
+      const html = markAnswer(item, item.meaning);
+      // Without key terms the answer is shown as before (the screen sanitises it); with them it is already safe.
+      if (list.length) assert.equal(sanitizeHtml(html), html);
+      else assert.equal(html, item.meaning);
+      // Opened in the editor and saved again, the card keeps its answer; saving twice changes nothing more.
+      const again = cardToItem(deck, { front: 'Q', back: answerSource(item), keyTerms: '' });
+      const twice = again && cardToItem(deck, { front: 'Q', back: answerSource(again), keyTerms: '' });
+      assert.deepEqual(twice && [twice.meaning, twice.extra], again && [again.meaning, again.extra]);
+    }),
+    params(RUNS * 2),
+  );
+});
+
 test('corrections: any text gives plain-text corrections, cleaning is stable and the HTML stays safe', () => {
   const mcq = { choices: ['a', 'b', 'c', 'd'], correct: [1] };
   fc.assert(
@@ -164,6 +189,32 @@ test('corrections: any text gives plain-text corrections, cleaning is stable and
       assert.equal(cleanCorrections(line, mcq), line, 'cleaning twice changes nothing');
       const list = parseCorrections(line);
       assert.ok(list.length <= 4 && !list[1]);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+const {
+  cleanWorkedSteps,
+  parseWorkedSteps,
+  stepHtml,
+  WORKED_STEPS_MAX,
+  WORKED_LABEL_MAX_LENGTH,
+  WORKED_RESULT_MAX_LENGTH,
+} = await import('../src/worked');
+test('worked steps: any text gives at most eight plain-text steps, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const list = parseWorkedSteps(text);
+      assert.ok(list.length <= WORKED_STEPS_MAX);
+      for (const s of list) {
+        assert.ok(s.result && s.result.length <= WORKED_RESULT_MAX_LENGTH && !s.result.includes('|'));
+        assert.ok(s.label.length <= WORKED_LABEL_MAX_LENGTH && !s.label.includes('|') && !s.label.includes('::'));
+        for (const t of [s.label, s.result]) assert.equal(sanitizeHtml(stepHtml(t)), stepHtml(t), 'already safe HTML');
+      }
+      const line = cleanWorkedSteps(text);
+      assert.equal(cleanWorkedSteps(line), line, 'cleaning twice changes nothing');
+      assert.deepEqual(parseWorkedSteps(line), list.length >= 2 ? list : []);
     }),
     params(RUNS * 2),
   );
@@ -182,6 +233,20 @@ test('key points: any text gives at most five plain-text points, cleaning is sta
       assert.equal(cleanKeyPoints(line), line, 'cleaning twice changes nothing');
       assert.ok(line === '' || parseKeyPoints(line).length >= 2);
     }),
+    params(RUNS * 2),
+  );
+});
+
+test("a compare card's second side: any text becomes short plain text, and cleaning twice changes nothing", () => {
+  fc.assert(
+    fc.property(
+      fc.oneof(fc.string({ maxLength: 900 }), fc.constantFrom('<b>x</b>', '&amp;lt;script&amp;gt;', '<scr<b></b>ipt>')),
+      (text) => {
+        const side = cleanTwin(text);
+        assert.ok(side.length <= TWIN_MAX_LENGTH);
+        assert.equal(cleanTwin(side), side);
+      },
+    ),
     params(RUNS * 2),
   );
 });

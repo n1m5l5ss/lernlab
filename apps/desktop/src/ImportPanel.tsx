@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import type { ColumnMapping, ImportPreview, MappableField } from '@lernlab/core/importpreview';
+import { ANSWER_WORDS_MAX } from '@lernlab/core/cardquality';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { AnkiImport } from './AnkiImport';
@@ -14,7 +15,7 @@ import { MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './impo
 /** CSV column names are file format, not text: they stay in English in every language. */
 const CSV_REQUIRED = 'front, back';
 const CSV_OPTIONAL =
-  'example, explanation, notes, category, tags, image, image_alt, audio, video, alt_answers, variants, type, choices, correct, corrections, key_points, steps';
+  'example, explanation, notes, category, tags, image, image_alt, audio, video, alt_answers, variants, type, choices, correct, corrections, key_points, key_terms, worked_steps, steps';
 
 type AppState = OutputOf<'state.get'>;
 type Source = { file: File } | { text: string };
@@ -250,6 +251,22 @@ export function ImportPanel({
                 />
               )}
               <PreviewTable cards={preview.cards} />
+              {preview.hints.length > 0 && (
+                // Suggestions only: nothing here stops the import.
+                <section className="import-hints small" aria-label={t('decks.importPanel.hints.title')}>
+                  <span className="lbl" aria-hidden="true">
+                    {t('decks.importPanel.hints.title')}
+                  </span>
+                  <ul>
+                    {preview.hints.map((h) => (
+                      <li key={h.hint}>
+                        {t(`decks.importPanel.hints.${h.hint}`, { count: h.count, words: ANSWER_WORDS_MAX })}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="muted">{t('decks.importPanel.hints.later')}</p>
+                </section>
+              )}
               {!!preview.ankiReviews && (
                 <label className="import-history">
                   <input type="checkbox" checked={ankiHistory} onChange={(e) => setAnkiHistory(e.target.checked)} />

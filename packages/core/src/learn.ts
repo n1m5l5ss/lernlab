@@ -10,6 +10,8 @@ import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 import { LEVELS } from './variants';
+import { noteConfusion } from './confusions';
+import { isWorked, rungOf, workedStepsOf } from './worked';
 
 export type Settings = {
   deck: string;
@@ -54,6 +56,8 @@ export type Settings = {
   remoteMedia: boolean;
   /** After a recall answer, ask "How sure were you?" (1–5, optional, #205). It never changes the schedule. */
   confidence: boolean;
+  /** Calm mode (#216): hide XP, levels, combos and celebrations. XP is still counted, so nothing is lost. Off by default. */
+  calm: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -82,6 +86,7 @@ export const DEFAULT_SETTINGS: Settings = {
   aiAssistant: false,
   remoteMedia: false,
   confidence: true,
+  calm: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
@@ -259,6 +264,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
   return tx(d, () => {
     const item = d.prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(a.itemId);
     if (!item) return { grade: null };
+    noteConfusion(d, item, a, now); // a wrong answer that is another card's answer (#200); never grades anything
     if (a.practice) {
       // Practice is logged (history, XP) but never introduces a card, moves the mastery ladder or grades FSRS.
       logAttempt(d, a, now, null, true);
@@ -270,7 +276,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     // Code and occlusion cards are question cards in every format they are asked in.
     if (
       a.format === 'intro' ||
-      ((['mcq', 'order', 'flip'].includes(a.format) || ['code', 'occlusion'].includes(String(item.kind))) &&
+      ((['mcq', 'order', 'flip', 'worked'].includes(a.format) || ['code', 'occlusion'].includes(String(item.kind))) &&
         !a.genderOnly)
     )
       introduce(a.itemId, d, now);
@@ -363,6 +369,25 @@ export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
       .map(rowToItem),
     d,
   );
+}
+
+/**
+ * Set each worked example's rung (worked.ts) from its ladder answers in the attempts log: right moves one up,
+ * wrong one down. One query, and none when the cards hold no worked example.
+ */
+export function withRungs<T extends Item>(items: T[], d: DB = getDb()): T[] {
+  const ladders = items.filter(isWorked);
+  if (!ladders.length) return items;
+  const answers = new Map<number, boolean[]>(ladders.map((i) => [i.id, []]));
+  for (const r of d
+    .prepare(
+      `SELECT item_id, correct FROM attempts WHERE format IN ('worked', 'ladder')
+       AND item_id IN (${ladders.map((i) => Number(i.id)).join(',')}) ORDER BY id`,
+    )
+    .all())
+    answers.get(Number(r.item_id))?.push(Number(r.correct) === 1);
+  for (const i of ladders) i.rung = rungOf(answers.get(i.id)!, workedStepsOf(i).length);
+  return items;
 }
 
 /** End of the current learning day (4 a.m. next morning), used as the "due" cutoff. */

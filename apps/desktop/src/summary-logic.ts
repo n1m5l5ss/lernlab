@@ -28,17 +28,28 @@ type FinishLike = {
   streakChange?: { freezeEarned: boolean; repaired: boolean; repairDone: number | null };
 };
 
-/** The level-up, new badges and streak news this session earned. Empty for an ordinary session. */
-export function summaryMoments(f: SummaryFacts, server: FinishLike | null): Moment[] {
+/**
+ * The level-up, new badges and streak news this session earned. Empty for an ordinary session.
+ * Calm mode (#216) leaves out the level and the badges (badges still show on Progress); streak news is
+ * information about your days, so it stays.
+ */
+export function summaryMoments(f: SummaryFacts, server: FinishLike | null, calm = false): Moment[] {
   const out: Moment[] = [];
-  if (f.levelUp) out.push({ kind: 'level', level: f.levelUp });
-  for (const u of server?.unlocked ?? []) out.push({ kind: 'badge', key: u.key });
+  if (f.levelUp && !calm) out.push({ kind: 'level', level: f.levelUp });
+  if (!calm) for (const u of server?.unlocked ?? []) out.push({ kind: 'badge', key: u.key });
   const s = server?.streakChange;
   if (s?.freezeEarned) out.push({ kind: 'freeze' });
   if (s?.repaired) out.push({ kind: 'repaired' });
   if (s?.repairDone) out.push({ kind: 'repairProgress', done: s.repairDone });
   return out;
 }
+
+/** Whether the summary celebrates (confetti, the level-up sound): a real milestone, and never in calm mode. */
+export const celebrates = (
+  f: Pick<SummaryFacts, 'levelUp'>,
+  server: { goalMetNow?: boolean; unlocked?: unknown[] } | null,
+  calm: boolean,
+) => !calm && !!(server?.goalMetNow || server?.unlocked?.length || f.levelUp);
 
 /** How many missed cards the "come back tomorrow" list shows. */
 export const MISSED_SHOWN = 6;

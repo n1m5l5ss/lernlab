@@ -170,6 +170,18 @@ test('.apkg: Anki has no corrections for wrong choices, so they are kept under t
   assert.equal(fields[5], 'EC2: A &amp; B<br>RDS: C');
 });
 
+test('.apkg: Anki has no worked examples, so the steps go under the notes, numbered', () => {
+  const deck = createDeck('Worked', null);
+  upsertCards(deck, [
+    { front: 'Solve 2x = 8', back: '', type: 'worked', workedSteps: 'Divide by 2 :: x = 4|Check :: 8 < 9' },
+  ]);
+  const db = collection(unzipSync(exportDeck(deck.id, 'apkg').data));
+  const flds = String(db.prepare('SELECT flds FROM notes').get()!.flds).split('\x1f');
+  db.close();
+  assert.equal(flds[1], '8 &lt; 9');
+  assert.equal(flds[5], '1. Divide by 2: x = 4<br>2. Check: 8 &lt; 9');
+});
+
 test('.apkg: Anki has no key points, so they go under the notes, or become the back when there is none', () => {
   const deck = createDeck('Explain', null);
   upsertCards(deck, [

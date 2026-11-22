@@ -4,10 +4,12 @@
 import { strFromU8, strToU8, unzipSync } from 'fflate';
 import { basename, extname } from './paths';
 import { cardToItem, type NormalizedCard } from './library';
+import { markdownLite } from './cards';
 import { csvToCards, detectDelimiter, parseDelimited, pastedToCards } from './formats/csv';
 import { readLernpack } from './formats/lernpack';
 import { readApkg } from './formats/apkg';
 import { stripHtml } from './text';
+import { countHints, type HintCount } from './cardquality';
 import { UserError } from './errors';
 
 /** Card fields a column can be mapped to, with the CSV header the CSV reader knows them by. */
@@ -37,6 +39,8 @@ export const MAPPABLE_FIELDS = {
   variants: 'variants',
   corrections: 'corrections',
   keyPoints: 'key_points',
+  keyTerms: 'key_terms',
+  workedSteps: 'worked_steps',
 } as const;
 export type MappableField = keyof typeof MAPPABLE_FIELDS;
 
@@ -53,6 +57,8 @@ export type ImportPreview = {
   total: number;
   cards: PreviewCard[];
   skipped: { reason: SkipReason; count: number }[];
+  /** Suggestions for better cards, counted over every card (cardquality.ts). Importing never depends on them. */
+  hints: HintCount[];
   /** Columns of delimited text, for mapping. Null for formats with named fields (deck files, JSON, Anki). */
   table: { header: boolean; columns: { name: string; sample: string }[]; fields: ColumnMapping['fields'] } | null;
   /** Anki packages: past reviews that can be replayed into the schedule (one per card per day). */
@@ -61,7 +67,8 @@ export type ImportPreview = {
 
 export const PREVIEW_LIMIT = 10;
 
-const plain = (s: string | undefined) => stripHtml(String(s ?? '')).trim();
+// Light Markdown is read as it will be saved, so ==term== and **bold** preview without their marks.
+const plain = (s: string | undefined) => stripHtml(markdownLite(String(s ?? ''))).trim();
 const isZip = (data: Uint8Array) => data[0] === 0x50 && data[1] === 0x4b;
 
 function summarize(
@@ -84,6 +91,7 @@ function summarize(
       tags: c.tags ?? [],
     })),
     skipped: noFront ? [{ reason: 'no_front', count: noFront }] : [],
+    hints: countHints(probe, cards),
     table,
   };
 }

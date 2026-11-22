@@ -201,6 +201,7 @@ export function App() {
         server={full.server}
         lang={full.lang}
         items={full.items}
+        calm={state.settings.calm}
         onAgain={() => start('mini', full.result.practice)}
         onHome={() => {
           go('home');

@@ -151,6 +151,18 @@ test('the card editor saves, keeps and clears corrections for wrong choices', as
   assert.ok(!('corrections' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
+test('the card editor saves key terms from ==term== in the back and clears them with the marks', async () => {
+  const deck = await ok('decks.create', { name: 'Cells', language: null });
+  const card = { front: 'What makes ATP?', back: 'The ==mitochondrion== does' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card });
+  const saved = await ok('cards.get', { id });
+  assert.deepEqual([saved.meaning, saved.extra.keyTerms], ['The mitochondrion does', 'mitochondrion']);
+  await ok('cards.update', { id, card: { starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.keyTerms, 'mitochondrion', 'kept when the card is not edited');
+  await ok('cards.update', { id, card: { ...card, back: 'The mitochondrion does' } });
+  assert.ok(!('keyTerms' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('the card editor saves, keeps and clears key points; attempts may say "easy"', async () => {
   const deck = await ok('decks.create', { name: 'Why', language: null });
   const card = { front: 'Why seasons?', back: 'Tilt', type: 'explain' };
@@ -163,6 +175,18 @@ test('the card editor saves, keeps and clears key points; attempts may say "easy
   const attempt = { sessionId: 's', itemId: id, format: 'flip', correct: true, responseMs: 1, xp: 1 };
   const wrong = await handle('attempt.record', { ...attempt, easy: 'yes' }); // recording one would study today
   assert.equal(!wrong.ok && wrong.error.code, 'invalid_input');
+});
+
+test('the card editor saves, keeps and clears worked steps', async () => {
+  const deck = await ok('decks.create', { name: 'Algebra', language: null });
+  const card = { front: 'Solve 2x + 3 = 11', back: 'x = 4', type: 'worked' };
+  const steps = 'Subtract 3 :: <b>2x = 8</b>|x = 4';
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, workedSteps: steps } });
+  assert.equal((await ok('cards.get', { id })).extra.workedSteps, 'Subtract 3 :: 2x = 8|x = 4');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.workedSteps, 'Subtract 3 :: 2x = 8|x = 4', 'kept');
+  await ok('cards.update', { id, card: { ...card, type: 'basic' } });
+  assert.ok(!('workedSteps' in (await ok('cards.get', { id })).extra), 'a basic card has none');
 });
 
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
@@ -553,6 +577,25 @@ test('an answer carries the level of the question asked, and only a known level'
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
 });
 
+test('calm mode is off by default, saved as a plain yes or no, and XP is still counted while it is on (#216)', async () => {
+  assert.equal((await ok('state.get')).settings.calm, false);
+  assert.equal((await ok('settings.save', { calm: 'yes' })).calm, false);
+  assert.equal((await ok('settings.save', { calm: true })).calm, true);
+  const deck = await ok('decks.create', { name: 'Calm', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Calm?', back: 'Yes' } });
+  const before = (await ok('state.get')).totalXp;
+  await ok('attempt.record', {
+    sessionId: 'calm',
+    itemId: id,
+    format: 'typed',
+    correct: true,
+    responseMs: 900,
+    xp: 15,
+  });
+  assert.equal((await ok('state.get')).totalXp, before + 15);
+  assert.equal((await ok('settings.save', { calm: false })).calm, false);
+});
+
 test('how sure you were is saved with your answer, 1 to 5 only, and the rating can be turned off (#205)', async () => {
   assert.equal((await ok('state.get')).settings.confidence, true, 'on by default');
   assert.equal((await ok('settings.save', { confidence: false })).confidence, false);
@@ -592,4 +635,39 @@ test('"Will you know this tomorrow?" answers are yes, unsure or no for known car
     startedAt: new Date().toISOString(),
   });
   assert.equal(fin.tomorrowCheck, null, 'nothing to report on the day of the check');
+});
+
+test('three mix-ups of two cards bring a compare-card offer; the card is added once and survives an edit', async () => {
+  const deck = await ok('decks.create', { name: 'Mix-ups', language: null });
+  const a = await ok('cards.add', { deckId: deck.id, card: { front: 'affect', back: 'to influence' } });
+  const b = await ok('cards.add', { deckId: deck.id, card: { front: 'effect', back: 'a result' } });
+  const finish = () =>
+    ok('session.finish', {
+      sessionId: 'mx',
+      length: 'mini',
+      seconds: 60,
+      answers: 3,
+      correct: 0,
+      bossWon: null,
+      bestGenderCombo: 0,
+      perfectBlocks: 0,
+      startedAt: new Date().toISOString(),
+    });
+  const wrong = { sessionId: 'mx', itemId: a.id, format: 'mc', correct: false, responseMs: 1, xp: 0, practice: true };
+  for (let k = 0; k < 2; k++) await ok('attempt.record', { ...wrong, given: 'a result' });
+  assert.equal((await finish()).twinOffer, null);
+  await ok('attempt.record', { ...wrong, given: 'a result' });
+  const offer = (await finish()).twinOffer;
+  // The pair is stored by card id, so which card is `a` depends on the random ids.
+  assert.deepEqual([offer?.count, ...[offer?.a.front, offer?.b.front].sort()], [3, 'affect', 'effect']);
+  const bad = await handle('confusions.twin', { a: a.id, b: a.id, answer: '' });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  const { id } = await ok('confusions.twin', { a: a.id, b: b.id, answer: 'Both are about change.' });
+  assert.equal((await ok('confusions.twin', { a: b.id, b: a.id, answer: 'x' })).id, id);
+  assert.equal((await finish()).twinOffer, null, 'offered once');
+  const card = await ok('cards.get', { id });
+  assert.deepEqual([card.target, card.extra.twin].sort(), ['affect: to influence', 'effect: a result']);
+  await ok('cards.update', { id, card: { front: card.target, back: 'Both change things.', type: 'basic' } });
+  assert.equal((await ok('cards.get', { id })).extra.twin, card.extra.twin, 'kept by the card editor');
+  assert.deepEqual(await ok('confusions.dismiss', { a: a.id, b: b.id }), { ok: true });
 });

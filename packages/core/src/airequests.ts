@@ -30,7 +30,9 @@ export type ProposedCard = {
   notes?: string;
   tags?: string[];
   category?: string;
-  type?: 'basic' | 'cloze' | 'mcq';
+  type?: 'basic' | 'cloze' | 'mcq' | 'twin';
+  /** twin (compare) cards: the second thing, shown beside the front (twin.ts). */
+  twin?: string;
   choices?: string;
   correct?: string;
 };

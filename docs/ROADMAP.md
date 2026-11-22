@@ -82,7 +82,7 @@ These come from a review of the research on remembering, understanding and stayi
 
 - [ ] **Question variants per card:** recall, apply and analyse prompts that rotate, with one grade per day.
 - [ ] **"Explain it" cards:** explain first, then tick the key points you covered. Why and how cards never use a plain flip.
-- [ ] **Learn from your own mix-ups:** confused cards become each other's wrong choices and sit close together in a session, with an offer of a compare card.
+- [x] **Learn from your own mix-ups:** confused cards become each other's wrong choices and sit close together in a session, with an offer of a compare card (#200).
 - [ ] **Relearn until right:** a missed card returns until you recall it once, and a new card needs 2–3 spaced recalls.
 - [ ] **Misconception feedback** on wrong multiple-choice answers.
 - [ ] **Guess first** before a new topic (practice only, no timer).
@@ -91,17 +91,17 @@ These come from a review of the research on remembering, understanding and stayi
 
 **Tier 2: good evidence, more effort or fewer subjects**
 
-- [ ] **Example ladder:** worked examples that fade step by step.
+- [x] **Example ladder:** worked examples that fade step by step (#206).
 - [ ] **Prerequisite links:** learn the basics first, without locking anything.
 - [ ] **Teach-back:** explain a topic aloud, then check yourself against its key points.
 - [ ] **Case chains:** one scenario with linked questions.
 - [ ] **Translate between representations,** such as graph and equation.
 - [ ] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme.
-- [ ] **Card-quality checker** and key-term highlight.
+- [x] **Card-quality checker** and key-term highlight (#212).
 - [ ] **Pattern feedback** at the end of a session.
 - [ ] **Weekly goals** and a progress card you can print or share.
 - [ ] **"Learn how to learn":** see spacing work on yourself.
-- [ ] **Calm mode,** and rewards that say what they are for.
+- [x] **Calm mode,** rewards that say what they are for, and one round swap per session (#216).
 - [ ] **Sleep bridge:** learn in the evening, check in the morning.
 
 **Tier 3: weaker evidence, niche or large**

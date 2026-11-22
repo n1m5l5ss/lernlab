@@ -11,6 +11,7 @@ import { DECK_SEPARATOR } from '../decktree';
 import { parseVariants } from '../variants';
 import { parseCorrections } from '../misconceptions';
 import { keyPointsAsBack, parseKeyPoints } from '../explain';
+import { parseWorkedSteps, workedStepsAsText } from '../worked';
 
 /** A LernLab card id in a note's guid, so importing the package back updates the same cards. */
 export const GUID_PREFIX = 'lernlab-';
@@ -152,6 +153,8 @@ const notesOf = (c: NormalizedCard) => {
     ...parseVariants(c.variants).map((v) => escapeHtml(`${v.level}: ${v.prompt}`)),
     ...corrections,
     pointsLine,
+    // A worked example's steps, numbered ("1. Divide by 2: x = 4").
+    escapeHtml(workedStepsAsText(parseWorkedSteps(c.workedSteps))).replace(/\n/g, '<br>'),
   ]
     .filter(Boolean)
     .join('<br>');

@@ -6,18 +6,27 @@ import { codeTask, GAP } from './code';
 import { variantsOf } from './variants';
 import { correctionHtml, correctionsOf, isMyth } from './misconceptions';
 import { askedOwnWay, asksWhy, isExplain, keyPointHtml, keyPointsOf } from './explain';
+import { isTwin } from './twin';
+import { isWorked, stepHtml, workedStepsOf } from './worked';
 import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
 export const frontText = (i: Item) => (i.kind === 'cloze' ? clozeText(stripHtml(i.target)) : stripHtml(i.target));
 export const backText = (i: Item) => stripHtml(i.meaning);
 
-function pickDistractors(item: Item, pool: Item[], n: number, key: (i: Item) => string): Item[] {
+/** `confused`: cards the learner mixed this one up with (confusions.ts); they come first as wrong choices. */
+function pickDistractors(
+  item: Item,
+  pool: Item[],
+  n: number,
+  key: (i: Item) => string,
+  confused: number[] = [],
+): Item[] {
   const own = key(item).toLowerCase();
   const seen = new Set([own]);
   const len = own.length;
   const score = (p: Item) => {
-    let s = 0;
+    let s = confused.includes(p.id) ? 100 : 0;
     if (p.kind === item.kind) s += 3;
     if (item.category && p.category === item.category) s += 2;
     if (item.rank && p.rank && Math.abs(p.rank - item.rank) < 150) s += 2;
@@ -49,9 +58,9 @@ function pickDistractors(item: Item, pool: Item[], n: number, key: (i: Item) => 
 }
 
 /** de2en = front → choose back; en2de = back → choose front (with a gender trap for German nouns). */
-export function mc(item: Item, pool: Item[], direction: 'de2en' | 'en2de'): Exercise {
+export function mc(item: Item, pool: Item[], direction: 'de2en' | 'en2de', confused?: number[]): Exercise {
   if (direction === 'de2en') {
-    const ds = pickDistractors(item, pool, 3, backText);
+    const ds = pickDistractors(item, pool, 3, backText, confused);
     const options = shuffle([backText(item), ...ds.map(backText)]);
     return {
       type: 'mc',
@@ -67,7 +76,7 @@ export function mc(item: Item, pool: Item[], direction: 'de2en' | 'en2de'): Exer
     const wrong = ARTS.filter((a) => a !== item.article);
     opts.push(`${wrong[Math.floor(Math.random() * 2)]} ${item.word}`);
   }
-  opts.push(...pickDistractors(item, pool, 4 - opts.length, frontText).map(frontText));
+  opts.push(...pickDistractors(item, pool, 4 - opts.length, frontText, confused).map(frontText));
   const options = shuffle(opts);
   return {
     type: 'mc',
@@ -152,12 +161,37 @@ export function explain(item: Item, k = 0): Exercise {
   };
 }
 
+/**
+ * A worked example on its rung (worked.ts): the last `rung` steps are blank. Without a rung (the card was not
+ * loaded for a session) it is the whole problem.
+ */
+export function worked(item: Item): Extract<Exercise, { type: 'worked' }> {
+  const steps = workedStepsOf(item);
+  return {
+    type: 'worked',
+    itemId: item.id,
+    prompt: item.target,
+    steps: steps.map((s) => ({ label: stepHtml(s.label), result: s.result, resultHtml: stepHtml(s.result) })),
+    blanks: Math.min(steps.length, Math.max(0, item.rung ?? steps.length)),
+    answer: item.meaning,
+  };
+}
+
 /** A myth card's recall: reject the statement, then say why (the card's back). */
 export const myth = (item: Item): Exercise => ({
   type: 'myth',
   itemId: item.id,
   statement: item.target,
   why: item.meaning,
+});
+
+/** A compare card's recall: both things side by side, then the answer to check against (its back). */
+export const twin = (item: Item): Exercise => ({
+  type: 'twin',
+  itemId: item.id,
+  left: asHtml(item.target),
+  right: asHtml(item.extra.twin ?? ''),
+  answer: item.meaning,
 });
 
 export function mcq(item: Item): Exercise | null {
@@ -226,15 +260,19 @@ export const recall = (item: Item, variant = 0): Exercise =>
     ? myth(item)
     : isExplain(item)
       ? explain(item)
-      : item.kind === 'mcq'
-        ? mcq(item)
-        : item.kind === 'order'
-          ? order(item)
-          : item.kind === 'code'
-            ? codeExercise(item)
-            : item.kind === 'occlusion'
-              ? typed(item)
-              : null) ?? recallBasic(item, variant);
+      : isTwin(item)
+        ? twin(item)
+        : isWorked(item)
+          ? worked(item)
+          : item.kind === 'mcq'
+            ? mcq(item)
+            : item.kind === 'order'
+              ? order(item)
+              : item.kind === 'code'
+                ? codeExercise(item)
+                : item.kind === 'occlusion'
+                  ? typed(item)
+                  : null) ?? recallBasic(item, variant);
 
 /** A basic card: typed when the answer is short, explained first when tagged why/how, otherwise flipped. */
 function recallBasic(item: Item, variant: number): Exercise {
@@ -272,9 +310,9 @@ export function cloze(item: Item): Exercise | null {
   };
 }
 
-export function truefalse(item: Item, pool: Item[]): Exercise {
+export function truefalse(item: Item, pool: Item[], confused?: number[]): Exercise {
   const isTrue = Math.random() < 0.5;
-  const other = isTrue ? null : pickDistractors(item, pool, 1, backText)[0];
+  const other = isTrue ? null : pickDistractors(item, pool, 1, backText, confused)[0];
   return {
     type: 'truefalse',
     itemId: item.id,

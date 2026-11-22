@@ -10,6 +10,7 @@ import {
   fieldsToSave,
   formFor,
   keyPointRows,
+  workedRows,
   previewOf,
   removeVariant,
   showImageAlt,
@@ -310,4 +311,74 @@ test('an explain card: key points written in rows, saved as one line, previewed 
   assert.equal(formFor(card).type, 'explain');
   assert.deepEqual(formFor(card).keyPoints, ['Earth is **tilted**', 'Not the distance/to the sun']);
   assert.deepEqual(previewOf({ ...f, keyPoints: ['one'] }, deck)!.view, { type: 'problem', problem: 'keyPoints' });
+});
+
+test('key terms: ==term== shows highlighted in the preview answer and comes back as written when the card is edited', () => {
+  const p = previewOf(
+    form({
+      front: 'What does the mitochondrion do in a cell, and why does it matter?',
+      back: 'It makes ==ATP== for the cell, which powers nearly everything',
+    }),
+    deck,
+  )!;
+  assert.equal(p.view.type, 'flip');
+  assert.equal(
+    p.view.type === 'flip' && p.view.answer,
+    'It makes <mark>ATP</mark> for the cell, which powers nearly everything',
+  );
+  const saved = { ...p.item, tags: [], suspended: false, starred: false } as unknown as Parameters<typeof formFor>[0];
+  assert.equal(formFor(saved).back, 'It makes ==ATP== for the cell, which powers nearly everything');
+});
+
+test('the preview carries card-quality hints, and none while the card has a problem to fix first', () => {
+  const long = Array.from({ length: 45 }, (_, i) => `w${i}`).join(' ');
+  assert.deepEqual(previewOf(form({ front: 'Capital of France?', back: 'Paris' }), deck)!.hints, []);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: long }), deck)!.hints, ['split', 'diagram']);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: 'A', image: 'a.png' }), deck)!.hints, ['decorativeImage']);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: 'A', image: 'a.png', imageAlt: 'A leaf' }), deck)!.hints, []);
+  assert.deepEqual(
+    previewOf(form({ front: 'der Hund', back: 'dog', audio: 'a.mp3' }), { id: 2, language: 'de' })!.hints,
+    [],
+  );
+  assert.deepEqual(previewOf(form({ type: 'cloze', front: 'No gap', back: long }), deck)!.hints, []);
+});
+
+test('a worked example: steps written in rows, saved as one line, previewed as the full example, without other questions', () => {
+  assert.deepEqual(workedRows([]), [
+    { label: '', result: '' },
+    { label: '', result: '' },
+  ]);
+  const f = form({
+    type: 'worked',
+    front: 'Solve 2x + 3 = 11',
+    back: '',
+    workedSteps: [
+      { label: 'Subtract 3 | both sides', result: '2x = 8' },
+      { label: 'no result yet', result: '' },
+      { label: '', result: 'x = **4**' },
+    ],
+    variants: [{ prompt: 'Solve it', level: 'apply' }],
+  });
+  assert.equal(showVariants(f), false);
+  assert.equal(fieldsToSave(f).type, 'worked');
+  assert.equal(fieldsToSave(f).workedSteps, 'Subtract 3 / both sides :: 2x = 8|x = **4**');
+  assert.equal(fieldsToSave(f).variants, '');
+  assert.equal(fieldsToSave({ ...f, type: 'basic' }).workedSteps, '', 'other types save none');
+  const p = previewOf(f, deck)!;
+  assert.deepEqual(p.view, {
+    type: 'worked',
+    prompt: 'Solve 2x + 3 = 11',
+    answer: 'x = **4**',
+    steps: [
+      { label: 'Subtract 3 / both sides', result: '2x = 8' },
+      { label: '', result: 'x = <b>4</b>' },
+    ],
+  });
+  const card = { ...p.item, suspended: false, starred: false };
+  assert.equal(formFor(card).type, 'worked');
+  assert.deepEqual(formFor(card).workedSteps[0], { label: 'Subtract 3 / both sides', result: '2x = 8' });
+  assert.deepEqual(previewOf({ ...f, workedSteps: [{ label: '', result: '1' }] }, deck)!.view, {
+    type: 'problem',
+    problem: 'workedSteps',
+  });
 });

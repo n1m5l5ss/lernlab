@@ -46,6 +46,8 @@ export type Item = {
   group: string | null; // grammar group, e.g. "G01"
   /** Occlusion cards: the boxes of the card's group, itself included (added when cards are loaded for study). */
   occlusionBoxes?: OcclusionBox[];
+  /** Worked examples: the rung of the ladder the learner is on (worked.ts; added when a session is planned). */
+  rung?: number;
 };
 
 /** Exercise formats. Only RECALL formats may write a spaced-repetition grade. */
@@ -66,9 +68,22 @@ export type Format =
   | 'truefalse'
   | 'blitz'
   | 'mcq'
-  | 'order';
+  | 'order'
+  /** A worked example solved whole (a real recall), and one of its faded rungs (practice): worked.ts. */
+  | 'worked'
+  | 'ladder';
 
-export const RECALL_FORMATS: Format[] = ['typed', 'cloze', 'dictation', 'speak', 'boss', 'flip', 'mcq', 'order'];
+export const RECALL_FORMATS: Format[] = [
+  'typed',
+  'cloze',
+  'dictation',
+  'speak',
+  'boss',
+  'flip',
+  'mcq',
+  'order',
+  'worked',
+];
 
 /** Mastery ladder: L0 seen → L1 recognised → L2 discriminated → L3 recalled → L4 in context → L5 spoken. */
 export const FORMAT_LEVEL: Partial<Record<Format, number>> = {
@@ -89,6 +104,7 @@ export const FORMAT_LEVEL: Partial<Record<Format, number>> = {
   blitz: 1,
   mcq: 3,
   order: 4,
+  worked: 4,
 };
 
 export type Exercise =
@@ -132,6 +148,24 @@ export type Exercise =
    * (safe HTML; none for a basic card tagged why/how, which is self-graded as usual). A real recall.
    */
   | { type: 'explain'; itemId: number; prompt: string; answer: string; points: string[]; level?: Level }
+  /**
+   * A compare card (twin.ts): two things side by side (safe HTML); say what they share and the one key
+   * difference, then check against the answer ('' for none) and rate yourself. A real recall.
+   */
+  | { type: 'twin'; itemId: number; left: string; right: string; answer: string }
+  /**
+   * A worked example (worked.ts): its first steps are shown, the last `blanks` are typed (0: study the full
+   * example; all of them: the whole problem, the only real recall). label and resultHtml are safe HTML; result
+   * is the plain text a typed step is checked against. answer is the card's back.
+   */
+  | {
+      type: 'worked';
+      itemId: number;
+      prompt: string;
+      steps: { label: string; result: string; resultHtml: string }[];
+      blanks: number;
+      answer: string;
+    }
   | { type: 'imagemc'; itemId: number; options: string[]; answerIndex: number }
   /** corrections: per choice, safe HTML shown when that wrong choice is picked ('' for none; misconceptions.ts). */
   | {

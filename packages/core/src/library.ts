@@ -12,7 +12,10 @@ import { normalizeCode } from './code';
 import { formatBox, modeOf, parseBox } from './occlusion';
 import { cleanVariants, takesVariants } from './variants';
 import { cleanCorrections, isMyth } from './misconceptions';
+import { cleanKeyTerms, markedTerms } from './keyterms';
 import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
+import { cleanTwin } from './twin';
+import { cleanWorkedSteps, parseWorkedSteps } from './worked';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -95,7 +98,7 @@ export type NormalizedCard = {
   group?: string; // lesson group, e.g. "G01" (taught together as a mini-lesson)
   rank?: number; // frequency rank / introduction order
   extra?: Record<string, string>;
-  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image), myth (a misconception to reject), explain (a why/how question checked against key points). */
+  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image), myth (a misconception to reject), explain (a why/how question checked against key points), worked (a solved problem whose steps fade). */
   type?: string;
   choices?: string; // "A|B|C|D"
   correct?: string; // "2|4" (1-based) or the correct choice texts
@@ -105,6 +108,12 @@ export type NormalizedCard = {
   corrections?: string;
   /** explain cards: 2–5 key points the learner ticks after explaining, "Earth is tilted|…" (explain.ts). '' clears them. */
   keyPoints?: string;
+  /** compare cards: the second thing, shown beside the front: "effect: a result" (twin.ts). '' clears it. */
+  twin?: string;
+  /** Key terms of the answer, highlighted when it shows: "mitochondrion|ATP" (keyterms.ts). In the back, ==term== says the same. '' clears them. */
+  keyTerms?: string;
+  /** worked examples: 2–8 solution steps, "Subtract 3 from both sides :: 2x = 8|…" (worked.ts). '' clears them. */
+  workedSteps?: string;
   /** Other ways to ask the question, with a level: "apply: A patient has X. Which mechanism? | analyse: …" (variants.ts). '' clears them. */
   variants?: string;
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
@@ -222,13 +231,13 @@ export function detectKind(
   c?: NormalizedCard,
 ): ItemKind {
   const t = (c?.type ?? '').toLowerCase();
-  if (t === 'myth' || t === 'explain') return 'card';
+  if (t === 'myth' || t === 'explain' || t === 'twin' || t === 'worked') return 'card';
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
   if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
   if ((c?.code ?? c?.extra?.code ?? '').trim() && (t === 'code' || !t)) return 'code';
   if (c?.image && parseBox(c.occlusion ?? c.extra?.occlusion) && (t === 'occlusion' || !t)) return 'occlusion';
-  if (!t && cleanKeyPoints(c?.keyPoints)) return 'card';
+  if (!t && (cleanKeyPoints(c?.keyPoints) || cleanWorkedSteps(c?.workedSteps))) return 'card';
   if (/\{\{c\d+::/.test(front)) return 'cloze';
   if (tags.includes('grammar')) return 'grammar';
   if (!language) return 'card';
@@ -306,8 +315,29 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
       : '';
   if (keyPoints) extra.keyPoints = keyPoints;
   else delete extra.keyPoints;
+  // A compare card (twin.ts): a basic card with a second side, kept while the card stays a basic card.
+  const twin =
+    kind === 'card' && !myth && !keyPoints && ['', 'twin', 'basic'].includes((c.type ?? '').toLowerCase())
+      ? cleanTwin(c.twin ?? extra.twin)
+      : '';
+  if (twin) extra.twin = twin;
+  else delete extra.twin;
+  // A worked example (worked.ts): a basic card with 2–8 solution steps, from its type or the steps alone.
+  const workedSteps =
+    kind === 'card' && !myth && !keyPoints && !twin && (!c.type || c.type.toLowerCase() === 'worked')
+      ? cleanWorkedSteps(c.workedSteps ?? extra.workedSteps)
+      : '';
+  if (workedSteps) extra.workedSteps = workedSteps;
+  else delete extra.workedSteps;
+  // Key terms of a plain-text answer (keyterms.ts): the ones marked in the back, or else the card's field.
+  const marked = markedTerms(back);
+  const keyTerms = ['code', 'cloze', 'mcq', 'order'].includes(kind)
+    ? ''
+    : cleanKeyTerms(marked.length ? marked.join('|') : (c.keyTerms ?? extra.keyTerms), stripHtml(back));
+  if (keyTerms) extra.keyTerms = keyTerms;
+  else delete extra.keyTerms;
   const variants = cleanVariants(c.variants ?? extra.variants);
-  if (variants && takesVariants(kind) && !myth && !keyPoints) extra.variants = variants;
+  if (variants && takesVariants(kind) && !myth && !keyPoints && !twin && !workedSteps) extra.variants = variants;
   else delete extra.variants;
   // Corrections for wrong choices: plain text, kept only on a multiple-choice card, one slot per choice.
   const corrections =
@@ -354,7 +384,8 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
           : // A back that is only the key points (what older readers get) is no model explanation of its own.
             keyPoints && stripHtml(back) === stripHtml(keyPointsAsBack(parseKeyPoints(keyPoints)))
             ? ''
-            : stripHtml(back),
+            : // A worked example without a back: its answer is the last step's result (older readers get it too).
+              stripHtml(back) || (workedSteps ? parseWorkedSteps(workedSteps).at(-1)!.result : ''),
     sentenceHtml: example,
     sentence: stripHtml(example),
     sentenceMeaning: stripHtml(c.exampleTranslation ?? ''),

@@ -8,5 +8,6 @@ export { LevelTag, type LevelTagProps } from './LevelTag';
 export { Misconception, type MisconceptionProps } from './Misconception';
 export { Input, Select, type InputProps, type SelectProps } from './Field';
 export { ProgressBar, type ProgressBarProps } from './ProgressBar';
+export { SideBySide, type SideBySideProps } from './SideBySide';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './SegmentedControl';
 export { Sidebar, type SidebarItem, type SidebarProps } from './Sidebar';

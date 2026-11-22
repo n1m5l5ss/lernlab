@@ -184,11 +184,13 @@ export function Home({
             <HabitNote onHide={() => void api.saveSettings({ habitNote: false }).then(refresh, () => refresh())} />
           )}
         </section>
-        <section className="panel home-tile" aria-labelledby="home-level">
-          <h2 id="home-level">{t('home.levelTitle', { level: lvl.level })}</h2>
-          <p className="home-tile-value">{t('home.xpOf', { xp: lvl.into, next: lvl.span })}</p>
-          <ProgressBar labelledBy="home-level" value={lvl.into} max={lvl.span} />
-        </section>
+        {!state.settings.calm && (
+          <section className="panel home-tile" aria-labelledby="home-level">
+            <h2 id="home-level">{t('home.levelTitle', { level: lvl.level })}</h2>
+            <p className="home-tile-value">{t('home.xpOf', { xp: lvl.into, next: lvl.span })}</p>
+            <ProgressBar labelledBy="home-level" value={lvl.into} max={lvl.span} />
+          </section>
+        )}
         <section className="panel home-tile" aria-labelledby="home-goal">
           <h2 id="home-goal">{goal ? t('home.goalTitle', { goal: goal.label }) : t('home.knownTitle')}</h2>
           <p className="home-tile-value">

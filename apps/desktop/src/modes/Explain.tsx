@@ -6,6 +6,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNDERSTANDING_SCALE, type ExplainOutcome } from '@lernlab/core/explain';
 import type { Exercise } from '@lernlab/core/types';
+import { markAnswer } from '@lernlab/core/keyterms';
 import { useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { textPx } from '../display';
@@ -157,7 +158,7 @@ export function Explain({ ex, ctx, onNext, format = 'flip' }: Props) {
                 {t(s.step === 'gaveUp' ? 'ex.explain.gaveUp' : 'ex.explain.model')}
                 {ex.answer && (
                   <div className="ans">
-                    <Rich html={ex.answer} />
+                    <Rich html={markAnswer(item, ex.answer)} />
                   </div>
                 )}
               </Feedback>

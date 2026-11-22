@@ -98,6 +98,7 @@ import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
 import { LEVELS } from '@lernlab/core/variants';
 import { rateConfidence } from '@lernlab/core/confidence';
+import { ANSWER_MAX, dismissTwin, makeTwin, twinOffer } from '@lernlab/core/confusions';
 import { reportTomorrowCheck, saveTomorrowCheck, TOMORROW_ANSWERS, TOMORROW_MAX } from '@lernlab/core/tomorrow';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
@@ -139,6 +140,8 @@ const cardInput = v.object({
   variants: text,
   corrections: text,
   keyPoints: text,
+  twin: text,
+  workedSteps: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -449,6 +452,10 @@ export const handlers = {
           variants: opt(b.variants),
           corrections: opt(b.corrections),
           keyPoints: opt(b.keyPoints),
+          twin: opt(b.twin),
+          // The editor writes key terms in the back as ==term==, so the back alone says which there are.
+          keyTerms: '',
+          workedSteps: opt(b.workedSteps),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);
@@ -635,8 +642,15 @@ export const handlers = {
       startedAt: v.string(40),
     }),
     // With how yesterday's "Will you know this tomorrow?" guesses held up, once their cards came back (#205).
-    (f) => ({ ...finishSession(f), tomorrowCheck: reportTomorrowCheck() }),
+    // And the two cards mixed up most, once they were mixed up often enough to offer a compare card (#200).
+    (f) => ({ ...finishSession(f), tomorrowCheck: reportTomorrowCheck(), twinOffer: twinOffer() }),
   ),
+  /** Add the compare card for a confusion pair, with the learner's own answer as its back (#200). */
+  'confusions.twin': h(v.object({ a: v.id, b: v.id, answer: v.string(ANSWER_MAX) }), ({ a, b, answer }) =>
+    makeTwin(a, b, answer),
+  ),
+  /** "Not now": the compare card for this pair is not offered again. */
+  'confusions.dismiss': h(v.object({ a: v.id, b: v.id }), ({ a, b }) => dismissTwin(a, b)),
   /** "Will you know this tomorrow?" answers for today's new cards (#205). Stored only; no schedule change. */
   'tomorrow.save': h(
     v.object({
@@ -730,6 +744,7 @@ export const handlers = {
     next.aiAssistant = next.aiAssistant === true;
     next.remoteMedia = next.remoteMedia === true;
     next.confidence = next.confidence !== false;
+    next.calm = next.calm === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

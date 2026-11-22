@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
-import { dayKey, xpFor } from '@lernlab/core/game';
+import { BONUS, dayKey, xpFor } from '@lernlab/core/game';
 import type { Confidence } from '@lernlab/core/confidence';
 import { teacherFor, type Line } from '@lernlab/core/teacher';
 import { api, sendAttempt, sendConfidence, sendOverride } from './api';
@@ -24,9 +24,13 @@ import {
   Unscramble,
 } from './modes/Exercises';
 import { Explain } from './modes/Explain';
+import { Twin } from './modes/Twin';
+import { Worked } from './modes/Worked';
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { GuessBlock } from './modes/Guess';
 import { mcFor, recallFor } from './plan';
+import { addReward, floatReason, newRewardTally, type RewardTally } from './reward-logic';
+import { canSwap, swapBlock } from './swap-logic';
 import { agendaText, bubbleFor, textTeacher, type Bubble } from './lines';
 import {
   Relearn,
@@ -62,7 +66,12 @@ export type SessionResult = {
   introduced: number;
   /** Their ids, for "Will you know this tomorrow?" on the summary (#205). */
   newCards: number[];
+  /** What the answers earned, by reason, so the summary can say what the XP was for (#216). */
+  rewards: RewardTally;
 };
+
+/** How long the number that floats up after an answer stays (the floatup animation in styles.css). */
+const FLOAT_MS = 900;
 
 /** Blocks of single exercises can bring cards back; games and blitz rounds can't. */
 const hostsRepeats = (b: Block) => 'exercises' in b && b.kind !== 'blitz';
@@ -169,6 +178,10 @@ function ExerciseBlock({
       return <Myth key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'explain':
       return <Explain key={k} ex={ex} ctx={ctx} onNext={next} />;
+    case 'twin':
+      return <Twin key={k} ex={ex} ctx={ctx} onNext={next} />;
+    case 'worked':
+      return <Worked key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'mcq':
       return <Mcq key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'order':
@@ -240,6 +253,8 @@ export function Session({
     questionTimer?: number;
     blitzSeconds?: number;
     confidence?: boolean;
+    /** Calm mode (#216): no XP, combo or floating numbers on screen. XP is still counted. */
+    calm?: boolean;
   };
   onFinish: (r: SessionResult) => void;
   onQuit: () => void;
@@ -286,7 +301,12 @@ export function Session({
     const agenda = agendaText(plan, tr, i18n.language);
     return plan.agendaTarget ? { main: plan.agendaTarget, gloss: agenda } : { main: agenda, gloss: '' };
   });
-  const [floats, setFloats] = useState<{ id: number; xp: number }[]>([]);
+  const [floats, setFloats] = useState<{ id: number; text: string }[]>([]);
+  const calm = settings.calm === true;
+  const rewards = useRef(newRewardTally());
+  // Swap a round (#216): once per session, and only before the round's first answer.
+  const [swapped, setSwapped] = useState(false);
+  const [touched, setTouched] = useState(false);
   const [step, setStep] = useState<Step>(null);
   const [paused, setPaused] = useState(false);
   const [sound, setSoundOn] = useState(settings.sound);
@@ -368,21 +388,32 @@ export function Session({
         newCards.current.add(a.itemId);
       }
       let gained = 0;
+      setTouched(true);
       if (counts && !a.silent) {
         const ok = a.correct && !a.articleError;
         comboRef.current = ok ? comboRef.current + 1 : 0;
         setCombo(comboRef.current);
         gained = xpFor(a.format, ok, comboRef.current);
         setXp((x) => x + gained);
+        const earned = { format: a.format, ok, combo: comboRef.current, slipped: missed.current.has(a.itemId) };
+        addReward(rewards.current, { ...earned, gained });
         totals.current.answers++;
         if (ok) totals.current.correct++;
         if (ok) {
-          a.nearMiss ? sfx.near() : sfx.right(comboRef.current);
+          a.nearMiss ? sfx.near() : sfx.right(calm ? 1 : comboRef.current); // calm: the pitch doesn't climb
         } else sfx.wrong();
-        if (gained > 1) {
+        if (gained > 1 && !calm) {
           const id = Math.random();
-          setFloats((f) => [...f, { id, xp: gained }]);
-          setTimeout(() => setFloats((f) => f.filter((x) => x.id !== id)), 900);
+          // The number says what it is for: a card back after a slip, or answers in a row.
+          const why = floatReason(earned);
+          const text =
+            why?.reason === 'comeback'
+              ? tr('session.xpFloatComeback', { xp: gained })
+              : why?.reason === 'run'
+                ? tr('session.xpFloatRun', { xp: gained, count: why.count })
+                : tr('session.xpFloat', { xp: gained });
+          setFloats((f) => [...f, { id, text }]);
+          setTimeout(() => setFloats((f) => f.filter((x) => x.id !== id)), FLOAT_MS);
         }
         // slow-answer detector (ignores timed games)
         if (!['gender', 'rain', 'match', 'blitz', 'truefalse', 'flip'].includes(a.format)) {
@@ -416,7 +447,7 @@ export function Session({
       });
       return gained;
     },
-    [plan.id],
+    [plan.id, calm, tr],
   );
 
   // How sure the learner was of each card's real answer this session (#205); saved with the answer.
@@ -444,7 +475,7 @@ export function Session({
     pool,
     answer,
     override,
-    combo,
+    combo: calm ? 0 : combo, // calm: the coach doesn't cheer runs
     missed: missed.current,
     teacher,
     settings,
@@ -454,7 +485,11 @@ export function Session({
     const b = blocks[bi];
     if (r.total >= 3 && r.correct === r.total) {
       totals.current.perfectBlocks++;
-      setFloats((f) => [...f, { id: Math.random(), xp: 20 }]);
+      if (!calm) {
+        const id = Math.random();
+        setFloats((f) => [...f, { id, text: tr('session.xpFloatPerfect', { xp: BONUS.perfectBlock }) }]);
+        setTimeout(() => setFloats((f) => f.filter((x) => x.id !== id)), FLOAT_MS);
+      }
     }
     if (b.kind === 'gender' && r.bestCombo)
       totals.current.bestGender = Math.max(totals.current.bestGender, r.bestCombo);
@@ -511,6 +546,7 @@ export function Session({
     const nb = [...blocks.slice(0, bi + 1), ...rest];
     setBlocks(nb);
     setStep(null);
+    setTouched(false);
     if (bi + 1 >= nb.length) return finish();
     const n = nb[bi + 1];
     teacher(n.teacher);
@@ -533,7 +569,17 @@ export function Session({
       practice: plan.practice,
       introduced: totals.current.introduced,
       newCards: [...newCards.current],
+      rewards: rewards.current,
     });
+  };
+
+  const swap = () => {
+    const other = swapBlock(blocks[bi], item, pool);
+    if (!other) return;
+    setBlocks(blocks.map((x, i) => (i === bi ? other : x)));
+    setSwapped(true);
+    setStep(null);
+    teacher(tr('session.swapped')); // announced: the coach line is a live region
   };
 
   // Esc asks before leaving. Every answer is already saved; leaving early still counts the session.
@@ -567,6 +613,10 @@ export function Session({
   }, [blockId]);
 
   const b = blocks[bi];
+  const swappable = useMemo(
+    () => !!b && canSwap({ used: swapped, started: touched, block: b, item, pool }),
+    [b, swapped, touched, item, pool],
+  );
   if (!b) return null;
   const later = blocks.slice(bi + 1);
   const plannedLater = plannedRecalls(later.flatMap((x) => ('exercises' in x ? x.exercises : [])));
@@ -600,15 +650,22 @@ export function Session({
         </h1>
         <div className="session-meta">
           {step && <span>{tr('session.step', { n: Math.min(step.done + 1, step.total), total: step.total })}</span>}
-          {combo >= 2 && <span className="session-combo">{tr('session.combo', { count: combo })}</span>}
-          <span className="session-xp" title={tr('session.xpLabel')}>
-            {tr('session.xp', { xp })}
-            {floats.map((f) => (
-              <span key={f.id} className="xpfloat" aria-hidden="true">
-                {tr('session.xpFloat', { xp: f.xp })}
-              </span>
-            ))}
-          </span>
+          {swappable && (
+            <Button variant="ghost" className="session-swap" title={tr('session.swapHint')} onClick={swap}>
+              {tr('session.swap')}
+            </Button>
+          )}
+          {!calm && combo >= 2 && <span className="session-combo">{tr('session.combo', { count: combo })}</span>}
+          {!calm && (
+            <span className="session-xp" title={tr('session.xpLabel')}>
+              {tr('session.xp', { xp })}
+              {floats.map((f) => (
+                <span key={f.id} className="xpfloat" aria-hidden="true">
+                  {f.text}
+                </span>
+              ))}
+            </span>
+          )}
           <button
             className="session-sound"
             aria-pressed={sound}

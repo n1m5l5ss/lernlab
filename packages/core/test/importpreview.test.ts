@@ -149,7 +149,31 @@ test('a column of corrections for wrong choices is recognised', () => {
   assert.equal(known.table?.fields.corrections, 4);
 });
 
+test('a column of key terms is recognised, and ==term== in the back previews as plain text', () => {
+  const known = previewFile('Bio.csv', strToU8('front,back,key terms\nWhat makes ATP?,The ==mitochondrion==,\n'));
+  assert.equal(known.table?.fields.keyTerms, 2);
+  assert.equal(known.cards[0].back, 'The mitochondrion');
+});
+
+test('the preview counts card-quality hints over the whole file, not just the cards shown', () => {
+  const long = Array.from({ length: 45 }, (_, i) => `w${i}`).join(' ');
+  const rows = Array.from({ length: 12 }, (_, i) => `Question ${i}?,${long},`);
+  const p = previewFile('Long.csv', strToU8(['front,back,image', ...rows, 'Pic?,A,pic.png', 'Short?,A,'].join('\n')));
+  assert.deepEqual(p.hints, [
+    { hint: 'split', count: 12 },
+    { hint: 'diagram', count: 12 },
+    { hint: 'decorativeImage', count: 1 },
+  ]);
+  assert.deepEqual(previewText('term\tdefinition').hints, []);
+  // A language deck's own language is not known before import, so its cards are checked as any subject.
+});
+
 test('a column of key points is recognised', () => {
   const known = previewFile('Why.csv', strToU8('front,back,key_points\nWhy seasons?,Tilt,Tilt|Angle\n'));
   assert.equal(known.table?.fields.keyPoints, 2);
+});
+
+test('a column of worked steps is recognised', () => {
+  const known = previewFile('Maths.csv', strToU8('front,back,worked_steps\nSolve,x = 4,Subtract :: 2x = 8|x = 4\n'));
+  assert.equal(known.table?.fields.workedSteps, 2);
 });
