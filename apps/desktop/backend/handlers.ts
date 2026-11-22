@@ -107,6 +107,14 @@ import { patternsOf } from '@lernlab/core/patterns';
 import { reportTomorrowCheck, saveTomorrowCheck, TOMORROW_ANSWERS, TOMORROW_MAX } from '@lernlab/core/tomorrow';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
+import {
+  addLearner,
+  asLearner,
+  cleanLearnerName,
+  LEARNER_NAME_MAX,
+  listLearners,
+  removeLearner,
+} from '@lernlab/storage-sqlite/learners';
 import { asRequest, checkBody } from './ai-requests';
 
 /** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
@@ -270,12 +278,23 @@ function assistantCommand(): AssistantCommand | null {
 type Handler<I, O> = { input: Check<I>; run: (input: I) => O | Promise<O> };
 const h = <I, O>(input: Check<I>, run: (input: I) => O | Promise<O>): Handler<I, O> => ({ input, run });
 
+/** What another learner can do in a session (together.as). All of them answer at once (no promises). */
+export const AS_LEARNER = [
+  'session.plan',
+  'attempt.record',
+  'attempt.override',
+  'attempt.confidence',
+  'session.finish',
+] as const;
+
 export const handlers = {
   'state.get': h(v.none, () => ({
     ...appState(),
     importing: importStatus.running,
     /** Changes an AI assistant proposed, waiting for the user (#148). */
     aiRequests: countAiRequests(),
+    /** Other people who study on this computer (#224): id and name only. */
+    learners: listLearners().map(({ id, name }) => ({ id, name })),
     languages: LANGUAGES,
     welcome: needsWelcome(getDb()),
     /** "What's new in X.Y.Z" on the first launch after an update, or null (issue #58). */
@@ -625,6 +644,26 @@ export const handlers = {
       return planSession(length, getDb(), new Date(), body?.deckId, { practice: !!body?.practice });
     },
   ),
+  /* ── Study together (#224): other learners on this computer, each with their own progress ── */
+  'learners.add': h(v.object({ name: v.string(LEARNER_NAME_MAX * 4) }), ({ name }) => {
+    const { id, name: saved } = addLearner(name);
+    return { id, name: saved };
+  }),
+  /** Removes the learner with their progress and backups. The screen asks first; it cannot be undone. */
+  'learners.remove': h(v.object({ id: v.string(40) }), ({ id }) => removeLearner(id)),
+  /**
+   * One study request as another learner: it reads the same cards and writes only that learner's own
+   * progress database. Only the requests a session needs; anything that edits cards or settings is not here.
+   */
+  'together.as': h(
+    v.object({ learnerId: v.string(40), channel: v.oneOf(...AS_LEARNER), input: v.optional(v.record) }),
+    ({ learnerId, channel, input }): unknown => {
+      const handler = handlers[channel] as Handler<unknown, unknown>;
+      const checked = handler.input(input);
+      // A new plan opens the learner's database anew, so it sees the cards as they are now.
+      return asLearner(learnerId, () => handler.run(checked), channel === 'session.plan');
+    },
+  ),
   /* ── Teach-back (#208): explain a mastered tag, then compare with its key points. Nothing is saved. ── */
   'teachback.topics': h(v.none, () => teachBackTopics()),
   'teachback.points': h(v.object({ tag: v.string(100) }), ({ tag }) => teachBackPoints(tag)),
@@ -782,6 +821,7 @@ export const handlers = {
     next.reminder = next.reminder === true;
     next.reminderTime = cleanReminderTime(next.reminderTime);
     next.sleepBridge = next.sleepBridge === true;
+    next.learnerName = cleanLearnerName(String(next.learnerName ?? ''));
     next.morningTime = cleanMorningTime(next.morningTime);
     next.planAfter = cleanPlanText(next.planAfter);
     next.planMinutes = cleanPlanMinutes(next.planMinutes);

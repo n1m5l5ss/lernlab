@@ -19,6 +19,7 @@ Languages, AWS, medicine, physics, law, history: if you can put it on a card, Le
 - **Safe with your data:** a daily backup, restore with a preview (each backup is checked before it replaces anything), and export everything as a zip.
 - **For everyone:** works fully by keyboard and with screen readers, in light and dark themes, and lays out right to left for Arabic, Hebrew and Urdu.
 - **Stays up to date:** Windows and Linux update themselves; Mac users download each new version from the website.
+- **Study together on one computer:** add a second person by name (no account, no password) and take turns on a deck. Each answer counts only toward that person's own schedule and progress, kept in its own folder; no scores side by side, no winner.
 - **Bring your own AI assistant (optional):** connect Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other assistant that supports MCP, to ask about your progress, be quizzed in the chat, turn a PDF into cards, fix, merge and tidy up cards, suggest other ways to ask a card, corrections for wrong choices and key points, or plan a deck toward an exam. Every change waits for you to review and accept it in the app. Off until you turn it on, and LernLab itself stays offline. See [AI assistants](docs/AI-ASSISTANTS.md).
 
 New here? The [user guide](docs/USER-GUIDE.md) shows how to import, study, follow your progress and back up.

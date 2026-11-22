@@ -27,11 +27,13 @@ import { applyDisplay } from './display';
 import { allowRemoteMedia } from './remote-media';
 import { hashFor, isStartHash, routeFromHash, type Route } from './routes';
 import { markOnce, MARKS } from './perf';
+import { Together, type TogetherPlans } from './Together';
 
 type AppState = OutputOf<'state.get'>;
 /** The study session and its summary fill the window; everything else sits in the shell. */
 type FullScreen =
   | { name: 'play'; plan: SessionPlan }
+  | { name: 'together'; plans: TogetherPlans }
   | { name: 'exam'; deckId: number }
   | { name: 'teach'; tag: string }
   | { name: 'map'; deckId: number; topic: string }
@@ -199,6 +201,18 @@ export function App() {
         }}
       />
     );
+  if (full?.name === 'together')
+    return (
+      <Together
+        plans={full.plans}
+        ownerName={state.settings.learnerName}
+        settings={state.settings}
+        onDone={() => {
+          go('home');
+          refresh();
+        }}
+      />
+    );
   if (full?.name === 'exam')
     return (
       <Exam
@@ -261,7 +275,15 @@ export function App() {
       kicker={route === 'home' ? formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }) : undefined}
       requests={state.settings.aiAssistant || state.aiRequests > 0 ? state.aiRequests : undefined}
     >
-      {route === 'home' && <Home state={state} onStart={start} refresh={refresh} goDecks={() => go('decks')} />}
+      {route === 'home' && (
+        <Home
+          state={state}
+          onStart={start}
+          onTogether={(plans) => setFull({ name: 'together', plans })}
+          refresh={refresh}
+          goDecks={() => go('decks')}
+        />
+      )}
       {route === 'decks' && (
         <Decks
           state={state}

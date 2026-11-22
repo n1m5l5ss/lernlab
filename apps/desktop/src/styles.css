@@ -4225,3 +4225,45 @@ textarea.input.code-input {
   max-width: 70ch;
   color: var(--color-text-muted);
 }
+/* Study together (#224): the start panel on Home, the hand-over screen, and the people list in Settings. */
+.together-start {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.together-start h2,
+.together-start p {
+  margin: 0;
+}
+.learners {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.learners li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  overflow-wrap: anywhere;
+}
+.learners-add {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.learners-add .field {
+  flex: 1;
+}
+.learners-add .field {
+  flex-direction: column;
+  align-items: stretch;
+  border: none;
+  padding: 0;
+}

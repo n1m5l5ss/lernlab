@@ -8,7 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./backups": "./src/backups.ts",
-    "./airequests": "./src/airequests.ts"
+    "./airequests": "./src/airequests.ts",
+    "./learners": "./src/learners.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

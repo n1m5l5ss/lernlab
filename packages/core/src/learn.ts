@@ -60,6 +60,8 @@ export type Settings = {
   confidence: boolean;
   /** Calm mode (#216): hide XP, levels, combos and celebrations. XP is still counted, so nothing is lost. Off by default. */
   calm: boolean;
+  /** What to call this computer's first learner when two study together (#224). '' until they give a name. */
+  learnerName: string;
   /** Sleep bridge (#217, sleep.ts): new cards in the evening, a short check the next morning. Off by default. */
   sleepBridge: boolean;
   /** When the morning check is offered by the reminder, "HH:MM" in local time. */
@@ -99,6 +101,7 @@ export const DEFAULT_SETTINGS: Settings = {
   remoteMedia: false,
   confidence: true,
   calm: false,
+  learnerName: '',
   sleepBridge: false,
   morningTime: DEFAULT_MORNING_TIME,
   sayAloud: true,

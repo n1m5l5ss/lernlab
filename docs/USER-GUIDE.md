@@ -164,6 +164,27 @@ If you turn on **Settings → Studying → Offer a quiet minute after new cards*
 
 Tick **Practice** on Home, then press **Start practice**. A practice session lets you cram any cards, for example before a test. Your review schedule stays the same. On the Decks screen, a deck with nothing due shows **Practice** instead of **Study**.
 
+### Study together
+
+Two people can study one deck on one computer, taking turns.
+
+1. Open **Settings → People on this computer**, type the other person's name and click **Add**. A name is enough: there is no account and no password, and nothing goes online. You can give your own name there too, so the screen can say whose turn it is. Up to five other people fit.
+2. On **Home**, a **Study together** panel appears. Choose the deck (and the person, if you added several) and click **Study with …**.
+3. Before each turn the screen says whose turn it is. Pass the keyboard, then click **Start the round**. A turn is one short round. **Stop here** ends the session at any hand-over; everything answered so far is kept.
+
+Each person gets their own rounds, planned from their own due and new cards, and each answer is saved only to the progress of the person whose turn it was: their own schedule (a card is graded once a day per person), streak, minutes and XP. Games stay practice for both. LernLab shows no scores side by side and names no winner; while one person answers, the other can listen and explain afterwards.
+
+The other person studies your decks: the cards, their pictures and your deck settings are shared, and only you can edit them. For now they study in **Study together** only; they have no Home, Progress screen or settings of their own.
+
+Where their data is and what covers it:
+
+- Their progress is in its own folder, `learners/` inside your LernLab data folder. Your own data stays where it was and is not changed by adding someone.
+- LernLab backs up each person's progress once a day in that folder (the last 7 are kept).
+- **Back up now**, **Restore a backup**, **Export everything** and **Import everything** cover your own data only and leave the other person's progress as it is. After a restore, their progress still fits every card that still exists.
+- **Remove …** in Settings deletes that person's progress and its backups for good, after asking.
+- **Delete all my data** deletes the other people and their progress too.
+- An AI assistant you connect reads your own data only.
+
 ### Take a mock exam
 
 On the **Decks** screen, press **Exam** on a deck. The questions come from that deck's cards, and the deck's tags become the topics in your score. In the deck's settings you can set the number of **Questions**, the **Minutes (timed mode)** and the **Pass mark (%)**.
@@ -315,7 +336,7 @@ In the desktop app, **File → Use a different data folder…** moves LernLab to
 
 ### Delete everything
 
-**Settings → Your data → Delete all my data** removes every deck, card, answer, setting and media file. Type `DELETE` to confirm. Your backups are deleted too, so this can't be undone.
+**Settings → Your data → Delete all my data** removes every deck, card, answer, setting and media file. Type `DELETE` to confirm. Your backups are deleted too, and so are the other people you added for Study together, with their progress. This can't be undone.
 
 ## Your AI assistant
 

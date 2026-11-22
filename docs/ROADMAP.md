@@ -94,6 +94,7 @@ These come from a review of the research on remembering, understanding and stayi
 - [x] **Example ladder:** worked examples that fade step by step (#206).
 - [x] **Teach-back:** explain a topic aloud, then check yourself against its key points (#208). The assistant as a curious student is not built yet.
 - [x] **Prerequisite links:** learn the basics first, without locking anything (#207).
+- [x] **Study together on one computer:** add a second person by name; the two take turns on a deck and each answer counts only toward that person's own schedule (#224). The second person studies in Study together only: their own Home, Progress screen and settings are not built yet.
 - [x] **Case chains:** one scenario with linked questions (#209).
 - [x] **Translate between representations,** such as graph and equation (#210).
 - [x] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme (#211).
@@ -114,7 +115,6 @@ These come from a review of the research on remembering, understanding and stayi
 - [x] **An optional quiet minute** after a session with new cards; off by default, because the evidence is mixed (#226).
 - [x] **Sketch pad:** draw a new card's meaning; the sketch is kept as your own picture cue and shows with the answer (#220).
 - [x] **Concept map from memory:** link a topic's terms from memory, then compare with the author's map (#219). Placing the terms by hand on a canvas is not built: the picture is laid out automatically.
-- [ ] Study together on one computer.
 
 ## Avoid
 

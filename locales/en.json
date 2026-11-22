@@ -205,7 +205,8 @@
       "data": "Your data",
       "privacy": "Updates and privacy",
       "assistant": "AI assistant",
-      "about": "About"
+      "about": "About",
+      "people": "People on this computer"
     },
     "textSize": "Text size",
     "textSizeOption": {
@@ -260,7 +261,7 @@
       "imported": "Data imported. Your previous data was saved as {{file}}.",
       "delete": "Delete all my data",
       "deleteHint": "Removes every deck, card, answer, setting, media file and backup from this computer.",
-      "deleteWarning": "Everything is deleted permanently, including all backups. This cannot be undone. To keep a copy, export everything first.",
+      "deleteWarning": "Everything is deleted permanently, including all backups and the progress of other people on this computer. This cannot be undone. To keep a copy, export everything first.",
       "deleteWord": "DELETE",
       "deleteType": "Type {{word}} to confirm",
       "deleteNow": "Delete everything",
@@ -1774,7 +1775,11 @@
     "gallery_too_big": "This deck is bigger than the gallery says, so it was not downloaded.",
     "gallery_checksum": "The download does not match the deck in the gallery, so it was not installed. Please try again.",
     "gallery_unknown_deck": "That deck is no longer in the gallery. Open the gallery again to see the latest list.",
-    "invalid_confidence": "How sure you were must be a number from 1 to 5."
+    "invalid_confidence": "How sure you were must be a number from 1 to 5.",
+    "learner_name_required": "Give the person a name.",
+    "learners_full": "At most 5 other people can be added.",
+    "learner_exists": "There is already someone with this name.",
+    "learner_not_found": "This person is no longer on this computer."
   },
   "update": {
     "ready": "LernLab {{version}} is ready. Restart to update; your progress is saved and backed up.",
@@ -1887,5 +1892,39 @@
     "practise_other": "Practise {{count}} cards",
     "done": "Done",
     "again": "Explain it again"
+  },
+  "together": {
+    "title": "Study together",
+    "lead": "Two people take turns on one deck. Each answer counts only for the person who gave it. No scores, no winner.",
+    "with": "With",
+    "deck": "Deck",
+    "start": "Study with {{name}}",
+    "nothing": "Neither of you has cards to study in this deck right now.",
+    "firstLearner": "First learner",
+    "turn": "Turn {{n}} of {{total}}",
+    "turnOf": "{{name}}'s turn",
+    "passHint": "Pass the keyboard to {{name}}. This round is saved to {{name}}'s own progress. The other person is welcome to help by explaining afterwards.",
+    "go": "Start the round",
+    "stop": "Stop here",
+    "doneTitle": "You studied together",
+    "doneBody": "{{a}} and {{b}} each have their answers saved to their own progress, and their cards come back on their own schedule.",
+    "doneAction": "Back to Home"
+  },
+  "learners": {
+    "lead": "Someone else can study your decks with you on this computer, in Study together on Home. They get a name and their own progress, kept in its own folder inside your LernLab data folder. No account, no password, nothing online.",
+    "myName": "Your name",
+    "myNameHint": "Shown when it is your turn.",
+    "others": "Other people on this computer",
+    "add": "Add a person",
+    "addHint": "A name is enough.",
+    "addAction": "Add",
+    "added": "{{name}} was added. Study together is now on Home.",
+    "remove": "Remove {{name}}",
+    "removeTitle": "Remove {{name}}?",
+    "removeBody": "{{name}}'s progress and its backups on this computer are deleted permanently. This cannot be undone. Your decks, cards and your own progress stay.",
+    "removeConfirm": "Remove and delete their progress",
+    "keep": "Keep",
+    "removed": "{{name}} was removed.",
+    "dataHint": "Their progress is backed up every day in their own folder (the last 7 are kept). Your backups, Restore, Export everything and Import everything cover your own data only and leave theirs as it is. Delete all my data deletes theirs too."
   }
 }

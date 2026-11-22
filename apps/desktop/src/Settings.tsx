@@ -16,6 +16,7 @@ import { DataControls } from './DataControls';
 import { allowRemoteMedia } from './remote-media';
 import { Button, Card, Input, SegmentedControl, Select } from './components';
 import { PlanFields } from './StudyPlan';
+import { LearnersSettings } from './Together';
 import { planDraftOf, planPatch, timeOfDay } from './plan-logic';
 
 const TIMERS = [
@@ -355,6 +356,10 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
         >
           {check('launchAtLogin', 'set-login', !desktop)}
         </Row>
+      </Section>
+
+      <Section id="people" title={t('settings.section.people')}>
+        <LearnersSettings state={state} onSaved={onSaved} />
       </Section>
 
       <Section id="data" title={t('settings.section.data')}>

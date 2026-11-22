@@ -70,6 +70,8 @@ export type SessionResult = {
   newCards: number[];
   /** What the answers earned, by reason, so the summary can say what the XP was for (#216). */
   rewards: RewardTally;
+  /** The learner left before the end (Study together stops there, #224). */
+  left?: boolean;
 };
 
 /** How long the number that floats up after an answer stays (the floatup animation in styles.css). */
@@ -598,8 +600,9 @@ export function Session({
     setBi(bi + 1);
   };
 
-  const finish = () => {
+  const finish = (left = false) => {
     onFinish({
+      left,
       sessionId: plan.id,
       length: plan.length,
       seconds: Math.round((Date.now() - started.current.at) / 1000),
@@ -636,7 +639,7 @@ export function Session({
   };
   const leave = () => {
     leaveDialog.current?.close();
-    if (totals.current.answers > 0) finish();
+    if (totals.current.answers > 0) finish(true);
     else onQuit();
   };
   const toggleSound = () => {

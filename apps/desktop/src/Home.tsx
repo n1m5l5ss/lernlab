@@ -14,6 +14,7 @@ import { parseSourceValue, sourceValue } from './sources';
 import { UpdateNote } from './UpdateNote';
 import { HabitNote } from './StudyPlan';
 import { markOnce, MARKS } from './perf';
+import { TogetherStart, type TogetherPlans } from './Together';
 
 type AppState = OutputOf<'state.get'>;
 
@@ -23,11 +24,13 @@ const noon = (day: string) => new Date(`${day}T12:00:00`);
 export function Home({
   state,
   onStart,
+  onTogether,
   refresh,
   goDecks,
 }: {
   state: AppState;
   onStart: (l: SessionLength, practice: boolean) => void;
+  onTogether: (plans: TogetherPlans) => void;
   refresh: () => void;
   goDecks: () => void;
 }) {
@@ -146,6 +149,7 @@ export function Home({
           {practice ? t('home.startPractice') : t('home.startStudying')} <kbd>{t('home.startKey')}</kbd>
         </Button>
       </section>
+      {state.learners.length > 0 && <TogetherStart state={state} onStart={onTogether} />}
       {s.repair && (
         <p className="panel home-repair">
           <MotivationIcon kind="repair" />
