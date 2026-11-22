@@ -34,6 +34,7 @@ import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
 import { confusionMap, keepClose } from './confusions';
+import { CHECK_MAX, holdNewCards, isEvening, morningCheckIds } from './sleep';
 import { recentlyAnswered, RELATED_MAX, restOfFamilies } from './family';
 import { basicsFirst, BASICS_MAX, isKeyTerm, LAPSES_WEAK, RECALLED, requiresGraph } from './requires';
 import { categoryLabels, confusableLabels, labelMisses, ROUND_MAX, themedFirst } from './discriminate';
@@ -115,7 +116,14 @@ export function planSession(
   // Prerequisite links (#207): what each card requires, and how well those basics are known.
   const links = requiresGraph(pool);
   const basics = links.size ? srsInfo([...new Set([...links.keys(), ...[...links.values()].flat()])], d) : {};
-  const dueNow = practice ? [] : dueItemIds(d, now, size.due, scope).filter(has);
+  // Sleep bridge (#217): before the evening, last night's new and missed cards are checked first. It is a new
+  // study day, so these are normal reviews. New cards then wait for the evening session (see holdNewCards).
+  const bridge = !practice && settings.sleepBridge;
+  const morning =
+    bridge && !isEvening(now) ? morningCheckIds(d, now).filter(has).slice(0, Math.min(CHECK_MAX, size.due)) : [];
+  const dueNow = practice
+    ? []
+    : [...new Set([...morning, ...dueItemIds(d, now, size.due, scope).filter(has)])].slice(0, size.due);
   const due = keepClose(
     practice
       ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
@@ -130,7 +138,7 @@ export function planSession(
         d,
         now,
         scope,
-        size.fresh,
+        bridge && holdNewCards(settings, d, now) ? 0 : size.fresh,
         (id) => get(id).deckId,
         // Then the basics first: key terms, and each card after the cards it requires were recalled. An order,
         // never a lock: cards whose basics are not ready wait at the end and are still met.
@@ -233,7 +241,7 @@ export function planSession(
       kind: 'drill',
       format: 'typed',
       title: 'Review',
-      teacher: say('review'),
+      teacher: morning.length ? { key: 'teacher.block.morning' } : say('review'),
       exercises: dueA.map(review),
     });
 

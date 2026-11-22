@@ -8,6 +8,7 @@ import { Gallery } from './Gallery';
 import { ImportPanel } from './ImportPanel';
 import { onVoicesChanged, systemVoices, tryVoice } from './audio';
 import { formatDate, formatLanguage, formatNumber } from './i18n';
+import { examSoon } from './plan-logic';
 import { examSettings, type ExamSettings } from '@lernlab/core/exam';
 import { MAX_RATE, MIN_RATE, clampRate, voicesFor } from './voice-logic';
 
@@ -101,6 +102,7 @@ export function Decks({ state, refresh, onStudy, onPractice, onBrowse, onExam }:
     const extra = [
       d?.settings.goal?.label,
       d?.settings.examDate && t('decks.examOn', { date: formatDate(`${d.settings.examDate}T12:00:00`) }),
+      examSoon(d?.settings.examDate) && t('decks.examSleep'),
     ].filter(Boolean);
     return (
       <section key={node.path} className={`panel deck ${d && d.id === state.activeDeck ? 'on' : ''}`}>

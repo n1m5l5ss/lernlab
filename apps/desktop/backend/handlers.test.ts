@@ -338,6 +338,7 @@ test('the daily reminder is off by default, its time is checked, and it knows wh
     language: 'en',
     plan: null,
     studiedToday: false,
+    morning: null,
   });
   await ok('session.finish', {
     sessionId: 'reminder-test',
@@ -350,6 +351,11 @@ test('the daily reminder is off by default, its time is checked, and it knows wh
     perfectBlocks: 0,
     startedAt: new Date().toISOString(),
   });
+  // The sleep rhythm (#217) is off by default; on, the reminder knows when to offer the morning check.
+  const sleepy = await ok('settings.save', { sleepBridge: true, morningTime: '9 am' });
+  assert.deepEqual([sleepy.sleepBridge, sleepy.morningTime], [true, '08:00']);
+  assert.deepEqual((await ok('reminder.status')).morning, { time: '08:00', cards: 0 });
+  assert.equal((await ok('settings.save', { sleepBridge: 'yes' })).sleepBridge, false);
   assert.equal((await ok('reminder.status')).studiedToday, true);
   await ok('settings.save', { reminder: false });
 });

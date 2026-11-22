@@ -52,7 +52,8 @@ import {
   stats,
   studiedToday,
 } from '@lernlab/core/progress';
-import { cleanReminderTime } from '@lernlab/core/reminder';
+import { cleanMorningTime, cleanReminderTime } from '@lernlab/core/reminder';
+import { morningCheckIds } from '@lernlab/core/sleep';
 import {
   cleanPlanMinutes,
   cleanPlanText,
@@ -709,6 +710,8 @@ export const handlers = {
       language: s.uiLanguage,
       plan: studyPlanOf(s),
       studiedToday: studiedToday(),
+      /** Sleep bridge (#217): when the morning check is offered, and how many of last night's cards wait. */
+      morning: s.sleepBridge ? { time: s.morningTime, cards: morningCheckIds().length } : null,
     };
   }),
   /** The hour you usually start studying ("HH:00"), from local sessions only, or null without a clear pattern. */
@@ -749,6 +752,8 @@ export const handlers = {
     next.reducedMotion = next.reducedMotion === true;
     next.reminder = next.reminder === true;
     next.reminderTime = cleanReminderTime(next.reminderTime);
+    next.sleepBridge = next.sleepBridge === true;
+    next.morningTime = cleanMorningTime(next.morningTime);
     next.planAfter = cleanPlanText(next.planAfter);
     next.planMinutes = cleanPlanMinutes(next.planMinutes);
     next.planBackup = cleanPlanText(next.planBackup);

@@ -1,7 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import en from '../../../locales/en.json';
-import { HIDDEN_ARG, linuxAutostartEntry, reminderPrefsOf, reminderText, startedAtLogin } from './reminder-policy';
+import {
+  HIDDEN_ARG,
+  linuxAutostartEntry,
+  morningText,
+  reminderPrefsOf,
+  reminderText,
+  startedAtLogin,
+} from './reminder-policy';
 
 test('reminder settings are read from the state and from saved settings', () => {
   const s = { reminder: true, reminderTime: '07:30', launchAtLogin: false };
@@ -62,4 +69,18 @@ test('reminder wording is friendly: no guilt, loss or pressure', () => {
   const words = [n.notification.title, ...n.notification.bodies, n.daily, n.dailyHint].join(' ').toLowerCase();
   for (const bad of ['streak', 'lose', 'lost', 'miss', 'fail', 'behind', "don't forget", 'should', 'must', 'sad'])
     assert.ok(!words.includes(bad), `reminder text should not say "${bad}"`);
+});
+
+test('the morning check has its own time, only with the sleep rhythm on, and friendly words', () => {
+  const s = { reminder: true, reminderTime: '19:00', launchAtLogin: false };
+  assert.equal(reminderPrefsOf('settings.save', s)?.morning ?? null, null);
+  assert.equal(reminderPrefsOf('settings.save', { ...s, sleepBridge: true, morningTime: '07:30' })?.morning, '07:30');
+  assert.deepEqual(morningText('en', 1), {
+    title: en.settings.reminders.notification.title,
+    body: 'Good morning! 1 card from last night is ready for a short check.',
+  });
+  assert.match(morningText('xx', 4).body, /4 cards from last night/);
+  const words = (en.settings.sleepBridgeHint + morningText('en', 3).body).toLowerCase();
+  for (const bad of ['streak', 'lose', 'lost', 'miss', 'fail', 'behind', "don't forget", 'should', 'must', 'sad'])
+    assert.ok(!words.includes(bad), `should not say "${bad}"`);
 });

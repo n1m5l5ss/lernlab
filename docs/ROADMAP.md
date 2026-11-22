@@ -102,7 +102,7 @@ These come from a review of the research on remembering, understanding and stayi
 - [x] **Weekly goals** and a progress card you can print or share (#214). The buddy file is not built.
 - [ ] **"Learn how to learn":** see spacing work on yourself.
 - [x] **Calm mode,** rewards that say what they are for, and one round swap per session (#216).
-- [ ] **Sleep bridge:** learn in the evening, check in the morning.
+- [x] **Sleep bridge:** learn in the evening, check in the morning (#217).
 
 **Tier 3: weaker evidence, niche or large**
 
