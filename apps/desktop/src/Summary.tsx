@@ -12,7 +12,8 @@ import { formatNumber } from './i18n';
 import { Rich } from './rich';
 import type { SessionResult } from './Session';
 import { dayDate, MotivationIcon, MAX_FREEZES, type MotivationIconKind } from './Motivation';
-import { summaryFacts, summaryMoments, tomorrowCards, tomorrowReport, type Moment } from './summary-logic';
+import { celebrates, summaryFacts, summaryMoments, tomorrowCards, tomorrowReport, type Moment } from './summary-logic';
+import { rewardLines } from './reward-logic';
 import { qa } from '@lernlab/core/cards';
 import type { TomorrowAnswer } from '@lernlab/core/tomorrow';
 import { api } from './api';
@@ -23,6 +24,7 @@ export function Summary({
   server,
   items,
   lang,
+  calm = false,
   onAgain,
   onHome,
 }: {
@@ -30,20 +32,37 @@ export function Summary({
   server: OutputOf<'session.finish'> | null;
   items: Record<number, Item>;
   lang: string | null;
+  /** Calm mode (#216): no XP, level, badge news, confetti or level-up sound; everything else stays. */
+  calm?: boolean;
   onAgain: () => void;
   onHome: () => void;
 }) {
   const { t } = useTranslation();
   const f = useMemo(() => summaryFacts(result, server, items), [result, server, items]);
-  const moments = useMemo(() => summaryMoments(f, server), [f, server]);
+  const moments = useMemo(() => summaryMoments(f, server, calm), [f, server, calm]);
+  // What the XP was for (#216): the lines add up to the number in the tile.
+  const rewards = useMemo(
+    () =>
+      calm
+        ? []
+        : rewardLines(
+            result.rewards,
+            server && {
+              perfectBlocks: result.perfectBlocks,
+              goalMetNow: !!server.goalMetNow,
+              bossWon: !!result.bossWon,
+            },
+          ),
+    [result, server, calm],
+  );
   const tomorrow = useMemo(() => tomorrowCards(result, items, qa), [result, items]);
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus(); // screen readers announce the result first
-    if (f.levelUp) sfx.levelUp();
+    if (f.levelUp && !calm) sfx.levelUp();
     else sfx.win();
-    // A celebration only at the end, and only for a real milestone.
-    if ((server?.goalMetNow || server?.unlocked?.length || f.levelUp) && !motionReduced())
+    // A celebration only at the end, only for a real milestone, and never in calm mode.
+    if (celebrates(f, server, calm) && !motionReduced())
       confetti({ particleCount: 140, spread: 80, origin: { y: 0.6 }, disableForReducedMotion: true });
   }, []);
   useKeys((e) => {
@@ -101,27 +120,42 @@ export function Summary({
       </h1>
       {result.practice && <p className="summary-note">{t('summary.practice')}</p>}
       {server?.tomorrowCheck && <TomorrowReport report={server.tomorrowCheck} />}
-      <div className="summary-tiles">
+      <div className={calm ? 'summary-tiles summary-tiles-calm' : 'summary-tiles'}>
         <section className="panel summary-tile">
           <b>{formatNumber(f.introduced)}</b>
           <span>{t('summary.introduced', { count: f.introduced })}</span>
         </section>
-        <section className="panel summary-tile">
-          <b>{t('summary.xp', { xp: f.xp })}</b>
-          {f.level && (
-            <>
-              <div className="meter" aria-hidden="true">
-                <i style={{ width: `${f.level.percent}%` }} />
-              </div>
-              <span className="small">{t('summary.toLevel', { xp: f.level.toNext, level: f.level.next })}</span>
-            </>
-          )}
-        </section>
+        {!calm && (
+          <section className="panel summary-tile">
+            <b>{t('summary.xp', { xp: f.xp })}</b>
+            {f.level && (
+              <>
+                <div className="meter" aria-hidden="true">
+                  <i style={{ width: `${f.level.percent}%` }} />
+                </div>
+                <span className="small">{t('summary.toLevel', { xp: f.level.toNext, level: f.level.next })}</span>
+              </>
+            )}
+          </section>
+        )}
         <section className="panel summary-tile">
           <b>{f.daysThisWeek === null ? '–' : t('summary.daysOf', { count: f.daysThisWeek })}</b>
           <span>{t('summary.daysThisWeek')}</span>
         </section>
       </div>
+      {rewards.length > 0 && (
+        <section className="panel summary-rewards" aria-labelledby="summary-rewards">
+          <h2 id="summary-rewards">{t('summary.rewardsTitle')}</h2>
+          <ul>
+            {rewards.map((r) => (
+              <li key={r.reason}>
+                <b>{t('summary.rewardXp', { xp: r.xp })}</b>
+                <span>{t(`summary.rewards.${r.reason}`, { count: r.count })}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       {(moments.length > 0 || server?.goalMetNow || result.bossWon) && (
         <section className="panel summary-moments" aria-labelledby="summary-moments">
           <h2 id="summary-moments" className="sr-only">
@@ -143,13 +177,13 @@ export function Summary({
             {server?.goalMetNow && (
               <li className="moment">
                 <MotivationIcon kind="goal" />
-                <b>{t('summary.goalReached', { xp: 25 })}</b>
+                <b>{t('summary.goalReached')}</b>
               </li>
             )}
             {result.bossWon && (
               <li className="moment">
                 <MotivationIcon kind="boss" />
-                <b>{t('summary.bossDefeated', { xp: 30 })}</b>
+                <b>{t('summary.bossDefeated')}</b>
               </li>
             )}
           </ul>

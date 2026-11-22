@@ -742,6 +742,7 @@ export const handlers = {
     next.aiAssistant = next.aiAssistant === true;
     next.remoteMedia = next.remoteMedia === true;
     next.confidence = next.confidence !== false;
+    next.calm = next.calm === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

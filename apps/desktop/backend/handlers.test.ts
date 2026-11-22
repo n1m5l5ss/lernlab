@@ -565,6 +565,25 @@ test('an answer carries the level of the question asked, and only a known level'
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
 });
 
+test('calm mode is off by default, saved as a plain yes or no, and XP is still counted while it is on (#216)', async () => {
+  assert.equal((await ok('state.get')).settings.calm, false);
+  assert.equal((await ok('settings.save', { calm: 'yes' })).calm, false);
+  assert.equal((await ok('settings.save', { calm: true })).calm, true);
+  const deck = await ok('decks.create', { name: 'Calm', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Calm?', back: 'Yes' } });
+  const before = (await ok('state.get')).totalXp;
+  await ok('attempt.record', {
+    sessionId: 'calm',
+    itemId: id,
+    format: 'typed',
+    correct: true,
+    responseMs: 900,
+    xp: 15,
+  });
+  assert.equal((await ok('state.get')).totalXp, before + 15);
+  assert.equal((await ok('settings.save', { calm: false })).calm, false);
+});
+
 test('how sure you were is saved with your answer, 1 to 5 only, and the rating can be turned off (#205)', async () => {
   assert.equal((await ok('state.get')).settings.confidence, true, 'on by default');
   assert.equal((await ok('settings.save', { confidence: false })).confidence, false);

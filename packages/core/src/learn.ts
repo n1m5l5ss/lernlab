@@ -55,6 +55,8 @@ export type Settings = {
   remoteMedia: boolean;
   /** After a recall answer, ask "How sure were you?" (1–5, optional, #205). It never changes the schedule. */
   confidence: boolean;
+  /** Calm mode (#216): hide XP, levels, combos and celebrations. XP is still counted, so nothing is lost. Off by default. */
+  calm: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -83,6 +85,7 @@ export const DEFAULT_SETTINGS: Settings = {
   aiAssistant: false,
   remoteMedia: false,
   confidence: true,
+  calm: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });

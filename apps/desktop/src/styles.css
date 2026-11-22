@@ -1283,6 +1283,30 @@ kbd {
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-4);
 }
+.summary-tiles-calm {
+  grid-template-columns: repeat(2, 1fr);
+}
+.summary-rewards h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+}
+.summary-rewards ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+.summary-rewards li {
+  display: grid;
+  grid-template-columns: minmax(4ch, auto) 1fr;
+  gap: var(--space-4);
+  align-items: baseline;
+}
+.summary-rewards b {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
 @media (max-width: 640px) {
   .summary-tiles {
     grid-template-columns: 1fr;

@@ -101,7 +101,7 @@ These come from a review of the research on remembering, understanding and stayi
 - [ ] **Pattern feedback** at the end of a session.
 - [ ] **Weekly goals** and a progress card you can print or share.
 - [ ] **"Learn how to learn":** see spacing work on yourself.
-- [ ] **Calm mode,** and rewards that say what they are for.
+- [x] **Calm mode,** rewards that say what they are for, and one round swap per session (#216).
 - [ ] **Sleep bridge:** learn in the evening, check in the morning.
 
 **Tier 3: weaker evidence, niche or large**

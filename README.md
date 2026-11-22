@@ -49,7 +49,9 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - it forgives capitals, small typos and German umlauts typed as `ae`, `oe`, `ue`;
   - there is an "I was right" button for when it's too strict.
 - **Keeps you going:**
-  - XP, levels, combos and badges;
+  - XP, levels, combos and badges, and the summary says what each XP reward was for;
+  - **calm mode** hides XP, levels, combos and celebrations and keeps your progress, for people who prefer no game elements;
+  - once per session you can swap a round for another format;
   - a streak with freezes (one missed day doesn't wipe you out);
   - an if-then study plan in your own words ("After I finish dinner, I'll study for 5 minutes"), which the daily reminder shows;
   - rescue rounds when you're struggling;

@@ -4,6 +4,7 @@ import type { Item } from '@lernlab/core/types';
 import {
   MISSED_SHOWN,
   TOMORROW_SHOWN,
+  celebrates,
   summaryFacts,
   summaryMoments,
   tomorrowCards,
@@ -73,6 +74,23 @@ test('moments: level-up first, then badges, then streak news; nothing for an ord
   const quiet = { ...repair, streakChange: { freezeEarned: false, repaired: false, repairDone: null } };
   assert.deepEqual(summaryMoments(summaryFacts(result, quiet, items), quiet), []);
   assert.deepEqual(summaryMoments(summaryFacts(result, null, items), null), []);
+});
+
+test('calm mode keeps streak news and drops the level, the badges and the celebration (#216)', () => {
+  const server = {
+    bonus: 0,
+    sessionXp: 120,
+    goalMetNow: true,
+    state: { totalXp: 300, week },
+    unlocked: [{ key: 'first' }],
+    streakChange: { freezeEarned: true, repaired: false, repairDone: null },
+  };
+  const f = summaryFacts(result, server, items);
+  assert.deepEqual(summaryMoments(f, server, true), [{ kind: 'freeze' }]);
+  assert.equal(celebrates(f, server, false), true);
+  assert.equal(celebrates(f, server, true), false);
+  assert.equal(celebrates({ levelUp: null }, { goalMetNow: false, unlocked: [] }, false), false);
+  assert.equal(celebrates({ levelUp: null }, null, false), false);
 });
 
 test('the tomorrow check asks about the new cards met, question only, never in practice (#205)', () => {

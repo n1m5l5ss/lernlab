@@ -284,7 +284,9 @@
       "cancel": "Keep it off"
     },
     "confidence": "Ask how sure I was",
-    "confidenceHint": "After about 1 answer in 4, one optional tap from 1 to 5. It never changes when a card comes back; Progress shows how well it matches what you really recall."
+    "confidenceHint": "After about 1 answer in 4, one optional tap from 1 to 5. It never changes when a card comes back; Progress shows how well it matches what you really recall.",
+    "calm": "Calm mode",
+    "calmHint": "Hides XP, levels, combos, badge news and confetti. Your progress, streak and study days stay. XP is still counted quietly, so nothing is lost if you switch back."
   },
   "home": {
     "welcomeTitle": "Welcome to LernLab",
@@ -909,7 +911,27 @@
     "daysOf_one": "{{count}} of 7",
     "daysOf_other": "{{count}} of 7",
     "daysThisWeek": "days this week",
-    "goalReached": "Daily goal reached (+{{xp}} XP)",
+    "goalReached": "Daily goal reached",
+    "rewardsTitle": "What your XP was for",
+    "rewardXp": "+{{xp, number}}",
+    "rewards": {
+      "recall_one": "{{count}} answer recalled from memory",
+      "recall_other": "{{count}} answers recalled from memory",
+      "comeback_one": "{{count}} card recalled after a slip",
+      "comeback_other": "{{count}} cards recalled after a slip",
+      "practice_one": "{{count}} right answer in practice rounds and games",
+      "practice_other": "{{count}} right answers in practice rounds and games",
+      "run_one": "Answers right in a row",
+      "run_other": "Answers right in a row (longest run: {{count}})",
+      "tried_one": "{{count}} miss: trying counts too",
+      "tried_other": "{{count}} misses: trying counts too",
+      "perfect_one": "{{count}} round with every answer right",
+      "perfect_other": "{{count}} rounds with every answer right",
+      "goal_one": "Daily goal reached",
+      "goal_other": "Daily goal reached",
+      "boss_one": "Boss defeated",
+      "boss_other": "Boss defeated"
+    },
     "momentsTitle": "What you earned",
     "moments": {
       "levelTitle": "Level {{level}} reached",
@@ -924,7 +946,7 @@
       "repairBody_one": "One more session by {{deadline}} brings your {{count}}-day streak back.",
       "repairBody_other": "One more session by {{deadline}} brings your {{count}}-day streak back."
     },
-    "bossDefeated": "Boss defeated (+{{xp}} XP)",
+    "bossDefeated": "Boss defeated",
     "missed_one": "This one comes back tomorrow",
     "missed_other": "These {{count}} come back tomorrow",
     "missedPractice_one": "This one is worth another look",
@@ -1163,6 +1185,12 @@
     "xp": "⭐ {{xp, number}}",
     "xpLabel": "XP this session",
     "xpFloat": "+{{xp}}",
+    "xpFloatRun": "+{{xp}} · {{count}} in a row",
+    "xpFloatComeback": "+{{xp}} · back after a slip",
+    "xpFloatPerfect": "+{{xp}} · whole round right",
+    "swap": "Swap this round",
+    "swapHint": "Once per session: do this round in another format, with the same cards",
+    "swapped": "Swapped: the same cards in another format.",
     "end": "End session",
     "step": "{{n}} of {{total}}",
     "blockProgress": "Progress in this block",
