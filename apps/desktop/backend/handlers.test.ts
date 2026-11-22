@@ -691,3 +691,28 @@ test('three mix-ups of two cards bring a compare-card offer; the card is added o
   assert.equal((await ok('cards.get', { id })).extra.twin, card.extra.twin, 'kept by the card editor');
   assert.deepEqual(await ok('confusions.dismiss', { a: a.id, b: b.id }), { ok: true });
 });
+
+test('teach-back: a mastered tag is offered, gives its key points, and its missed cards make a practice session', async () => {
+  const deck = await ok('decks.create', { name: 'Teach', language: null });
+  const ids: number[] = [];
+  for (const [front, back] of [
+    ['What makes ATP?', 'The mitochondrion'],
+    ['What builds proteins?', 'The ribosome'],
+    ['What holds DNA?', 'The nucleus'],
+  ])
+    ids.push((await ok('cards.add', { deckId: deck.id, card: { front, back, tags: 'organelles' } })).id);
+  assert.deepEqual(await ok('teachback.topics'), [], 'not mastered yet');
+  for (const itemId of ids)
+    await ok('attempt.record', { sessionId: 'tb', itemId, format: 'typed', correct: true, responseMs: 1, xp: 0 });
+  assert.deepEqual(await ok('teachback.topics'), [{ tag: 'organelles', cards: 3 }]);
+  const points = await ok('teachback.points', { tag: 'organelles' });
+  assert.deepEqual(
+    points.map((p: { text: string }) => p.text),
+    ['The mitochondrion', 'The ribosome', 'The nucleus'],
+  );
+  const plan = await ok('teachback.practice', { ids: [ids[1]] });
+  assert.equal(plan.practice, true);
+  assert.deepEqual(Object.keys(plan.items).map(Number), [ids[1]]);
+  const none = await handle('teachback.practice', { ids: [] });
+  assert.equal(!none.ok && none.error.code, 'invalid_input');
+});

@@ -17,6 +17,7 @@ import { Badges } from './Badges';
 import { StreakPanel } from './Motivation';
 import { Shell } from './Shell';
 import { AiRequests } from './AiRequests';
+import { TeachBack } from './TeachBack';
 import { Welcome } from './Welcome';
 import { WhatsNew } from './WhatsNew';
 import { formatDate, setLanguage } from './i18n';
@@ -31,6 +32,7 @@ type AppState = OutputOf<'state.get'>;
 type FullScreen =
   | { name: 'play'; plan: SessionPlan }
   | { name: 'exam'; deckId: number }
+  | { name: 'teach'; tag: string }
   | {
       name: 'summary';
       result: SessionResult;
@@ -194,6 +196,23 @@ export function App() {
         }}
       />
     );
+  if (full?.name === 'teach')
+    return (
+      <TeachBack
+        tag={full.tag}
+        onPractise={async (ids) => {
+          try {
+            setFull({ name: 'play', plan: await api.teachPractice(ids) });
+          } catch (e) {
+            setError(message(e));
+          }
+        }}
+        onDone={() => {
+          go('progress');
+          refresh();
+        }}
+      />
+    );
   if (full?.name === 'summary')
     return (
       <Summary
@@ -230,7 +249,7 @@ export function App() {
       {route === 'cards' && <Browse state={state} refresh={refresh} />}
       {route === 'progress' && (
         <div className="col" style={{ gap: 'var(--space-5)' }}>
-          <Progress onStudyHardest={studyHardest} />
+          <Progress onStudyHardest={studyHardest} onTeach={(tag) => setFull({ name: 'teach', tag })} />
           <StreakPanel streak={state.streak} />
           <Badges got={state.achievements} />
         </div>

@@ -212,6 +212,17 @@ The **…** button on a deck in **Decks** opens the deck settings: its name, the
 
 A card counts as learned once you have recalled it from memory, not just recognised it.
 
+### Teach it back
+
+Explaining something to someone else shows what you really know. When you know most cards of a tag (at least 3 cards, and 4 out of 5 learned), Progress lists the tag under **Teach it back**. Language decks are left out.
+
+1. Press **Explain it**. LernLab asks you to explain the topic to a beginner in about 60 seconds. That is a suggestion: there is no timer.
+2. Say it out loud, type it, or press **Record your voice** and **Stop recording** when you are done.
+3. Press **Compare with the key points**. You see your explanation (and can play your recording) above the topic's key points: the key points of its Explain it cards and the answers of its other cards, at most 8.
+4. Tick the points you missed. **Practise … cards** starts a practice session with just the cards behind them.
+
+Nothing here is saved or graded, and it never changes when your cards come back. Your text and your recording stay on your computer and are gone when you leave the screen.
+
 ## Back up and move your data
 
 Everything stays on your computer, in one data folder: your decks, cards, progress, settings, pictures and sounds. Nothing is uploaded.

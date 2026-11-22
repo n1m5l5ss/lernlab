@@ -6,6 +6,7 @@ import { getDb, type DB } from './db';
 import { host } from './host';
 import {
   allItems,
+  cardsScope,
   currentSource,
   freshPerDeck,
   scopeFor,
@@ -70,17 +71,21 @@ export function planSession(
   d: DB = getDb(),
   now = new Date(),
   sourceArg?: number | null | StudySource,
-  { practice = false }: { practice?: boolean } = {},
+  {
+    practice = false,
+    cards,
+  }: { practice?: boolean; /** Only these cards (teach-back's missed points). */ cards?: number[] } = {},
 ): SessionPlan {
-  const source: StudySource =
-    sourceArg === undefined
+  const source: StudySource = cards
+    ? { kind: 'all' }
+    : sourceArg === undefined
       ? currentSource(d)
       : sourceArg === null
         ? { kind: 'all' }
         : typeof sourceArg === 'number'
           ? { kind: 'deck', deckId: sourceArg }
           : sourceArg;
-  const scope = scopeFor(source, d);
+  const scope = cards ? cardsScope(cards) : scopeFor(source, d);
   const deckId = source.kind === 'deck' ? source.deckId : null;
   const deck = deckId ? getDeck(deckId, d) : null;
   const settings = getSettings(d);

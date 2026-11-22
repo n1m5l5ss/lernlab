@@ -1627,5 +1627,37 @@
       "image": "This picture is on the internet. To show it, turn on “Allow pictures and sounds from the internet” in Settings.",
       "video": "This video is on the internet. To show it, turn on “Allow pictures and sounds from the internet” in Settings."
     }
+  },
+  "teach": {
+    "title": "Teach it back",
+    "intro": "You know these topics well. Explaining one to a beginner in about {{seconds}} seconds shows what you can say without the cards. It is practice and never changes your schedule.",
+    "cards_one": "{{count}} card",
+    "cards_other": "{{count}} cards",
+    "start": "Explain it",
+    "startFor": "Explain {{tag}}",
+    "kicker": "Teach it back",
+    "prompt": "Explain “{{tag}}” to a beginner in about {{seconds}} seconds. Say it out loud, record yourself or type it. There is no timer: take the time you need.",
+    "typeLabel": "Your explanation",
+    "typePlaceholder": "Start with the main idea, in simple words…",
+    "record": "Record your voice",
+    "recordAgain": "Record again",
+    "stop": "Stop recording ({{time}})",
+    "recording": "Recording. Press Stop recording when you are done.",
+    "recorded": "Recording ready. You can play it on the next step.",
+    "yourRecording": "Your recording",
+    "private": "Your explanation is not saved. The recording stays on this computer and is gone when you leave this screen.",
+    "compare": "Compare with the key points",
+    "back": "Back to Progress",
+    "checkNote": "Read or play your explanation again and compare it with the key points. Tick the ones you left out.",
+    "yours": "Your explanation",
+    "missedLegend": "Tick the points you missed",
+    "noPoints": "This topic has no key points to compare with yet.",
+    "missedCount_one": "{{count}} card is worth another look.",
+    "missedCount_other": "{{count}} cards are worth another look.",
+    "allCovered": "Nothing ticked: you covered every point.",
+    "practise_one": "Practise {{count}} card",
+    "practise_other": "Practise {{count}} cards",
+    "done": "Done",
+    "again": "Explain it again"
   }
 }

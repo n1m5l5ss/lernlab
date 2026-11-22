@@ -27,3 +27,9 @@ export function micProblem(e: unknown): 'denied' | 'noMic' | 'failed' {
   if (name === 'NotFoundError' || name === 'OverconstrainedError' || name === 'NotReadableError') return 'noMic';
   return 'failed';
 }
+
+/** Seconds as m:ss, for a recording that counts up (teach-back). */
+export function clock(seconds: number): string {
+  const s = Math.max(0, Math.floor(seconds));
+  return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}

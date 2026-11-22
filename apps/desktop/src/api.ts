@@ -27,6 +27,10 @@ export const api = {
   dismissTwin: (body: InputOf<'confusions.dismiss'>) => call('confusions.dismiss', body),
   summary: () => call('summary.today'),
   progress: () => call('progress.get'),
+  /** Teach-back (#208): mastered tags, a tag's key points, and a practice session over missed cards. */
+  teachTopics: () => call('teachback.topics'),
+  teachPoints: (tag: string) => call('teachback.points', { tag }),
+  teachPractice: (ids: number[]) => call('teachback.practice', { ids }),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),
   appInfo: () => call('app.info'),
   /** The hour you usually study, from local sessions (#204). */

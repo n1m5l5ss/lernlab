@@ -137,6 +137,9 @@ export function hardestCards(limit: number, d: DB = getDb()): { id: number; laps
 }
 
 /** Turn a study source into a query scope. Only numbers are written into SQL; tags are matched in code. */
+/** Just these cards, whatever their deck. */
+export const cardsScope = (ids: number[]): Scope => ({ source: { kind: 'all' }, where: idList(ids) });
+
 export function scopeFor(source: StudySource, d: DB = getDb()): Scope {
   switch (source.kind) {
     case 'deck':

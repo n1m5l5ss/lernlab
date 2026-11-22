@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import type { OutputOf } from '../backend/handlers';
+import { TEACH_SECONDS } from '@lernlab/core/teachback';
 import { api } from './api';
 import { directionOf } from './direction';
 import { formatDate, formatNumber, formatPercent } from './i18n';
@@ -17,7 +18,14 @@ type DeckJourney = Journey['decks'][number];
 const date = (day: string, opts?: Intl.DateTimeFormatOptions) => formatDate(`${day}T12:00:00`, opts);
 const b = { b: <b /> };
 
-export function Progress({ onStudyHardest }: { onStudyHardest: () => void }) {
+export function Progress({
+  onStudyHardest,
+  onTeach,
+}: {
+  onStudyHardest: () => void;
+  /** Teach-back (#208): explain a mastered tag. */
+  onTeach: (tag: string) => void;
+}) {
   const { t } = useTranslation();
   const [p, setP] = useState<Journey | null>(null);
   useEffect(() => {
@@ -63,6 +71,7 @@ export function Progress({ onStudyHardest }: { onStudyHardest: () => void }) {
       <Retention p={p} />
       <Calibration p={p} />
       <Hardest p={p} onStudy={onStudyHardest} />
+      <TeachTopics onTeach={onTeach} />
     </div>
   );
 }
@@ -448,6 +457,41 @@ function Calibration({ p }: { p: Journey }) {
         <span>{t('progress.calibration.axis')}</span>
         <span>{t('progress.calibration.high')}</span>
       </div>
+    </section>
+  );
+}
+
+/** Tags the learner has mastered, each with "Teach it back". Nothing shows until there is one. */
+function TeachTopics({ onTeach }: { onTeach: (tag: string) => void }) {
+  const { t } = useTranslation();
+  const [topics, setTopics] = useState<OutputOf<'teachback.topics'>>([]);
+  useEffect(() => {
+    api
+      .teachTopics()
+      .then(setTopics)
+      .catch(() => setTopics([]));
+  }, []);
+  if (!topics.length) return null;
+  return (
+    <section className="panel journey-panel journey-teach" aria-labelledby="journey-teach">
+      <h2 id="journey-teach">{t('teach.title')}</h2>
+      <p className="muted">{t('teach.intro', { seconds: TEACH_SECONDS })}</p>
+      <ul>
+        {topics.map((topic) => (
+          <li key={topic.tag}>
+            <span className="grow">
+              <b>{topic.tag}</b> <span className="muted small">{t('teach.cards', { count: topic.cards })}</span>
+            </span>
+            <button
+              className="btn"
+              onClick={() => onTeach(topic.tag)}
+              aria-label={t('teach.startFor', { tag: topic.tag })}
+            >
+              {t('teach.start')}
+            </button>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
