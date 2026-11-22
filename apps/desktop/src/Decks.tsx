@@ -10,6 +10,8 @@ import { onVoicesChanged, systemVoices, tryVoice } from './audio';
 import { formatDate, formatLanguage, formatNumber } from './i18n';
 import { examSoon } from './plan-logic';
 import { examSettings, type ExamSettings } from '@lernlab/core/exam';
+import { MAP_TEXT_MAX_LENGTH, parseMaps } from '@lernlab/core/conceptmap';
+import type { TFunction } from 'i18next';
 import { MAX_RATE, MIN_RATE, clampRate, voicesFor } from './voice-logic';
 
 type AppState = OutputOf<'state.get'>;
@@ -32,12 +34,24 @@ type Form = {
   goalWords: string;
   examDate: string;
   subject: string;
+  maps: string;
   voice: string;
   rate: string;
   examQuestions: string;
   examMinutes: string;
   examPassMark: string;
 };
+
+/** Under the maps field: how to write a map, or what LernLab read from what is written so far. */
+function mapsNote(text: string, t: TFunction): string {
+  if (!text.trim()) return t('decks.editor.mapsHint');
+  const maps = parseMaps(text);
+  if (!maps.length) return t('decks.editor.mapsNone');
+  return t('decks.editor.mapsRead', {
+    count: maps.length,
+    links: maps.reduce((n, m) => n + m.links.length, 0),
+  });
+}
 
 const formFor = (d?: DeckRow): Form => ({
   voice: d?.settings.voice ?? '',
@@ -50,6 +64,7 @@ const formFor = (d?: DeckRow): Form => ({
   goalWords: d?.settings.goal?.words ? String(d.settings.goal.words) : '',
   examDate: d?.settings.examDate ?? '',
   subject: d?.settings.subject ?? '',
+  maps: d?.settings.maps ?? '',
   ...examForm(examSettings(d?.settings.exam)),
 });
 const examForm = (e: ExamSettings) => ({
@@ -332,6 +347,7 @@ function DeckEditor({
       goal: f.goalLabel.trim() ? { label: f.goalLabel, words: Number(f.goalWords) || 0 } : null,
       examDate: f.examDate,
       subject: f.subject,
+      maps: f.maps,
       voice: f.voice,
       rate: Number(f.rate),
       exam: { questions: f.examQuestions, minutes: f.examMinutes, passMark: f.examPassMark },
@@ -394,6 +410,23 @@ function DeckEditor({
       </label>
       <p id="deck-subject-hint" className="small muted">
         {t('decks.editor.subjectHint')}
+      </p>
+      <label className="deck-field" htmlFor="deck-maps">
+        <span>{t('decks.editor.maps')}</span>
+      </label>
+      <textarea
+        id="deck-maps"
+        className="input deck-maps"
+        rows={5}
+        spellCheck={false}
+        maxLength={MAP_TEXT_MAX_LENGTH}
+        value={f.maps}
+        aria-describedby="deck-maps-hint"
+        placeholder={t('decks.editor.mapsPlaceholder')}
+        onChange={(e) => set('maps', e.target.value)}
+      />
+      <p id="deck-maps-hint" className="small muted">
+        {mapsNote(f.maps, t)}
       </p>
       <fieldset className="deck-voice">
         <legend>{t('decks.editor.examTitle')}</legend>

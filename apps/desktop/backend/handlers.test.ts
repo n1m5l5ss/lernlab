@@ -818,3 +818,21 @@ test('the card editor saves, keeps and clears a graph and the translate type; a 
   await ok('cards.update', { id, card: { ...card, type: 'basic', graph: '' } });
   assert.deepEqual((await ok('cards.get', { id })).extra, {}, 'cleared');
 });
+
+test("concept maps: a deck keeps its cleaned maps; topics list them; a topic gives terms and the author's links", async () => {
+  assert.deepEqual(await ok('conceptmap.topics'), []);
+  const deck = await ok('decks.create', { name: 'Maps', language: null });
+  const maps = '# Cell energy\n<b>Glucose</b> --feeds--> Mitochondrion\nMitochondrion --makes--> ATP\nnot a link';
+  const saved = await ok('decks.update', { id: deck.id, patch: { settings: { maps } } });
+  assert.equal(saved.settings.maps, '# Cell energy\nGlucose --feeds--> Mitochondrion\nMitochondrion --makes--> ATP');
+  assert.deepEqual(await ok('conceptmap.topics'), [
+    { deckId: deck.id, deckName: 'Maps', topic: 'Cell energy', terms: 3, links: 2 },
+  ]);
+  const map = await ok('conceptmap.get', { deckId: deck.id, topic: 'Cell energy' });
+  assert.deepEqual(map.terms, ['ATP', 'Glucose', 'Mitochondrion']);
+  assert.equal(map.links.length, 2);
+  const none = await handle('conceptmap.get', { deckId: deck.id, topic: 'Other' });
+  assert.equal(!none.ok && none.error.code, 'map_not_found');
+  await ok('decks.update', { id: deck.id, patch: { settings: { maps: '' } } });
+  assert.deepEqual(await ok('conceptmap.topics'), [], 'an emptied field clears the maps');
+});

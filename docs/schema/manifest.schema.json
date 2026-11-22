@@ -43,6 +43,11 @@
             "hoursHigh": { "description": "Upper estimate of study hours.", "type": "number", "minimum": 0 },
             "tag": { "description": "Tag that marks the cards counting towards the goal.", "type": "string" }
           }
+        },
+        "maps": {
+          "description": "Optional, added after v1 was published; older readers ignore it. The author's concept maps as plain text. A line starting with # opens a map and names its topic; each following line is one link, \"Term --label--> Other term\" (or \"Term --> Other term\"). At most 20 maps, 16 terms and 30 links per map, 6000 characters in all; a map needs at least two links. Readers skip lines they cannot read and remove any HTML.",
+          "type": "string",
+          "maxLength": 6000
         }
       }
     },

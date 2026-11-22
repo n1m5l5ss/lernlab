@@ -5,10 +5,12 @@ import assert from 'node:assert/strict';
 import { createElement as h, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { parseGraph, plotGraph } from '@lernlab/core/graph';
+import { layoutTerms } from '@lernlab/core/conceptmap';
 import {
   Button,
   Card,
   CasePanel,
+  ConceptMapView,
   ConfidenceRow,
   Feedback,
   GraphPlot,
@@ -179,6 +181,29 @@ test('GraphPlot is one image with a text alternative; grid, ticks and curve are 
   assert.equal(out.match(/<circle class="graph-plot-dot"/g)?.length, 2);
   assert.match(out, /<g aria-hidden="true">/);
   assert.match(out, /<text class="graph-plot-tick"[^>]*>0\.5<\/text>/);
+});
+
+test('ConceptMapView is one image with a text alternative; a link shows its tone by line style, not colour alone', () => {
+  const nodes = layoutTerms(['Glucose', 'ATP']);
+  const links = [{ from: 'glucose', to: 'ATP', label: 'becomes', tone: 'missing' as const }];
+  const out = html(h(ConceptMapView, { nodes, links, label: "The author's map: 1 link" }));
+  assert.match(
+    out,
+    /^<svg class="cmap-view" viewBox="0 0 360 260" width="360" height="260" role="img" aria-label="The author&#x27;s map: 1 link">/,
+  );
+  assert.match(out, /<g aria-hidden="true">/);
+  assert.match(out, /<g class="cmap-view-link cmap-view-missing"><line /);
+  assert.match(out, /<text class="cmap-view-label"[^>]*>becomes<\/text>/);
+  assert.equal(out.match(/<rect class="cmap-view-node"/g)?.length, 2);
+  // A link to a term the picture does not have is left out; a long term is cut (the list has it in full).
+  const odd = html(
+    h(ConceptMapView, {
+      nodes: layoutTerms(['A very long term that will not fit']),
+      links: [{ from: 'x', to: 'y', label: '' }],
+      label: 'x',
+    }),
+  );
+  assert.ok(!odd.includes('<line') && odd.includes('A very long term …'));
 });
 
 test('Misconception shows the lead, the correction and then the right answer', () => {

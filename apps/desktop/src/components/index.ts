@@ -2,6 +2,7 @@
 export { Button, type ButtonProps, type ButtonVariant } from './Button';
 export { Card, type CardProps } from './Card';
 export { CasePanel, type CasePanelProps } from './CasePanel';
+export { ConceptMapView, type ConceptMapViewProps } from './ConceptMapView';
 export { ConfidenceRow, type ConfidencePick, type ConfidenceRowProps } from './ConfidenceRow';
 export { GraphPlot, type GraphPlotProps } from './GraphPlot';
 export { Feedback, type FeedbackProps, type FeedbackTone } from './Feedback';

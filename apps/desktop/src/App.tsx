@@ -18,6 +18,7 @@ import { StreakPanel } from './Motivation';
 import { Shell } from './Shell';
 import { AiRequests } from './AiRequests';
 import { TeachBack } from './TeachBack';
+import { ConceptMap } from './ConceptMap';
 import { Welcome } from './Welcome';
 import { WhatsNew } from './WhatsNew';
 import { formatDate, setLanguage } from './i18n';
@@ -33,6 +34,7 @@ type FullScreen =
   | { name: 'play'; plan: SessionPlan }
   | { name: 'exam'; deckId: number }
   | { name: 'teach'; tag: string }
+  | { name: 'map'; deckId: number; topic: string }
   | {
       name: 'summary';
       result: SessionResult;
@@ -207,6 +209,17 @@ export function App() {
         }}
       />
     );
+  if (full?.name === 'map')
+    return (
+      <ConceptMap
+        deckId={full.deckId}
+        topic={full.topic}
+        onDone={() => {
+          go('progress');
+          refresh();
+        }}
+      />
+    );
   if (full?.name === 'teach')
     return (
       <TeachBack
@@ -262,7 +275,11 @@ export function App() {
       {route === 'cards' && <Browse state={state} refresh={refresh} />}
       {route === 'progress' && (
         <div className="col" style={{ gap: 'var(--space-5)' }}>
-          <Progress onStudyHardest={studyHardest} onTeach={(tag) => setFull({ name: 'teach', tag })} />
+          <Progress
+            onStudyHardest={studyHardest}
+            onTeach={(tag) => setFull({ name: 'teach', tag })}
+            onMap={(deckId, topic) => setFull({ name: 'map', deckId, topic })}
+          />
           <StreakPanel streak={state.streak} />
           <Badges got={state.achievements} />
         </div>

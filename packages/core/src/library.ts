@@ -20,6 +20,7 @@ import { cleanRequires } from './requires';
 import { cleanGraph } from './graph';
 import { cleanWorkedSteps, parseWorkedSteps } from './worked';
 import { cleanCase, questionOf } from './cases';
+import { cleanMaps } from './conceptmap';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -38,6 +39,8 @@ export type DeckSettings = {
   exam?: Partial<ExamSettings>;
   /** A maths or science deck: a new unit opens with a problem to try before its cards (guess.ts, #218). */
   subject?: 'maths' | 'science';
+  /** The author's concept maps, as text: "# topic" then one "A --label--> B" link per line (conceptmap.ts, #219). */
+  maps?: string;
 };
 
 /**
@@ -74,6 +77,7 @@ export function cleanDeckSettings(input: Record<string, unknown>): Partial<Recor
   if ('exam' in input) out.exam = cleanExamSettings(input.exam);
   if ('subject' in input)
     out.subject = input.subject === 'maths' || input.subject === 'science' ? input.subject : undefined;
+  if ('maps' in input) out.maps = (typeof input.maps === 'string' && cleanMaps(input.maps)) || undefined;
   return out;
 }
 

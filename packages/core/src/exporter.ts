@@ -116,7 +116,13 @@ export function exportDeck(
     return { name: `${safe}.apkg`, data: writeApkg(deck.name, cards, media), type: 'application/zip' };
   const data = writeLernpack(
     {
-      deck: { name: deck.name, language: deck.language, description: deck.description, goal: deck.settings.goal },
+      deck: {
+        name: deck.name,
+        language: deck.language,
+        description: deck.description,
+        goal: deck.settings.goal,
+        maps: deck.settings.maps,
+      },
       generator: 'LernLab',
     },
     cards,

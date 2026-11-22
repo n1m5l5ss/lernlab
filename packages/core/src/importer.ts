@@ -6,6 +6,7 @@ import {
   createDeck,
   deckByName,
   getDeck,
+  updateDeck,
   storeMedia,
   upsertCards,
   type Deck,
@@ -13,6 +14,7 @@ import {
   type NormalizedCard,
   type SkipCode,
 } from './library';
+import { cleanMaps } from './conceptmap';
 import { csvToCards, pastedToCards } from './formats/csv';
 import { lernpackMedia, readLernpack } from './formats/lernpack';
 import { readApkg } from './formats/apkg';
@@ -75,6 +77,12 @@ export const IMPORT_REPORT_CODES: readonly (SkipCode | ImportWarningCode)[] = [
   'nested_zip_ignored',
   'encoding_guessed',
 ];
+
+/** A file's concept maps (conceptmap.ts) go to a deck that has none yet: cleaned, and never over the user's own. */
+function withMaps(deck: Deck, maps: unknown, d: DB): Deck {
+  const text = typeof maps === 'string' && !deck.settings.maps ? cleanMaps(maps) : '';
+  return text ? updateDeck(deck.id, { settings: { maps: text } }, d) : deck;
+}
 
 function pickDeck(
   fallbackName: string,
@@ -203,7 +211,7 @@ export function importFile(
           const deck = pickDeck(g.name || base, opts, g.language ?? null, g.goal ? { goal: g.goal } : {}, d);
           if (g.description && !deck.description)
             d.prepare('UPDATE decks SET description = ? WHERE id = ?').run(g.description, deck.id);
-          return deck;
+          return withMaps(deck, g.maps, d);
         },
         d,
       );
@@ -255,7 +263,10 @@ export function importFile(
   if (ext === '.json' && json === undefined)
     throw new UserError('bad_json', 'This JSON file could not be read: check that it is valid JSON');
   if (json !== undefined) {
-    const j = json as { cards?: unknown; deck?: { name?: unknown; language?: unknown; goal?: unknown } } | null;
+    const j = json as {
+      cards?: unknown;
+      deck?: { name?: unknown; language?: unknown; goal?: unknown; maps?: unknown };
+    } | null;
     const list = Array.isArray(j) ? j : Array.isArray(j?.cards) ? j.cards : [];
     if (!list.length)
       throw new UserError('no_cards', 'No cards found. Use one card per line: front, back (comma or tab separated).');
@@ -275,7 +286,7 @@ export function importFile(
     const goal = g.goal && typeof g.goal === 'object' ? { goal: g.goal as DeckSettings['goal'] } : {};
     return finish(
       { format: 'json', cards, lines, invalid, warnings },
-      () => pickDeck(name, opts, language, goal, d),
+      () => withMaps(pickDeck(name, opts, language, goal, d), g.maps, d),
       d,
     );
   }

@@ -276,6 +276,31 @@ test('graphs: any text reads or gives no graph, never throws; the kept line is s
   );
 });
 
+const { cleanMaps, parseMaps, compareMaps, termsOf, MAPS_MAX, MAP_LINKS_MAX, MAP_TERMS_MAX } =
+  await import('../src/conceptmap');
+test('concept maps: any text gives capped maps of plain text, cleaning is stable and comparing never throws', () => {
+  const line = fc.oneof(
+    hostileText,
+    fc.tuple(hostileText, hostileText, hostileText).map(([a, l, b]) => `${a} --${l}--> ${b}`),
+    hostileText.map((t) => `# ${t}`),
+  );
+  fc.assert(
+    fc.property(fc.array(line, { maxLength: 60 }), (lines) => {
+      const text = cleanMaps(lines.join('\n'));
+      assert.equal(cleanMaps(text), text, 'cleaning twice changes nothing');
+      assert.equal(sanitizeHtml(text), text, 'plain text');
+      const maps = parseMaps(text);
+      assert.ok(maps.length <= MAPS_MAX);
+      for (const m of maps) {
+        assert.ok(m.links.length >= 2 && m.links.length <= MAP_LINKS_MAX && termsOf(m.links).length <= MAP_TERMS_MAX);
+        const c = compareMaps(m.links.slice(1), m.links);
+        assert.deepEqual([c.matched.length, c.missing.length, c.extra.length], [m.links.length - 1, 1, 0]);
+      }
+    }),
+    params(RUNS),
+  );
+});
+
 const { cleanCase, caseHtml, questionOf, CASE_MAX_LENGTH } = await import('../src/cases');
 test('cases: any text gives one line of plain text, cleaning is stable and the HTML stays safe', () => {
   fc.assert(

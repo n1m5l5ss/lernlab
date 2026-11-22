@@ -54,6 +54,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **Mnemonics that fade:** give a card a memory aid. It shows only after a miss or when you ask for a hint, never before you try, and stops showing by itself once you get the card right twice in a row.
 - **Sketch pad:** when you meet a new card, draw its meaning with a mouse, finger or pen, or describe the picture in words. Your sketch stays on your computer and shows with the answer on later reviews. Optional, never graded, and never part of a deck you export.
 - **Teach it back:** for a tag you know well, explain it to a beginner in about a minute, typed or recorded, then tick the key points you left out and practise those cards. Nothing is saved or graded.
+- **Draw the map from memory:** for a topic with a concept map from the deck's author, link its terms from memory, then compare the two maps side by side. Practice only: no grade, no timer.
 - **Say a few answers aloud:** on a few starred or recently missed flip cards, a session asks you to say the answer out loud before you show it. No microphone, and never on every card.
 - **Act it out:** a few cards tagged `action`, and a few verbs in language decks, ask you to do or mime the action when the answer shows.
 - **A quiet minute (optional):** after a session with new cards, the summary can offer one minute of eyes-closed rest. It may help; the studies disagree, so it is off by default.

@@ -113,7 +113,8 @@ These come from a review of the research on remembering, understanding and stayi
 - [x] **"Act it out" cards:** a few cards tagged `action`, and a few verbs in language decks, ask you to act the answer out (#225).
 - [x] **An optional quiet minute** after a session with new cards; off by default, because the evidence is mixed (#226).
 - [x] **Sketch pad:** draw a new card's meaning; the sketch is kept as your own picture cue and shows with the answer (#220).
-- [ ] Concept map from memory; study together on one computer.
+- [x] **Concept map from memory:** link a topic's terms from memory, then compare with the author's map (#219). Placing the terms by hand on a canvas is not built: the picture is laid out automatically.
+- [ ] Study together on one computer.
 
 ## Avoid
 

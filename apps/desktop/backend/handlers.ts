@@ -65,6 +65,7 @@ import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
+import { MAP_TOPIC_MAX_LENGTH, mapFor, mapTopics } from '@lernlab/core/conceptmap';
 import { TEACH_POINTS_MAX, teachBackPoints, teachBackTopics } from '@lernlab/core/teachback';
 import { setOcclusionMode, withOcclusionBoxes } from '@lernlab/core/occlusion';
 import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
@@ -631,6 +632,13 @@ export const handlers = {
   'teachback.practice': h(v.object({ ids: v.array(v.id, TEACH_POINTS_MAX) }), ({ ids }) => {
     if (!ids.length) throw new AppError('invalid_input', 'No cards to practise');
     return planSession('mini', getDb(), new Date(), undefined, { practice: true, cards: ids });
+  }),
+  /* ── Concept map from memory (#219): topics with an author's map, and one map to draw and compare. Nothing is saved. ── */
+  'conceptmap.topics': h(v.none, () => mapTopics(listDecks())),
+  'conceptmap.get': h(v.object({ deckId: v.id, topic: v.string(MAP_TOPIC_MAX_LENGTH) }), ({ deckId, topic }) => {
+    const map = mapFor(getDeck(deckId), topic);
+    if (!map) throw new AppError('map_not_found', 'This deck has no concept map for that topic');
+    return map;
   }),
   'attempt.record': h(
     v.object({

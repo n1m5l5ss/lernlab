@@ -31,6 +31,9 @@ export const api = {
   teachTopics: () => call('teachback.topics'),
   teachPoints: (tag: string) => call('teachback.points', { tag }),
   teachPractice: (ids: number[]) => call('teachback.practice', { ids }),
+  /** Concept map from memory (#219): topics with an author's map, and one map to draw and compare. */
+  mapTopics: () => call('conceptmap.topics'),
+  mapGet: (deckId: number, topic: string) => call('conceptmap.get', { deckId, topic }),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),
   appInfo: () => call('app.info'),
   /** The hour you usually study, from local sessions (#204). */

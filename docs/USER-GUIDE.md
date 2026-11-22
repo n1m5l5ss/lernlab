@@ -245,6 +245,28 @@ Explaining something to someone else shows what you really know. When you know m
 
 Nothing here is saved or graded, and it never changes when your cards come back. Your text and your recording stay on your computer and are gone when you leave the screen.
 
+
+### Draw the map from memory
+
+A concept map shows how the ideas of a topic connect: *Mitochondrion → makes → ATP*. When a deck has a concept map from its author, Progress lists its topic under **Draw the map from memory**.
+
+1. Press **Draw it**. You see the topic's terms, in A–Z order.
+2. Add the links you remember: choose a term under **From**, type how it relates (for example "makes"; you can leave this empty), choose the other term under **To**, and press **Add link**. Your links appear as a list, with **Remove** beside each, and as a picture below. Everything works with the keyboard and a screen reader; the picture shows the same links as the list.
+3. Press **Compare with the author's map**. The two maps appear side by side, and below them three lists: links in both maps, links only in the author's map, and links only in yours. For a link in both, you see your words next to the author's.
+
+This is practice: there is no timer, nothing is graded, and your schedule does not change. A map can be drawn in more than one good way, so a link that is only in yours is not marked wrong. LernLab places the terms in the picture itself; you cannot move them.
+
+**Writing a map for your deck.** Open the deck's settings on the Decks page and fill in **Concept maps (optional)**. Start a map with `#` and its topic, then write one link per line:
+
+```
+# Cell energy
+Glucose --is broken down in--> Mitochondrion
+Mitochondrion --makes--> ATP
+Oxygen --> Mitochondrion
+```
+
+A map needs at least two links and can have up to 16 terms and 30 links. The note under the field says how many maps LernLab reads. Maps travel with the deck in a LernLab deck file (`.lernpack`).
+
 ## Back up and move your data
 
 Everything stays on your computer, in one data folder: your decks, cards, progress, settings, pictures and sounds. Nothing is uploaded.

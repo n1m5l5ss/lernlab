@@ -24,10 +24,13 @@ const b = { b: <b /> };
 export function Progress({
   onStudyHardest,
   onTeach,
+  onMap,
 }: {
   onStudyHardest: () => void;
   /** Teach-back (#208): explain a mastered tag. */
   onTeach: (tag: string) => void;
+  /** Concept map from memory (#219): draw a topic's map, then compare with the author's. */
+  onMap: (deckId: number, topic: string) => void;
 }) {
   const { t } = useTranslation();
   const [p, setP] = useState<Journey | null>(null);
@@ -77,6 +80,7 @@ export function Progress({
       <Hardest p={p} onStudy={onStudyHardest} />
       <Methods />
       <TeachTopics onTeach={onTeach} />
+      <MapTopics onMap={onMap} />
     </div>
   );
 }
@@ -553,6 +557,42 @@ function TeachTopics({ onTeach }: { onTeach: (tag: string) => void }) {
               aria-label={t('teach.startFor', { tag: topic.tag })}
             >
               {t('teach.start')}
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
+/** Topics that have an author's concept map, each with "Draw it". Nothing shows until a deck has one. */
+function MapTopics({ onMap }: { onMap: (deckId: number, topic: string) => void }) {
+  const { t } = useTranslation();
+  const [topics, setTopics] = useState<OutputOf<'conceptmap.topics'>>([]);
+  useEffect(() => {
+    api
+      .mapTopics()
+      .then(setTopics)
+      .catch(() => setTopics([]));
+  }, []);
+  if (!topics.length) return null;
+  return (
+    <section className="panel journey-panel journey-teach" aria-labelledby="journey-maps">
+      <h2 id="journey-maps">{t('cmap.title')}</h2>
+      <p className="muted">{t('cmap.intro')}</p>
+      <ul>
+        {topics.map((topic) => (
+          <li key={`${topic.deckId}\n${topic.topic}`}>
+            <span className="grow">
+              <b>{topic.topic}</b>{' '}
+              <span className="muted small">{t('cmap.topicInfo', { deck: topic.deckName, count: topic.terms })}</span>
+            </span>
+            <button
+              className="btn"
+              onClick={() => onMap(topic.deckId, topic.topic)}
+              aria-label={t('cmap.startFor', { topic: topic.topic, deck: topic.deckName })}
+            >
+              {t('cmap.start')}
             </button>
           </li>
         ))}

@@ -3732,6 +3732,104 @@ textarea.input.code-input {
   line-height: 1.5;
   overflow-wrap: anywhere;
 }
+/* Concept map from memory (ConceptMap.tsx, components/ConceptMapView.tsx, #219). */
+.cmap-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: start;
+}
+.cmap-panel h2 {
+  margin: 0;
+}
+.cmap-terms,
+.cmap-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: var(--space-2);
+}
+.cmap-terms {
+  flex-wrap: wrap;
+}
+.cmap-terms li {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-subtle);
+}
+.cmap-list {
+  flex-direction: column;
+}
+.cmap-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  overflow-wrap: anywhere;
+}
+.cmap-add {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+.cmap-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.cmap-figure {
+  margin: 0;
+}
+.cmap-figure figcaption {
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+.cmap-view {
+  max-width: 100%;
+  height: auto;
+  align-self: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+.cmap-view-link line {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+.cmap-view-matched line {
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+.cmap-view-missing line {
+  stroke-dasharray: 7 5;
+}
+.cmap-view-extra line {
+  stroke-dasharray: 2 4;
+}
+.cmap-view-arrow {
+  fill: var(--color-text-muted);
+}
+.cmap-view-node {
+  fill: var(--color-subtle);
+  stroke: var(--color-border-strong);
+}
+.cmap-view-term {
+  fill: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.cmap-view-label {
+  fill: var(--color-text);
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: var(--color-bg);
+  stroke-width: 3px;
+}
+.deck-maps {
+  font-family: var(--font-mono, monospace);
+}
 /* A card's graph (components/GraphPlot.tsx, #210): a curve on a light grid, drawn from tokens only. */
 .graph-plot {
   max-width: 100%;
