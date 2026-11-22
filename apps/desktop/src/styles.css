@@ -2021,6 +2021,10 @@ kbd {
 .import-hints p {
   margin: var(--space-1) 0 0;
 }
+.say-aloud {
+  font-weight: 700;
+  color: var(--color-text);
+}
 .mnemonic {
   margin-top: var(--space-2);
   padding-inline-start: var(--space-2);

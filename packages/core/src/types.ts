@@ -141,7 +141,16 @@ export type Exercise =
   | { type: 'dictation'; itemId: number; sentence: string; translation: string }
   | { type: 'speak'; itemId: number; prompt: string; expected: string }
   | { type: 'lesson'; group: string; title: string; text: string; examples: { de: string; en: string }[] }
-  | { type: 'flip'; itemId: number; prompt: string; answer: string; reverse: boolean; level?: Level }
+  | {
+      type: 'flip';
+      itemId: number;
+      prompt: string;
+      answer: string;
+      reverse: boolean;
+      level?: Level;
+      /** Ask the learner to say the answer aloud before showing it (a few cards only, sayaloud.ts). */
+      sayAloud?: boolean;
+    }
   | { type: 'truefalse'; itemId: number; front: string; shown: string; isTrue: boolean }
   /** A myth card (misconceptions.ts): "True or myth?" about the statement, then why (its back). A real recall. */
   | { type: 'myth'; itemId: number; statement: string; why: string }

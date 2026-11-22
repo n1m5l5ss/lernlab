@@ -109,7 +109,8 @@ These come from a review of the research on remembering, understanding and stayi
 - [x] **Cover related card families:** when some cards of a small group are reviewed, the rest get a quick question within a day or two (#223).
 - [x] **Try first for maths and science:** a problem to try before a new unit's lesson, then the worked solution (#218).
 - [x] **Fading mnemonics:** a card's mnemonic shows only after a miss or a hint, and fades after 2 correct answers in a row (#221).
-- [ ] Concept map from memory; sketch pad; "say it aloud" on a few cards; study together on one computer; "act it out" cards; an optional quiet minute.
+- [x] **"Say it aloud" on a few cards:** starred or recently missed flip cards, at most about 1 in 5 (#222).
+- [ ] Concept map from memory; sketch pad; study together on one computer; "act it out" cards; an optional quiet minute.
 
 ## Avoid
 

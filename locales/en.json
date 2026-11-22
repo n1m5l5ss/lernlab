@@ -288,6 +288,8 @@
     },
     "confidence": "Ask how sure I was",
     "confidenceHint": "After about 1 answer in 4, one optional tap from 1 to 5. It never changes when a card comes back; Progress shows how well it matches what you really recall.",
+    "sayAloud": "Say a few answers aloud",
+    "sayAloudHint": "On a few starred or recently missed cards, a session asks you to say the answer out loud before you show it. It works because only some cards are spoken, so it is never asked on every card. No microphone is used.",
     "calm": "Calm mode",
     "calmHint": "Hides XP, levels, combos, badge news and confetti. Your progress, streak and study days stay. XP is still counted quietly, so nothing is lost if you switch back.",
     "sleepBridge": "Evening and morning rhythm",
@@ -1460,6 +1462,7 @@
       "title": "Recall · think of the answer",
       "show": "Show answer",
       "hint": "Say or think your answer first – that's what makes it stick.",
+      "sayAloud": "Say the answer out loud first, then show it.",
       "no": "Didn't know",
       "partly": "Partly",
       "yes": "Knew it"

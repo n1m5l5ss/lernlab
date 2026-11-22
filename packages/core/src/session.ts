@@ -30,7 +30,8 @@ import { GUESS_MAX, neverAnswered, pickGuessRound, pickTryFirst, topicIsNew, top
 import { variantIndex, variantsOf } from './variants';
 import { askedOwnWay } from './explain';
 import { isWorked } from './worked';
-import { arcadeSeconds, dayKey } from './game';
+import { addDays, arcadeSeconds, dayKey } from './game';
+import { SAY_ALOUD_DAYS, markSayAloud, sayAloudCap, sayAloudCards } from './sayaloud';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
 import { confusionMap, keepClose } from './confusions';
@@ -493,6 +494,15 @@ export function planSession(
     ...rainIds,
     ...blitzPool.slice(0, 12),
   ]);
+  // A few of the flip cards, starred or recently missed, ask for the answer out loud (#222).
+  if (settings.sayAloud) {
+    const flips = finalBlocks.flatMap((b) => ('exercises' in b ? b.exercises : [])).filter((e) => e.type === 'flip');
+    if (sayAloudCap(new Set(flips.map((e) => e.itemId)).size)) {
+      const since = addDays(dayKey(now), -SAY_ALOUD_DAYS);
+      const { missed, starred } = sayAloudCards([...new Set(flips.map((e) => e.itemId))], since, d);
+      markSayAloud(finalBlocks, missed, starred);
+    }
+  }
   for (const b of finalBlocks) {
     if ('itemIds' in b) b.itemIds.forEach((i) => ids.add(i));
     if ('exercises' in b) b.exercises.forEach((e) => 'itemId' in e && ids.add(e.itemId));

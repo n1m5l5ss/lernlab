@@ -51,6 +51,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **Try first:** in a deck you mark as maths or science, a new unit opens with a problem to try before the lesson, then its worked solution. Optional, no grade, no clock.
 - **Mnemonics that fade:** give a card a memory aid. It shows only after a miss or when you ask for a hint, never before you try, and stops showing by itself once you get the card right twice in a row.
 - **Teach it back:** for a tag you know well, explain it to a beginner in about a minute, typed or recorded, then tick the key points you left out and practise those cards. Nothing is saved or graded.
+- **Say a few answers aloud:** on a few starred or recently missed flip cards, a session asks you to say the answer out loud before you show it. No microphone, and never on every card.
 - **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark, a score by topic and by question level.
 - **Honest grading:**
   - you type or say the answer, and LernLab grades it;

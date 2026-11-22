@@ -770,6 +770,7 @@ export const handlers = {
     next.remoteMedia = next.remoteMedia === true;
     next.confidence = next.confidence !== false;
     next.calm = next.calm === true;
+    next.sayAloud = next.sayAloud !== false;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

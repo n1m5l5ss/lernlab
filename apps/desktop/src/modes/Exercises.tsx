@@ -493,7 +493,12 @@ export function Flip({
           >
             {t('ex.flip.show')} <span className="kbd">{t('keys.space')}</span>
           </button>
-          <span className="small muted">{t('ex.flip.hint')}</span>
+          {ex.sayAloud ? (
+            // One of a few cards to say out loud (#222): a prompt only, nothing listens or checks.
+            <span className="say-aloud">{t('ex.flip.sayAloud')}</span>
+          ) : (
+            <span className="small muted">{t('ex.flip.hint')}</span>
+          )}
         </div>
       ) : (
         <>

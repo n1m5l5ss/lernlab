@@ -63,6 +63,8 @@ export type Settings = {
   sleepBridge: boolean;
   /** When the morning check is offered by the reminder, "HH:MM" in local time. */
   morningTime: string;
+  /** Ask for the answer out loud on a few flip cards, starred or recently missed (#222). On by default. */
+  sayAloud: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -94,6 +96,7 @@ export const DEFAULT_SETTINGS: Settings = {
   calm: false,
   sleepBridge: false,
   morningTime: DEFAULT_MORNING_TIME,
+  sayAloud: true,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
