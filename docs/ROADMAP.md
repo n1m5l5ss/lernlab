@@ -98,7 +98,7 @@ These come from a review of the research on remembering, understanding and stayi
 - [ ] **Translate between representations,** such as graph and equation.
 - [x] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme (#211).
 - [x] **Card-quality checker** and key-term highlight (#212).
-- [ ] **Pattern feedback** at the end of a session.
+- [x] **Pattern feedback** at the end of a session (#213).
 - [x] **Weekly goals** and a progress card you can print or share (#214). The buddy file is not built.
 - [ ] **"Learn how to learn":** see spacing work on yourself.
 - [x] **Calm mode,** rewards that say what they are for, and one round swap per session (#216).

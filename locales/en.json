@@ -1016,6 +1016,30 @@
       "repairBody_other": "One more session by {{deadline}} brings your {{count}}-day streak back."
     },
     "bossDefeated": "Boss defeated",
+    "patterns": {
+      "title": "How this session went",
+      "mixups_one": "{{count}} miss was a mix-up between two similar cards.",
+      "mixups_other": "{{count}} misses were mix-ups between two similar cards.",
+      "tag_one": "{{count}} of the cards you missed is tagged “{{tag}}”.",
+      "tag_other": "{{count}} of the cards you missed are tagged “{{tag}}”.",
+      "confident_one": "{{count}} miss was an answer you felt sure of.",
+      "confident_other": "{{count}} misses were answers you felt sure of.",
+      "fast_one": "{{count}} miss was answered in about a second.",
+      "fast_other": "{{count}} misses were answered in about a second.",
+      "hints_one": "A hint helped with {{used}} of {{count}} typed answer.",
+      "hints_other": "A hint helped with {{used}} of {{count}} typed answers.",
+      "comeback_one": "{{count}} card you missed, you recalled later in this session. Going back to a miss is what makes it stick.",
+      "comeback_other": "{{count}} cards you missed, you recalled later in this session. Going back to a miss is what makes it stick.",
+      "nextLabel": "A next step:",
+      "next": {
+        "mixups": "put the two cards side by side and name the one thing that tells them apart. When a pair keeps coming back, a compare card is offered here.",
+        "tag": "a short session on just that tag.",
+        "confident": "read those answers once more in the list below. Being surprised by an answer helps it stick.",
+        "fast": "read the whole question and take a breath before you answer. Speed earns nothing here.",
+        "hints": "try for a few seconds before you ask for the hint. An attempt, even a wrong one, helps more than the hint."
+      },
+      "studyTag": "Study “{{tag}}” next"
+    },
     "missed_one": "This one comes back tomorrow",
     "missed_other": "These {{count}} come back tomorrow",
     "missedPractice_one": "This one is worth another look",

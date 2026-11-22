@@ -61,6 +61,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - **calm mode** hides XP, levels, combos and celebrations and keeps your progress, for people who prefer no game elements;
   - once per session you can swap a round for another format;
   - a streak with freezes (one missed day doesn't wipe you out);
+  - the summary says how a session went, not only the score: mix-ups between similar cards, a tag that holds most misses, misses you were sure of, with one next step;
   - a goal for this week (new cards and sessions) worked out from your deck goals and exam dates, and a progress card you can print or save as a picture or PDF, made on your computer;
   - an if-then study plan in your own words ("After I finish dinner, I'll study for 5 minutes"), which the daily reminder shows;
   - rescue rounds when you're struggling;

@@ -27,6 +27,7 @@ export function Summary({
   calm = false,
   onAgain,
   onHome,
+  onStudyTag,
 }: {
   result: SessionResult;
   server: OutputOf<'session.finish'> | null;
@@ -36,6 +37,8 @@ export function Summary({
   calm?: boolean;
   onAgain: () => void;
   onHome: () => void;
+  /** Starts a session on one tag: the next step for misses that sit in that tag (#213). */
+  onStudyTag?: (tag: string) => void;
 }) {
   const { t } = useTranslation();
   const f = useMemo(() => summaryFacts(result, server, items), [result, server, items]);
@@ -189,6 +192,7 @@ export function Summary({
           </ul>
         </section>
       )}
+      {server?.patterns && <Patterns patterns={server.patterns} onStudyTag={onStudyTag} />}
       {f.missed.length > 0 && (
         <section className="panel summary-missed" aria-labelledby="summary-missed">
           <h2 id="summary-missed">
@@ -343,6 +347,53 @@ function TwinOffer({
           </div>
           {state === 'failed' && <p role="alert">{t('errors.failed')}</p>}
         </>
+      )}
+    </section>
+  );
+}
+
+/**
+ * How the session went (#213): up to three lines from the session's own answers, about the cards and the
+ * strategy and never about the learner, with one suggested next step. Plain information: no XP and no
+ * celebration, so it is the same in calm mode.
+ */
+function Patterns({
+  patterns,
+  onStudyTag,
+}: {
+  patterns: NonNullable<OutputOf<'session.finish'>['patterns']>;
+  onStudyTag?: (tag: string) => void;
+}) {
+  const { t } = useTranslation();
+  if (!patterns.lines.length) return null;
+  const tag = patterns.lines.find((l) => l.kind === 'tag');
+  const line = (l: (typeof patterns.lines)[number]) => {
+    switch (l.kind) {
+      case 'tag':
+        return t('summary.patterns.tag', { count: l.missed, tag: l.tag });
+      case 'hints':
+        return t('summary.patterns.hints', { count: l.answers, used: l.used });
+      default:
+        return t(`summary.patterns.${l.kind}`, { count: l.count });
+    }
+  };
+  return (
+    <section className="panel summary-patterns" aria-labelledby="summary-patterns">
+      <h2 id="summary-patterns">{t('summary.patterns.title')}</h2>
+      <ul>
+        {patterns.lines.map((l) => (
+          <li key={l.kind}>{line(l)}</li>
+        ))}
+      </ul>
+      {patterns.next && (
+        <p className="summary-patterns-next">
+          <b>{t('summary.patterns.nextLabel')}</b> {t(`summary.patterns.next.${patterns.next}`)}
+          {patterns.next === 'tag' && tag?.kind === 'tag' && onStudyTag && (
+            <button className="btn" onClick={() => onStudyTag(tag.tag)}>
+              {t('summary.patterns.studyTag', { tag: tag.tag })}
+            </button>
+          )}
+        </p>
       )}
     </section>
   );

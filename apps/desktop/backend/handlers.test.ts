@@ -679,6 +679,7 @@ test('"Will you know this tomorrow?" answers are yes, unsure or no for known car
     startedAt: new Date().toISOString(),
   });
   assert.equal(fin.tomorrowCheck, null, 'nothing to report on the day of the check');
+  assert.deepEqual(fin.patterns, { lines: [], next: null }, 'an ordinary session has no patterns to name (#213)');
 });
 
 test('three mix-ups of two cards bring a compare-card offer; the card is added once and survives an edit', async () => {

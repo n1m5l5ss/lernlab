@@ -138,7 +138,18 @@ Some things to know:
 
 ### The summary
 
-At the end you see how many answers you recalled, how many new cards you started, the XP you earned, and your days this week. **What your XP was for** lists each reason with its share, for example **+45** next to "3 cards recalled after a slip": answers recalled from memory, cards recalled after a slip, right answers in practice rounds and games, answers in a row, rounds with every answer right, the daily goal and the boss. The lines add up to the XP shown. Cards you missed are listed: they come back tomorrow. Press **One more round** (`Space`) or **Done** (`Enter`).
+At the end you see how many answers you recalled, how many new cards you started, the XP you earned, and your days this week. **What your XP was for** lists each reason with its share, for example **+45** next to "3 cards recalled after a slip": answers recalled from memory, cards recalled after a slip, right answers in practice rounds and games, answers in a row, rounds with every answer right, the daily goal and the boss. The lines add up to the XP shown. Cards you missed are listed: they come back tomorrow.
+
+**How this session went** appears when your answers show a pattern. It has at most three lines and one suggested next step, and it is about the cards and how you studied, never about you:
+
+- misses that were **mix-ups**: your wrong answer was the answer of another card in the deck (2 or more);
+- a **tag** that holds at least 3 of the cards you missed and at least half of them, with **Study "tag" next** to start a session on that tag (this changes **What to study** on Home to that tag);
+- misses you **felt sure of** (rated 4 or 5 on "How sure were you?", 2 or more);
+- misses **answered in about a second** (3 or more; timed games and flip cards don't count);
+- **hints** used on 40% or more of typed and fill-the-gap answers (from 5 answers);
+- cards you missed and then **recalled later** in the same session (2 or more).
+
+An ordinary session shows nothing here. The lines are worked out on your computer from this session's answers; they change no schedule and earn no XP, and they are the same in calm mode. Press **One more round** (`Space`) or **Done** (`Enter`).
 
 When your wrong answer is the answer of another card in the deck (typed, or picked as a wrong choice), LernLab remembers that you mixed the two up. From then on each of them is a wrong choice in the other's multiple-choice questions, and sessions ask them next to each other, so you practise telling them apart. After three mix-ups of the same two cards, the summary shows them side by side under **You mixed these two up** and offers a **compare card**. If you like, write what they share and the one key difference; that becomes the card's answer. **Add a compare card** puts it in the deck; **Not now** means you are not asked about these two again. In a session a compare card shows both sides and asks "What do they share? What is the one key difference?": answer in your head, show the answer and rate yourself as on a flip card. Your mix-ups stay on your computer and never change when a card is due.
 

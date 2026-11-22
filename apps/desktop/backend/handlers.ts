@@ -101,6 +101,7 @@ import { InvalidInput, v, type Check } from './validate';
 import { LEVELS } from '@lernlab/core/variants';
 import { rateConfidence } from '@lernlab/core/confidence';
 import { ANSWER_MAX, dismissTwin, makeTwin, twinOffer } from '@lernlab/core/confusions';
+import { patternsOf } from '@lernlab/core/patterns';
 import { reportTomorrowCheck, saveTomorrowCheck, TOMORROW_ANSWERS, TOMORROW_MAX } from '@lernlab/core/tomorrow';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
@@ -657,7 +658,13 @@ export const handlers = {
     }),
     // With how yesterday's "Will you know this tomorrow?" guesses held up, once their cards came back (#205).
     // And the two cards mixed up most, once they were mixed up often enough to offer a compare card (#200).
-    (f) => ({ ...finishSession(f), tomorrowCheck: reportTomorrowCheck(), twinOffer: twinOffer() }),
+    // And what the session's own answers say about how it went (#213); read only.
+    (f) => ({
+      ...finishSession(f),
+      tomorrowCheck: reportTomorrowCheck(),
+      twinOffer: twinOffer(),
+      patterns: patternsOf(f.sessionId),
+    }),
   ),
   /** Add the compare card for a confusion pair, with the learner's own answer as its back (#200). */
   'confusions.twin': h(v.object({ a: v.id, b: v.id, answer: v.string(ANSWER_MAX) }), ({ a, b, answer }) =>
