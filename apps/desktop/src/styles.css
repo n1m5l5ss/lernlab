@@ -3727,3 +3727,126 @@ textarea.input.code-input {
   font-size: var(--text-subhead);
   font-weight: 700;
 }
+
+/* This week's goal and the progress card (#214). */
+.week-goal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+.week-goal-head h2 {
+  margin: 0;
+}
+.week-goal-list,
+.progress-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-4);
+}
+.week-goal-list {
+  margin-bottom: var(--space-4);
+}
+.progress-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+.progress-card-row b {
+  overflow-wrap: anywhere;
+}
+.progress-card-row span {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.card-dialog {
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+  color: var(--color-text);
+}
+.card-dialog::backdrop {
+  background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+}
+.card-dialog h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-subhead);
+}
+.card-dialog .session-dialog-actions {
+  flex-wrap: wrap;
+}
+.progress-card {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.progress-card h3 {
+  margin: 0;
+  font-size: var(--text-title);
+}
+.progress-card header p,
+.progress-card footer,
+.progress-card-note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.progress-card h4 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.progress-card-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.progress-card-stats div {
+  display: flex;
+  flex-direction: column-reverse; /* the number above its label */
+  justify-content: flex-end;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+.progress-card-stats dd {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+}
+.progress-card-stats dt {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.progress-card footer {
+  font-size: var(--text-caption);
+}
+/* Printing the card: only the card, at the top of the page. */
+@media print {
+  body[data-print='card'] * {
+    visibility: hidden;
+  }
+  body[data-print='card'] .progress-card,
+  body[data-print='card'] .progress-card * {
+    visibility: visible;
+  }
+  body[data-print='card'] .progress-card {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    border: none;
+    print-color-adjust: exact;
+  }
+}

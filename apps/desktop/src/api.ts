@@ -50,6 +50,8 @@ export const api = {
   activate: (id: number | null) => call('decks.activate', { id }),
   chooseSource: (source: StudySource) => call('study.choose', { source }),
   /** Save the CSV template (column names and three example cards). */
+  /** Save a picture made in this window (the progress card, #214) as a file. Nothing is sent anywhere. */
+  savePicture: (name: string, png: Uint8Array) => saveFile(name, png, 'image/png'),
   downloadTemplate: () => saveFile(CSV_TEMPLATE_NAME, CSV_TEMPLATE, 'text/csv'),
   exportDeck: async (id: number, format: 'csv' | 'lernpack' | 'apkg') => {
     const f = await call('decks.export', { id, format });

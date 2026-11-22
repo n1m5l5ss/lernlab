@@ -524,6 +524,12 @@ test('progress lists every deck with learned vs remaining, and the hardest cards
   assert.deepEqual(p.decks.map((d: { id: number }) => d.id).sort(), decks.map((d: { id: number }) => d.id).sort());
   for (const d of p.decks) assert.equal(d.learned + d.remaining, d.cards);
   assert.equal(p.retention.weeks.length, 12);
+  // This week's goal (#214): the decks' card goals added up, and 3 to 7 sessions.
+  assert.equal(
+    p.week.cards.target,
+    p.decks.reduce((n: number, d: { week: { target: number } }) => n + d.week.target, 0),
+  );
+  assert.ok(p.week.sessions.target >= 3 && p.week.sessions.target <= 7);
   assert.ok(Array.isArray(p.studyDays) && Array.isArray(p.hardest));
   await ok('study.choose', { source: { kind: 'hardest' } });
   assert.deepEqual((await ok('state.get')).source, { kind: 'hardest' });
