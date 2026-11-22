@@ -114,6 +114,8 @@ A session is a run of short blocks. Each block lasts about a minute and has its 
 - **Fill the gap**: type the missing word;
 - **Listen** and **Speak** (language decks): answer what you hear, or say the answer out loud;
 - **Category sprint**, **Match pairs**, **True or false** and **Word rain**: quick games;
+- **Which one is this?** The category sprint sorts cards into groups: a card's category, or, in a deck that is not a language deck, tags that split the deck into groups (art styles, bird species, problem types: at least three cards per tag, one such tag per card). It picks up to four groups, starting with the ones you mix up most, from your wrong picks in earlier rounds and from cards you mixed up. A round made from tags has no clock. It is practice: it never changes when a card is due;
+- **New words by theme** (language decks): the next new word sets the theme (its sub-deck and tag), and the other new words of that theme come with it. Themes are mixed later, in review;
 - **Blitz**: a timed round, only with cards you already know;
 - **Boss fight**: your hardest cards from today, with three lives.
 

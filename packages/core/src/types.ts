@@ -187,7 +187,20 @@ export type Block =
   /** Guess first: a new topic's questions before its cards are met. Practice only, never graded (guess.ts). */
   | { id: string; kind: 'guess'; title: string; teacher: Line; topic: string; itemIds: number[] }
   | { id: string; kind: 'drill'; format: Format; title: string; teacher: Line; exercises: Exercise[] }
-  | { id: string; kind: 'gender'; title: string; teacher: Line; itemIds: number[]; seconds: number }
+  /**
+   * The sorting round. `choices` and `labels` (discriminate.ts): the labels to choose from and each card's own,
+   * when the planner picked them; without them the round sorts by the cards' categories. seconds 0: no clock.
+   */
+  | {
+      id: string;
+      kind: 'gender';
+      title: string;
+      teacher: Line;
+      itemIds: number[];
+      seconds: number;
+      choices?: string[];
+      labels?: Record<number, string>;
+    }
   | { id: string; kind: 'match'; title: string; teacher: Line; itemIds: number[] }
   | { id: string; kind: 'rain'; title: string; teacher: Line; itemIds: number[]; seconds: number }
   | { id: string; kind: 'boss'; title: string; teacher: Line; itemIds: number[]; lives: number }

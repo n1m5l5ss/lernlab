@@ -33,6 +33,7 @@ import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
 import { confusionMap, keepClose } from './confusions';
+import { categoryLabels, confusableLabels, labelMisses, ROUND_MAX, themedFirst } from './discriminate';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
 const SIZES: Record<
@@ -111,7 +112,17 @@ export function planSession(
     mixups,
   );
   const leftovers = practice ? [] : learningTodayIds(d, now, scope).filter((id) => has(id) && notGrammar(id));
-  const fresh = practice ? [] : freshPerDeck(d, now, scope, size.fresh, (id) => get(id).deckId);
+  // New vocabulary is met in themed groups (#211): the next new word's theme first, then the deck's order.
+  const fresh = practice
+    ? []
+    : freshPerDeck(
+        d,
+        now,
+        scope,
+        size.fresh,
+        (id) => get(id).deckId,
+        (ids) => themedFirst(ids.filter(has).map(get)),
+      );
   const learned = learnedIds(d, 300, scope).filter((id) => has(id) && notGrammar(id));
   const upcoming = newItemIds(d, 40, undefined, scope).filter(has);
   const group = length === 'mini' || practice ? null : nextGrammarGroup(d, now, scope);
@@ -146,15 +157,15 @@ export function planSession(
   }
 
   // 2. Category sprint: sort cards into their category (der/die/das, IaaS/PaaS/SaaS…) on the clock.
+  //    It takes the categories (or category-like tags) the learner mixes up most (#211). Tags: no clock.
   if (size.sprint) {
-    const withCat = [...new Set([...known, ...fresh, ...upcoming])].filter((id) => get(id).category && notOwnWay(id));
-    const freq = new Map<string, number>();
-    withCat.forEach((id) => freq.set(get(id).category!, (freq.get(get(id).category!) ?? 0) + 1));
-    const cats = [...freq.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(([c]) => c);
-    const sprintIds = shuffle(withCat.filter((id) => cats.includes(get(id).category!))).slice(0, 30);
+    const labels = categoryLabels([...new Set([...known, ...fresh, ...upcoming])].map(get));
+    const cats = confusableLabels(labels, mixups, labels.size ? labelMisses(d, now) : []);
+    const byTag = [...labels].some(([id, l]) => cats.includes(l) && get(id).category !== l);
+    const sprintIds = shuffle([...labels.keys()].filter((id) => cats.includes(labels.get(id)!))).slice(
+      0,
+      byTag ? ROUND_MAX : 30,
+    );
     if (cats.length >= 2 && sprintIds.length >= 4) {
       const label =
         lang === 'de' && cats.every((c) => ['der', 'die', 'das'].includes(c)) ? say('sortGender') : say('sort');
@@ -162,9 +173,11 @@ export function planSession(
         id: bid(),
         kind: 'gender',
         title: 'Category sprint',
-        teacher: label,
+        teacher: byTag ? { key: 'teacher.block.tellApart' } : label,
         itemIds: sprintIds,
-        seconds: arcadeSeconds(size.sprint, settings), // 0: timers off, one untimed pass
+        seconds: byTag ? 0 : arcadeSeconds(size.sprint, settings), // 0: timers off, one untimed pass
+        choices: cats,
+        labels: Object.fromEntries(sprintIds.map((id) => [id, labels.get(id)!])),
       });
     }
   }

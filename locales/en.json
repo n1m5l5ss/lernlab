@@ -1173,6 +1173,7 @@
       "boss": "Your hardest cards. Three lives – have fun with it!",
       "sortGender": "Der, die or das? As fast as you can!",
       "sort": "Sort each card into its group. Fast!",
+      "tellApart": "Which group does each one belong to? Take your time.",
       "match": "Match the pairs – against the clock!",
       "trueFalse": "Quick: does this match?",
       "lesson": "One idea, then practise it right away.",
@@ -1460,6 +1461,7 @@
   "games": {
     "sprintArticles": "Der, die or das?",
     "sprint": "Sort each card",
+    "whichOne": "Which one is this?",
     "sorted": "Right: {{category}}",
     "itWas": "Not quite. It’s {{category}}",
     "hits": "{{count}} right",

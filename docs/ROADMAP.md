@@ -96,7 +96,7 @@ These come from a review of the research on remembering, understanding and stayi
 - [ ] **Teach-back:** explain a topic aloud, then check yourself against its key points.
 - [ ] **Case chains:** one scenario with linked questions.
 - [ ] **Translate between representations,** such as graph and equation.
-- [ ] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme.
+- [x] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme (#211).
 - [x] **Card-quality checker** and key-term highlight (#212).
 - [ ] **Pattern feedback** at the end of a session.
 - [ ] **Weekly goals** and a progress card you can print or share.

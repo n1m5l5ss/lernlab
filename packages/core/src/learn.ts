@@ -513,7 +513,15 @@ export function currentSource(d: DB = getDb()): StudySource {
 }
 
 /** New cards for a session: up to `cap`, and never more than each deck's own new-card limit for today. */
-export function freshPerDeck(d: DB, now: Date, scope: Scope, cap: number, deckOf?: (id: number) => number): number[] {
+/** `order`: a different order to meet the new cards in (the session planner groups new words by theme). */
+export function freshPerDeck(
+  d: DB,
+  now: Date,
+  scope: Scope,
+  cap: number,
+  deckOf?: (id: number) => number,
+  order?: (ids: number[]) => number[],
+): number[] {
   const left = new Map<number, number>();
   const budget = (deck: number) => {
     if (!left.has(deck)) left.set(deck, Math.max(0, deckNewPerDay(deck, d) - introducedTodayCount(d, now, deck)));
@@ -529,7 +537,7 @@ export function freshPerDeck(d: DB, now: Date, scope: Scope, cap: number, deckOf
       decks.set(Number(r.id), Number(r.deck_id));
     deckOf = (id) => decks.get(id)!;
   }
-  for (const id of ids) {
+  for (const id of order ? order(ids) : ids) {
     const deck = deckOf(id);
     if (budget(deck) <= 0) continue;
     left.set(deck, budget(deck) - 1);
