@@ -121,7 +121,7 @@ Each line is one card. Only `front` is required.
 | Field | Meaning |
 |---|---|
 | `id` | Stable id so updates keep progress. Write a string; readers also accept a number |
-| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)), `myth` (see [Myth cards](#myth-cards)), `explain` (see [Explain cards](#explain-cards)), `worked` (see [Worked examples](#worked-examples)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card, two or more `keyPoints` an explain card, two or more `workedSteps` a worked example, `twin` a compare card (`twin`, see [Compare cards](#compare-cards)) |
+| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)), `myth` (see [Myth cards](#myth-cards)), `explain` (see [Explain cards](#explain-cards)), `worked` (see [Worked examples](#worked-examples)), `twin` (a compare card, see [Compare cards](#compare-cards)), `translate` (see [Translate cards and graphs](#translate-cards-and-graphs)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card, two or more `keyPoints` an explain card, two or more `workedSteps` a worked example, `twin` a compare card |
 | `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
@@ -410,7 +410,7 @@ Recognised column names (case-insensitive):
 | `mnemonic` | mnemonics, memory aid (before November 2026 a `mnemonic` column was read as notes) |
 | `category` | class, gender, article, group |
 | `tags` | tag, labels (space- or comma-separated) |
-| `type` | card type, kind (`mcq`, `order`, `cloze`) |
+| `type` | card type, kind (`basic`, `cloze`, `mcq`, `order`, `numeric`, `code`, `occlusion`, `myth`, `explain`, `worked`, `twin`, `translate`) |
 | `choices`, `correct` | options / correct answer(s) |
 | `steps` | sequence |
 | `alt_answers` | alternatives, also accept |

@@ -19,7 +19,6 @@ Languages, AWS, medicine, physics, law, history: if you can put it on a card, Le
 - **Safe with your data:** a daily backup, restore with a preview (each backup is checked before it replaces anything), and export everything as a zip.
 - **For everyone:** works fully by keyboard and with screen readers, in light and dark themes, and lays out right to left for Arabic, Hebrew and Urdu.
 - **Stays up to date:** Windows and Linux update themselves; Mac users download each new version from the website.
-- **Study together on one computer:** add a second person by name (no account, no password) and take turns on a deck. Each answer counts only toward that person's own schedule and progress, kept in its own folder; no scores side by side, no winner.
 - **Bring your own AI assistant (optional):** connect Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other assistant that supports MCP, to ask about your progress, be quizzed in the chat, turn a PDF into cards, fix, merge and tidy up cards, suggest other ways to ask a card, corrections for wrong choices and key points, or plan a deck toward an exam. Every change waits for you to review and accept it in the app. Off until you turn it on, and LernLab itself stays offline. See [AI assistants](docs/AI-ASSISTANTS.md).
 
 New here? The [user guide](docs/USER-GUIDE.md) shows how to import, study, follow your progress and back up.
@@ -38,27 +37,33 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - image occlusion: draw boxes over a picture and name each hidden part, one card per box;
   - a timed Blitz, and a boss fight over everything you missed;
   - "Guess first": before you meet the cards of a new topic, guess a few of its questions, then see the answers (practice only, no timer).
-- **Ask each card in several ways:** add apply and analyse questions to a card ("A patient has X. Which drug?", "What if the dose doubles?"). Sessions take turns asking them, so you learn the idea and not just the wording, and the card keeps one schedule.
-- **Learn from common mix-ups:** a multiple-choice card can explain why a wrong choice is wrong ("Many people think X. In fact Y."). Pick it and you see that note with the right answer, not just "wrong". Myth cards ask "True or myth?", then why.
-- **Learn from your own mix-ups:** when your wrong answer is another card's answer, LernLab remembers the pair. The two cards become each other's wrong choice and are asked next to each other, and after three mix-ups you can add a compare card that shows both side by side.
-- **Tell look-alikes apart:** the sorting round asks "Which one is this?" about the categories you mix up most (art styles, species, problem types), from a card's category or its tags. New words in a language deck are met in themed groups and mixed only in review.
-- **Related cards stay fresh:** review a few cards of a small group ("Capital of …") and the rest of the group gets a quick question within a day or two, without changing its schedule.
-- **Basics first:** a card can say which cards or tags to learn first. New cards then come after their basics were recalled, key terms come first, and nothing is ever locked.
-- **Sleep on it** (optional): new cards in the evening, a short check of them the next morning, and a morning reminder if you like.
-- **How sure were you?** After about 1 in 4 recall answers, one optional tap from 1 to 5. A confident miss comes back once later in the session; at the end of a session you can say whether you'll know each new card tomorrow, and the next session shows how that went. Progress shows how often each rating was right at the next review. It never changes the schedule.
-- **Explain it:** why and how cards where you write (or say) an explanation, then tick the key points you covered; that sets the grade, so you can't fool yourself with a quick flip.
-- **Better cards:** mark the key part of an answer as `==term==` and it is highlighted when the answer shows. The card editor and the import preview suggest splitting an answer over 40 words, adding a picture to a card about an idea, and describing or dropping a picture that doesn't help. The rules run on your computer and never stop you saving.
-- **Worked examples that fade:** for maths, science, code and accounting. Study a solved problem, then fill in its last step, then the last two, until you solve it alone. Only the whole problem changes your schedule.
-- **Case chains:** a short case (a patient, a fact pattern, an architecture) with a few linked questions. Each question is its own card; the case shows above every one, and a mock exam asks the whole case together.
-- **Translate cards and graphs:** a card whose two sides are two forms of one idea (a graph and its formula, a formula and its diagram) is asked in both directions. LernLab draws small function graphs itself from a line like `y = x^2 - 1`.
-- **Try first:** in a deck you mark as maths or science, a new unit opens with a problem to try before the lesson, then its worked solution. Optional, no grade, no clock.
-- **Mnemonics that fade:** give a card a memory aid. It shows only after a miss or when you ask for a hint, never before you try, and stops showing by itself once you get the card right twice in a row.
-- **Sketch pad:** when you meet a new card, draw its meaning with a mouse, finger or pen, or describe the picture in words. Your sketch stays on your computer and shows with the answer on later reviews. Optional, never graded, and never part of a deck you export.
-- **Teach it back:** for a tag you know well, explain it to a beginner in about a minute, typed or recorded, then tick the key points you left out and practise those cards. Nothing is saved or graded.
-- **Draw the map from memory:** for a topic with a concept map from the deck's author, link its terms from memory, then compare the two maps side by side. Practice only: no grade, no timer.
-- **Say a few answers aloud:** on a few starred or recently missed flip cards, a session asks you to say the answer out loud before you show it. No microphone, and never on every card.
-- **Act it out:** a few cards tagged `action`, and a few verbs in language decks, ask you to do or mime the action when the answer shows.
-- **A quiet minute (optional):** after a session with new cards, the summary can offer one minute of eyes-closed rest. It may help; the studies disagree, so it is off by default.
+- **Understand, not just remember:**
+  - ask a card in several ways: add apply and analyse questions ("A patient has X. Which drug?", "What if the dose doubles?"). Sessions take turns asking them, and the card keeps one schedule;
+  - "Explain it" cards for why and how questions: write or say an explanation, then tick the key points you covered; the ticks set the grade, so a quick flip can't fool you;
+  - worked examples that fade, for maths, science, code and accounting: study a solved problem, then fill in its last step, then the last two, until you solve it alone;
+  - case chains: a short case (a patient, a fact pattern, an architecture) shown above a few linked questions, asked together in a mock exam;
+  - translate cards: two forms of one idea (a graph and its formula) asked in both directions. LernLab draws small function graphs from a line like `y = x^2 - 1`;
+  - "Try first": in a deck you mark as maths or science, a new unit opens with a problem to try before the lesson, then its worked solution;
+  - "Teach it back": explain a tag you know well to a beginner, typed or recorded, tick the key points you left out and practise those cards;
+  - "Draw the map from memory": for a topic with a concept map from the deck's author, link its terms from memory, then compare the two maps side by side. Practice only: no grade, no timer.
+- **Learn from mix-ups:**
+  - a multiple-choice card can say why a wrong choice is wrong ("Many people think X. In fact Y."), and myth cards ask "True or myth?", then why;
+  - when your wrong answer is another card's answer, the two become each other's wrong choice and are asked next to each other; after three mix-ups you can add a compare card that shows both side by side;
+  - the sorting round asks "Which one is this?" about the categories you mix up most (art styles, species, problem types).
+- **The right card at the right time:**
+  - a card can say which cards or tags to learn first; new cards then come after their basics, and nothing is ever locked;
+  - new words in a language deck are met in themed groups and mixed only in review;
+  - review a few cards of a small group ("Capital of …") and the rest of the group gets a quick question within a day or two;
+  - an optional evening and morning rhythm: new cards in the evening, a short check of them the next morning.
+- **Memory aids, used sparingly:**
+  - mark the key part of an answer as `==term==` and it is highlighted when the answer shows;
+  - a card's mnemonic shows only after a miss or a hint, and stops showing once you get the card right twice in a row;
+  - a few starred or recently missed flip cards ask you to say the answer aloud first, and a few cards tagged `action` (and verbs in language decks) ask you to act the answer out; never on every card;
+  - a sketch pad on new cards: draw the card's meaning or describe the picture in words. The sketch stays on your computer, shows with the answer on later reviews and is never part of a deck you export;
+  - an optional quiet minute of rest after a session with new cards. The studies disagree, so it is off by default.
+- **Better cards:** the card editor and the import preview suggest splitting an answer over 40 words, adding a picture to a card about an idea, and describing or dropping a picture that doesn't help. The rules run on your computer and never stop you saving.
+- **Study together on one computer:** add a second person by name (no account, no password) and take turns on a deck. Each answer counts only toward that person's own schedule and progress, kept in its own folder; no scores side by side, no winner.
+- **How sure were you?** After about 1 in 4 recall answers, one optional tap from 1 to 5. A confident miss comes back once later in the session, you can say whether you'll know each new card tomorrow, and Progress shows how often each rating was right at the next review. It never changes the schedule.
 - **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark, a score by topic and by question level.
 - **Honest grading:**
   - you type or say the answer, and LernLab grades it;
