@@ -151,6 +151,20 @@ test('the card editor saves, keeps and clears corrections for wrong choices', as
   assert.ok(!('corrections' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
+test('the card editor saves, keeps and clears a mnemonic, and a studied card carries its run', async () => {
+  const deck = await ok('decks.create', { name: 'Planets', language: null });
+  const card = { front: 'Order of the planets?', back: 'Mercury, Venus, Earth' };
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { ...card, mnemonic: '<b>My Very</b> Educated Mother' },
+  });
+  assert.equal((await ok('cards.get', { id })).extra.mnemonic, 'My Very Educated Mother');
+  await ok('cards.update', { id, card });
+  assert.equal((await ok('cards.get', { id })).extra.mnemonic, 'My Very Educated Mother', 'kept when not sent');
+  await ok('cards.update', { id, card: { ...card, mnemonic: '' } });
+  assert.ok(!('mnemonic' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('the card editor saves key terms from ==term== in the back and clears them with the marks', async () => {
   const deck = await ok('decks.create', { name: 'Cells', language: null });
   const card = { front: 'What makes ATP?', back: 'The ==mitochondrion== does' };

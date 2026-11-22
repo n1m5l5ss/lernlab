@@ -48,6 +48,8 @@ export type Item = {
   occlusionBoxes?: OcclusionBox[];
   /** Worked examples: the rung of the ladder the learner is on (worked.ts; added when a session is planned). */
   rung?: number;
+  /** Cards with a mnemonic: correct recalls in a row since the last miss; absent while never missed (added when cards are loaded for study, mnemonic.ts). */
+  mnemonicRun?: number;
 };
 
 /** Exercise formats. Only RECALL formats may write a spaced-repetition grade. */

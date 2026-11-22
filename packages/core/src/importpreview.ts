@@ -20,6 +20,7 @@ export const MAPPABLE_FIELDS = {
   exampleTranslation: 'example translation',
   explanation: 'explanation',
   notes: 'notes',
+  mnemonic: 'mnemonic',
   category: 'category',
   tags: 'tags',
   image: 'image',

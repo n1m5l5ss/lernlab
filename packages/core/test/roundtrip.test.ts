@@ -68,6 +68,7 @@ upsertCards(deck, [
     front: 'What does a ribosome do, and where?',
     back: 'It builds proteins from amino acids, "reading" messenger RNA, in the cytoplasm',
     keyTerms: 'proteins|messenger RNA',
+    mnemonic: 'Ribosome, "rib" = build, with commas',
     rank: 7,
   },
   { front: '#1 rule, "quoted", with commas', back: 'line one\nline two', rank: 5, variants: 'Say it, "again"' },
@@ -158,6 +159,7 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
     'key_points',
     'key_terms',
     'worked_steps',
+    'mnemonic',
     'audio',
     'video',
     'id',
@@ -240,6 +242,10 @@ test('worked steps are stored with the cards, and an empty back becomes the last
     worked.map((c) => [extraOf(c).workedSteps, (c as { meaning?: unknown }).meaning]),
     [['Subtract 3, "both sides" :: 2x = 8|Divide by 2 :: x = 4', 'x = 4']],
   );
+});
+
+test('a mnemonic is stored with its card (so the round trips above carry it)', () => {
+  assert.deepEqual(original.map((c) => extraOf(c).mnemonic).filter(Boolean), ['Ribosome, "rib" = build, with commas']);
 });
 
 test('the CSV template imports as three example cards', () => {

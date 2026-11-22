@@ -466,6 +466,7 @@
         "exampleTranslation": "Example translation",
         "explanation": "Explanation",
         "notes": "Notes",
+        "mnemonic": "Mnemonic",
         "category": "Category",
         "tags": "Tags",
         "image": "Image",
@@ -776,7 +777,10 @@
       "preview": "Preview",
       "previewQuestion": "Preview · question",
       "previewAnswer": "Preview · answer",
-      "moreFields": "More: explanation, example, category, tags",
+      "moreFields": "More: explanation, example, mnemonic, category, tags",
+      "mnemonic": "Mnemonic",
+      "mnemonicPlaceholder": "A memory aid, like “My Very Educated Mother…”",
+      "mnemonicHint": "Shown only after a miss or when you ask for a hint, never before you try. It stops showing by itself once you get the card right twice in a row.",
       "previewShuffled": "When you study, the order is shuffled.",
       "alsoAccepted": "Also accepted: {{answers}}",
       "problem": {
@@ -1424,6 +1428,9 @@
       "no": "Didn't know",
       "partly": "Partly",
       "yes": "Knew it"
+    },
+    "mnemonic": {
+      "lead": "Your mnemonic:"
     },
     "typed": {
       "overridden": "Okay – counted as correct.",

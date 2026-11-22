@@ -13,6 +13,7 @@ import { formatBox, modeOf, parseBox } from './occlusion';
 import { cleanVariants, takesVariants } from './variants';
 import { cleanCorrections, isMyth } from './misconceptions';
 import { cleanKeyTerms, markedTerms } from './keyterms';
+import { cleanMnemonic } from './mnemonic';
 import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
 import { cleanTwin } from './twin';
 import { cleanWorkedSteps, parseWorkedSteps } from './worked';
@@ -118,6 +119,8 @@ export type NormalizedCard = {
   keyTerms?: string;
   /** worked examples: 2–8 solution steps, "Subtract 3 from both sides :: 2x = 8|…" (worked.ts). '' clears them. */
   workedSteps?: string;
+  /** A memory aid, shown only after a miss or as a hint and faded after two correct answers in a row (mnemonic.ts). Plain text; '' clears it. */
+  mnemonic?: string;
   /** Other ways to ask the question, with a level: "apply: A patient has X. Which mechanism? | analyse: …" (variants.ts). '' clears them. */
   variants?: string;
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
@@ -333,6 +336,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
       : '';
   if (workedSteps) extra.workedSteps = workedSteps;
   else delete extra.workedSteps;
+  // The card's mnemonic (mnemonic.ts): plain text, for every kind of card.
+  const mnemonic = cleanMnemonic(c.mnemonic ?? extra.mnemonic);
+  if (mnemonic) extra.mnemonic = mnemonic;
+  else delete extra.mnemonic;
   // Key terms of a plain-text answer (keyterms.ts): the ones marked in the back, or else the card's field.
   const marked = markedTerms(back);
   const keyTerms = ['code', 'cloze', 'mcq', 'order'].includes(kind)

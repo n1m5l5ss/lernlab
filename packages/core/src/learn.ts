@@ -8,6 +8,7 @@ import { qa } from './cards';
 import { DEFAULT_REMINDER_TIME } from './reminder';
 import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
+import { withMnemonicRuns } from './mnemonic';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 import { LEVELS } from './variants';
 import { noteConfusion } from './confusions';
@@ -362,11 +363,14 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
 }
 
 export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
-  return withOcclusionBoxes(
-    d
-      .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
-      .all()
-      .map(rowToItem),
+  return withMnemonicRuns(
+    withOcclusionBoxes(
+      d
+        .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
+        .all()
+        .map(rowToItem),
+      d,
+    ),
     d,
   );
 }
@@ -489,7 +493,7 @@ export function grammarItemIds(group: string, d: DB = getDb(), scope?: Scope): n
 export function itemsByIds(ids: number[], d: DB = getDb()): Record<number, Item> {
   if (!ids.length) return {};
   const rows = d.prepare(`${ITEM_SELECT} WHERE i.id IN (${ids.map(() => '?').join(',')})`).all(...ids);
-  return Object.fromEntries(withOcclusionBoxes(rows.map(rowToItem), d).map((i) => [i.id, i]));
+  return Object.fromEntries(withMnemonicRuns(withOcclusionBoxes(rows.map(rowToItem), d), d).map((i) => [i.id, i]));
 }
 
 export function srsInfo(ids: number[], d: DB = getDb()): Record<number, { reps: number; mastery: number }> {

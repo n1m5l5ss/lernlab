@@ -25,6 +25,7 @@ const { writeApkg } = await import('../src/formats/apkgwrite');
 const { listZip, unsafeZipPath } = await import('../src/formats/zip');
 const { sanitizeHtml, SAFE_TAGS } = await import('../src/cards');
 const { cardToItem } = await import('../src/library');
+const { MNEMONIC_MAX_LENGTH, cleanMnemonic, mnemonicHtml } = await import('../src/mnemonic');
 const { KEY_TERMS_MAX, KEY_TERM_MAX_LENGTH, answerSource, keyTermsOf, markAnswer } = await import('../src/keyterms');
 const { cleanVariants, parseVariants, VARIANTS_MAX, VARIANT_MAX_LENGTH } = await import('../src/variants');
 const { cleanCorrections, correctionHtml, parseCorrections, CORRECTION_MAX_LENGTH } =
@@ -172,6 +173,19 @@ test('key terms: any back and any terms give a plain answer, a few terms and saf
       const again = cardToItem(deck, { front: 'Q', back: answerSource(item), keyTerms: '' });
       const twice = again && cardToItem(deck, { front: 'Q', back: answerSource(again), keyTerms: '' });
       assert.deepEqual(twice && [twice.meaning, twice.extra], again && [again.meaning, again.extra]);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test('mnemonics: any text gives short plain text, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const m = cleanMnemonic(text);
+      assert.ok(m.length <= MNEMONIC_MAX_LENGTH);
+      assert.equal(cleanMnemonic(m), m, 'cleaning twice changes nothing');
+      const html = mnemonicHtml(m);
+      assert.equal(sanitizeHtml(html), html);
     }),
     params(RUNS * 2),
   );

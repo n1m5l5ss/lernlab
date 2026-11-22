@@ -11,6 +11,7 @@ export const MAPPABLE: MappableField[] = [
   'exampleTranslation',
   'explanation',
   'notes',
+  'mnemonic',
   'category',
   'tags',
   'image',

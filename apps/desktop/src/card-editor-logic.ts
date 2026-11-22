@@ -48,6 +48,8 @@ export const EMPTY = {
   exampleTranslation: '',
   explanation: '',
   notes: '',
+  /** A memory aid: shown in a session only after a miss or a hint (core/mnemonic.ts). */
+  mnemonic: '',
   category: '',
   tags: '',
   image: '',
@@ -85,6 +87,7 @@ export const formFor = (c: FullCard): Form => ({
   exampleTranslation: c.sentenceMeaning,
   explanation: c.grammar,
   notes: c.notes,
+  mnemonic: c.extra.mnemonic ?? '',
   category: c.category ?? '',
   tags: c.tags.join(' '),
   image: c.image ?? '',

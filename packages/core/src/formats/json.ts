@@ -27,6 +27,7 @@ const TEXT_FIELDS = [
   'twin',
   'keyTerms',
   'workedSteps',
+  'mnemonic',
   'tolerance',
   'code',
   'codeLang',
