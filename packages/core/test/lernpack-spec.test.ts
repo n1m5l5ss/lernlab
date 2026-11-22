@@ -171,6 +171,11 @@ test('docs/FORMAT.md is marked version 1 and lists exactly the schema fields', (
     .find((l) => l.startsWith('| `workedSteps` |'));
   assert.match(workedSteps ?? '', /optional, added after v1 was published; older readers ignore it/);
   assert.ok(!cardSchema.required.includes('workedSteps'), 'worked steps are optional');
+  const caseRow = section('### cards.jsonl')
+    .split('\n')
+    .find((l) => l.startsWith('| `case` |'));
+  assert.match(caseRow ?? '', /optional, added after v1 was published; older readers ignore it/);
+  assert.ok(!cardSchema.required.includes('case'), 'a case is optional');
   const deckKeys = [...section('### manifest.json').matchAll(/^\| `deck\.(\w+)` \|/gm)].map((m) => m[1]);
   assert.deepEqual(deckKeys.sort(), Object.keys(manifestSchema.properties.deck.properties).sort());
 });
@@ -226,13 +231,14 @@ test('a fresh export with every kind of field matches the schemas', () => {
       },
       { id: 'h', front: 'Why seasons?', back: '', type: 'explain', keyPoints: 'Tilt|Angle of sunlight' },
       { id: 'i', front: 'Solve 2x + 3 = 11', back: '', type: 'worked', workedSteps: 'Subtract 3 :: 2x = 8|x = 4' },
+      { id: 'j', front: 'Most likely diagnosis?', back: 'STEMI', case: 'A man has crushing chest pain.' },
     ],
   };
   const { deck } = importFile('spec.json', strToU8(JSON.stringify(json)));
   const { manifest, cards } = readPack(exportDeck(deck.id, 'lernpack').data);
   assert.deepEqual(validate(manifestSchema, manifest, true), []);
   assert.deepEqual(manifest.deck.goal, { label: 'JLPT N5', words: 800 });
-  assert.equal(cards.length, 9);
+  assert.equal(cards.length, 10);
   for (const c of cards) assert.deepEqual(validate(cardSchema, c, true), [], JSON.stringify(c));
   assert.equal(cards.find((c) => c.id && c.front === 'What is this?')?.imageAlt, 'A cat');
   assert.equal(cards.find((c) => c.front === 'Beta blocker')?.variants, 'apply: A patient with angina?');
@@ -241,6 +247,11 @@ test('a fresh export with every kind of field matches the schemas', () => {
   assert.deepEqual(
     [why?.type, why?.keyPoints, why?.back],
     ['explain', 'Tilt|Angle of sunlight', '• Tilt\n• Angle of sunlight'],
+  );
+  const dx = cards.find((c) => c.back === 'STEMI');
+  assert.deepEqual(
+    [dx?.case, dx?.front],
+    ['A man has crushing chest pain.', 'A man has crushing chest pain.\n\nMost likely diagnosis?'],
   );
   const solve = cards.find((c) => c.front === 'Solve 2x + 3 = 11');
   assert.deepEqual([solve?.type, solve?.workedSteps, solve?.back], ['worked', 'Subtract 3 :: 2x = 8|x = 4', 'x = 4']);

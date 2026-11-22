@@ -221,6 +221,27 @@ test('the card editor saves, keeps and clears worked steps', async () => {
   assert.ok(!('workedSteps' in (await ok('cards.get', { id })).extra), 'a basic card has none');
 });
 
+test('the card editor saves, keeps and clears a case; a mock exam shows it', async () => {
+  const deck = await ok('decks.create', { name: 'Cases', language: null });
+  const card = { front: 'Most likely diagnosis?', back: 'STEMI' };
+  const text = 'A man has <b>crushing</b> chest pain.';
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, case: text } });
+  await ok('cards.add', { deckId: deck.id, card: { front: 'Blocked artery?', back: 'RCA', case: text } });
+  assert.equal((await ok('cards.get', { id })).extra.case, 'A man has crushing chest pain.');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.case, 'A man has crushing chest pain.', 'kept');
+  const exam = await ok('exam.start', { deckId: deck.id });
+  assert.deepEqual(
+    exam.questions.map((q: { stem: string; caseText?: string }) => [q.stem, q.caseText]),
+    [
+      ['Most likely diagnosis?', 'A man has crushing chest pain.'],
+      ['Blocked artery?', 'A man has crushing chest pain.'],
+    ],
+  );
+  await ok('cards.update', { id, card: { ...card, case: '' } });
+  assert.ok(!('case' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');

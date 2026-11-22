@@ -72,6 +72,10 @@
       "description": "Optional, added after v1 was published; older readers ignore it. The key terms of the answer (the back), separated by |, highlighted when the answer shows. Plain text, at most 5 terms of at most 100 characters each, without '='; a term that is not in the back as a whole word is dropped. Writers may instead mark terms in the back as ==term==. Example: \"proteins|messenger RNA\"",
       "type": "string"
     },
+    "case": {
+      "description": "Optional, added after v1 was published; older readers ignore it. Case chain: the case (a patient, a fact pattern, an architecture) this question belongs to. Cards of one deck with exactly the same case form a chain of linked questions, in file order; each is its own card with its own answer. Plain text with **bold**, *italic* and `code`, on one line, at most 2000 characters (cloze, ordering, code and image occlusion cards drop it). Writers also put the case before the question in front, separated by an empty line, so older readers can still answer the card; a reader that knows this field drops it from the front again.",
+      "type": "string"
+    },
     "workedSteps": {
       "description": "Optional, added after v1 was published; older readers ignore it. Worked example: the 2–8 steps of the solution, separated by |, each \"what you do :: result\" (the first :: splits; a step without it is only a result). The learner studies the full example, then types the last result, the last two, and so on up to the whole problem. Plain text with **bold**, *italic*, `code` and math; what you do is at most 300 characters, a result at most 200; a card with fewer than two steps keeps none. Without a back, the answer is the last result. Example: \"Subtract 3 from both sides :: 2x = 8|Divide both sides by 2 :: x = 4\"",
       "type": "string"

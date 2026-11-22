@@ -27,6 +27,7 @@ import {
 import { Explain } from './modes/Explain';
 import { Twin } from './modes/Twin';
 import { Worked } from './modes/Worked';
+import { CaseFor } from './case-view';
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { GuessBlock } from './modes/Guess';
 import { mcFor, recallFor } from './plan';
@@ -164,41 +165,51 @@ function ExerciseBlock({
   // About 1 in 4 recall answers ask how sure you were; the others move on exactly as before.
   if (rate && 'itemId' in ex && asksConfidenceHere(ex.itemId, today, i)) ctx = { ...ctx, confidence: rate };
   if (repeats.current.has(ex)) ctx = asRepeat<AnswerInput, Ctx>(ctx);
-  switch (ex.type) {
-    case 'intro':
-      return <Intro key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'mc':
-    case 'listen':
-    case 'imagemc':
-      return <Choice key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'truefalse':
-      return <TrueFalse key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'flip':
-      return <Flip key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'myth':
-      return <Myth key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'explain':
-      return <Explain key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'twin':
-      return <Twin key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'worked':
-      return <Worked key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'mcq':
-      return <Mcq key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'order':
-      return <Order key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'typed':
-      return <Typed key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'cloze':
-      return <Cloze key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'unscramble':
-      return <Unscramble key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'dictation':
-      return <Dictation key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'speak':
-      return <Speak key={k} ex={ex} ctx={ctx} onNext={next} />;
-    case 'lesson':
-      return <Lesson key={k} ex={ex} ctx={ctx} onNext={next} grammarIds={grammarIds} />;
+  // A question of a case chain shows its case above it, whatever the exercise.
+  return (
+    <>
+      <CaseFor item={'itemId' in ex ? ctx.item(ex.itemId) : null} />
+      {exercise()}
+    </>
+  );
+
+  function exercise() {
+    switch (ex.type) {
+      case 'intro':
+        return <Intro key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'mc':
+      case 'listen':
+      case 'imagemc':
+        return <Choice key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'truefalse':
+        return <TrueFalse key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'flip':
+        return <Flip key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'myth':
+        return <Myth key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'explain':
+        return <Explain key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'twin':
+        return <Twin key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'worked':
+        return <Worked key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'mcq':
+        return <Mcq key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'order':
+        return <Order key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'typed':
+        return <Typed key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'cloze':
+        return <Cloze key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'unscramble':
+        return <Unscramble key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'dictation':
+        return <Dictation key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'speak':
+        return <Speak key={k} ex={ex} ctx={ctx} onNext={next} />;
+      case 'lesson':
+        return <Lesson key={k} ex={ex} ctx={ctx} onNext={next} grammarIds={grammarIds} />;
+    }
   }
 }
 

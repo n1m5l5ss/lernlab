@@ -33,6 +33,7 @@ import { isWorked } from './worked';
 import { addDays, arcadeSeconds, dayKey } from './game';
 import { isAction, markActOut } from './actout';
 import { SAY_ALOUD_DAYS, markSayAloud, sayAloudCap, sayAloudCards } from './sayaloud';
+import { keepChains } from './cases';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
 import { confusionMap, keepClose } from './confusions';
@@ -126,11 +127,16 @@ export function planSession(
   const dueNow = practice
     ? []
     : [...new Set([...morning, ...dueItemIds(d, now, size.due, scope).filter(has)])].slice(0, size.due);
-  const due = keepClose(
-    practice
-      ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
-      : basicsFirst(dueNow, links, (id) => !dueNow.includes(id)), // a due basic is reviewed before what builds on it
-    mixups,
+  /** The questions of one case (cases.ts) stay together, in deck order. */
+  const order = new Map(pool.map((i, k) => [i.id, k]));
+  const chains = (ids: number[]) => keepChains(ids, get, (id) => order.get(id) ?? 0);
+  const due = chains(
+    keepClose(
+      practice
+        ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
+        : basicsFirst(dueNow, links, (id) => !dueNow.includes(id)), // a due basic is reviewed before what builds on it
+      mixups,
+    ),
   );
   const leftovers = practice ? [] : learningTodayIds(d, now, scope).filter((id) => has(id) && notGrammar(id));
   // New vocabulary is met in themed groups (#211): the next new word's theme first, then the deck's order.
@@ -452,7 +458,7 @@ export function planSession(
       format: 'typed',
       title: 'Recall',
       teacher: say('recall'),
-      exercises: keepClose(shuffle(recallIds), mixups).map(
+      exercises: chains(keepClose(shuffle(recallIds), mixups)).map(
         (id, i) =>
           nextRung(id) ??
           (i % 3 === 2 && notOwnWay(id) ? (gen.cloze(get(id)) ?? gen.recall(get(id))) : gen.recall(get(id))),

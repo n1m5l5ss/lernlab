@@ -86,6 +86,12 @@ upsertCards(deck, [
     workedSteps: 'Subtract 3, "both sides" :: 2x = 8|Divide by 2 :: x = 4',
     rank: 7,
   },
+  {
+    front: 'Which artery, "most likely"?',
+    back: 'Right coronary artery',
+    case: 'A man, 58, has "crushing" chest pain, with ST elevation in II, III and aVF.',
+    rank: 8,
+  },
 ]);
 
 /** Every stored card field except the row's own id, deck, order and timestamps; the deck's own name reads <deck>. */
@@ -104,7 +110,7 @@ test('.lernpack: export then import into a new deck gives identical cards, with 
   const pack = exportDeck(deck.id, 'lernpack');
   assert.equal(pack.name, 'Biology.lernpack');
   const r = importFile(pack.name, pack.data, { deckName: 'Biology copy' });
-  assert.equal(r.added, 8);
+  assert.equal(r.added, 9);
   assert.equal(r.media, 4);
   assert.equal(r.mediaMissing, 0);
   assert.deepEqual(cardsOf(r.deck.id, 'Biology copy'), original);
@@ -160,6 +166,7 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
     'key_terms',
     'worked_steps',
     'mnemonic',
+    'case',
     'audio',
     'video',
     'id',
@@ -176,7 +183,7 @@ test('.lernpack: its cards.csv alone imports to identical cards, with media', ()
   const { 'cards.jsonl': _jsonl, ...rest } = files;
   const r = importFile('csv-only.lernpack', zipSync(rest as Zippable), { deckName: 'Biology from CSV' });
   assert.equal(r.format, 'lernpack');
-  assert.equal(r.added, 8);
+  assert.equal(r.added, 9);
   assert.equal(r.media, 4);
   assert.equal(r.mediaMissing, 0);
   assert.deepEqual(cardsOf(r.deck.id, 'Biology from CSV'), original);
@@ -187,7 +194,7 @@ test('CSV: export then import into a new deck gives identical cards (media files
   assert.equal(csv.name, 'Biology.csv');
   const r = importFile('Fresh.csv', csv.data);
   assert.equal(r.deck.name, 'Fresh');
-  assert.equal(r.added, 8);
+  assert.equal(r.added, 9);
   const copy = cardsOf(r.deck.id, 'Fresh');
   // A plain CSV carries the file name of a picture, not the picture itself.
   assert.equal(r.mediaMissing, 4);
@@ -246,6 +253,14 @@ test('worked steps are stored with the cards, and an empty back becomes the last
 
 test('a mnemonic is stored with its card (so the round trips above carry it)', () => {
   assert.deepEqual(original.map((c) => extraOf(c).mnemonic).filter(Boolean), ['Ribosome, "rib" = build, with commas']);
+});
+
+test('a case is stored with its card, and the front stays the question alone (so the round trips above carry it)', () => {
+  const withCase = original.filter((c) => extraOf(c).case);
+  assert.deepEqual(
+    withCase.map((c) => [extraOf(c).case, (c as { target?: unknown }).target]),
+    [['A man, 58, has "crushing" chest pain, with ST elevation in II, III and aVF.', 'Which artery, "most likely"?']],
+  );
 });
 
 test('the CSV template imports as three example cards', () => {

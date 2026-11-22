@@ -18,6 +18,7 @@ import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
 import { cleanTwin } from './twin';
 import { cleanRequires } from './requires';
 import { cleanWorkedSteps, parseWorkedSteps } from './worked';
+import { cleanCase, questionOf } from './cases';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -120,6 +121,8 @@ export type NormalizedCard = {
   requires?: string;
   /** Key terms of the answer, highlighted when it shows: "mitochondrion|ATP" (keyterms.ts). In the back, ==term== says the same. '' clears them. */
   keyTerms?: string;
+  /** Case chains: the case this question belongs to; cards of a deck with the same case form a chain (cases.ts). '' clears it. */
+  case?: string;
   /** worked examples: 2–8 solution steps, "Subtract 3 from both sides :: 2x = 8|…" (worked.ts). '' clears them. */
   workedSteps?: string;
   /** A memory aid, shown only after a miss or as a hint and faded after two correct answers in a row (mnemonic.ts). Plain text; '' clears it. */
@@ -384,7 +387,15 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   delete extra.occlusionMode;
   if (kind === 'occlusion' && box)
     Object.assign(extra, { occlusion: formatBox(box), occlusionGroup: group, occlusionMode: mode });
-  const { article, word } = splitArticle(frontText);
+  // A question of a case (cases.ts): the case as plain text, on cards asked as a written question. A front that starts
+  // with the case (what older readers get) is the question alone.
+  const rawCase = c.case ?? extra.case; // most cards have none: nothing is cleaned for them
+  const caseText =
+    rawCase && !['grammar', 'cloze', 'order', 'code', 'occlusion'].includes(kind) ? cleanCase(rawCase) : '';
+  if (caseText) extra.case = caseText;
+  else if (rawCase !== undefined) delete extra.case;
+  const question = caseText ? questionOf(frontText, caseText) : frontText;
+  const { article, word } = splitArticle(question);
   const example = clean(c.example);
   const isNoun = kind === 'noun';
   return {
@@ -393,9 +404,9 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
     lang: deck.language,
     deck: c.subdeck ?? deck.name,
     kind,
-    target: kind === 'cloze' ? front : frontText,
+    target: kind === 'cloze' ? front : question,
     article: isNoun ? article : null,
-    word: isNoun ? word : frontText,
+    word: isNoun ? word : question,
     // A code card's back is its expected output: plain text with its line breaks (shown as text, never as HTML).
     meaning:
       kind === 'code'

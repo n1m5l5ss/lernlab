@@ -1,6 +1,7 @@
 // Base components (issue #59). They hold no text of their own: callers pass every word in, from t().
 export { Button, type ButtonProps, type ButtonVariant } from './Button';
 export { Card, type CardProps } from './Card';
+export { CasePanel, type CasePanelProps } from './CasePanel';
 export { ConfidenceRow, type ConfidencePick, type ConfidenceRowProps } from './ConfidenceRow';
 export { Feedback, type FeedbackProps, type FeedbackTone } from './Feedback';
 export { KeyPointChecklist, type KeyPointChecklistProps } from './KeyPointChecklist';

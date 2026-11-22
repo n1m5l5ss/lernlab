@@ -42,6 +42,7 @@ export const MAPPABLE_FIELDS = {
   keyPoints: 'key_points',
   keyTerms: 'key_terms',
   workedSteps: 'worked_steps',
+  case: 'case',
 } as const;
 export type MappableField = keyof typeof MAPPABLE_FIELDS;
 

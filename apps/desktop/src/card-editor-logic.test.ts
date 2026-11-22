@@ -11,6 +11,7 @@ import {
   formFor,
   keyPointRows,
   workedRows,
+  showCase,
   previewOf,
   removeVariant,
   showImageAlt,
@@ -396,4 +397,17 @@ test('the mnemonic is a field of every card type, saved as written and never par
   assert.ok(!JSON.stringify(p.view).includes('Educated'), 'it only shows in a session, after a miss or a hint');
   const saved = { ...p.item, tags: [], suspended: false, starred: false } as unknown as Parameters<typeof formFor>[0];
   assert.equal(formFor(saved).mnemonic, 'My Very Educated Mother');
+});
+
+test('a case: saved with question cards, cleared on the others, kept as plain text and shown in the preview', () => {
+  const text = 'A man, 58, has <b>crushing</b> chest pain.';
+  const f = form({ front: 'Most likely diagnosis?', back: 'STEMI', case: text });
+  assert.equal(showCase(f), true);
+  assert.equal(fieldsToSave(f).case, text);
+  assert.equal(showCase({ type: 'cloze' }), false);
+  assert.equal(fieldsToSave({ ...f, type: 'order' }).case, '', 'other types save none');
+  const p = previewOf(f, deck)!;
+  assert.equal(p.item.extra.case, 'A man, 58, has crushing chest pain.');
+  assert.equal(p.item.target, 'Most likely diagnosis?');
+  assert.equal(formFor({ ...p.item, suspended: false, starred: false }).case, 'A man, 58, has crushing chest pain.');
 });

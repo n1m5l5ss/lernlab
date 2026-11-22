@@ -234,6 +234,21 @@ test('worked steps: any text gives at most eight plain-text steps, cleaning is s
   );
 });
 
+const { cleanCase, caseHtml, questionOf, CASE_MAX_LENGTH } = await import('../src/cases');
+test('cases: any text gives one line of plain text, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, hostileText, (text, front) => {
+      const c = cleanCase(text);
+      assert.ok(c.length <= CASE_MAX_LENGTH && !/[\n\r]/.test(c));
+      assert.equal(cleanCase(c), c, 'cleaning twice changes nothing');
+      assert.equal(sanitizeHtml(caseHtml(c)), caseHtml(c), 'already safe HTML');
+      const q = questionOf(front, c);
+      assert.ok(q === front || (q.length > 0 && front.endsWith(q)), 'the question is the front or its end');
+    }),
+    params(RUNS * 2),
+  );
+});
+
 test('key points: any text gives at most five plain-text points, cleaning is stable and the HTML stays safe', () => {
   fc.assert(
     fc.property(hostileText, (text) => {

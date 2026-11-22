@@ -8,8 +8,9 @@ import { writeApkg } from './formats/apkgwrite';
 import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
 import { keyPointsAsBack, parseKeyPoints } from './explain';
+import { frontWithCase } from './cases';
 
-/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `twin`, `keyTerms`, `workedSteps`, `mnemonic`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `twin`, `keyTerms`, `workedSteps`, `mnemonic`, `case`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
 const FROM_EXTRA = {
   choices: 'choices',
   correct: 'correct',
@@ -24,6 +25,7 @@ const FROM_EXTRA = {
   keyTerms: 'keyTerms',
   workedSteps: 'workedSteps',
   mnemonic: 'mnemonic',
+  case: 'case',
   tolerance: 'tolerance',
   code: 'code',
   codeLang: 'codeLang',
@@ -63,7 +65,8 @@ export function rowToCard(row: Row, deckName: string): NormalizedCard {
             : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
               ? r.kind
               : undefined,
-    front: r.target,
+    // A question of a case: older readers and Anki get the case before the question (read back in, it is dropped).
+    front: frontWithCase(fields.case ?? '', r.target),
     // An explain card without a model explanation: older readers and Anki get its key points as the back.
     back: !r.meaning && fields.keyPoints ? keyPointsAsBack(parseKeyPoints(fields.keyPoints)) : r.meaning,
     ...fields,

@@ -77,6 +77,8 @@ export const EMPTY = {
   keyPoints: [] as string[],
   /** worked: its solution steps (rows being edited may still be empty). */
   workedSteps: [] as WorkedStep[],
+  /** The case this question belongs to (cases.ts); cards of the deck with the same case form a chain. */
+  case: '',
 };
 export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
 
@@ -120,6 +122,7 @@ export const formFor = (c: FullCard): Form => ({
   corrections: correctionsOf(c),
   keyPoints: keyPointsOf(c),
   workedSteps: workedStepsOf(c),
+  case: c.extra.case ?? '',
   suspended: c.suspended,
   starred: c.starred,
   item: c,
@@ -145,6 +148,9 @@ export const removeVariant = (list: Variant[], i: number): Variant[] => list.fil
 /** The key point rows to show: at least two, as an explain card needs. */
 export const keyPointRows = (list: string[]): string[] =>
   list.length >= KEY_POINTS_MIN ? list : [...list, ...Array<string>(KEY_POINTS_MIN - list.length).fill('')];
+
+/** A case is for cards asked as a written question (core drops it from the others). */
+export const showCase = (f: Pick<Form, 'type'>) => !['cloze', 'order', 'code', 'occlusion'].includes(f.type);
 
 /** The worked-step rows to show: at least two, as a worked example needs. */
 export const workedRows = (list: WorkedStep[]): WorkedStep[] =>
@@ -181,6 +187,7 @@ export function fieldsToSave(f: Form) {
     variants: showVariants(f) ? formatVariants(f.variants) : '',
     keyPoints: f.type === 'explain' ? formatKeyPoints(f.keyPoints) : '',
     workedSteps: f.type === 'worked' ? formatWorkedSteps(f.workedSteps.filter((s) => s.result.trim())) : '',
+    case: showCase(f) ? f.case : '',
     corrections:
       f.type === 'mcq'
         ? formatCorrections(f.corrections, mcqOf({ extra: { choices: f.choices, correct: f.correct }, meaning: '' }))

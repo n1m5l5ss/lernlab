@@ -498,6 +498,7 @@
         "corrections": "Corrections for wrong choices",
         "keyPoints": "Key points",
         "workedSteps": "Worked steps",
+        "case": "Case",
         "keyTerms": "Key terms to highlight"
       },
       "hints": {
@@ -641,6 +642,11 @@
         "myth": "Myth (a common misconception to reject)",
         "explain": "Explain it (a why or how question with key points)",
         "worked": "Worked example (a solved problem whose steps fade)"
+      },
+      "case": {
+        "label": "Case (optional)",
+        "placeholder": "A 58-year-old man has crushing chest pain for 40 minutes. His ECG shows ST elevation in II, III and aVF.",
+        "hint": "For a chain of linked questions about one case: paste the same case into each of its cards. It shows above the question, and a mock exam asks the whole case together."
       },
       "worked": {
         "problem": "Problem",
@@ -1439,6 +1445,9 @@
       "gapDown": "You rated {{before}} before and {{after}} after. Explaining often shows what is still unclear: that is how it helps.",
       "gapUp": "You rated {{before}} before and {{after}} after: explaining made it clearer.",
       "gapSame": "You rated {{before}} before and after."
+    },
+    "case": {
+      "label": "Case"
     },
     "worked": {
       "title": {

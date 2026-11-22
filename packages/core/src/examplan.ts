@@ -7,7 +7,8 @@ import { host } from './host';
 import { qa } from './cards';
 import { asHtml, backText, mc, mcq } from './exercises';
 import { variantsOf } from './variants';
-import { askedOwnWay } from './explain';
+import { ownExercise } from './explain';
+import { caseHtml, caseOf, chainOf, hasCase } from './cases';
 import { allItems, deckNewPerDay, introducedTodayCount, recordAttempt } from './learn';
 import { getDeck, type Deck } from './library';
 import { shuffle, stripHtml } from './text';
@@ -55,15 +56,24 @@ function question(item: Item, pool: Item[]): ExamQuestion | null {
 export function buildExam(deckId: number, d: DB = getDb()): Exam {
   const deck: Deck | null = getDeck(deckId, d);
   const settings = examSettings(deck?.settings.exam);
-  // Myth and explain cards are asked in their own way in sessions; they are neither questions nor answers in an exam.
+  // Cards with their own exercise in sessions (myth, explain…) are neither questions nor answers in an exam.
   const pool = allItems(d, deckId).filter(
-    (i) => !['grammar', 'order', 'occlusion'].includes(i.kind) && !askedOwnWay(i),
+    (i) => !['grammar', 'order', 'occlusion'].includes(i.kind) && !ownExercise(i),
   );
   const questions: ExamQuestion[] = [];
+  const used = new Set<number>();
   for (const item of shuffle(pool)) {
     if (questions.length >= settings.questions) break;
-    const q = question(item, pool);
-    if (q) questions.push(q);
+    if (used.has(item.id)) continue;
+    // A case is drawn whole, its questions in deck order, when it still fits (or opens the exam).
+    const chain = chainOf(item, pool);
+    const room = settings.questions - questions.length;
+    if (chain.length > room && questions.length) continue;
+    for (const card of chain.slice(0, room)) {
+      used.add(card.id);
+      const q = question(card, pool);
+      if (q) questions.push(hasCase(card) ? { ...q, caseText: caseHtml(caseOf(card)) } : q);
+    }
   }
   return { id: `exam-${host().randomId()}`, deckId, deckName: deck?.name ?? '', settings, questions };
 }

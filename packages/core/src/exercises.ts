@@ -5,7 +5,7 @@ import { hasMath, splitMath } from './math';
 import { codeTask, GAP } from './code';
 import { variantsOf } from './variants';
 import { correctionHtml, correctionsOf, isMyth } from './misconceptions';
-import { askedOwnWay, asksWhy, isExplain, keyPointHtml, keyPointsOf } from './explain';
+import { ownExercise, asksWhy, isExplain, keyPointHtml, keyPointsOf } from './explain';
 import { isTwin } from './twin';
 import { isWorked, stepHtml, workedStepsOf } from './worked';
 import type { Exercise, Item } from './types';
@@ -39,7 +39,7 @@ function pickDistractors(
       (p) =>
         p.id !== item.id &&
         !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(p.kind) &&
-        !askedOwnWay(p) &&
+        !ownExercise(p) && // a case question's answer can still be a wrong choice
         key(p) &&
         !seen.has(key(p).toLowerCase()),
     )

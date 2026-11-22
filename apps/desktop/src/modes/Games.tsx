@@ -9,6 +9,7 @@ import { Cloze, Flip, Myth, Order, TypedEngine } from './Exercises';
 import { Explain } from './Explain';
 import { Twin } from './Twin';
 import { Worked } from './Worked';
+import { CaseFor } from '../case-view';
 import { CodeBlock } from '../code-block';
 import { Media, Rich } from '../rich';
 import { sprintLabel } from '../session-logic';
@@ -453,6 +454,7 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
       >
         <i style={{ width: `${(hp / ids.length) * 100}%` }} />
       </div>
+      {over === null && <CaseFor item={item} />}
       {over === null ? (
         ex.type === 'typed' ? (
           <TypedEngine

@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { isRight, type ExamMode } from '@lernlab/core/exam';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
-import { Feedback, LevelTag, SegmentedControl } from './components';
+import { CasePanel, Feedback, LevelTag, SegmentedControl } from './components';
 import { useKeys } from './ctx';
 import { clock, reviewRows, secondsLeft, toggleChoice, type ReviewFilter } from './exam-logic';
 import { formatNumber } from './i18n';
@@ -356,6 +356,11 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
               </>
             )}
           </div>
+          {q.caseText && (
+            <CasePanel label={t('ex.case.label')}>
+              <Rich html={q.caseText} />
+            </CasePanel>
+          )}
           <div className="prompt exam-stem">
             <Rich html={q.stem} />
           </div>

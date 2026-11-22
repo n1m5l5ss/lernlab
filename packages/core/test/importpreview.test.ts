@@ -173,6 +173,11 @@ test('a column of key points is recognised', () => {
   assert.equal(known.table?.fields.keyPoints, 2);
 });
 
+test('a case column is recognised', () => {
+  const known = previewFile('Cases.csv', strToU8('front,back,scenario\nDiagnosis?,STEMI,A man has chest pain.\n'));
+  assert.equal(known.table?.fields.case, 2);
+});
+
 test('a column of worked steps is recognised', () => {
   const known = previewFile('Maths.csv', strToU8('front,back,worked_steps\nSolve,x = 4,Subtract :: 2x = 8|x = 4\n'));
   assert.equal(known.table?.fields.workedSteps, 2);

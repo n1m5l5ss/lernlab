@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import {
   Button,
   Card,
+  CasePanel,
   ConfidenceRow,
   Feedback,
   Input,
@@ -153,6 +154,14 @@ test('LevelTag shows the level word with a class per level', () => {
   assert.equal(
     html(h(LevelTag, { level: 'apply', children: 'Apply' })),
     '<span class="level-tag level-apply">Apply</span>',
+  );
+});
+
+test('CasePanel is a labelled region with the case text', () => {
+  assert.equal(
+    html(h(CasePanel, { label: 'Case', children: 'A man has chest pain.' })),
+    '<section class="case-panel" aria-label="Case"><div class="case-panel-label" aria-hidden="true">Case</div>' +
+      '<div class="case-panel-text">A man has chest pain.</div></section>',
   );
 });
 

@@ -53,6 +53,8 @@ export type ExamQuestion = {
   level?: Level;
   /** Per choice: the correction (safe HTML) tutor mode shows when that wrong choice is picked; '' for none. */
   corrections?: string[];
+  /** A question of a case chain (cases.ts): the case, as safe HTML, shown above the question. */
+  caseText?: string;
 };
 
 /** Right only when every correct choice, and nothing else, is picked. */

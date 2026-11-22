@@ -147,6 +147,7 @@ const cardInput = v.object({
   requires: text,
   workedSteps: text,
   mnemonic: text,
+  case: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -463,6 +464,7 @@ export const handlers = {
           // The editor writes key terms in the back as ==term==, so the back alone says which there are.
           keyTerms: '',
           workedSteps: opt(b.workedSteps),
+          case: opt(b.case),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);
