@@ -271,16 +271,17 @@ test('a case is stored with its card, and the front stays the question alone (so
   );
 });
 
-test('the CSV template imports as three example cards', () => {
+test('the CSV template imports as four example cards', () => {
   const lines = CSV_TEMPLATE.trim().split('\n');
-  assert.equal(lines.length, 4, 'a header and three example rows');
+  assert.equal(lines.length, 5, 'a header and four example rows');
   assert.match(lines[0], /^front,back,/);
   assert.ok(lines[0].split(',').includes('image_alt'), 'the template shows the image description column');
   assert.ok(lines[0].split(',').includes('variants'), 'the template shows the question variants column');
   assert.ok(lines[0].split(',').includes('corrections'), 'the template shows the corrections column');
+  assert.ok(lines[0].split(',').includes('key_points'), 'the template shows the key points column');
   for (const l of lines) assert.equal(l.split(',').length, lines[0].split(',').length, l);
   const r = importFile('template.csv', strToU8(CSV_TEMPLATE));
-  assert.equal(r.added, 3);
+  assert.equal(r.added, 4);
   const kinds = getDb()
     .prepare('SELECT kind FROM items WHERE deck_id = ? ORDER BY ord')
     .all(r.deck.id)
@@ -290,4 +291,26 @@ test('the CSV template imports as three example cards', () => {
   assert.match(String(s3?.extra), /apply: Which AWS service .* \| analyse: /);
   const quiz = getDb().prepare("SELECT extra FROM items WHERE deck_id = ? AND kind = 'mcq'").get(r.deck.id);
   assert.match(JSON.parse(String(quiz?.extra)).corrections, /^Many people think EC2 is serverless\./);
+  // The explain card: a why question, a model answer on the back and its key points.
+  const explain = getDb()
+    .prepare("SELECT target, meaning, extra FROM items WHERE deck_id = ? AND extra LIKE '%keyPoints%'")
+    .all(r.deck.id);
+  assert.equal(explain.length, 1);
+  assert.match(String(explain[0].target), /^Why /);
+  assert.match(String(explain[0].meaning), /tilted axis/);
+  assert.equal(String(JSON.parse(String(explain[0].extra)).keyPoints).split('|').length, 3);
+});
+
+test('the import preview maps every column of the CSV template, key points included', async () => {
+  const { previewFile } = await import('../src/importpreview');
+  const p = previewFile('template.csv', strToU8(CSV_TEMPLATE));
+  assert.equal(p.total, 4);
+  assert.ok(p.table?.header);
+  const names = p.table!.columns.map((c) => c.name);
+  assert.equal(p.table!.fields.keyPoints, names.indexOf('key_points'));
+  assert.deepEqual(
+    Object.values(p.table!.fields).sort((a, b) => a - b),
+    names.map((_, i) => i),
+    'no template column is left unmapped',
+  );
 });

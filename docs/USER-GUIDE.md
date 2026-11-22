@@ -81,7 +81,7 @@ Importing the same file again **updates** the cards. It never makes copies, and 
 
 ### Make your own deck file
 
-The easiest way is a spreadsheet. On the Decks screen, press **Download the CSV template**. Fill it in with Excel, LibreOffice or Google Sheets, save it as CSV and import it. The columns are explained in [FORMAT.md](FORMAT.md#csv--tsv).
+The easiest way is a spreadsheet. On the Decks screen, press **Download the CSV template**. Fill it in with Excel, LibreOffice or Google Sheets, save it as CSV and import it. Its example rows show a plain card, a multiple-choice card, a language card and an **Explain it** card: for one of those, write the why or how question in `front`, a model answer in `back` and 2–5 key points in `key_points`, separated by `|`. The columns are explained in [FORMAT.md](FORMAT.md#csv--tsv).
 
 The [`examples/`](../examples/) folder has ready decks to try or copy:
 

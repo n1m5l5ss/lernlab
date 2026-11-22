@@ -416,7 +416,7 @@ To include media with a CSV, zip the CSV together with the files it references a
 
 **Exporting a CSV** (Decks → a deck's options → Export CSV) writes every column above plus `lesson` and `reading`, so importing it gives the same cards. A CSV holds media file names, not the files: export a `.lernpack` to take pictures and sounds along.
 
-**CSV template.** Decks → "Download the CSV template" saves `lernlab-template.csv`: the main columns and three example cards (a plain card with two question variants, a multiple-choice card with a correction for a wrong choice and a language card).
+**CSV template.** Decks → "Download the CSV template" saves `lernlab-template.csv`: the main columns and four example cards (a plain card with two question variants, a multiple-choice card with a correction for a wrong choice, a language card and an explain card with three `key_points`).
 
 ## Anki `.apkg`
 
