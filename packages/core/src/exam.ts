@@ -55,6 +55,8 @@ export type ExamQuestion = {
   corrections?: string[];
   /** A question of a case chain (cases.ts): the case, as safe HTML, shown above the question. */
   caseText?: string;
+  /** The card's graph line (graph.ts), drawn above a question that asks from the card's front. */
+  graph?: string;
 };
 
 /** Right only when every correct choice, and nothing else, is picked. */

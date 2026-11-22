@@ -173,6 +173,11 @@ test('a column of key points is recognised', () => {
   assert.equal(known.table?.fields.keyPoints, 2);
 });
 
+test('a graph column is recognised', () => {
+  const known = previewFile('Graphs.csv', strToU8('front,back,plot\nWhich function?,y = 2x,y = 2x\n'));
+  assert.equal(known.table?.fields.graph, 2);
+});
+
 test('a case column is recognised', () => {
   const known = previewFile('Cases.csv', strToU8('front,back,scenario\nDiagnosis?,STEMI,A man has chest pain.\n'));
   assert.equal(known.table?.fields.case, 2);

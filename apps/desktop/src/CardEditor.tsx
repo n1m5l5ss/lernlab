@@ -20,6 +20,8 @@ import {
   keyPointRows,
   workedRows,
   showCase,
+  showGraph,
+  graphProblem,
   previewOf,
   removeVariant,
   showImageAlt,
@@ -42,7 +44,9 @@ import {
 } from '@lernlab/core/worked';
 import { Media, Rich } from './rich';
 import { CaseFor } from './case-view';
+import { isTranslate } from '@lernlab/core/translate';
 import { CASE_MAX_LENGTH } from '@lernlab/core/cases';
+import { GRAPH_MAX_LENGTH } from '@lernlab/core/graph';
 import { CodeBlock } from './code-block';
 import { OcclusionEditor } from './occlusion';
 import { newGroupId, occlusionCards, shapesFor, shapesReady } from './occlusion-logic';
@@ -378,6 +382,32 @@ export function CardEditor({
           <p id={`${uid}-case-hint`} className="small muted">
             {t('browse.editor.case.hint')}
           </p>
+        </>
+      )}
+      {showGraph(c) && (
+        <>
+          <label className="lbl" htmlFor={`${uid}-graph`}>
+            {t('browse.editor.graph.label')}
+          </label>
+          <input
+            id={`${uid}-graph`}
+            className="input"
+            maxLength={GRAPH_MAX_LENGTH}
+            value={c.graph}
+            spellCheck={false}
+            aria-describedby={`${uid}-graph-hint`}
+            aria-invalid={graphProblem(c) || undefined}
+            placeholder={t('browse.editor.graph.placeholder')}
+            onChange={(e) => set('graph', e.target.value)}
+          />
+          <p id={`${uid}-graph-hint`} className="small muted">
+            {t('browse.editor.graph.hint')}
+          </p>
+          {graphProblem(c) && (
+            <p className="editor-dup small" role="status">
+              {t('browse.editor.graph.problem')}
+            </p>
+          )}
         </>
       )}
       {showVariants(c) && <VariantsField variants={c.variants} onChange={(v) => set('variants', v)} />}
@@ -791,6 +821,7 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
         <div className="editor-preview-side">
           <CaseFor item={preview.item} />
           {question}
+          {isTranslate(preview.item) && <p className="small muted">{t('browse.editor.translateNote')}</p>}
         </div>
       </div>
       <div>

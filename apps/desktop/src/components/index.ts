@@ -3,6 +3,7 @@ export { Button, type ButtonProps, type ButtonVariant } from './Button';
 export { Card, type CardProps } from './Card';
 export { CasePanel, type CasePanelProps } from './CasePanel';
 export { ConfidenceRow, type ConfidencePick, type ConfidenceRowProps } from './ConfidenceRow';
+export { GraphPlot, type GraphPlotProps } from './GraphPlot';
 export { Feedback, type FeedbackProps, type FeedbackTone } from './Feedback';
 export { KeyPointChecklist, type KeyPointChecklistProps } from './KeyPointChecklist';
 export { LevelTag, type LevelTagProps } from './LevelTag';

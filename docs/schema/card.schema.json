@@ -11,9 +11,22 @@
       "type": ["string", "number"]
     },
     "type": {
-      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit; code: a code snippet in `code`; occlusion: a box hidden on the image; myth: a common misconception on the front, why it is wrong on the back; explain: a why or how question on the front, a model explanation on the back and 2–5 keyPoints; worked: a solved problem on the front, its answer on the back and 2–8 workedSteps that fade; twin: a compare card, two things side by side, the first on the front and the second in twin (all added after v1 was published). Readers treat an unknown type as if it were missing.",
+      "description": "Card type. Without it the reader picks one from the content (a {{c1::...}} front is a cloze, choices make an mcq, steps make an order card). numeric: the back is a number with an optional unit; code: a code snippet in `code`; occlusion: a box hidden on the image; myth: a common misconception on the front, why it is wrong on the back; explain: a why or how question on the front, a model explanation on the back and 2–5 keyPoints; worked: a solved problem on the front, its answer on the back and 2–8 workedSteps that fade; twin: a compare card, two things side by side, the first on the front and the second in twin; translate: front and back are two representations of one idea (a graph and its formula, a formula and its diagram), asked in both directions in turn (all added after v1 was published). Readers treat an unknown type as if it were missing.",
       "type": "string",
-      "enum": ["basic", "cloze", "mcq", "order", "numeric", "code", "occlusion", "myth", "explain", "twin", "worked"]
+      "enum": [
+        "basic",
+        "cloze",
+        "mcq",
+        "order",
+        "numeric",
+        "code",
+        "occlusion",
+        "myth",
+        "explain",
+        "twin",
+        "worked",
+        "translate"
+      ]
     },
     "front": {
       "description": "Term, question or prompt. Cloze: text with {{c1::answer}} or {{c1::answer::hint}} (Anki syntax). A card with an empty front is skipped.",
@@ -75,6 +88,11 @@
     "case": {
       "description": "Optional, added after v1 was published; older readers ignore it. Case chain: the case (a patient, a fact pattern, an architecture) this question belongs to. Cards of one deck with exactly the same case form a chain of linked questions, in file order; each is its own card with its own answer. Plain text with **bold**, *italic* and `code`, on one line, at most 2000 characters (cloze, ordering, code and image occlusion cards drop it). Writers also put the case before the question in front, separated by an empty line, so older readers can still answer the card; a reader that knows this field drops it from the front again.",
       "type": "string"
+    },
+    "graph": {
+      "description": "Optional, added after v1 was published; older readers ignore it. A small graph the reader draws with the front. Either one function of x: \"y = x^2 - 1\", with optional ranges after semicolons, \"y = 1/x; x = -3..3; y = -4..4\" (x is -5..5 when not given; y fits the curve); or 2–50 points joined by lines: \"(0,1) (1,3) (2,5)\". An expression may use numbers, x, + - * / ^, brackets, implied multiplication (2x), pi, e and sqrt, sin, cos, tan, abs, exp, ln, log (base 10), each with brackets. Readers parse it themselves and must never evaluate it as code; a line that does not read, or is longer than 300 characters, is dropped. Kept on basic, numeric and multiple-choice cards.",
+      "type": "string",
+      "maxLength": 300
     },
     "workedSteps": {
       "description": "Optional, added after v1 was published; older readers ignore it. Worked example: the 2–8 steps of the solution, separated by |, each \"what you do :: result\" (the first :: splits; a step without it is only a result). The learner studies the full example, then types the last result, the last two, and so on up to the whole problem. Plain text with **bold**, *italic*, `code` and math; what you do is at most 300 characters, a result at most 200; a card with fewer than two steps keeps none. Without a back, the answer is the last result. Example: \"Subtract 3 from both sides :: 2x = 8|Divide both sides by 2 :: x = 4\"",

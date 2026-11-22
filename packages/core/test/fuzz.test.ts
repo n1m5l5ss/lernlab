@@ -234,6 +234,48 @@ test('worked steps: any text gives at most eight plain-text steps, cleaning is s
   );
 });
 
+const { cleanGraph, parseGraph, plotGraph, graphPoints, GRAPH_MAX_LENGTH } = await import('../src/graph');
+test('graphs: any text reads or gives no graph, never throws; the kept line is stable, safe and draws finite numbers', () => {
+  const pieces = [
+    'x',
+    'y',
+    '=',
+    '+',
+    '-',
+    '*',
+    '/',
+    '^',
+    '(',
+    ')',
+    ';',
+    '..',
+    ',',
+    ' ',
+    'sin',
+    'sqrt',
+    'ln',
+    'pi',
+    'e',
+  ];
+  const mathish = fc
+    .array(fc.oneof(fc.constantFrom(...pieces), fc.integer({ min: 0, max: 999 }).map(String)), { maxLength: 40 })
+    .map((a) => a.join(''));
+  fc.assert(
+    fc.property(fc.oneof(hostileText, mathish), (text) => {
+      const line = cleanGraph(text);
+      assert.ok(line.length <= GRAPH_MAX_LENGTH + 40 && /^[0-9a-z.+\-*/^(),;= ]*$/.test(line), line);
+      assert.equal(cleanGraph(line), line, 'cleaning twice changes nothing');
+      const g = parseGraph(line);
+      if (!g) return assert.equal(line, '');
+      const plot = plotGraph(g);
+      assert.ok(plot.paths.length <= 130 && !/NaN|Infinity/.test(plot.paths.join(' ')));
+      for (const n of [...plot.x, ...plot.y, ...plot.dots.flat(), ...graphPoints(g).flat()])
+        assert.ok(Number.isFinite(n));
+    }),
+    params(RUNS * 2),
+  );
+});
+
 const { cleanCase, caseHtml, questionOf, CASE_MAX_LENGTH } = await import('../src/cases');
 test('cases: any text gives one line of plain text, cleaning is stable and the HTML stays safe', () => {
   fc.assert(

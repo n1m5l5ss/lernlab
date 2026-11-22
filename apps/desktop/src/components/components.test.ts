@@ -4,12 +4,14 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement as h, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { parseGraph, plotGraph } from '@lernlab/core/graph';
 import {
   Button,
   Card,
   CasePanel,
   ConfidenceRow,
   Feedback,
+  GraphPlot,
   Input,
   KeyPointChecklist,
   LevelTag,
@@ -163,6 +165,19 @@ test('CasePanel is a labelled region with the case text', () => {
     '<section class="case-panel" aria-label="Case"><div class="case-panel-label" aria-hidden="true">Case</div>' +
       '<div class="case-panel-text">A man has chest pain.</div></section>',
   );
+});
+
+test('GraphPlot is one image with a text alternative; grid, ticks and curve are hidden from screen readers', () => {
+  const plot = plotGraph(parseGraph('(0,0) (1,2)')!);
+  const out = html(h(GraphPlot, { plot, label: 'A line through (0, 0) and (1, 2)' }));
+  assert.match(
+    out,
+    /^<svg class="graph-plot" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="A line through \(0, 0\) and \(1, 2\)">/,
+  );
+  assert.equal(out.match(/<path class="graph-plot-line"/g)?.length, 1);
+  assert.equal(out.match(/<circle class="graph-plot-dot"/g)?.length, 2);
+  assert.match(out, /<g aria-hidden="true">/);
+  assert.match(out, /<text class="graph-plot-tick"[^>]*>0\.5<\/text>/);
 });
 
 test('Misconception shows the lead, the correction and then the right answer', () => {

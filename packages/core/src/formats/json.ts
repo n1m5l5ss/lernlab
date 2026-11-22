@@ -30,6 +30,7 @@ const TEXT_FIELDS = [
   'workedSteps',
   'mnemonic',
   'case',
+  'graph',
   'tolerance',
   'code',
   'codeLang',

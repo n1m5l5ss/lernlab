@@ -90,6 +90,7 @@ const COLUMNS: Record<string, string[]> = {
   keyTerms: ['key_terms', 'key terms', 'keyterms'],
   workedSteps: ['worked_steps', 'worked steps', 'solution steps'],
   case: ['case', 'scenario', 'vignette'],
+  graph: ['graph', 'plot'],
   tolerance: ['tolerance', 'tol'],
   code: ['code', 'snippet', 'source code'],
   codeLang: ['code_lang', 'code language', 'programming language'],
@@ -177,6 +178,7 @@ export function csvToCards(text: string): {
       workedSteps: get(r, 'workedSteps') || undefined,
       mnemonic: get(r, 'mnemonic') || undefined,
       case: get(r, 'case') || undefined,
+      graph: get(r, 'graph') || undefined,
       tolerance: get(r, 'tolerance') || undefined,
       code: 'code' in columns ? r[columns.code] || undefined : undefined, // untrimmed: indentation matters
       codeLang: get(r, 'codeLang') || undefined,
@@ -212,6 +214,7 @@ const CSV_COLUMNS: [string, (c: NormalizedCard) => string | number | undefined][
   ['key_terms', (c) => c.keyTerms],
   ['worked_steps', (c) => c.workedSteps],
   ['case', (c) => c.case],
+  ['graph', (c) => c.graph],
   ['steps', (c) => c.steps],
   ['tolerance', (c) => c.tolerance],
   ['code', (c) => c.code],

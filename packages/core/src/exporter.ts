@@ -10,7 +10,7 @@ import { UserError } from './errors';
 import { keyPointsAsBack, parseKeyPoints } from './explain';
 import { frontWithCase } from './cases';
 
-/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `twin`, `keyTerms`, `workedSteps`, `mnemonic`, `case`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `twin`, `keyTerms`, `workedSteps`, `mnemonic`, `case`, `graph`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
 const FROM_EXTRA = {
   choices: 'choices',
   correct: 'correct',
@@ -26,6 +26,7 @@ const FROM_EXTRA = {
   workedSteps: 'workedSteps',
   mnemonic: 'mnemonic',
   case: 'case',
+  graph: 'graph',
   tolerance: 'tolerance',
   code: 'code',
   codeLang: 'codeLang',
@@ -48,6 +49,8 @@ export function rowToCard(row: Row, deckName: string): NormalizedCard {
   const fields: Partial<NormalizedCard> = {};
   const myth = extra.myth === '1';
   delete extra.myth;
+  const translate = extra.translate === '1';
+  delete extra.translate;
   for (const [key, field] of Object.entries(FROM_EXTRA)) {
     if (extra[key]) fields[field] = extra[key];
     delete extra[key];
@@ -62,9 +65,11 @@ export function rowToCard(row: Row, deckName: string): NormalizedCard {
           ? 'twin'
           : fields.workedSteps
             ? 'worked'
-            : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
-              ? r.kind
-              : undefined,
+            : translate
+              ? 'translate'
+              : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
+                ? r.kind
+                : undefined,
     // A question of a case: older readers and Anki get the case before the question (read back in, it is dropped).
     front: frontWithCase(fields.case ?? '', r.target),
     // An explain card without a model explanation: older readers and Anki get its key points as the back.

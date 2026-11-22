@@ -148,6 +148,7 @@ const cardInput = v.object({
   workedSteps: text,
   mnemonic: text,
   case: text,
+  graph: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -465,6 +466,7 @@ export const handlers = {
           keyTerms: '',
           workedSteps: opt(b.workedSteps),
           case: opt(b.case),
+          graph: opt(b.graph),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);

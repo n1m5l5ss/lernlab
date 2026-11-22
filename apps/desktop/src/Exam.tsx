@@ -9,6 +9,7 @@ import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { CasePanel, Feedback, LevelTag, SegmentedControl } from './components';
 import { useKeys } from './ctx';
+import { GraphOf } from './graph-view';
 import { clock, reviewRows, secondsLeft, toggleChoice, type ReviewFilter } from './exam-logic';
 import { formatNumber } from './i18n';
 import { controlOwnsKey } from './keys-logic';
@@ -361,6 +362,7 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
               <Rich html={q.caseText} />
             </CasePanel>
           )}
+          {q.graph && <GraphOf line={q.graph} />}
           <div className="prompt exam-stem">
             <Rich html={q.stem} />
           </div>

@@ -146,6 +146,21 @@ export function flip(item: Item, k = 0): Exercise {
 }
 
 /**
+ * A translate card asked the other way round (translate.ts): the side the usual question (qa) gives as the
+ * answer is shown, and the learner recalls the other side, then checks it and rates themselves.
+ */
+export function otherWay(item: Item): Exercise {
+  const toFront = qa(item).prompt === item.target; // the usual way asks the front, so this one asks the back
+  return {
+    type: 'flip',
+    itemId: item.id,
+    prompt: toFront ? item.meaning : item.target,
+    answer: toFront ? item.target : item.meaning,
+    reverse: toFront,
+  };
+}
+
+/**
  * Explain first (explain.ts): an explain card, with its key points to tick, or a basic card tagged why/how
  * (no points: the usual self-grade after the reveal). The model answer is the card's back ('' for none).
  */

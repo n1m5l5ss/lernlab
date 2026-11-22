@@ -773,3 +773,21 @@ test('"say a few answers aloud" is on by default and can be turned off', async (
   assert.equal((await ok('settings.save', { quietMinute: 'yes' })).quietMinute, false);
   assert.equal((await ok('settings.save', { quietMinute: true })).quietMinute, true);
 });
+
+test('the card editor saves, keeps and clears a graph and the translate type; a mock exam shows the graph', async () => {
+  const deck = await ok('decks.create', { name: 'Graphs', language: null });
+  const card = { front: 'Which function is this?', back: 'y = 2x + 1', type: 'translate' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, graph: ' Y = 2x + 1 ; x = -3..3' } });
+  await ok('cards.add', { deckId: deck.id, card: { front: 'Which curve?', back: 'y = x^2', graph: 'alert(1)' } });
+  const saved = await ok('cards.get', { id });
+  assert.deepEqual([saved.extra.graph, saved.extra.translate, saved.kind], ['y = 2x + 1; x = -3..3', '1', 'card']);
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.graph, 'y = 2x + 1; x = -3..3', 'kept');
+  const exam = await ok('exam.start', { deckId: deck.id });
+  assert.deepEqual(exam.questions.map((q: { stem: string; graph?: string }) => [q.stem, q.graph]).sort(), [
+    ['Which curve?', undefined],
+    ['Which function is this?', 'y = 2x + 1; x = -3..3'],
+  ]);
+  await ok('cards.update', { id, card: { ...card, type: 'basic', graph: '' } });
+  assert.deepEqual((await ok('cards.get', { id })).extra, {}, 'cleared');
+});

@@ -499,6 +499,7 @@
         "keyPoints": "Key points",
         "workedSteps": "Worked steps",
         "case": "Case",
+        "graph": "Graph",
         "keyTerms": "Key terms to highlight"
       },
       "hints": {
@@ -641,7 +642,15 @@
         "occlusion": "Image occlusion (hide parts of a picture)",
         "myth": "Myth (a common misconception to reject)",
         "explain": "Explain it (a why or how question with key points)",
-        "worked": "Worked example (a solved problem whose steps fade)"
+        "worked": "Worked example (a solved problem whose steps fade)",
+        "translate": "Translate (two forms of one idea, asked both ways)"
+      },
+      "translateNote": "This card is asked both ways: at every second review you see the answer side and recall this side.",
+      "graph": {
+        "label": "Graph (optional)",
+        "placeholder": "y = x^2 - 1; x = -3..3",
+        "hint": "LernLab draws it with the front. Write a function of x, such as y = 2x + 1 or y = sin(x); x = 0..6.3, or points to join: (0,1) (1,3) (2,5). You can use + - * / ^, brackets, pi, e, sqrt, sin, cos, tan, abs, exp, ln and log.",
+        "problem": "LernLab can't draw this graph yet. Check the brackets and write functions with brackets, like sin(x). The card saves without a graph."
       },
       "case": {
         "label": "Case (optional)",
@@ -1448,6 +1457,12 @@
     },
     "case": {
       "label": "Case"
+    },
+    "graph": {
+      "alt": "Graph of a function for x from {{from}} to {{to}}. It passes through {{points}}.",
+      "altPoints": "Graph: a line through the points {{points}}.",
+      "point": "({{x}}, {{y}})",
+      "pointSeparator": ", "
     },
     "worked": {
       "title": {

@@ -29,6 +29,7 @@ import { qa } from './cards';
 import { GUESS_MAX, neverAnswered, pickGuessRound, pickTryFirst, topicIsNew, topicName } from './guess';
 import { variantIndex, variantsOf } from './variants';
 import { askedOwnWay } from './explain';
+import { asksOtherWay } from './translate';
 import { isWorked } from './worked';
 import { addDays, arcadeSeconds, dayKey } from './game';
 import { isAction, markActOut } from './actout';
@@ -165,7 +166,11 @@ export function planSession(
   const info = srsInfo([...due, ...learned], d);
   const known = [...new Set([...learned, ...leftovers])];
   /** A review asks the card's next wording (its own question, or one of its variants), in turn per review. */
-  const review = (id: number) => gen.recall(get(id), variantIndex(id, info[id]?.reps ?? 0, variantsOf(get(id)).length));
+  const review = (id: number) =>
+    // A translate card (translate.ts) is asked the other way round on every second review.
+    asksOtherWay(get(id), info[id]?.reps ?? 0)
+      ? gen.otherWay(get(id))
+      : gen.recall(get(id), variantIndex(id, info[id]?.reps ?? 0, variantsOf(get(id)).length));
 
   const blocks: Block[] = [];
   const say = teacherFor(lang).block;

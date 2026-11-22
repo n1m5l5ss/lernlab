@@ -12,6 +12,8 @@ import {
   keyPointRows,
   workedRows,
   showCase,
+  showGraph,
+  graphProblem,
   previewOf,
   removeVariant,
   showImageAlt,
@@ -410,4 +412,21 @@ test('a case: saved with question cards, cleared on the others, kept as plain te
   assert.equal(p.item.extra.case, 'A man, 58, has crushing chest pain.');
   assert.equal(p.item.target, 'Most likely diagnosis?');
   assert.equal(formFor({ ...p.item, suspended: false, starred: false }).case, 'A man, 58, has crushing chest pain.');
+});
+
+test('a graph and the translate type: saved on cards asked as a question, checked as written, shown in the preview', () => {
+  const f = form({ type: 'translate', front: 'Which function is this?', back: 'y = 2x + 1', graph: 'Y = 2x+1' });
+  assert.equal(showGraph(f), true);
+  assert.equal(graphProblem(f), false);
+  assert.equal(fieldsToSave(f).graph, 'Y = 2x+1');
+  assert.equal(showGraph({ type: 'cloze' }), false);
+  assert.equal(fieldsToSave({ ...f, type: 'order' }).graph, '', 'other types save none');
+  assert.equal(graphProblem({ ...f, graph: 'sin x' }), true);
+  assert.equal(graphProblem({ ...f, graph: '  ' }), false);
+  const p = previewOf(f, deck)!;
+  assert.deepEqual(p.item.extra, { translate: '1', graph: 'y = 2x+1' });
+  assert.equal(p.view.type, 'typed');
+  const again = formFor({ ...p.item, suspended: false, starred: false });
+  assert.deepEqual([again.type, again.graph], ['translate', 'y = 2x+1']);
+  assert.equal(previewOf({ ...f, type: 'basic' }, deck)!.item.extra.translate, undefined);
 });

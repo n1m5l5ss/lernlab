@@ -8,6 +8,7 @@ import { correctionHtml } from './misconceptions';
 import { isMyth } from './misconceptions';
 import { isWorked } from './worked';
 import { hasCase } from './cases';
+import { hasGraph } from './graph';
 import { stripHtml } from './text';
 import { isTwin } from './twin';
 import type { Item } from './types';
@@ -59,9 +60,9 @@ export const ownExercise = (item: Pick<Item, 'extra'>): boolean =>
 
 /**
  * Cards asked only in their own way: no games, distractors or guess rounds. Those with their own exercise, and
- * the questions of a case (cases.ts), which make no sense without it.
+ * the questions of a case (cases.ts) or about a graph (graph.ts), which make no sense without it.
  */
-export const askedOwnWay = (item: Pick<Item, 'extra'>): boolean => ownExercise(item) || hasCase(item);
+export const askedOwnWay = (item: Pick<Item, 'extra'>): boolean => ownExercise(item) || hasCase(item) || hasGraph(item);
 
 /** Cards tagged `why` or `how` are explained before the answer shows, never flipped. */
 export const asksWhy = (item: Pick<Item, 'tags'>): boolean => item.tags.some((t) => /^(why|how)$/i.test(t.trim()));

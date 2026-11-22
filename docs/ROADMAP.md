@@ -95,7 +95,7 @@ These come from a review of the research on remembering, understanding and stayi
 - [x] **Teach-back:** explain a topic aloud, then check yourself against its key points (#208). The assistant as a curious student is not built yet.
 - [x] **Prerequisite links:** learn the basics first, without locking anything (#207).
 - [x] **Case chains:** one scenario with linked questions (#209).
-- [ ] **Translate between representations,** such as graph and equation.
+- [x] **Translate between representations,** such as graph and equation (#210).
 - [x] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme (#211).
 - [x] **Card-quality checker** and key-term highlight (#212).
 - [x] **Pattern feedback** at the end of a session (#213).
