@@ -30,6 +30,7 @@ import { askedOwnWay } from './explain';
 import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
+import { confusionMap, keepClose } from './confusions';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
 const SIZES: Record<
@@ -97,9 +98,16 @@ export function planSession(
   const notOwnWay = (id: number) => !askedOwnWay(get(id));
 
   // Practice (cramming) draws on every card in the source, due or not, and teaches nothing new.
-  const due = practice
-    ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
-    : dueItemIds(d, now, size.due, scope).filter(has);
+  // Cards the learner mixed up (#200) are each other's wrong choice and are asked next to each other.
+  const mixups = confusionMap(d);
+  const mc = (id: number, direction: 'de2en' | 'en2de') => gen.mc(get(id), pool, direction, mixups.get(id));
+  const truefalse = (id: number) => gen.truefalse(get(id), pool, mixups.get(id));
+  const due = keepClose(
+    practice
+      ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
+      : dueItemIds(d, now, size.due, scope).filter(has),
+    mixups,
+  );
   const leftovers = practice ? [] : learningTodayIds(d, now, scope).filter((id) => has(id) && notGrammar(id));
   const fresh = practice ? [] : freshPerDeck(d, now, scope, size.fresh, (id) => get(id).deckId);
   const learned = learnedIds(d, 300, scope).filter((id) => has(id) && notGrammar(id));
@@ -131,7 +139,7 @@ export function planSession(
       kind: 'ignition',
       title: 'Warm-up',
       teacher: say('warm'),
-      exercises: ignitionIds.map((id) => gen.mc(get(id), pool, 'de2en')),
+      exercises: ignitionIds.map((id) => mc(id, 'de2en')),
     });
   }
 
@@ -160,7 +168,8 @@ export function planSession(
   }
 
   // 3. Due reviews, first half: recall (typed, or flip and self-grade for long answers).
-  const half = Math.ceil(due.length / 2);
+  let half = Math.ceil(due.length / 2);
+  if (mixups.get(due[half - 1])?.includes(due[half])) half++; // a mixed-up pair stays in one block
   const dueA = due.slice(0, half);
   const dueB = due.slice(half);
   if (dueA.length)
@@ -196,8 +205,7 @@ export function planSession(
         continue;
       } // question cards: answer first, learn from the explanation
       ex.push({ type: 'intro', itemId: id });
-      if (pool.filter((p) => plain(p.id)).length >= 4)
-        ex.push(gen.mc(get(id), pool, Math.random() < 0.5 ? 'de2en' : 'en2de'));
+      if (pool.filter((p) => plain(p.id)).length >= 4) ex.push(mc(id, Math.random() < 0.5 ? 'de2en' : 'en2de'));
     }
     blocks.push({
       id: bid(),
@@ -231,7 +239,7 @@ export function planSession(
       format: 'truefalse',
       title: 'True or false',
       teacher: say('trueFalse'),
-      exercises: ids.map((id) => gen.truefalse(get(id), pool)),
+      exercises: ids.map(truefalse),
     });
   }
 
@@ -257,9 +265,7 @@ export function planSession(
   const blitzPool = shuffle(known.filter(plain));
   const blitzOn = (settings.blitzSeconds ?? 8) > 0;
   if (size.blitz && blitzOn && blitzPool.length >= 4 && pool.filter((p) => plain(p.id)).length >= 4) {
-    const ex = blitzPool
-      .slice(0, size.blitz)
-      .map((id, i) => (i % 2 ? gen.truefalse(get(id), pool) : gen.mc(get(id), pool, 'de2en')));
+    const ex = blitzPool.slice(0, size.blitz).map((id, i) => (i % 2 ? truefalse(id) : mc(id, 'de2en')));
     blocks.push({
       id: bid(),
       kind: 'blitz',
@@ -342,7 +348,7 @@ export function planSession(
       format: 'typed',
       title: 'Recall',
       teacher: say('recall'),
-      exercises: shuffle(recallIds).map((id, i) =>
+      exercises: keepClose(shuffle(recallIds), mixups).map((id, i) =>
         i % 3 === 2 && notOwnWay(id) ? (gen.cloze(get(id)) ?? gen.recall(get(id))) : gen.recall(get(id)),
       ),
     });

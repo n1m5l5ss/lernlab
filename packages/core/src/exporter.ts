@@ -9,7 +9,7 @@ import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
 import { keyPointsAsBack, parseKeyPoints } from './explain';
 
-/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `twin`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
 const FROM_EXTRA = {
   choices: 'choices',
   correct: 'correct',
@@ -19,6 +19,7 @@ const FROM_EXTRA = {
   variants: 'variants',
   corrections: 'corrections',
   keyPoints: 'keyPoints',
+  twin: 'twin',
   tolerance: 'tolerance',
   code: 'code',
   codeLang: 'codeLang',
@@ -51,9 +52,11 @@ export function rowToCard(row: Row, deckName: string): NormalizedCard {
       ? 'myth'
       : fields.keyPoints
         ? 'explain'
-        : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
-          ? r.kind
-          : undefined,
+        : fields.twin
+          ? 'twin'
+          : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
+            ? r.kind
+            : undefined,
     front: r.target,
     // An explain card without a model explanation: older readers and Anki get its key points as the back.
     back: !r.meaning && fields.keyPoints ? keyPointsAsBack(parseKeyPoints(fields.keyPoints)) : r.meaning,

@@ -82,7 +82,7 @@ These come from a review of the research on remembering, understanding and stayi
 
 - [ ] **Question variants per card:** recall, apply and analyse prompts that rotate, with one grade per day.
 - [ ] **"Explain it" cards:** explain first, then tick the key points you covered. Why and how cards never use a plain flip.
-- [ ] **Learn from your own mix-ups:** confused cards become each other's wrong choices and sit close together in a session, with an offer of a compare card.
+- [x] **Learn from your own mix-ups:** confused cards become each other's wrong choices and sit close together in a session, with an offer of a compare card (#200).
 - [ ] **Relearn until right:** a missed card returns until you recall it once, and a new card needs 2–3 spaced recalls.
 - [ ] **Misconception feedback** on wrong multiple-choice answers.
 - [ ] **Guess first** before a new topic (practice only, no timer).

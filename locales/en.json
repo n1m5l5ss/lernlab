@@ -933,6 +933,15 @@
         "no_one": "You said no to {{count}} card: you knew {{right}}.",
         "no_other": "You said no to {{count}} cards: you knew {{right}}."
       }
+    },
+    "twin": {
+      "title_one": "You mixed these two up {{count}} time",
+      "title_other": "You mixed these two up {{count}} times",
+      "lead": "Similar cards are easy to mix up. A compare card shows both side by side, so you learn to tell them apart. Write your answer now if you like; it becomes the card's answer.",
+      "placeholder": "Both… The difference is…",
+      "add": "Add a compare card",
+      "notNow": "Not now",
+      "added": "Added. The compare card comes up with your new cards."
     }
   },
   "exam": {
@@ -1225,6 +1234,14 @@
       "hint": "Say or think why first, then check.",
       "because": "It's a myth, because:",
       "fooled": "It's a myth, a common one. Here's why:"
+    },
+    "twin": {
+      "title": "Compare",
+      "sides": "The two to compare",
+      "question": "What do they share? What is the one key difference?",
+      "hint": "Say or think your answer first, then check.",
+      "check": "I have my answer",
+      "noAnswer": "This card has no written answer. Did you name something they share and the one key difference?"
     },
     "explain": {
       "title": "Explain it in your own words",

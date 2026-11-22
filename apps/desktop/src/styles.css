@@ -3543,6 +3543,39 @@ textarea.input.code-input {
   cursor: pointer;
 }
 
+/* Compare cards (#200): two things side by side; they stack when there is no room for two columns. */
+.side-by-side {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-3);
+  text-align: start;
+}
+.side-by-side-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  font-size: var(--text-subhead);
+  overflow-wrap: anywhere;
+}
+.twin-question {
+  margin: var(--space-4) 0 0;
+  font-weight: 700;
+}
+.twin-offer h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+}
+.twin-offer > p {
+  margin: var(--space-3) 0;
+}
+.twin-answer {
+  min-height: 4.5rem;
+  field-sizing: content;
+}
+
 /* Guess first (modes/Guess.tsx): a new topic's questions before its cards. */
 .guess-head {
   margin-bottom: var(--space-1);

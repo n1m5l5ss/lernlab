@@ -1,8 +1,9 @@
 // Client-side exercise builders (boss, rescue and action rounds are assembled on the fly).
 import { qa } from '@lernlab/core/cards';
-import { codeExercise, explain, hintSource, myth } from '@lernlab/core/exercises';
+import { codeExercise, explain, hintSource, myth, twin } from '@lernlab/core/exercises';
 import { asksWhy, isExplain } from '@lernlab/core/explain';
 import { isMyth } from '@lernlab/core/misconceptions';
+import { isTwin } from '@lernlab/core/twin';
 import { stripHtml } from '@lernlab/core/text';
 import type { Exercise, Item } from '@lernlab/core/types';
 
@@ -22,6 +23,7 @@ export function typedFor(item: Item): Extract<Exercise, { type: 'typed' }> {
 export function recallFor(item: Item): Exercise {
   if (isMyth(item)) return myth(item);
   if (isExplain(item)) return explain(item);
+  if (isTwin(item)) return twin(item);
   const code = item.kind === 'code' ? codeExercise(item) : null;
   if (code) return code;
   const q = qa(item);

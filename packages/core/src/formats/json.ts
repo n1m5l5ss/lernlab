@@ -24,6 +24,7 @@ const TEXT_FIELDS = [
   'variants',
   'corrections',
   'keyPoints',
+  'twin',
   'tolerance',
   'code',
   'codeLang',

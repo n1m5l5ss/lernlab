@@ -13,6 +13,7 @@ import { formatBox, modeOf, parseBox } from './occlusion';
 import { cleanVariants, takesVariants } from './variants';
 import { cleanCorrections, isMyth } from './misconceptions';
 import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
+import { cleanTwin } from './twin';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -105,6 +106,8 @@ export type NormalizedCard = {
   corrections?: string;
   /** explain cards: 2–5 key points the learner ticks after explaining, "Earth is tilted|…" (explain.ts). '' clears them. */
   keyPoints?: string;
+  /** compare cards: the second thing, shown beside the front: "effect: a result" (twin.ts). '' clears it. */
+  twin?: string;
   /** Other ways to ask the question, with a level: "apply: A patient has X. Which mechanism? | analyse: …" (variants.ts). '' clears them. */
   variants?: string;
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
@@ -222,7 +225,7 @@ export function detectKind(
   c?: NormalizedCard,
 ): ItemKind {
   const t = (c?.type ?? '').toLowerCase();
-  if (t === 'myth' || t === 'explain') return 'card';
+  if (t === 'myth' || t === 'explain' || t === 'twin') return 'card';
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
   if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
@@ -306,8 +309,15 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
       : '';
   if (keyPoints) extra.keyPoints = keyPoints;
   else delete extra.keyPoints;
+  // A compare card (twin.ts): a basic card with a second side, kept while the card stays a basic card.
+  const twin =
+    kind === 'card' && !myth && !keyPoints && ['', 'twin', 'basic'].includes((c.type ?? '').toLowerCase())
+      ? cleanTwin(c.twin ?? extra.twin)
+      : '';
+  if (twin) extra.twin = twin;
+  else delete extra.twin;
   const variants = cleanVariants(c.variants ?? extra.variants);
-  if (variants && takesVariants(kind) && !myth && !keyPoints) extra.variants = variants;
+  if (variants && takesVariants(kind) && !myth && !keyPoints && !twin) extra.variants = variants;
   else delete extra.variants;
   // Corrections for wrong choices: plain text, kept only on a multiple-choice card, one slot per choice.
   const corrections =

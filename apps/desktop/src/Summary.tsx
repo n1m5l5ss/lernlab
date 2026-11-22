@@ -16,7 +16,7 @@ import { summaryFacts, summaryMoments, tomorrowCards, tomorrowReport, type Momen
 import { qa } from '@lernlab/core/cards';
 import type { TomorrowAnswer } from '@lernlab/core/tomorrow';
 import { api } from './api';
-import { SegmentedControl } from './components';
+import { SegmentedControl, SideBySide } from './components';
 
 export function Summary({
   result,
@@ -174,6 +174,7 @@ export function Summary({
           </ul>
         </section>
       )}
+      {server?.twinOffer && <TwinOffer offer={server.twinOffer} lang={lang} />}
       <TomorrowCheck cards={tomorrow} lang={lang} />
       <div className="summary-actions">
         <button className="btn" onClick={onAgain}>
@@ -241,6 +242,74 @@ function TomorrowReport({ report }: { report: NonNullable<OutputOf<'session.fini
           <li key={l.answer}>{t(`summary.tomorrow.report.${l.answer}`, { count: l.reviewed, right: l.right })}</li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/**
+ * Two cards that keep getting mixed up (#200): both side by side, with an offer to add a compare card. The
+ * learner may write what they share and the key difference first; it becomes the card's answer. Optional, and
+ * "Not now" is remembered: a pair is offered once.
+ */
+function TwinOffer({
+  offer,
+  lang,
+}: {
+  offer: NonNullable<OutputOf<'session.finish'>['twinOffer']>;
+  lang: string | null;
+}) {
+  const { t } = useTranslation();
+  const id = useId();
+  const [answer, setAnswer] = useState('');
+  const [state, setState] = useState<'open' | 'added' | 'failed' | 'closed'>('open');
+  const pair = { a: offer.a.id, b: offer.b.id };
+  const add = () =>
+    void api
+      .makeTwin({ ...pair, answer })
+      .then(() => setState('added'))
+      .catch(() => setState('failed'));
+  const dismiss = () => {
+    setState('closed');
+    void api.dismissTwin(pair).catch(() => {});
+  };
+  const sideOf = (c: { front: string; back: string }) => (
+    <>
+      <b>{c.front}</b>
+      <span>{c.back}</span>
+    </>
+  );
+  if (state === 'closed') return null;
+  return (
+    <section className="panel twin-offer" aria-labelledby={`${id}-title`}>
+      <h2 id={`${id}-title`}>{t('summary.twin.title', { count: offer.count })}</h2>
+      <SideBySide label={t('ex.twin.sides')} lang={lang ?? undefined} left={sideOf(offer.a)} right={sideOf(offer.b)} />
+      {state === 'added' ? (
+        <p role="status">{t('summary.twin.added')}</p>
+      ) : (
+        <>
+          <p className="muted">{t('summary.twin.lead')}</p>
+          <label className="lbl" htmlFor={`${id}-answer`}>
+            {t('ex.twin.question')}
+          </label>
+          <textarea
+            id={`${id}-answer`}
+            className="input twin-answer"
+            value={answer}
+            maxLength={2000}
+            placeholder={t('summary.twin.placeholder')}
+            onChange={(e) => setAnswer(e.target.value)}
+          />
+          <div className="actions">
+            <button className="btn" onClick={add}>
+              {t('summary.twin.add')}
+            </button>
+            <button className="btn ghost" onClick={dismiss}>
+              {t('summary.twin.notNow')}
+            </button>
+          </div>
+          {state === 'failed' && <p role="alert">{t('errors.failed')}</p>}
+        </>
+      )}
     </section>
   );
 }

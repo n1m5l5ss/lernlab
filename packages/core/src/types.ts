@@ -132,6 +132,11 @@ export type Exercise =
    * (safe HTML; none for a basic card tagged why/how, which is self-graded as usual). A real recall.
    */
   | { type: 'explain'; itemId: number; prompt: string; answer: string; points: string[]; level?: Level }
+  /**
+   * A compare card (twin.ts): two things side by side (safe HTML); say what they share and the one key
+   * difference, then check against the answer ('' for none) and rate yourself. A real recall.
+   */
+  | { type: 'twin'; itemId: number; left: string; right: string; answer: string }
   | { type: 'imagemc'; itemId: number; options: string[]; answerIndex: number }
   /** corrections: per choice, safe HTML shown when that wrong choice is picked ('' for none; misconceptions.ts). */
   | {

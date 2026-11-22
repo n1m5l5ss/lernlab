@@ -261,7 +261,7 @@ test('listening and dictation are skipped when the card cannot be played', () =>
 
 test('only real recall formats count as recalling a card; meeting a card is not a recall', () => {
   assert.equal(answerKind('intro'), 'meet');
-  for (const t of ['typed', 'cloze', 'flip', 'mcq', 'order', 'myth', 'explain'])
+  for (const t of ['typed', 'cloze', 'flip', 'mcq', 'order', 'myth', 'explain', 'twin'])
     assert.equal(answerKind(t), 'recall', t);
   for (const t of ['mc', 'truefalse', 'listen', 'imagemc', 'unscramble', 'dictation', 'speak', 'lesson'])
     assert.equal(answerKind(t), 'other', t);

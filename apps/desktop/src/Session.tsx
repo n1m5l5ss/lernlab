@@ -24,6 +24,7 @@ import {
   Unscramble,
 } from './modes/Exercises';
 import { Explain } from './modes/Explain';
+import { Twin } from './modes/Twin';
 import { Boss, GenderSprint, MatchPairs, WordRain } from './modes/Games';
 import { GuessBlock } from './modes/Guess';
 import { mcFor, recallFor } from './plan';
@@ -169,6 +170,8 @@ function ExerciseBlock({
       return <Myth key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'explain':
       return <Explain key={k} ex={ex} ctx={ctx} onNext={next} />;
+    case 'twin':
+      return <Twin key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'mcq':
       return <Mcq key={k} ex={ex} ctx={ctx} onNext={next} />;
     case 'order':

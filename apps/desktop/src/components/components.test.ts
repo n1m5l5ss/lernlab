@@ -13,6 +13,7 @@ import {
   KeyPointChecklist,
   LevelTag,
   Misconception,
+  SideBySide,
   ProgressBar,
   SegmentedControl,
   Select,
@@ -160,6 +161,14 @@ test('Misconception shows the lead, the correction and then the right answer', (
     html(h(Misconception, { lead: 'A common mix-up', answer: 'Correct: B', children: 'Many people think A.' })),
     '<span class="misconception-lead">A common mix-up</span><div class="misconception">Many people think A.</div>' +
       '<div class="misconception-answer">Correct: B</div>',
+  );
+});
+
+test('SideBySide is a labelled group with the two sides', () => {
+  assert.equal(
+    html(h(SideBySide, { label: 'The two to compare', left: 'affect', right: 'effect', lang: 'en' })),
+    '<div class="side-by-side" role="group" aria-label="The two to compare">' +
+      '<div class="side-by-side-item" lang="en">affect</div><div class="side-by-side-item" lang="en">effect</div></div>',
   );
 });
 

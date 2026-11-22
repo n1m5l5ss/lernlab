@@ -116,6 +116,7 @@ test('the schema files are draft 2020-12 JSON Schemas with the required keys', (
     'occlusion',
     'myth',
     'explain',
+    'twin',
   ]);
   // The checker used below really checks.
   assert.equal(validate(cardSchema, { front: '', tags: 'x', type: 'quiz', bogus: 1 }, true).length, 4);
@@ -154,6 +155,11 @@ test('docs/FORMAT.md is marked version 1 and lists exactly the schema fields', (
     .find((l) => l.startsWith('| `keyPoints` |'));
   assert.match(keyPoints ?? '', /optional, added after v1 was published; older readers ignore it/);
   assert.ok(!cardSchema.required.includes('keyPoints'), 'key points are optional');
+  const twin = section('### cards.jsonl')
+    .split('\n')
+    .find((l) => l.startsWith('| `twin` |'));
+  assert.match(twin ?? '', /optional, added after v1 was published; older readers ignore it/);
+  assert.ok(!cardSchema.required.includes('twin'), 'a second side is optional');
   const deckKeys = [...section('### manifest.json').matchAll(/^\| `deck\.(\w+)` \|/gm)].map((m) => m[1]);
   assert.deepEqual(deckKeys.sort(), Object.keys(manifestSchema.properties.deck.properties).sort());
 });

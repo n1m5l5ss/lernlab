@@ -593,3 +593,37 @@ test('"Will you know this tomorrow?" answers are yes, unsure or no for known car
   });
   assert.equal(fin.tomorrowCheck, null, 'nothing to report on the day of the check');
 });
+
+test('three mix-ups of two cards bring a compare-card offer; the card is added once and survives an edit', async () => {
+  const deck = await ok('decks.create', { name: 'Mix-ups', language: null });
+  const a = await ok('cards.add', { deckId: deck.id, card: { front: 'affect', back: 'to influence' } });
+  const b = await ok('cards.add', { deckId: deck.id, card: { front: 'effect', back: 'a result' } });
+  const finish = () =>
+    ok('session.finish', {
+      sessionId: 'mx',
+      length: 'mini',
+      seconds: 60,
+      answers: 3,
+      correct: 0,
+      bossWon: null,
+      bestGenderCombo: 0,
+      perfectBlocks: 0,
+      startedAt: new Date().toISOString(),
+    });
+  const wrong = { sessionId: 'mx', itemId: a.id, format: 'mc', correct: false, responseMs: 1, xp: 0, practice: true };
+  for (let k = 0; k < 2; k++) await ok('attempt.record', { ...wrong, given: 'a result' });
+  assert.equal((await finish()).twinOffer, null);
+  await ok('attempt.record', { ...wrong, given: 'a result' });
+  const offer = (await finish()).twinOffer;
+  assert.deepEqual([offer?.count, offer?.a.front, offer?.b.front], [3, 'affect', 'effect']);
+  const bad = await handle('confusions.twin', { a: a.id, b: a.id, answer: '' });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  const { id } = await ok('confusions.twin', { a: a.id, b: b.id, answer: 'Both are about change.' });
+  assert.equal((await ok('confusions.twin', { a: b.id, b: a.id, answer: 'x' })).id, id);
+  assert.equal((await finish()).twinOffer, null, 'offered once');
+  const card = await ok('cards.get', { id });
+  assert.deepEqual([card.target, card.extra.twin], ['affect: to influence', 'effect: a result']);
+  await ok('cards.update', { id, card: { front: card.target, back: 'Both change things.', type: 'basic' } });
+  assert.equal((await ok('cards.get', { id })).extra.twin, 'effect: a result', 'kept by the card editor');
+  assert.deepEqual(await ok('confusions.dismiss', { a: a.id, b: b.id }), { ok: true });
+});

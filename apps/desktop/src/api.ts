@@ -22,6 +22,9 @@ export const api = {
   stats: () => call('stats.get'),
   /** "Will you know this tomorrow?" answers for today's new cards (#205). */
   saveTomorrow: (answers: InputOf<'tomorrow.save'>['answers']) => call('tomorrow.save', { answers }),
+  /** Add the compare card for two cards that were mixed up, or say "not now" (#200). */
+  makeTwin: (body: InputOf<'confusions.twin'>) => call('confusions.twin', body),
+  dismissTwin: (body: InputOf<'confusions.dismiss'>) => call('confusions.dismiss', body),
   summary: () => call('summary.today'),
   progress: () => call('progress.get'),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),

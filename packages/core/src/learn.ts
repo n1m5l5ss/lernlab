@@ -10,6 +10,7 @@ import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 import { LEVELS } from './variants';
+import { noteConfusion } from './confusions';
 
 export type Settings = {
   deck: string;
@@ -259,6 +260,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
   return tx(d, () => {
     const item = d.prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(a.itemId);
     if (!item) return { grade: null };
+    noteConfusion(d, item, a, now); // a wrong answer that is another card's answer (#200); never grades anything
     if (a.practice) {
       // Practice is logged (history, XP) but never introduces a card, moves the mastery ladder or grades FSRS.
       logAttempt(d, a, now, null, true);

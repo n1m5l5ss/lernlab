@@ -7,6 +7,7 @@
 import { correctionHtml } from './misconceptions';
 import { isMyth } from './misconceptions';
 import { stripHtml } from './text';
+import { isTwin } from './twin';
 import type { Item } from './types';
 
 /** An explain card has 2–5 key points, each at most this long (deck files are untrusted). */
@@ -50,8 +51,8 @@ export const keyPointsOf = (item: Pick<Item, 'extra'>): string[] => parseKeyPoin
 /** An explain card: a basic card whose extra fields hold its key points (cardToItem keeps them only then). */
 export const isExplain = (item: Pick<Item, 'extra'>): boolean => !!item.extra?.keyPoints;
 
-/** Myth and explain cards are asked only in their own way: no games, distractors, guess rounds or exams. */
-export const askedOwnWay = (item: Pick<Item, 'extra'>): boolean => isMyth(item) || isExplain(item);
+/** Myth, explain and compare cards are asked only in their own way: no games, distractors, guess rounds or exams. */
+export const askedOwnWay = (item: Pick<Item, 'extra'>): boolean => isMyth(item) || isExplain(item) || isTwin(item);
 
 /** Cards tagged `why` or `how` are explained before the answer shows, never flipped. */
 export const asksWhy = (item: Pick<Item, 'tags'>): boolean => item.tags.some((t) => /^(why|how)$/i.test(t.trim()));

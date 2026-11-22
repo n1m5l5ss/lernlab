@@ -29,6 +29,7 @@ const { cleanCorrections, correctionHtml, parseCorrections, CORRECTION_MAX_LENGT
   await import('../src/misconceptions');
 const { cleanKeyPoints, keyPointHtml, parseKeyPoints, KEY_POINTS_MAX, KEY_POINT_MAX_LENGTH } =
   await import('../src/explain');
+const { cleanTwin, TWIN_MAX_LENGTH } = await import('../src/twin');
 const { UserError } = await import('../src/errors');
 const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
@@ -182,6 +183,20 @@ test('key points: any text gives at most five plain-text points, cleaning is sta
       assert.equal(cleanKeyPoints(line), line, 'cleaning twice changes nothing');
       assert.ok(line === '' || parseKeyPoints(line).length >= 2);
     }),
+    params(RUNS * 2),
+  );
+});
+
+test("a compare card's second side: any text becomes short plain text, and cleaning twice changes nothing", () => {
+  fc.assert(
+    fc.property(
+      fc.oneof(fc.string({ maxLength: 900 }), fc.constantFrom('<b>x</b>', '&amp;lt;script&amp;gt;', '<scr<b></b>ipt>')),
+      (text) => {
+        const side = cleanTwin(text);
+        assert.ok(side.length <= TWIN_MAX_LENGTH);
+        assert.equal(cleanTwin(side), side);
+      },
+    ),
     params(RUNS * 2),
   );
 });

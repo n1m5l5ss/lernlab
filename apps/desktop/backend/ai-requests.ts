@@ -25,7 +25,18 @@ export const proposedCard = f.object({
   notes: opt(f.text(5000, 'Notes.')),
   tags: opt(f.list(f.text(100, 'One tag, no spaces.'), 20, 'Tags.')),
   category: opt(f.text(100, 'A category for sorting rounds (e.g. der/die/das).')),
-  type: opt(f.oneOf(['basic', 'cloze', 'mcq'] as const, 'Card type (default basic).')),
+  type: opt(
+    f.oneOf(
+      ['basic', 'cloze', 'mcq', 'twin'] as const,
+      'Card type (default basic). twin: a compare card for two things that are easy to mix up.',
+    ),
+  ),
+  twin: opt(
+    f.text(
+      500,
+      'For twin: the second thing, shown beside the front ("effect: a result"). The back says what they share and the one key difference.',
+    ),
+  ),
   choices: opt(f.text(2000, 'For mcq: the choices separated by |.')),
   correct: opt(f.text(200, 'For mcq: the correct choice numbers (1-based), separated by |.')),
 });
