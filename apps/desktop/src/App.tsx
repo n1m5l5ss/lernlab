@@ -233,6 +233,7 @@ export function App() {
         items={full.items}
         calm={state.settings.calm}
         onStudyTag={studyTag}
+        quietMinute={state.settings.quietMinute}
         onAgain={() => start('mini', full.result.practice)}
         onHome={() => {
           go('home');

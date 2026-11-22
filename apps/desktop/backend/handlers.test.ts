@@ -748,4 +748,7 @@ test('"say a few answers aloud" is on by default and can be turned off', async (
   assert.equal((await ok('settings.save', { sayAloud: 'yes' })).sayAloud, true);
   assert.equal((await ok('state.get')).settings.actOut, true, '"act it out" too');
   assert.equal((await ok('settings.save', { actOut: false })).actOut, false);
+  assert.equal((await ok('state.get')).settings.quietMinute, false, 'the quiet minute is off by default');
+  assert.equal((await ok('settings.save', { quietMinute: 'yes' })).quietMinute, false);
+  assert.equal((await ok('settings.save', { quietMinute: true })).quietMinute, true);
 });

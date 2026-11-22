@@ -107,3 +107,15 @@ export function tomorrowReport(groups: Record<'yes' | 'unsure' | 'no', Group>) {
     .filter((answer) => groups[answer].reviewed > 0)
     .map((answer) => ({ answer, reviewed: groups[answer].reviewed, right: groups[answer].right }));
 }
+
+/**
+ * The quiet minute (#226): after a session that taught new cards, an optional minute of rest with eyes
+ * closed. The evidence is mixed (a preregistered replication found d = 0.09, a meta-analysis d = 0.38
+ * [Humiston et al. 2019]), so it is off by default, says "may help", and can be ended at any time.
+ */
+export const QUIET_SECONDS = 60;
+export const offersQuietMinute = (result: { practice: boolean; introduced: number }, on: boolean): boolean =>
+  on && !result.practice && result.introduced > 0;
+/** Whole seconds of rest left. */
+export const quietLeft = (startedAt: number, now: number): number =>
+  Math.max(0, QUIET_SECONDS - Math.floor((now - startedAt) / 1000));

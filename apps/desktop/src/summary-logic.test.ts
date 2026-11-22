@@ -9,6 +9,9 @@ import {
   summaryMoments,
   tomorrowCards,
   tomorrowReport,
+  QUIET_SECONDS,
+  offersQuietMinute,
+  quietLeft,
 } from './summary-logic';
 
 const item = (id: number) => ({ id, target: `word ${id}`, meaning: `meaning ${id}` }) as Item;
@@ -116,4 +119,19 @@ test('the report on the last check lists only answers whose cards came back', ()
     { answer: 'yes', reviewed: 3, right: 2 },
     { answer: 'no', reviewed: 1, right: 1 },
   ]);
+});
+
+test('the quiet minute is offered only when turned on, after a real session that taught new cards', () => {
+  assert.equal(offersQuietMinute({ practice: false, introduced: 3 }, true), true);
+  assert.equal(offersQuietMinute({ practice: false, introduced: 3 }, false), false, 'off by default');
+  assert.equal(offersQuietMinute({ practice: false, introduced: 0 }, true), false, 'nothing new to rest on');
+  assert.equal(offersQuietMinute({ practice: true, introduced: 3 }, true), false);
+});
+
+test('the quiet minute counts down one minute in whole seconds and stops at zero', () => {
+  assert.equal(QUIET_SECONDS, 60);
+  assert.equal(quietLeft(1000, 1000), 60);
+  assert.equal(quietLeft(1000, 1000 + 12_400), 48);
+  assert.equal(quietLeft(1000, 1000 + 60_000), 0);
+  assert.equal(quietLeft(1000, 1000 + 95_000), 0);
 });

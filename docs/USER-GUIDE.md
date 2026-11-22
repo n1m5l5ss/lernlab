@@ -157,6 +157,8 @@ When your wrong answer is the answer of another card in the deck (typed, or pick
 
 After a session in which you met new cards, **Will you know these tomorrow?** shows each new card's question, without the answer. Answer **Yes**, **Not sure** or **No** for any you like; each answer is saved at once, and you can skip them all. At the end of your next session on a later day, once some of those cards have come back, the summary shows how your guesses held up ("You said yes to 4 cards that came back: you knew 3"). Cards you were not sure about come first in the next warm-up. None of this changes when a card is next due; it stays on your computer.
 
+If you turn on **Settings → Studying → Offer a quiet minute after new cards** (off by default), the summary of a session with new cards offers **A quiet minute?**. Press **Rest for a minute**, close your eyes and let your mind wander: the screen dims and a quiet countdown runs for 60 seconds (with sounds on, a soft tick tells you it is over). Resting right after learning may help new memories settle, but the studies disagree, so treat it as something to try. **End the rest** or `Esc` stops it at any time, and you never have to take it.
+
 ### Practice without changing the schedule
 
 Tick **Practice** on Home, then press **Start practice**. A practice session lets you cram any cards, for example before a test. Your review schedule stays the same. On the Decks screen, a deck with nothing due shows **Practice** instead of **Study**.

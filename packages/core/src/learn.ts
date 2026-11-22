@@ -67,6 +67,8 @@ export type Settings = {
   sayAloud: boolean;
   /** Ask to act out a few action cards: tagged `action`, or verbs in a language deck (#225). On by default. */
   actOut: boolean;
+  /** Offer an optional minute of eyes-closed rest after a session with new cards (#226). The evidence is mixed, so it is off by default. */
+  quietMinute: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -100,6 +102,7 @@ export const DEFAULT_SETTINGS: Settings = {
   morningTime: DEFAULT_MORNING_TIME,
   sayAloud: true,
   actOut: true,
+  quietMinute: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });

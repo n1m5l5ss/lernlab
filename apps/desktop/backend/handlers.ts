@@ -772,6 +772,7 @@ export const handlers = {
     next.calm = next.calm === true;
     next.sayAloud = next.sayAloud !== false;
     next.actOut = next.actOut !== false;
+    next.quietMinute = next.quietMinute === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),
