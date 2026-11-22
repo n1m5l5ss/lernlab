@@ -237,6 +237,7 @@ export const nodeHost: Host = {
     size: (name) => statSync(mediaPath(name), { throwIfNoEntry: false })?.size ?? null,
     read: (name) => (existsSync(mediaPath(name)) ? readFileSync(mediaPath(name)) : null),
     write: (name, data) => writeFileSync(mediaPath(name), data),
+    remove: (name) => rmSync(mediaPath(name), { force: true }),
   },
   saveProgressSnapshot(day, json) {
     const dir = resolve(dataDir(), 'progress');

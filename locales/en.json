@@ -1572,6 +1572,26 @@
     "mnemonic": {
       "lead": "Your mnemonic:"
     },
+    "sketch": {
+      "draw": "Draw it",
+      "again": "Draw it again",
+      "why": "Optional: a quick sketch of the meaning helps it stick. It doesn't have to be good.",
+      "title": "Sketch pad",
+      "canvas": "Drawing area",
+      "hint": "Draw the meaning with a mouse, a finger or a pen. Prefer words? Describe your picture below instead.",
+      "undo": "Undo",
+      "clear": "Clear",
+      "text": "What does it show?",
+      "textHint": "Optional with a drawing. It is shown with your sketch.",
+      "save": "Save sketch",
+      "cancel": "Cancel",
+      "lead": "Your sketch",
+      "alt": "The sketch you drew for this card",
+      "remove": "Remove sketch",
+      "removeAsk": "Remove your sketch for good?",
+      "removeYes": "Remove",
+      "removeNo": "Keep it"
+    },
     "typed": {
       "overridden": "Okay – counted as correct.",
       "hint": "Hint: {{hint}}",
@@ -1695,6 +1715,7 @@
     "data_process_exit": "LernLab lost touch with your data for a moment. Please try again.",
     "data_process_down": "LernLab can't reach your data right now. Close and reopen LernLab; your progress is saved.",
     "invalid_input": "That input was not valid.",
+    "sketch_too_big": "That sketch is too big to save (the limit is {{kb}} KB). Clear some of it and try again.",
     "migration_failed": "Your data could not be upgraded. LernLab restored your backup.",
     "name_required": "Give the deck a name.",
     "front_required": "The card needs a front.",

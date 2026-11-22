@@ -93,6 +93,9 @@ export const api = {
   uploadMedia: async (file: File) =>
     call('media.upload', { name: file.name, data: new Uint8Array(await file.arrayBuffer()) }),
   saveRecording: async (audio: Blob) => call('media.record', { data: new Uint8Array(await audio.arrayBuffer()) }),
+  /** Keep a drawing (PNG bytes), a description, or both as the learner's own cue for a card (#220). */
+  saveSketch: (itemId: number, data: Uint8Array | null, text: string) => call('sketch.save', { itemId, data, text }),
+  removeSketch: (itemId: number) => call('sketch.remove', { itemId }),
   downloadSummary: async () => {
     const s = await call('summary.today');
     saveFile(`lernlab-${s.date}.json`, JSON.stringify(s, null, 2), 'application/json');

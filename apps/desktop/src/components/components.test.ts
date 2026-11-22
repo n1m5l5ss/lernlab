@@ -21,6 +21,7 @@ import {
   SegmentedControl,
   Select,
   Sidebar,
+  SketchPad,
 } from './index';
 
 const html = (el: ReactElement) => renderToStaticMarkup(el);
@@ -216,4 +217,34 @@ test('KeyPointChecklist is a fieldset of labelled checkboxes, one per key point'
       [false, true, 'Angle'],
     ],
   );
+});
+
+test('SketchPad names its drawing area, offers words instead, and has nothing to save while empty', () => {
+  const labels = {
+    canvas: 'Drawing area',
+    hint: 'Draw or describe',
+    undo: 'Undo',
+    clear: 'Clear',
+    text: 'What does it show?',
+    textHint: 'Optional',
+    save: 'Save',
+    cancel: 'Cancel',
+  };
+  const pad = (more: object = {}) =>
+    html(h(SketchPad, { id: 'p', width: 480, height: 320, maxText: 200, labels, onSave() {}, onCancel() {}, ...more }));
+  const empty = pad();
+  assert.match(empty, /<canvas[^>]*role="img"[^>]*aria-label="Drawing area"[^>]*aria-describedby="p-hint"/);
+  assert.match(empty, /<canvas[^>]*width="480" height="320"/);
+  assert.match(empty, /<label for="p-text">What does it show\?<\/label>/);
+  assert.match(empty, /<input maxLength="200"[^>]*id="p-text"[^>]*aria-describedby="p-text-hint"/);
+  assert.match(empty, /<button type="button" disabled="" class="btn">Undo<\/button>/);
+  assert.match(empty, /<button type="button" disabled="" class="btn">Clear<\/button>/);
+  assert.match(empty, /<button type="button" disabled="" class="btn primary">Save<\/button>/);
+  assert.match(empty, /<button type="button" class="btn ghost">Cancel<\/button>/);
+
+  const drawn = pad({ initial: [[[1, 1]]], error: 'Too big' });
+  assert.match(drawn, /<button type="button" class="btn">Undo<\/button>/);
+  assert.match(drawn, /<button type="button" class="btn primary">Save<\/button>/);
+  assert.match(drawn, /role="alert">Too big</);
+  assert.doesNotMatch(pad({ initial: [[[1, 1]]], busy: true }), /<button type="button" class="btn/);
 });

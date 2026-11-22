@@ -68,6 +68,7 @@ import { planSession } from '@lernlab/core/session';
 import { TEACH_POINTS_MAX, teachBackPoints, teachBackTopics } from '@lernlab/core/teachback';
 import { setOcclusionMode, withOcclusionBoxes } from '@lernlab/core/occlusion';
 import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
+import { SKETCH, removeSketch, saveSketch } from '@lernlab/core/sketch';
 import { buildExam, recordExam, type Exam } from '@lernlab/core/examplan';
 import { EXAM_MODES } from '@lernlab/core/exam';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
@@ -601,6 +602,15 @@ export const handlers = {
   'media.record': h(v.object({ data: v.bytes(2 * RECORDING_MAX_BYTES) }), ({ data }) => ({
     file: saveRecording(data),
   })),
+  /**
+   * The learner's own sketch for a card (#220): a PNG drawn on the pad, a description, or both. The engine checks
+   * the bytes. Stored only: no answer is logged and the schedule stays as it is.
+   */
+  'sketch.save': h(
+    v.object({ itemId: v.id, data: v.nullable(v.bytes(SKETCH.maxBytes)), text: v.string(2000) }),
+    ({ itemId, data, text }) => saveSketch(itemId, data, text),
+  ),
+  'sketch.remove': h(v.object({ itemId: v.id }), ({ itemId }) => removeSketch(itemId)),
 
   /* ── Study ── */
   'session.plan': h(

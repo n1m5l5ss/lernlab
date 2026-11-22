@@ -13,4 +13,5 @@ export { ProgressBar, type ProgressBarProps } from './ProgressBar';
 export { SideBySide, type SideBySideProps } from './SideBySide';
 export { ProgressCard, type ProgressCardProps } from './ProgressCard';
 export { SegmentedControl, type SegmentedControlProps, type SegmentedOption } from './SegmentedControl';
+export { SketchPad, type SketchPadLabels, type SketchPadProps } from './SketchPad';
 export { Sidebar, type SidebarItem, type SidebarProps } from './Sidebar';

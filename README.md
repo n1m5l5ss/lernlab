@@ -52,6 +52,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **Translate cards and graphs:** a card whose two sides are two forms of one idea (a graph and its formula, a formula and its diagram) is asked in both directions. LernLab draws small function graphs itself from a line like `y = x^2 - 1`.
 - **Try first:** in a deck you mark as maths or science, a new unit opens with a problem to try before the lesson, then its worked solution. Optional, no grade, no clock.
 - **Mnemonics that fade:** give a card a memory aid. It shows only after a miss or when you ask for a hint, never before you try, and stops showing by itself once you get the card right twice in a row.
+- **Sketch pad:** when you meet a new card, draw its meaning with a mouse, finger or pen, or describe the picture in words. Your sketch stays on your computer and shows with the answer on later reviews. Optional, never graded, and never part of a deck you export.
 - **Teach it back:** for a tag you know well, explain it to a beginner in about a minute, typed or recorded, then tick the key points you left out and practise those cards. Nothing is saved or graded.
 - **Say a few answers aloud:** on a few starred or recently missed flip cards, a session asks you to say the answer out loud before you show it. No microphone, and never on every card.
 - **Act it out:** a few cards tagged `action`, and a few verbs in language decks, ask you to do or mime the action when the answer shows.

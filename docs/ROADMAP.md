@@ -112,7 +112,8 @@ These come from a review of the research on remembering, understanding and stayi
 - [x] **"Say it aloud" on a few cards:** starred or recently missed flip cards, at most about 1 in 5 (#222).
 - [x] **"Act it out" cards:** a few cards tagged `action`, and a few verbs in language decks, ask you to act the answer out (#225).
 - [x] **An optional quiet minute** after a session with new cards; off by default, because the evidence is mixed (#226).
-- [ ] Concept map from memory; sketch pad; study together on one computer.
+- [x] **Sketch pad:** draw a new card's meaning; the sketch is kept as your own picture cue and shows with the answer (#220).
+- [ ] Concept map from memory; study together on one computer.
 
 ## Avoid
 

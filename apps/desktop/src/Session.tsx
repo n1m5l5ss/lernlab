@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
+import type { Block, Exercise, Item, SessionPlan, Sketch } from '@lernlab/core/types';
 import { BONUS, dayKey, xpFor } from '@lernlab/core/game';
 import { mnemonicOf, nextRun } from '@lernlab/core/mnemonic';
 import type { Confidence } from '@lernlab/core/confidence';
@@ -492,6 +492,22 @@ export function Session({
       runs.current.set(itemId, nextRun(runBeforeMiss.current.get(itemId), 'typed', true));
     totals.current.correct++;
   }, []);
+  // Sketches drawn or removed in this session (#220), on top of the ones the plan came with.
+  const [sketchEdits, setSketchEdits] = useState<Record<number, Sketch | null>>({});
+  const sketches = useMemo<NonNullable<Ctx['sketches']>>(
+    () => ({
+      of: (id) => (id in sketchEdits ? (sketchEdits[id] ?? undefined) : item(id)?.sketch),
+      save: async (id, picture, text) => {
+        const saved = await api.saveSketch(id, picture, text);
+        setSketchEdits((e) => ({ ...e, [id]: saved }));
+      },
+      remove: async (id) => {
+        await api.removeSketch(id);
+        setSketchEdits((e) => ({ ...e, [id]: null }));
+      },
+    }),
+    [sketchEdits, item],
+  );
   const ctx: Ctx = {
     plan,
     lang: plan.lang,
@@ -505,6 +521,7 @@ export function Session({
     combo: calm ? 0 : combo, // calm: the coach doesn't cheer runs
     missed: missed.current,
     mnemonicRun,
+    sketches,
     teacher,
     settings,
   };

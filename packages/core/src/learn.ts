@@ -9,6 +9,7 @@ import { DEFAULT_MORNING_TIME, DEFAULT_REMINDER_TIME } from './reminder';
 import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
 import { withMnemonicRuns } from './mnemonic';
+import { withSketches } from './sketch';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 import { LEVELS } from './variants';
 import { noteConfusion } from './confusions';
@@ -381,12 +382,15 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
 }
 
 export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
-  return withMnemonicRuns(
-    withOcclusionBoxes(
-      d
-        .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
-        .all()
-        .map(rowToItem),
+  return withSketches(
+    withMnemonicRuns(
+      withOcclusionBoxes(
+        d
+          .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
+          .all()
+          .map(rowToItem),
+        d,
+      ),
       d,
     ),
     d,
@@ -511,7 +515,8 @@ export function grammarItemIds(group: string, d: DB = getDb(), scope?: Scope): n
 export function itemsByIds(ids: number[], d: DB = getDb()): Record<number, Item> {
   if (!ids.length) return {};
   const rows = d.prepare(`${ITEM_SELECT} WHERE i.id IN (${ids.map(() => '?').join(',')})`).all(...ids);
-  return Object.fromEntries(withMnemonicRuns(withOcclusionBoxes(rows.map(rowToItem), d), d).map((i) => [i.id, i]));
+  const items = withSketches(withMnemonicRuns(withOcclusionBoxes(rows.map(rowToItem), d), d), d);
+  return Object.fromEntries(items.map((i) => [i.id, i]));
 }
 
 export function srsInfo(

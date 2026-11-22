@@ -17,6 +17,7 @@ import { CONFIDENCE_LEVELS, type Confidence } from '@lernlab/core/confidence';
 import type { Level } from '@lernlab/core/variants';
 import { markAnswer } from '@lernlab/core/keyterms';
 import { mnemonicHtml, mnemonicOf, showsMnemonic } from '@lernlab/core/mnemonic';
+import { SketchCue, SketchOffer } from './Sketch';
 import { checkTyped, plainAnswer } from '../typed-logic';
 import { CodeBlock, CodeLine } from '../code-block';
 
@@ -130,6 +131,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
   const [guess, setGuess] = useState<string | null>(null);
   const shown = useRef(now());
   const recorded = useRef(false);
+  const [sketching, setSketching] = useState(false); // the sketch pad is open (#220)
 
   useEffect(() => {
     if (phase !== 'card' || recorded.current) return;
@@ -157,6 +159,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
   };
 
   useKeys((e) => {
+    if (sketching) return; // a drawing in progress is never skipped by a stray Enter
     if (phase === 'guess' && ['1', '2', '3'].includes(e.key)) pick(['der', 'die', 'das'][Number(e.key) - 1]);
     else if (phase === 'card' && e.key === 'Enter') onNext({ correct: true });
     else if (phase === 'card' && e.key === ' ') {
@@ -209,6 +212,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
         </div>
       )}
       {ex.actOut && <ActOut />}
+      <SketchOffer ctx={ctx} item={item} open={sketching} onOpen={setSketching} />
       <div className="actions" style={{ justifyContent: 'center' }}>
         {ctx.lang && (
           <button className="audio" onClick={() => sayFront(ctx, item)}>
@@ -481,6 +485,7 @@ export function Flip({
             )}
             <MnemonicNote ctx={ctx} item={item} attempted />
             {ex.actOut && <ActOut />}
+            <SketchCue ctx={ctx} item={item} attempted />
           </Feedback>
         )}
       </div>
@@ -905,6 +910,7 @@ export function TypedEngine({
           )}
           <MnemonicNote ctx={ctx} item={item} attempted={phase !== 'answer'} asked={hintLevel > 0} />
           {actOut && phase === 'done' && <ActOut />}
+          <SketchCue ctx={ctx} item={item} attempted={phase === 'copy' || phase === 'done'} />
           {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
         </Feedback>
       )}

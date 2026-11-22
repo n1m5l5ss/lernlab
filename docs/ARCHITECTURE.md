@@ -111,6 +111,7 @@ docs/adr/        architecture decision records
   - **Delete all my data:** the screen warns that everything, backups included, is deleted permanently and cannot be undone, and the user types a confirmation word. Then the database, `media/`, `progress/` and `backups/` are removed and an empty database is created. No backup is kept; "Export everything" is the way to keep a copy first.
   - **Health check:** `PRAGMA quick_check` runs at startup, in the background.
 - **Media store:** files are content-addressed (`media/<sha256>.<ext>`), so the same image used in two decks is stored once.
+- **Sketches (#220):** a learner's own drawing for a card is a PNG the screen draws on a plain `<canvas>` and sends through `sketch.save`. The engine (`packages/core/src/sketch.ts`) treats the bytes as untrusted: PNG signature, header and end chunk, at most 512 KB and 1,024 px a side. The file goes to `media/sketch-<id>.png` and a row to the `sketches` table (migration 009: card id, file, description). Sketches are kept apart from card fields, so deck exports never contain them; "Export everything" and backups do. Removing or replacing a sketch deletes its file (`MediaStore.remove`, optional on a host).
 
 ## 6. Renderer
 

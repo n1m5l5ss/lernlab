@@ -633,6 +633,33 @@ test('a recording made in the card editor is kept in media/ and plays from the c
   assert.equal(!noBytes.ok && noBytes.error.code, 'invalid_input');
 });
 
+test('a sketch for a card is kept, comes back with the session plan, and can be removed', async () => {
+  const { fakePng } = await import('@lernlab/core/sketch-samples');
+  const deck = await ok('decks.create', { name: 'Sketches', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Mitochondrion', back: 'powerhouse' } });
+  const saved = await ok('sketch.save', { itemId: id, data: fakePng(480, 320), text: ' a tiny power plant ' });
+  assert.match(saved.file, /^sketch-.+\.png$/);
+  assert.equal(saved.text, 'a tiny power plant');
+  assert.ok(existsSync(join(dir, 'media', saved.file)));
+  const plan = await ok('session.plan', { length: 'mini', deckId: deck.id });
+  assert.deepEqual(plan.items[id].sketch, saved);
+  assert.equal(plan.items[id].image, null, 'the card itself is unchanged');
+
+  const words = await ok('sketch.save', { itemId: id, data: null, text: 'only words' });
+  assert.deepEqual(words, { file: '', text: 'only words' });
+  assert.ok(!existsSync(join(dir, 'media', saved.file)), 'the replaced picture is deleted');
+
+  const notPng = await handle('sketch.save', { itemId: id, data: new TextEncoder().encode('<svg/>'), text: '' });
+  assert.equal(!notPng.ok && notPng.error.code, 'unsupported_media');
+  const huge = await handle('sketch.save', { itemId: id, data: new Uint8Array(2 * 1024 * 1024), text: '' });
+  assert.equal(!huge.ok && huge.error.code, 'invalid_input');
+  const empty = await handle('sketch.save', { itemId: id, data: null, text: '' });
+  assert.equal(!empty.ok && empty.error.code, 'invalid_input');
+
+  assert.deepEqual(await ok('sketch.remove', { itemId: id }), { ok: true });
+  assert.equal((await ok('session.plan', { length: 'mini', deckId: deck.id })).items[id].sketch, undefined);
+});
+
 test('an answer carries the level of the question asked, and only a known level', async () => {
   const deck = await ok('decks.create', { name: 'Levels', language: null });
   const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Statin', back: 'atorvastatin' } });
