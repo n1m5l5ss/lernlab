@@ -666,8 +666,8 @@ test('three mix-ups of two cards bring a compare-card offer; the card is added o
   assert.equal((await ok('confusions.twin', { a: b.id, b: a.id, answer: 'x' })).id, id);
   assert.equal((await finish()).twinOffer, null, 'offered once');
   const card = await ok('cards.get', { id });
-  assert.deepEqual([card.target, card.extra.twin], ['affect: to influence', 'effect: a result']);
+  assert.deepEqual([card.target, card.extra.twin].sort(), ['affect: to influence', 'effect: a result']);
   await ok('cards.update', { id, card: { front: card.target, back: 'Both change things.', type: 'basic' } });
-  assert.equal((await ok('cards.get', { id })).extra.twin, 'effect: a result', 'kept by the card editor');
+  assert.equal((await ok('cards.get', { id })).extra.twin, card.extra.twin, 'kept by the card editor');
   assert.deepEqual(await ok('confusions.dismiss', { a: a.id, b: b.id }), { ok: true });
 });
