@@ -30,10 +30,13 @@ import { GUESS_MAX, neverAnswered, pickGuessRound, pickTryFirst, topicIsNew, top
 import { variantIndex, variantsOf } from './variants';
 import { askedOwnWay } from './explain';
 import { isWorked } from './worked';
-import { arcadeSeconds, dayKey } from './game';
+import { addDays, arcadeSeconds, dayKey } from './game';
+import { isAction, markActOut } from './actout';
+import { SAY_ALOUD_DAYS, markSayAloud, sayAloudCap, sayAloudCards } from './sayaloud';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
 import { confusionMap, keepClose } from './confusions';
+import { CHECK_MAX, holdNewCards, isEvening, morningCheckIds } from './sleep';
 import { recentlyAnswered, RELATED_MAX, restOfFamilies } from './family';
 import { basicsFirst, BASICS_MAX, isKeyTerm, LAPSES_WEAK, RECALLED, requiresGraph } from './requires';
 import { categoryLabels, confusableLabels, labelMisses, ROUND_MAX, themedFirst } from './discriminate';
@@ -115,7 +118,14 @@ export function planSession(
   // Prerequisite links (#207): what each card requires, and how well those basics are known.
   const links = requiresGraph(pool);
   const basics = links.size ? srsInfo([...new Set([...links.keys(), ...[...links.values()].flat()])], d) : {};
-  const dueNow = practice ? [] : dueItemIds(d, now, size.due, scope).filter(has);
+  // Sleep bridge (#217): before the evening, last night's new and missed cards are checked first. It is a new
+  // study day, so these are normal reviews. New cards then wait for the evening session (see holdNewCards).
+  const bridge = !practice && settings.sleepBridge;
+  const morning =
+    bridge && !isEvening(now) ? morningCheckIds(d, now).filter(has).slice(0, Math.min(CHECK_MAX, size.due)) : [];
+  const dueNow = practice
+    ? []
+    : [...new Set([...morning, ...dueItemIds(d, now, size.due, scope).filter(has)])].slice(0, size.due);
   const due = keepClose(
     practice
       ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
@@ -130,7 +140,7 @@ export function planSession(
         d,
         now,
         scope,
-        size.fresh,
+        bridge && holdNewCards(settings, d, now) ? 0 : size.fresh,
         (id) => get(id).deckId,
         // Then the basics first: key terms, and each card after the cards it requires were recalled. An order,
         // never a lock: cards whose basics are not ready wait at the end and are still met.
@@ -233,7 +243,7 @@ export function planSession(
       kind: 'drill',
       format: 'typed',
       title: 'Review',
-      teacher: say('review'),
+      teacher: morning.length ? { key: 'teacher.block.morning' } : say('review'),
       exercises: dueA.map(review),
     });
 
@@ -485,6 +495,17 @@ export function planSession(
     ...rainIds,
     ...blitzPool.slice(0, 12),
   ]);
+  // A few of the flip cards, starred or recently missed, ask for the answer out loud (#222).
+  if (settings.sayAloud) {
+    const flips = finalBlocks.flatMap((b) => ('exercises' in b ? b.exercises : [])).filter((e) => e.type === 'flip');
+    if (sayAloudCap(new Set(flips.map((e) => e.itemId)).size)) {
+      const since = addDays(dayKey(now), -SAY_ALOUD_DAYS);
+      const { missed, starred } = sayAloudCards([...new Set(flips.map((e) => e.itemId))], since, d);
+      markSayAloud(finalBlocks, missed, starred);
+    }
+  }
+  // A few action cards (tagged `action`, or verbs in a language deck) ask to be acted out (#225).
+  if (settings.actOut) markActOut(finalBlocks, (id) => has(id) && isAction(get(id)));
   for (const b of finalBlocks) {
     if ('itemIds' in b) b.itemIds.forEach((i) => ids.add(i));
     if ('exercises' in b) b.exercises.forEach((e) => 'itemId' in e && ids.add(e.itemId));

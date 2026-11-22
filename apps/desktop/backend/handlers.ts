@@ -52,7 +52,8 @@ import {
   stats,
   studiedToday,
 } from '@lernlab/core/progress';
-import { cleanReminderTime } from '@lernlab/core/reminder';
+import { cleanMorningTime, cleanReminderTime } from '@lernlab/core/reminder';
+import { morningCheckIds } from '@lernlab/core/sleep';
 import {
   cleanPlanMinutes,
   cleanPlanText,
@@ -100,6 +101,7 @@ import { InvalidInput, v, type Check } from './validate';
 import { LEVELS } from '@lernlab/core/variants';
 import { rateConfidence } from '@lernlab/core/confidence';
 import { ANSWER_MAX, dismissTwin, makeTwin, twinOffer } from '@lernlab/core/confusions';
+import { patternsOf } from '@lernlab/core/patterns';
 import { reportTomorrowCheck, saveTomorrowCheck, TOMORROW_ANSWERS, TOMORROW_MAX } from '@lernlab/core/tomorrow';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
@@ -656,7 +658,13 @@ export const handlers = {
     }),
     // With how yesterday's "Will you know this tomorrow?" guesses held up, once their cards came back (#205).
     // And the two cards mixed up most, once they were mixed up often enough to offer a compare card (#200).
-    (f) => ({ ...finishSession(f), tomorrowCheck: reportTomorrowCheck(), twinOffer: twinOffer() }),
+    // And what the session's own answers say about how it went (#213); read only.
+    (f) => ({
+      ...finishSession(f),
+      tomorrowCheck: reportTomorrowCheck(),
+      twinOffer: twinOffer(),
+      patterns: patternsOf(f.sessionId),
+    }),
   ),
   /** Add the compare card for a confusion pair, with the learner's own answer as its back (#200). */
   'confusions.twin': h(v.object({ a: v.id, b: v.id, answer: v.string(ANSWER_MAX) }), ({ a, b, answer }) =>
@@ -709,6 +717,8 @@ export const handlers = {
       language: s.uiLanguage,
       plan: studyPlanOf(s),
       studiedToday: studiedToday(),
+      /** Sleep bridge (#217): when the morning check is offered, and how many of last night's cards wait. */
+      morning: s.sleepBridge ? { time: s.morningTime, cards: morningCheckIds().length } : null,
     };
   }),
   /** The hour you usually start studying ("HH:00"), from local sessions only, or null without a clear pattern. */
@@ -749,6 +759,8 @@ export const handlers = {
     next.reducedMotion = next.reducedMotion === true;
     next.reminder = next.reminder === true;
     next.reminderTime = cleanReminderTime(next.reminderTime);
+    next.sleepBridge = next.sleepBridge === true;
+    next.morningTime = cleanMorningTime(next.morningTime);
     next.planAfter = cleanPlanText(next.planAfter);
     next.planMinutes = cleanPlanMinutes(next.planMinutes);
     next.planBackup = cleanPlanText(next.planBackup);
@@ -758,6 +770,9 @@ export const handlers = {
     next.remoteMedia = next.remoteMedia === true;
     next.confidence = next.confidence !== false;
     next.calm = next.calm === true;
+    next.sayAloud = next.sayAloud !== false;
+    next.actOut = next.actOut !== false;
+    next.quietMinute = next.quietMinute === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

@@ -153,6 +153,7 @@
       "daily": "Daily reminder",
       "dailyHint": "A gentle nudge once a day. It skips days when you have already studied.",
       "time": "Remind me at",
+      "morningTime": "Offer the morning check at",
       "launchAtLogin": "Open LernLab when I log in",
       "launchAtLoginHint": "Starts minimised, so reminders can arrive. You can close it any time.",
       "desktopOnly": "Reminders and opening at login work in the desktop app.",
@@ -163,7 +164,9 @@
           "A few minutes of practice today? Click to start.",
           "Your cards would love a visit. Click for a short session.",
           "Got five minutes? A little practice goes a long way."
-        ]
+        ],
+        "morning_one": "Good morning! {{count}} card from last night is ready for a short check.",
+        "morning_other": "Good morning! {{count}} cards from last night are ready for a short check."
       }
     },
     "language": "Language",
@@ -285,8 +288,16 @@
     },
     "confidence": "Ask how sure I was",
     "confidenceHint": "After about 1 answer in 4, one optional tap from 1 to 5. It never changes when a card comes back; Progress shows how well it matches what you really recall.",
+    "sayAloud": "Say a few answers aloud",
+    "sayAloudHint": "On a few starred or recently missed cards, a session asks you to say the answer out loud before you show it. It works because only some cards are spoken, so it is never asked on every card. No microphone is used.",
+    "actOut": "Act out a few action cards",
+    "actOutHint": "On a few cards tagged “action”, and a few verbs in language decks, a session asks you to act the answer out when it shows: do the movement, or mime it. Like saying answers aloud, it is only asked on a few cards. Nothing is checked.",
+    "quietMinute": "Offer a quiet minute after new cards",
+    "quietMinuteHint": "After a session with new cards, the summary offers one minute of rest with your eyes closed. It may help new memories settle; the studies disagree. You can always skip it or end it early.",
     "calm": "Calm mode",
-    "calmHint": "Hides XP, levels, combos, badge news and confetti. Your progress, streak and study days stay. XP is still counted quietly, so nothing is lost if you switch back."
+    "calmHint": "Hides XP, levels, combos, badge news and confetti. Your progress, streak and study days stay. XP is still counted quietly, so nothing is lost if you switch back.",
+    "sleepBridge": "Evening and morning rhythm",
+    "sleepBridgeHint": "Sleep helps memory. After an evening session, new cards wait for the next evening, and your next session before 5 p.m. starts with a short check of last night's new cards and the ones you got wrong. Study at other times whenever you like: new cards then come as usual."
   },
   "home": {
     "welcomeTitle": "Welcome to LernLab",
@@ -560,6 +571,7 @@
     "subjectDeck_one": "Subject · {{count}} card",
     "subjectDeck_other": "Subject · {{count}} cards",
     "examOn": "exam {{date}}",
+    "examSleep": "Exam soon: sleep is part of studying. A good night helps you remember.",
     "new": "<b>{{count}}</b> new",
     "known": "<b>{{count}}</b> known of {{total}}",
     "childCounts": "{{due}} due, {{fresh}} new",
@@ -1010,10 +1022,45 @@
       "repairBody_other": "One more session by {{deadline}} brings your {{count}}-day streak back."
     },
     "bossDefeated": "Boss defeated",
+    "patterns": {
+      "title": "How this session went",
+      "mixups_one": "{{count}} miss was a mix-up between two similar cards.",
+      "mixups_other": "{{count}} misses were mix-ups between two similar cards.",
+      "tag_one": "{{count}} of the cards you missed is tagged “{{tag}}”.",
+      "tag_other": "{{count}} of the cards you missed are tagged “{{tag}}”.",
+      "confident_one": "{{count}} miss was an answer you felt sure of.",
+      "confident_other": "{{count}} misses were answers you felt sure of.",
+      "fast_one": "{{count}} miss was answered in about a second.",
+      "fast_other": "{{count}} misses were answered in about a second.",
+      "hints_one": "A hint helped with {{used}} of {{count}} typed answer.",
+      "hints_other": "A hint helped with {{used}} of {{count}} typed answers.",
+      "comeback_one": "{{count}} card you missed, you recalled later in this session. Going back to a miss is what makes it stick.",
+      "comeback_other": "{{count}} cards you missed, you recalled later in this session. Going back to a miss is what makes it stick.",
+      "nextLabel": "A next step:",
+      "next": {
+        "mixups": "put the two cards side by side and name the one thing that tells them apart. When a pair keeps coming back, a compare card is offered here.",
+        "tag": "a short session on just that tag.",
+        "confident": "read those answers once more in the list below. Being surprised by an answer helps it stick.",
+        "fast": "read the whole question and take a breath before you answer. Speed earns nothing here.",
+        "hints": "try for a few seconds before you ask for the hint. An attempt, even a wrong one, helps more than the hint."
+      },
+      "studyTag": "Study “{{tag}}” next"
+    },
     "missed_one": "This one comes back tomorrow",
     "missed_other": "These {{count}} come back tomorrow",
     "missedPractice_one": "This one is worth another look",
     "missedPractice_other": "These {{count}} are worth another look",
+    "quiet": {
+      "title": "A quiet minute?",
+      "body": "You learned new cards. One minute of rest with your eyes closed may help them settle. The studies disagree, so try it if you like it.",
+      "start": "Rest for a minute",
+      "rest": "Close your eyes and rest",
+      "restBody": "Let your mind wander. There is nothing to do. The rest ends by itself.",
+      "left_one": "{{count}} second left",
+      "left_other": "{{count}} seconds left",
+      "end": "End the rest",
+      "over": "The minute is over."
+    },
     "again": "One more round",
     "againKey": "Space",
     "done": "Done",
@@ -1220,6 +1267,7 @@
       "sort": "Sort each card into its group. Fast!",
       "tellApart": "Which group does each one belong to? Take your time.",
       "related": "A quick look at cards related to the ones you reviewed.",
+      "morning": "Morning check: last night's cards first.",
       "basics": "One of today's cards keeps slipping. First a look at what it builds on.",
       "match": "Match the pairs – against the clock!",
       "trueFalse": "Quick: does this match?",
@@ -1429,10 +1477,12 @@
       "title": "Recall · think of the answer",
       "show": "Show answer",
       "hint": "Say or think your answer first – that's what makes it stick.",
+      "sayAloud": "Say the answer out loud first, then show it.",
       "no": "Didn't know",
       "partly": "Partly",
       "yes": "Knew it"
     },
+    "actOut": "Act it out: do the action, or mime it, as you say the answer.",
     "mnemonic": {
       "lead": "Your mnemonic:"
     },

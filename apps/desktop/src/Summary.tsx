@@ -12,7 +12,17 @@ import { formatNumber } from './i18n';
 import { Rich } from './rich';
 import type { SessionResult } from './Session';
 import { dayDate, MotivationIcon, MAX_FREEZES, type MotivationIconKind } from './Motivation';
-import { celebrates, summaryFacts, summaryMoments, tomorrowCards, tomorrowReport, type Moment } from './summary-logic';
+import {
+  celebrates,
+  QUIET_SECONDS,
+  offersQuietMinute,
+  quietLeft,
+  summaryFacts,
+  summaryMoments,
+  tomorrowCards,
+  tomorrowReport,
+  type Moment,
+} from './summary-logic';
 import { rewardLines } from './reward-logic';
 import { qa } from '@lernlab/core/cards';
 import type { TomorrowAnswer } from '@lernlab/core/tomorrow';
@@ -25,8 +35,10 @@ export function Summary({
   items,
   lang,
   calm = false,
+  quietMinute = false,
   onAgain,
   onHome,
+  onStudyTag,
 }: {
   result: SessionResult;
   server: OutputOf<'session.finish'> | null;
@@ -34,8 +46,12 @@ export function Summary({
   lang: string | null;
   /** Calm mode (#216): no XP, level, badge news, confetti or level-up sound; everything else stays. */
   calm?: boolean;
+  /** The setting "Offer a quiet minute after new cards" (#226). Off by default. */
+  quietMinute?: boolean;
   onAgain: () => void;
   onHome: () => void;
+  /** Starts a session on one tag: the next step for misses that sit in that tag (#213). */
+  onStudyTag?: (tag: string) => void;
 }) {
   const { t } = useTranslation();
   const f = useMemo(() => summaryFacts(result, server, items), [result, server, items]);
@@ -189,6 +205,7 @@ export function Summary({
           </ul>
         </section>
       )}
+      {server?.patterns && <Patterns patterns={server.patterns} onStudyTag={onStudyTag} />}
       {f.missed.length > 0 && (
         <section className="panel summary-missed" aria-labelledby="summary-missed">
           <h2 id="summary-missed">
@@ -210,6 +227,7 @@ export function Summary({
       )}
       {server?.twinOffer && <TwinOffer offer={server.twinOffer} lang={lang} />}
       <TomorrowCheck cards={tomorrow} lang={lang} />
+      {offersQuietMinute(result, quietMinute) && <QuietMinute />}
       <div className="summary-actions">
         <button className="btn" onClick={onAgain}>
           {t('summary.again')} <span className="kbd">{t('summary.againKey')}</span>
@@ -344,6 +362,114 @@ function TwinOffer({
           {state === 'failed' && <p role="alert">{t('errors.failed')}</p>}
         </>
       )}
+    </section>
+  );
+}
+
+/**
+ * How the session went (#213): up to three lines from the session's own answers, about the cards and the
+ * strategy and never about the learner, with one suggested next step. Plain information: no XP and no
+ * celebration, so it is the same in calm mode.
+ */
+function Patterns({
+  patterns,
+  onStudyTag,
+}: {
+  patterns: NonNullable<OutputOf<'session.finish'>['patterns']>;
+  onStudyTag?: (tag: string) => void;
+}) {
+  const { t } = useTranslation();
+  if (!patterns.lines.length) return null;
+  const tag = patterns.lines.find((l) => l.kind === 'tag');
+  const line = (l: (typeof patterns.lines)[number]) => {
+    switch (l.kind) {
+      case 'tag':
+        return t('summary.patterns.tag', { count: l.missed, tag: l.tag });
+      case 'hints':
+        return t('summary.patterns.hints', { count: l.answers, used: l.used });
+      default:
+        return t(`summary.patterns.${l.kind}`, { count: l.count });
+    }
+  };
+  return (
+    <section className="panel summary-patterns" aria-labelledby="summary-patterns">
+      <h2 id="summary-patterns">{t('summary.patterns.title')}</h2>
+      <ul>
+        {patterns.lines.map((l) => (
+          <li key={l.kind}>{line(l)}</li>
+        ))}
+      </ul>
+      {patterns.next && (
+        <p className="summary-patterns-next">
+          <b>{t('summary.patterns.nextLabel')}</b> {t(`summary.patterns.next.${patterns.next}`)}
+          {patterns.next === 'tag' && tag?.kind === 'tag' && onStudyTag && (
+            <button className="btn" onClick={() => onStudyTag(tag.tag)}>
+              {t('summary.patterns.studyTag', { tag: tag.tag })}
+            </button>
+          )}
+        </p>
+      )}
+    </section>
+  );
+}
+
+/**
+ * The quiet minute (#226): an offer, never a step. Starting it dims the screen behind a dialog with a calm
+ * countdown in text (no animation, so it is the same with reduced motion); "End the rest", Esc or the end of
+ * the minute closes it. Nothing is saved and nothing waits for it.
+ */
+function QuietMinute() {
+  const { t } = useTranslation();
+  const dialog = useRef<HTMLDialogElement>(null);
+  const [left, setLeft] = useState<number | null>(null);
+  const [rested, setRested] = useState(false);
+  useEffect(() => {
+    if (left === null) return;
+    const startedAt = Date.now() - (QUIET_SECONDS - left) * 1000;
+    const id = setInterval(() => {
+      const s = quietLeft(startedAt, Date.now());
+      setLeft(s);
+      if (s === 0) {
+        sfx.tap(); // only heard when sounds are on: eyes are closed
+        setRested(true);
+        dialog.current?.close();
+      }
+    }, 250);
+    return () => clearInterval(id);
+  }, [left === null]);
+  const start = () => {
+    setRested(false);
+    setLeft(QUIET_SECONDS);
+    dialog.current?.showModal();
+  };
+  return (
+    <section className="panel quiet-offer" aria-labelledby="quiet-title">
+      <div>
+        <h2 id="quiet-title">{t('summary.quiet.title')}</h2>
+        <p className="muted">{t('summary.quiet.body')}</p>
+        <p role="status" className="small muted">
+          {rested ? t('summary.quiet.over') : ''}
+        </p>
+      </div>
+      <button className="btn" onClick={start}>
+        {t('summary.quiet.start')}
+      </button>
+      <dialog
+        ref={dialog}
+        className="panel quiet-dialog"
+        aria-labelledby="quiet-rest"
+        onClose={() => setLeft(null)}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <h2 id="quiet-rest">{t('summary.quiet.rest')}</h2>
+        <p className="muted">{t('summary.quiet.restBody')}</p>
+        <p className="quiet-left" role="timer">
+          {t('summary.quiet.left', { count: left ?? 0 })}
+        </p>
+        <button className="btn" onClick={() => dialog.current?.close()}>
+          {t('summary.quiet.end')}
+        </button>
+      </dialog>
     </section>
   );
 }

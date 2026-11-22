@@ -338,6 +338,7 @@ test('the daily reminder is off by default, its time is checked, and it knows wh
     language: 'en',
     plan: null,
     studiedToday: false,
+    morning: null,
   });
   await ok('session.finish', {
     sessionId: 'reminder-test',
@@ -350,6 +351,11 @@ test('the daily reminder is off by default, its time is checked, and it knows wh
     perfectBlocks: 0,
     startedAt: new Date().toISOString(),
   });
+  // The sleep rhythm (#217) is off by default; on, the reminder knows when to offer the morning check.
+  const sleepy = await ok('settings.save', { sleepBridge: true, morningTime: '9 am' });
+  assert.deepEqual([sleepy.sleepBridge, sleepy.morningTime], [true, '08:00']);
+  assert.deepEqual((await ok('reminder.status')).morning, { time: '08:00', cards: 0 });
+  assert.equal((await ok('settings.save', { sleepBridge: 'yes' })).sleepBridge, false);
   assert.equal((await ok('reminder.status')).studiedToday, true);
   await ok('settings.save', { reminder: false });
 });
@@ -673,6 +679,7 @@ test('"Will you know this tomorrow?" answers are yes, unsure or no for known car
     startedAt: new Date().toISOString(),
   });
   assert.equal(fin.tomorrowCheck, null, 'nothing to report on the day of the check');
+  assert.deepEqual(fin.patterns, { lines: [], next: null }, 'an ordinary session has no patterns to name (#213)');
 });
 
 test('three mix-ups of two cards bring a compare-card offer; the card is added once and survives an edit', async () => {
@@ -733,4 +740,15 @@ test('teach-back: a mastered tag is offered, gives its key points, and its misse
   assert.deepEqual(Object.keys(plan.items).map(Number), [ids[1]]);
   const none = await handle('teachback.practice', { ids: [] });
   assert.equal(!none.ok && none.error.code, 'invalid_input');
+});
+
+test('"say a few answers aloud" is on by default and can be turned off', async () => {
+  assert.equal((await ok('state.get')).settings.sayAloud, true);
+  assert.equal((await ok('settings.save', { sayAloud: false })).sayAloud, false);
+  assert.equal((await ok('settings.save', { sayAloud: 'yes' })).sayAloud, true);
+  assert.equal((await ok('state.get')).settings.actOut, true, '"act it out" too');
+  assert.equal((await ok('settings.save', { actOut: false })).actOut, false);
+  assert.equal((await ok('state.get')).settings.quietMinute, false, 'the quiet minute is off by default');
+  assert.equal((await ok('settings.save', { quietMinute: 'yes' })).quietMinute, false);
+  assert.equal((await ok('settings.save', { quietMinute: true })).quietMinute, true);
 });

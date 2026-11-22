@@ -46,14 +46,14 @@ const names = (r: Row): Set<string> =>
       .filter(Boolean),
   );
 
-/**
- * A wrong answer was given to `item`: when it names exactly another card of the deck, count the pair.
- * Called for every logged answer, practice included.
- */
-export function noteConfusion(d: DB, item: Row, a: Attempt, now: Date): void {
+/** What `confusedWith` needs of an answer. */
+type Given = Pick<Attempt, 'itemId' | 'format' | 'correct' | 'given' | 'genderOnly'>;
+
+/** The other card of the deck that a wrong answer to `item` names exactly, or null. Reads only. */
+export function confusedWith(d: DB, item: Row, a: Given): number | null {
   const given = normalize(a.given ?? '');
-  if (a.correct || a.genderOnly || !FORMATS.has(a.format) || !given || given.length > GIVEN_MAX) return;
-  if (ownWay(item) || names(item).has(given)) return;
+  if (a.correct || a.genderOnly || !FORMATS.has(a.format) || !given || given.length > GIVEN_MAX) return null;
+  if (ownWay(item) || names(item).has(given)) return null;
   // Only cards that hold the answer's longest plain run of letters are read in full (large decks stay quick).
   const needle = (given.match(/[a-z0-9]{2,}/g) ?? []).sort((x, y) => y.length - x.length)[0] ?? '';
   const rows = d
@@ -65,8 +65,17 @@ export function noteConfusion(d: DB, item: Row, a: Attempt, now: Date): void {
     )
     .all(item.deck_id as number, a.itemId, needle, needle, needle, needle, needle);
   const other = rows.find((r) => !NOT_PAIRED.has(String(r.kind)) && !ownWay(r) && names(r).has(given));
-  if (!other) return;
-  const [x, y] = [a.itemId, Number(other.id)].sort((m, n) => m - n);
+  return other ? Number(other.id) : null;
+}
+
+/**
+ * A wrong answer was given to `item`: when it names exactly another card of the deck, count the pair.
+ * Called for every logged answer, practice included.
+ */
+export function noteConfusion(d: DB, item: Row, a: Attempt, now: Date): void {
+  const other = confusedWith(d, item, a);
+  if (other === null) return;
+  const [x, y] = [a.itemId, other].sort((m, n) => m - n);
   d.prepare(
     `INSERT INTO confusions(a, b, count, last_day) VALUES (?, ?, 1, ?)
      ON CONFLICT(a, b) DO UPDATE SET count = count + 1, last_day = excluded.last_day`,

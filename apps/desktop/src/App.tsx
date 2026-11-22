@@ -86,6 +86,17 @@ export function App() {
       });
     if (s) await start(s.settings.sessionLength);
   };
+  /** "Study this tag next" on the summary (#213): the next session covers that tag, as picked on Home. */
+  const studyTag = async (tag: string) => {
+    const s = await api
+      .chooseSource({ kind: 'tag', tag })
+      .then(refresh)
+      .catch((e: unknown) => {
+        setError(message(e));
+        return null;
+      });
+    if (s) await start(s.settings.sessionLength);
+  };
   const go = (r: Route) => {
     setFull(null);
     if (location.hash !== hashFor(r)) location.hash = hashFor(r);
@@ -221,6 +232,8 @@ export function App() {
         lang={full.lang}
         items={full.items}
         calm={state.settings.calm}
+        onStudyTag={studyTag}
+        quietMinute={state.settings.quietMinute}
         onAgain={() => start('mini', full.result.practice)}
         onHome={() => {
           go('home');

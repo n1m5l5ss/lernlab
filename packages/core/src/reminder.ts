@@ -38,3 +38,9 @@ export function reminderDue(r: { enabled: boolean; time: string; lastShown?: str
   const late = now.getTime() - reminderMoment(r.time, now).getTime();
   return late >= 0 && late < REMINDER_GRACE_MINUTES * 60_000;
 }
+
+/** Sleep bridge (#217, sleep.ts): when the reminder offers the morning check of last night's cards. */
+export const DEFAULT_MORNING_TIME = '08:00';
+/** A valid "HH:MM" time for the morning check, or the default. */
+export const cleanMorningTime = (x: unknown): string =>
+  typeof x === 'string' && TIME.test(x) ? x : DEFAULT_MORNING_TIME;

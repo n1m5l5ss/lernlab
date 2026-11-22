@@ -1226,6 +1226,37 @@ kbd {
   max-width: var(--size-card-max-width);
   margin: 0 auto;
 }
+.quiet-offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.quiet-offer h2 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-subhead);
+}
+.quiet-offer p {
+  margin: 0;
+}
+.quiet-dialog {
+  max-width: 440px;
+  color: var(--color-text);
+  text-align: center;
+}
+/* The rest dims everything behind it. No animation: the countdown is plain text. */
+.quiet-dialog::backdrop {
+  background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+}
+.quiet-dialog h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-subhead);
+}
+.quiet-left {
+  margin: var(--space-4) 0;
+  font-size: var(--text-title);
+  font-variant-numeric: tabular-nums;
+}
 .session-dialog {
   max-width: 440px;
   color: var(--color-text);
@@ -2020,6 +2051,14 @@ kbd {
 }
 .import-hints p {
   margin: var(--space-1) 0 0;
+}
+.act-out {
+  margin-top: var(--space-2);
+}
+.say-aloud,
+.act-out {
+  font-weight: 700;
+  color: var(--color-text);
 }
 .mnemonic {
   margin-top: var(--space-2);
@@ -3900,4 +3939,27 @@ textarea.input.code-input {
     border: none;
     print-color-adjust: exact;
   }
+}
+
+/* How the session went (#213). */
+.summary-patterns h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+}
+.summary-patterns ul {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+}
+.summary-patterns-next {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+}
+.summary-patterns-next b {
+  color: var(--color-text);
+}
+.summary-patterns-next .btn {
+  display: block;
+  margin-top: var(--space-3);
 }

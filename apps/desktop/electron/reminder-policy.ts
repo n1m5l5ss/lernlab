@@ -8,7 +8,8 @@ export const HIDDEN_ARG = '--hidden';
 /** How often the main process looks at the clock. Cheap: no database call unless a reminder is due. */
 export const REMINDER_TICK_MS = 60_000;
 
-export type ReminderPrefs = { enabled: boolean; time: string; launchAtLogin: boolean };
+/** `morning`: when the morning check is offered, with the sleep rhythm on (#217). */
+export type ReminderPrefs = { enabled: boolean; time: string; launchAtLogin: boolean; morning?: string };
 
 /** Reminder settings in a `state.get` or `settings.save` answer, or null when there are none. */
 export function reminderPrefsOf(channel: string, value: unknown): ReminderPrefs | null {
@@ -16,7 +17,12 @@ export function reminderPrefsOf(channel: string, value: unknown): ReminderPrefs 
   const v = value as { settings?: Record<string, unknown> } & Record<string, unknown>;
   const s = channel === 'state.get' ? v?.settings : v;
   if (!s || typeof s.reminderTime !== 'string') return null;
-  return { enabled: s.reminder === true, time: s.reminderTime, launchAtLogin: s.launchAtLogin === true };
+  return {
+    enabled: s.reminder === true,
+    time: s.reminderTime,
+    launchAtLogin: s.launchAtLogin === true,
+    ...(s.sleepBridge === true && typeof s.morningTime === 'string' && { morning: s.morningTime }),
+  };
 }
 
 /**
@@ -46,7 +52,7 @@ export function linuxAutostartEntry(exec: string): string {
 }
 
 type Strings = {
-  settings: { reminders: { notification: { title: string; bodies: string[] } } };
+  settings: { reminders: { notification: { title: string; bodies: string[] } & Record<string, string | string[]> } };
   plan: Record<string, string>;
 };
 const LOCALES: Record<string, Strings> = { en };
@@ -78,4 +84,12 @@ function planText(lang: string, plan: StudyPlan): string {
   const count = new Intl.NumberFormat(lang).format(plan.minutes);
   const main = fill(p[`sentence_${form}`] ?? p.sentence_other, { after: plan.after, count });
   return plan.backup ? `${main} ${fill(p.backupSentence, { backup: plan.backup })}` : main;
+}
+
+/** The morning check's words (#217): how many of last night's cards are ready. No streaks, no pressure. */
+export function morningText(language: string | undefined, cards: number): { title: string; body: string } {
+  const lang = LOCALES[language ?? 'en'] ? (language ?? 'en') : 'en';
+  const n = LOCALES[lang].settings.reminders.notification;
+  const form = n[`morning_${new Intl.PluralRules(lang).select(cards)}`] ?? n.morning_other;
+  return { title: n.title, body: String(form).replace('{{count}}', new Intl.NumberFormat(lang).format(cards)) };
 }

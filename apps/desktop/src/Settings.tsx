@@ -9,7 +9,7 @@ import { THEMES } from '@lernlab/ui/tokens';
 import { applyTheme } from './theme';
 import { TEXT_SIZES, applyDisplay } from './display';
 import { LENGTHS } from './lengths';
-import { cleanReminderTime } from '@lernlab/core/reminder';
+import { cleanMorningTime, cleanReminderTime } from '@lernlab/core/reminder';
 import { ASSISTANT_GUIDE_URL, LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
 import { clientConfig } from './assistant-logic';
 import { DataControls } from './DataControls';
@@ -62,6 +62,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
   const [newPerDay, setNewPerDay] = useState(String(state.settings.newPerDay));
   const [dailyGoal, setDailyGoal] = useState(String(state.settings.dailyGoalSessions));
   const [reminderTime, setReminderTime] = useState(state.settings.reminderTime);
+  const [morningTime, setMorningTime] = useState(state.settings.morningTime);
   const [plan, setPlan] = useState(() => planDraftOf(state.settings));
   // The hour you usually study, from your own sessions on this computer (#204).
   const [usualTime, setUsualTime] = useState<string | null>(null);
@@ -96,6 +97,7 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
       setNewPerDay(String(saved.newPerDay));
       setDailyGoal(String(saved.dailyGoalSessions));
       setReminderTime(saved.reminderTime);
+      setMorningTime(saved.morningTime);
       setPlan(planDraftOf(saved));
       await setLanguage(saved.uiLanguage);
       setMsg(i18next.t('common.saved')); // the new language, not the one this render started with
@@ -122,7 +124,11 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
     | 'aiAssistant'
     | 'habitNote'
     | 'confidence'
-    | 'calm';
+    | 'calm'
+    | 'sleepBridge'
+    | 'sayAloud'
+    | 'actOut'
+    | 'quietMinute';
   const check = (key: Toggle, id: string, disabled = false) => (
     <input
       id={id}
@@ -263,8 +269,20 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
         <Row id="set-confidence" label={t('settings.confidence')} hint={t('settings.confidenceHint')}>
           {check('confidence', 'set-confidence')}
         </Row>
+        <Row id="set-say-aloud" label={t('settings.sayAloud')} hint={t('settings.sayAloudHint')}>
+          {check('sayAloud', 'set-say-aloud')}
+        </Row>
+        <Row id="set-act-out" label={t('settings.actOut')} hint={t('settings.actOutHint')}>
+          {check('actOut', 'set-act-out')}
+        </Row>
+        <Row id="set-quiet-minute" label={t('settings.quietMinute')} hint={t('settings.quietMinuteHint')}>
+          {check('quietMinute', 'set-quiet-minute')}
+        </Row>
         <Row id="set-calm" label={t('settings.calm')} hint={t('settings.calmHint')}>
           {check('calm', 'set-calm')}
+        </Row>
+        <Row id="set-sleep" label={t('settings.sleepBridge')} hint={t('settings.sleepBridgeHint')}>
+          {check('sleepBridge', 'set-sleep')}
         </Row>
       </Section>
 
@@ -318,6 +336,18 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
           // The field is empty while half typed; save only a complete time.
           onBlur={() => cleanReminderTime(reminderTime) === reminderTime && update({ reminderTime })}
         />
+        {s.sleepBridge && (
+          <Input
+            id="set-morning-time"
+            label={t('settings.reminders.morningTime')}
+            className="field settings-row"
+            type="time"
+            value={morningTime}
+            disabled={!desktop || !s.reminder}
+            onChange={(e) => setMorningTime(e.target.value)}
+            onBlur={() => cleanMorningTime(morningTime) === morningTime && update({ morningTime })}
+          />
+        )}
         <Row
           id="set-login"
           label={t('settings.reminders.launchAtLogin')}

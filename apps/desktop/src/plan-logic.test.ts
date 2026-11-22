@@ -39,3 +39,12 @@ test('a suggested "HH:00" becomes a local time to show', () => {
   const d = timeOfDay('19:00', new Date(2026, 10, 21, 8, 30));
   assert.deepEqual([d.getFullYear(), d.getMonth(), d.getDate(), d.getHours(), d.getMinutes()], [2026, 10, 21, 19, 0]);
 });
+
+test('an exam today or within three days counts as soon; past, far or unreadable dates do not', async () => {
+  const { examSoon } = await import('./plan-logic');
+  const now = new Date(2027, 4, 10, 23);
+  assert.deepEqual(
+    ['2027-05-10', '2027-05-13', '2027-05-14', '2027-05-09', 'soon', undefined].map((d) => examSoon(d, now)),
+    [true, true, false, false, false, false],
+  );
+});

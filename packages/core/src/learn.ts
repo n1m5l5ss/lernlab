@@ -5,7 +5,7 @@ import { getDb, getMeta, tx, type DB } from './db';
 import { gradeFor, dayKey } from './game';
 import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from './types';
 import { qa } from './cards';
-import { DEFAULT_REMINDER_TIME } from './reminder';
+import { DEFAULT_MORNING_TIME, DEFAULT_REMINDER_TIME } from './reminder';
 import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
 import { withMnemonicRuns } from './mnemonic';
@@ -59,6 +59,16 @@ export type Settings = {
   confidence: boolean;
   /** Calm mode (#216): hide XP, levels, combos and celebrations. XP is still counted, so nothing is lost. Off by default. */
   calm: boolean;
+  /** Sleep bridge (#217, sleep.ts): new cards in the evening, a short check the next morning. Off by default. */
+  sleepBridge: boolean;
+  /** When the morning check is offered by the reminder, "HH:MM" in local time. */
+  morningTime: string;
+  /** Ask for the answer out loud on a few flip cards, starred or recently missed (#222). On by default. */
+  sayAloud: boolean;
+  /** Ask to act out a few action cards: tagged `action`, or verbs in a language deck (#225). On by default. */
+  actOut: boolean;
+  /** Offer an optional minute of eyes-closed rest after a session with new cards (#226). The evidence is mixed, so it is off by default. */
+  quietMinute: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -88,6 +98,11 @@ export const DEFAULT_SETTINGS: Settings = {
   remoteMedia: false,
   confidence: true,
   calm: false,
+  sleepBridge: false,
+  morningTime: DEFAULT_MORNING_TIME,
+  sayAloud: true,
+  actOut: true,
+  quietMinute: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
