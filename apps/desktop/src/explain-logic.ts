@@ -1,5 +1,6 @@
 // "Explain it" (core/explain.ts, #199): write an explanation, see the model answer, tick the key points you
-// covered. The steps, keys and grade of modes/Explain.tsx, as pure functions. There is no clock.
+// covered. The steps, keys and grade of modes/Explain.tsx, as pure functions. There is no clock. You can say
+// the explanation instead of typing it: the words land in the same text box, so nothing else changes.
 import { explainOutcome, understandingGap, type ExplainOutcome } from '@lernlab/core/explain';
 
 export type ExplainState = {
@@ -21,6 +22,25 @@ export const explainStart = (points: number): ExplainState => ({
 });
 
 export const canCheck = (s: ExplainState) => s.text.trim().length > 0;
+
+/** The longest explanation that is kept (the answer log stores this much). */
+export const SPOKEN_MAX = 2000;
+
+/**
+ * Add what the speech input heard to the explanation: after what is already there, as plain text. Control
+ * characters are dropped and the length is capped; the screen shows it as text, never as HTML.
+ */
+export function addSpoken(text: string, heard: string): string {
+  // eslint-disable-next-line no-control-regex
+  const said = heard.replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, '').trim();
+  if (!said) return text;
+  const gap = !text || /\s$/.test(text) ? '' : ' ';
+  return (text + gap + said).slice(0, SPOKEN_MAX);
+}
+
+/** A speech error that will not go away by trying again (no microphone, no permission, no service): type instead. */
+export const speechGone = (error: unknown): boolean =>
+  ['not-allowed', 'service-not-allowed', 'network', 'audio-capture', 'language-not-supported'].includes(String(error));
 
 export const toggle = (s: ExplainState, i: number): ExplainState => ({
   ...s,

@@ -3638,6 +3638,13 @@ textarea.input.code-input {
   font-size: var(--text-body);
   line-height: 1.5;
 }
+.explain-voice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
 .explain-understand {
   display: grid;
   gap: var(--space-1);
