@@ -646,7 +646,8 @@ test('three mix-ups of two cards bring a compare-card offer; the card is added o
   assert.equal((await finish()).twinOffer, null);
   await ok('attempt.record', { ...wrong, given: 'a result' });
   const offer = (await finish()).twinOffer;
-  assert.deepEqual([offer?.count, offer?.a.front, offer?.b.front], [3, 'affect', 'effect']);
+  // The pair is stored by card id, so which card is `a` depends on the random ids.
+  assert.deepEqual([offer?.count, ...[offer?.a.front, offer?.b.front].sort()], [3, 'affect', 'effect']);
   const bad = await handle('confusions.twin', { a: a.id, b: a.id, answer: '' });
   assert.equal(!bad.ok && bad.error.code, 'invalid_input');
   const { id } = await ok('confusions.twin', { a: a.id, b: b.id, answer: 'Both are about change.' });
