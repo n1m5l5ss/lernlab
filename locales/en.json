@@ -477,7 +477,18 @@
         "altAnswers": "Other accepted answers",
         "variants": "Question variants",
         "corrections": "Corrections for wrong choices",
-        "keyPoints": "Key points"
+        "keyPoints": "Key points",
+        "keyTerms": "Key terms to highlight"
+      },
+      "hints": {
+        "title": "Tips for better cards",
+        "split_one": "{{count}} card has an answer over {{words}} words. Split it into two cards?",
+        "split_other": "{{count}} cards have an answer over {{words}} words. Split them into two cards each?",
+        "decorativeImage_one": "{{count}} card has a picture with no description. Does it help the answer?",
+        "decorativeImage_other": "{{count}} cards have a picture with no description. Do the pictures help the answers?",
+        "diagram_one": "{{count}} card is about an idea and has no picture. A diagram could help.",
+        "diagram_other": "{{count}} cards are about an idea and have no picture. A diagram could help.",
+        "later": "You can import now and change cards later under Cards."
       },
       "previewCaption_one": "The first card",
       "previewCaption_other": "The first {{count}} cards",
@@ -737,7 +748,7 @@
       "dropRejected": "Can't put these on a card: {{names}}. Use an image, GIF, audio or video file.",
       "duplicate_one": "This deck already has a card with this front: “{{front}}” → {{back}}. You can still add it.",
       "duplicate_other": "This deck already has {{count}} cards with this front, like “{{front}}” → {{back}}. You can still add it.",
-      "formatHint": "Formatting: **bold**, *italic*, `code`, or the tags {{tags}}. Anything else is removed. Math: \\( x^2 \\) in a line, \\[ x^2 \\] on its own line.",
+      "formatHint": "Formatting: **bold**, *italic*, `code`, ==key term== (highlighted when the answer shows), or the tags {{tags}}. Anything else is removed. Math: \\( x^2 \\) in a line, \\[ x^2 \\] on its own line.",
       "preview": "Preview",
       "previewQuestion": "Preview · question",
       "previewAnswer": "Preview · answer",
@@ -753,6 +764,12 @@
         "code": "Add the output, a gap like {{open}}token{{close}} in the code, or at least two lines to put in order.",
         "occlusion": "Add an image, draw at least one box and give each box a label.",
         "keyPoints": "Write at least two key points, or this card is studied as a basic card."
+      },
+      "hints": {
+        "title": "Tips for this card",
+        "split": "This answer is over {{words}} words. Split it into two cards? Short answers are easier to recall.",
+        "decorativeImage": "This picture has no description. Does it help the answer? If it does, describe it. If not, the card is clearer without it.",
+        "diagram": "This card is about an idea. A diagram or picture could help."
       },
       "add": "Add card",
       "starred": "★ Starred",

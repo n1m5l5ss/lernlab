@@ -111,6 +111,19 @@ test('markdown lite', () => {
   );
 });
 
+test('key terms: ==term== is highlighted, comparisons in text and formulas are left alone', () => {
+  assert.equal(markdownLite('The ==mitochondrion== makes ATP'), 'The <mark>mitochondrion</mark> makes ATP');
+  assert.equal(markdownLite('==Paris==, not ==Lyon=='), '<mark>Paris</mark>, not <mark>Lyon</mark>');
+  assert.equal(markdownLite('(==key term==)'), '(<mark>key term</mark>)');
+  for (const s of ['a == b == c', 'a==b and c==d', 'x === y === z', '== loose ==', '====', '\\( a ==b== c \\)'])
+    assert.equal(markdownLite(s), s);
+  // Saved like any other formatting; plain-text uses (typed answers, games) never see the marks.
+  const item = cardToItem({ id: 1, name: 'D', language: null }, { front: 'Capital of France?', back: '==Paris==' })!;
+  assert.equal(item.meaning, 'Paris');
+  assert.equal(item.extra.keyTerms, 'Paris');
+  assert.deepEqual(qa(item).accepted, ['Paris']);
+});
+
 test('image description: plain text, kept only while the card has an image, and the alt text of that image', () => {
   const deck = { id: 1, name: 'D', language: null };
   const item = cardToItem(deck, {

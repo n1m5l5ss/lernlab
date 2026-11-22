@@ -311,3 +311,33 @@ test('an explain card: key points written in rows, saved as one line, previewed 
   assert.deepEqual(formFor(card).keyPoints, ['Earth is **tilted**', 'Not the distance/to the sun']);
   assert.deepEqual(previewOf({ ...f, keyPoints: ['one'] }, deck)!.view, { type: 'problem', problem: 'keyPoints' });
 });
+
+test('key terms: ==term== shows highlighted in the preview answer and comes back as written when the card is edited', () => {
+  const p = previewOf(
+    form({
+      front: 'What does the mitochondrion do in a cell, and why does it matter?',
+      back: 'It makes ==ATP== for the cell, which powers nearly everything',
+    }),
+    deck,
+  )!;
+  assert.equal(p.view.type, 'flip');
+  assert.equal(
+    p.view.type === 'flip' && p.view.answer,
+    'It makes <mark>ATP</mark> for the cell, which powers nearly everything',
+  );
+  const saved = { ...p.item, tags: [], suspended: false, starred: false } as unknown as Parameters<typeof formFor>[0];
+  assert.equal(formFor(saved).back, 'It makes ==ATP== for the cell, which powers nearly everything');
+});
+
+test('the preview carries card-quality hints, and none while the card has a problem to fix first', () => {
+  const long = Array.from({ length: 45 }, (_, i) => `w${i}`).join(' ');
+  assert.deepEqual(previewOf(form({ front: 'Capital of France?', back: 'Paris' }), deck)!.hints, []);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: long }), deck)!.hints, ['split', 'diagram']);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: 'A', image: 'a.png' }), deck)!.hints, ['decorativeImage']);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: 'A', image: 'a.png', imageAlt: 'A leaf' }), deck)!.hints, []);
+  assert.deepEqual(
+    previewOf(form({ front: 'der Hund', back: 'dog', audio: 'a.mp3' }), { id: 2, language: 'de' })!.hints,
+    [],
+  );
+  assert.deepEqual(previewOf(form({ type: 'cloze', front: 'No gap', back: long }), deck)!.hints, []);
+});

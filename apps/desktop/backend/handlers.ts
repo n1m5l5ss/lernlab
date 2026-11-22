@@ -452,6 +452,8 @@ export const handlers = {
           corrections: opt(b.corrections),
           keyPoints: opt(b.keyPoints),
           twin: opt(b.twin),
+          // The editor writes key terms in the back as ==term==, so the back alone says which there are.
+          keyTerms: '',
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);

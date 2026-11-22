@@ -12,6 +12,7 @@ import { normalizeCode } from './code';
 import { formatBox, modeOf, parseBox } from './occlusion';
 import { cleanVariants, takesVariants } from './variants';
 import { cleanCorrections, isMyth } from './misconceptions';
+import { cleanKeyTerms, markedTerms } from './keyterms';
 import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
 import { cleanTwin } from './twin';
 import type { Item, ItemKind } from './types';
@@ -108,6 +109,8 @@ export type NormalizedCard = {
   keyPoints?: string;
   /** compare cards: the second thing, shown beside the front: "effect: a result" (twin.ts). '' clears it. */
   twin?: string;
+  /** Key terms of the answer, highlighted when it shows: "mitochondrion|ATP" (keyterms.ts). In the back, ==term== says the same. '' clears them. */
+  keyTerms?: string;
   /** Other ways to ask the question, with a level: "apply: A patient has X. Which mechanism? | analyse: …" (variants.ts). '' clears them. */
   variants?: string;
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
@@ -316,6 +319,13 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
       : '';
   if (twin) extra.twin = twin;
   else delete extra.twin;
+  // Key terms of a plain-text answer (keyterms.ts): the ones marked in the back, or else the card's field.
+  const marked = markedTerms(back);
+  const keyTerms = ['code', 'cloze', 'mcq', 'order'].includes(kind)
+    ? ''
+    : cleanKeyTerms(marked.length ? marked.join('|') : (c.keyTerms ?? extra.keyTerms), stripHtml(back));
+  if (keyTerms) extra.keyTerms = keyTerms;
+  else delete extra.keyTerms;
   const variants = cleanVariants(c.variants ?? extra.variants);
   if (variants && takesVariants(kind) && !myth && !keyPoints && !twin) extra.variants = variants;
   else delete extra.variants;

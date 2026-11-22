@@ -151,6 +151,18 @@ test('the card editor saves, keeps and clears corrections for wrong choices', as
   assert.ok(!('corrections' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
+test('the card editor saves key terms from ==term== in the back and clears them with the marks', async () => {
+  const deck = await ok('decks.create', { name: 'Cells', language: null });
+  const card = { front: 'What makes ATP?', back: 'The ==mitochondrion== does' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card });
+  const saved = await ok('cards.get', { id });
+  assert.deepEqual([saved.meaning, saved.extra.keyTerms], ['The mitochondrion does', 'mitochondrion']);
+  await ok('cards.update', { id, card: { starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.keyTerms, 'mitochondrion', 'kept when the card is not edited');
+  await ok('cards.update', { id, card: { ...card, back: 'The mitochondrion does' } });
+  assert.ok(!('keyTerms' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('the card editor saves, keeps and clears key points; attempts may say "easy"', async () => {
   const deck = await ok('decks.create', { name: 'Why', language: null });
   const card = { front: 'Why seasons?', back: 'Tilt', type: 'explain' };

@@ -30,6 +30,7 @@ import {
 import { LEVELS, VARIANTS_MAX, type Variant } from '@lernlab/core/variants';
 import { CORRECTION_MAX_LENGTH } from '@lernlab/core/misconceptions';
 import { KEY_POINTS_MAX, KEY_POINTS_MIN, KEY_POINT_MAX_LENGTH } from '@lernlab/core/explain';
+import { ANSWER_WORDS_MAX } from '@lernlab/core/cardquality';
 import { Media, Rich } from './rich';
 import { CodeBlock } from './code-block';
 import { OcclusionEditor } from './occlusion';
@@ -402,6 +403,19 @@ export function CardEditor({
         </section>
       )}
       <CardPreview preview={preview} lang={deck.language} />
+      {!!preview?.hints.length && (
+        // Suggestions only: the card saves and studies the same with or without them.
+        <section className="editor-hints small" role="status" aria-label={t('browse.editor.hints.title')}>
+          <span className="lbl" aria-hidden="true">
+            {t('browse.editor.hints.title')}
+          </span>
+          <ul>
+            {preview.hints.map((h) => (
+              <li key={h}>{t(`browse.editor.hints.${h}`, { words: ANSWER_WORDS_MAX })}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <details className="editor-more" open={hasMore(card)}>
         <summary>{t('browse.editor.moreFields')}</summary>
         {c.type === 'basic' && f('alt', t('browse.editor.alt'), t('browse.editor.altPlaceholder'))}

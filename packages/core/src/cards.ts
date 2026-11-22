@@ -215,12 +215,19 @@ export function sanitizeHtml(html: string): string {
     .replace(BARE_TAG, '&lt;');
 }
 
-/** Light Markdown for CSV authors: **bold**, *italic*, `code`. Math (\( … \)) is left as written. */
+// ==term==: the marks touch the term and stand apart from other text, so `a == b` and `a==b` stay as written.
+const KEY_TERM = /(^|[^\w=])==(?=[^\s=])([^=]+?)(?<=\S)==(?![\w=])/g;
+
+/**
+ * Light Markdown for CSV authors: **bold**, *italic*, `code` and ==key term== (highlighted, which helps
+ * readers find what matters: signalling, d = 0.70 [Mayer 2023]). Math (\( … \)) is left as written.
+ */
 export function markdownLite(s: string): string {
   return outsideMath(s, (text) =>
     text
       .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
       .replace(/(^|[^*])\*(?!\s)(.+?)\*/g, '$1<i>$2</i>')
-      .replace(/`([^`]+)`/g, '<code>$1</code>'),
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(KEY_TERM, '$1<mark>$2</mark>'),
   );
 }

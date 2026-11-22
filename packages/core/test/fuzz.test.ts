@@ -24,6 +24,8 @@ const { readApkg } = await import('../src/formats/apkg');
 const { writeApkg } = await import('../src/formats/apkgwrite');
 const { listZip, unsafeZipPath } = await import('../src/formats/zip');
 const { sanitizeHtml, SAFE_TAGS } = await import('../src/cards');
+const { cardToItem } = await import('../src/library');
+const { KEY_TERMS_MAX, KEY_TERM_MAX_LENGTH, answerSource, keyTermsOf, markAnswer } = await import('../src/keyterms');
 const { cleanVariants, parseVariants, VARIANTS_MAX, VARIANT_MAX_LENGTH } = await import('../src/variants');
 const { cleanCorrections, correctionHtml, parseCorrections, CORRECTION_MAX_LENGTH } =
   await import('../src/misconceptions');
@@ -148,6 +150,28 @@ test('question variants: any text gives a few plain-text questions, and cleaning
       const line = cleanVariants(text);
       assert.equal(cleanVariants(line), line, 'cleaning twice changes nothing');
       assert.equal(parseVariants(line).length, variants.length);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test('key terms: any back and any terms give a plain answer, a few terms and safe HTML, and editing is stable', () => {
+  const deck = { id: 1, name: 'D', language: null };
+  fc.assert(
+    fc.property(hostileText, hostileText, (back, terms) => {
+      const item = cardToItem(deck, { front: 'Q', back, keyTerms: terms });
+      if (!item) return;
+      const list = keyTermsOf(item);
+      assert.ok(list.length <= KEY_TERMS_MAX);
+      for (const t of list) assert.ok(t && t.length <= KEY_TERM_MAX_LENGTH && !t.includes('|'));
+      const html = markAnswer(item, item.meaning);
+      // Without key terms the answer is shown as before (the screen sanitises it); with them it is already safe.
+      if (list.length) assert.equal(sanitizeHtml(html), html);
+      else assert.equal(html, item.meaning);
+      // Opened in the editor and saved again, the card keeps its answer; saving twice changes nothing more.
+      const again = cardToItem(deck, { front: 'Q', back: answerSource(item), keyTerms: '' });
+      const twice = again && cardToItem(deck, { front: 'Q', back: answerSource(again), keyTerms: '' });
+      assert.deepEqual(twice && [twice.meaning, twice.extra], again && [again.meaning, again.extra]);
     }),
     params(RUNS * 2),
   );

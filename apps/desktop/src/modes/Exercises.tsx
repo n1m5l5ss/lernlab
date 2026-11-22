@@ -15,6 +15,7 @@ import { ConfidenceRow, Feedback, LevelTag, Misconception, type ConfidencePick }
 import { pickedCorrections } from '@lernlab/core/misconceptions';
 import { CONFIDENCE_LEVELS, type Confidence } from '@lernlab/core/confidence';
 import type { Level } from '@lernlab/core/variants';
+import { markAnswer } from '@lernlab/core/keyterms';
 import { checkTyped, plainAnswer } from '../typed-logic';
 import { CodeBlock, CodeLine } from '../code-block';
 
@@ -189,7 +190,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
         <Article item={item} />
       </div>
       <div className="prompt" style={{ fontSize: textPx(22), margin: '6px 0 16px' }}>
-        <Rich html={item.meaning} />
+        <Rich html={markAnswer(item, item.meaning)} />
       </div>
       {item.sentence && (
         <div style={{ fontSize: textPx(20) }}>
@@ -468,7 +469,7 @@ export function Flip({
         {shownAns && (
           <Feedback tone="right" style={{ textAlign: 'start' }}>
             <div className="ans">
-              <Rich html={ex.answer} />
+              <Rich html={markAnswer(item, ex.answer)} />
             </div>
             {ex.reverse && <Media item={item} size="sm" />}
             {(item.notes || item.grammar) && (
@@ -561,7 +562,7 @@ export function Myth({
           <Feedback tone={step === 'shown' ? 'right' : 'wrong'} style={{ textAlign: 'start' }}>
             {t(step === 'shown' ? 'ex.myth.because' : 'ex.myth.fooled')}
             <div className="ans">
-              <Rich html={ex.why} />
+              <Rich html={markAnswer(item, ex.why)} />
             </div>
           </Feedback>
         )}

@@ -60,6 +60,10 @@
       "description": "Optional, added after v1 was published; older readers ignore it. Compare card: the second thing, shown beside the front; the back says what the two share and the one key difference. Plain text, at most 500 characters.",
       "type": "string"
     },
+    "keyTerms": {
+      "description": "Optional, added after v1 was published; older readers ignore it. The key terms of the answer (the back), separated by |, highlighted when the answer shows. Plain text, at most 5 terms of at most 100 characters each, without '='; a term that is not in the back as a whole word is dropped. Writers may instead mark terms in the back as ==term==. Example: \"proteins|messenger RNA\"",
+      "type": "string"
+    },
     "steps": {
       "description": "Ordering card: the steps in the correct order, separated by |.",
       "type": "string"

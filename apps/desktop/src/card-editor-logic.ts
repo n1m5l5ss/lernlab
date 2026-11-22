@@ -9,6 +9,8 @@ import { VARIANTS_MAX, formatVariants, parseVariants, takesVariants, type Varian
 import { correctionsOf, formatCorrections, isMyth } from '@lernlab/core/misconceptions';
 import { KEY_POINTS_MIN, formatKeyPoints, isExplain, keyPointHtml, keyPointsOf } from '@lernlab/core/explain';
 import { stripHtml } from '@lernlab/core/text';
+import { cardHints, type CardHint } from '@lernlab/core/cardquality';
+import { answerSource, markAnswer } from '@lernlab/core/keyterms';
 import type { Shape } from './occlusion-logic';
 import type { Item } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
@@ -65,7 +67,8 @@ export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: 
 export const formFor = (c: FullCard): Form => ({
   id: c.id,
   front: c.target,
-  back: c.meaning,
+  // Key terms are written in the back as ==term==.
+  back: answerSource(c),
   example: c.sentenceHtml,
   exampleTranslation: c.sentenceMeaning,
   explanation: c.grammar,
@@ -179,7 +182,8 @@ export type PreviewView =
       type: 'problem';
       problem: 'noGap' | 'choices' | 'steps' | 'number' | 'tolerance' | 'code' | 'occlusion' | 'keyPoints';
     };
-export type Preview = { item: Item; view: PreviewView; explanation: string };
+/** `hints`: suggestions for a better card (never a reason not to save it). */
+export type Preview = { item: Item; view: PreviewView; explanation: string; hints: CardHint[] };
 
 /**
  * The live preview: the card cleaned exactly as it will be saved, then asked the way a recall round asks it
@@ -198,19 +202,29 @@ export function previewOf(
   const item = cardToItem({ ...deck, name: '' }, toCard(form), f.type === 'occlusion' ? idOf(selected) : (f.id ?? 0));
   if (!item) return null;
   const explanation = item.grammar || item.notes;
-  const out = (view: PreviewView): Preview => ({ item, view, explanation });
+  const out = (view: PreviewView): Preview => ({
+    item,
+    view,
+    explanation,
+    hints: view.type === 'problem' ? [] : cardHints(item),
+  });
   if (f.type === 'cloze') {
     const ex = item.kind === 'cloze' ? cloze(item) : null;
     if (ex?.type !== 'cloze') return out({ type: 'problem', problem: 'noGap' });
     const answer = ex.accepted[0] ?? '';
     return out({ type: 'cloze', before: ex.before, after: ex.after, answer, hint: ex.hint, extra: ex.translation });
   }
-  if (f.type === 'myth') return out({ type: 'myth', prompt: item.target, answer: item.meaning });
+  if (f.type === 'myth') return out({ type: 'myth', prompt: item.target, answer: markAnswer(item, item.meaning) });
   if (f.type === 'explain') {
     const points = keyPointsOf(item);
     return out(
       points.length
-        ? { type: 'explain', prompt: item.target, answer: item.meaning, points: points.map(keyPointHtml) }
+        ? {
+            type: 'explain',
+            prompt: item.target,
+            answer: markAnswer(item, item.meaning),
+            points: points.map(keyPointHtml),
+          }
         : { type: 'problem', problem: 'keyPoints' },
     );
   }
@@ -244,7 +258,12 @@ export function previewOf(
       return out({ type: 'typed', prompt: ex.prompt, answer, also, mediaFirst: ex.prompt === item.target });
     }
   }
-  return out({ type: 'flip', prompt: q.prompt, answer: q.answer, mediaFirst: q.prompt !== item.meaning });
+  return out({
+    type: 'flip',
+    prompt: q.prompt,
+    answer: markAnswer(item, q.answer),
+    mediaFirst: q.prompt !== item.meaning,
+  });
 }
 
 /** Sort dropped files into the card's media slots (the last file of a kind wins); name the ones that can't go on a card. */
