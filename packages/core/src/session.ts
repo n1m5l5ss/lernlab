@@ -33,6 +33,7 @@ import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
 import { confusionMap, keepClose } from './confusions';
+import { recentlyAnswered, RELATED_MAX, restOfFamilies } from './family';
 import { categoryLabels, confusableLabels, labelMisses, ROUND_MAX, themedFirst } from './discriminate';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
@@ -196,6 +197,31 @@ export function planSession(
       teacher: say('review'),
       exercises: dueA.map(review),
     });
+
+  // 3a. The rest of a closely related group (#223): when some cards of a family ("Capital of …" with one tag)
+  //     are reviewed now or were in the last day or two, its other learned cards get one recognition question.
+  //     Recognition never grades: their real reviews stay on their own days.
+  if (!practice && learned.length && pool.filter((p) => plain(p.id)).length >= 4) {
+    const answered = recentlyAnswered(d, now);
+    const practised = [
+      ...new Set([...due, ...[...answered].filter(([id, a]) => a.graded && has(id)).map(([id]) => id)]),
+    ];
+    const taken = new Set([...due, ...leftovers, ...fresh]);
+    const eligible = new Set(learned.filter((id) => plain(id) && !taken.has(id) && !answered.has(id)));
+    const related = shuffle(restOfFamilies(practised.map(get), pool).filter((id) => eligible.has(id))).slice(
+      0,
+      RELATED_MAX[length],
+    );
+    if (related.length)
+      blocks.push({
+        id: bid(),
+        kind: 'drill',
+        format: 'mc',
+        title: 'Related cards',
+        teacher: { key: 'teacher.block.related' },
+        exercises: related.map((id) => mc(id, 'de2en')),
+      });
+  }
 
   // 4a. Guess first: the first new cards of a new topic (concepts, facts, maths) are asked before they are met.
   const guess = fresh.length ? pickGuessRound(fresh.map(get), pool, (t) => topicIsNew(t, d), GUESS_MAX[length]) : null;
