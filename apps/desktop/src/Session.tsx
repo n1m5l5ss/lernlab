@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Block, Exercise, Item, SessionPlan } from '@lernlab/core/types';
 import { BONUS, dayKey, xpFor } from '@lernlab/core/game';
+import { mnemonicOf, nextRun } from '@lernlab/core/mnemonic';
 import type { Confidence } from '@lernlab/core/confidence';
 import { teacherFor, type Line } from '@lernlab/core/teacher';
 import { api, sendAttempt, sendConfidence, sendOverride } from './api';
@@ -379,6 +380,12 @@ export function Session({
     };
   }, []);
 
+  const runs = useRef(new Map<number, number | undefined>());
+  const runBeforeMiss = useRef(new Map<number, number | undefined>());
+  const mnemonicRun = useCallback(
+    (id: number) => (runs.current.has(id) ? runs.current.get(id) : item(id)?.mnemonicRun),
+    [item],
+  );
   const answer = useCallback(
     (a: AnswerInput): number => {
       const ms = performance.now() - a.shownAt;
@@ -428,6 +435,12 @@ export function Session({
         }
       }
       if (!a.correct && counts && !a.genderOnly) missed.current.add(a.itemId);
+      // Fading mnemonics (#221): keep the card's run of correct recalls up to date within the session.
+      if (!a.genderOnly && mnemonicOf(item(a.itemId))) {
+        const before = mnemonicRun(a.itemId);
+        if (!a.correct) runBeforeMiss.current.set(a.itemId, before);
+        runs.current.set(a.itemId, nextRun(before, a.format, a.correct));
+      }
       sendAttempt({
         sessionId: plan.id,
         itemId: a.itemId,
@@ -463,6 +476,9 @@ export function Session({
   const override = useCallback((itemId: number, practice?: boolean) => {
     if (!plan.practice && !practice) sendOverride(itemId); // practice never touches today's real grade
     missed.current.delete(itemId);
+    // The miss is taken back: the run goes on from where it was.
+    if (runBeforeMiss.current.has(itemId))
+      runs.current.set(itemId, nextRun(runBeforeMiss.current.get(itemId), 'typed', true));
     totals.current.correct++;
   }, []);
   const ctx: Ctx = {
@@ -477,6 +493,7 @@ export function Session({
     override,
     combo: calm ? 0 : combo, // calm: the coach doesn't cheer runs
     missed: missed.current,
+    mnemonicRun,
     teacher,
     settings,
   };

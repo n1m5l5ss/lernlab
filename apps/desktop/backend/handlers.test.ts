@@ -140,6 +140,24 @@ test('the card editor saves, keeps and clears question variants', async () => {
   assert.ok(!('variants' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
+test('the card editor saves, keeps and clears what a card requires', async () => {
+  const deck = await ok('decks.create', { name: 'Calculus', language: null });
+  const card = { front: 'Chain rule', back: 'outer times inner' };
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { ...card, requires: '<b>Derivative</b>|#functions|' },
+  });
+  assert.equal((await ok('cards.get', { id })).extra.requires, 'Derivative|#functions');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal(
+    (await ok('cards.get', { id })).extra.requires,
+    'Derivative|#functions',
+    'kept when the field is not sent',
+  );
+  await ok('cards.update', { id, card: { ...card, requires: '' } });
+  assert.ok(!('requires' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('the card editor saves, keeps and clears corrections for wrong choices', async () => {
   const deck = await ok('decks.create', { name: 'Cloud quiz', language: null });
   const card = { front: 'Serverless?', back: '', type: 'mcq', choices: 'EC2|Lambda', correct: '2' };
@@ -149,6 +167,20 @@ test('the card editor saves, keeps and clears corrections for wrong choices', as
   assert.equal((await ok('cards.get', { id })).extra.corrections, 'Many think so', 'kept when the field is not sent');
   await ok('cards.update', { id, card: { ...card, corrections: '' } });
   assert.ok(!('corrections' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
+test('the card editor saves, keeps and clears a mnemonic, and a studied card carries its run', async () => {
+  const deck = await ok('decks.create', { name: 'Planets', language: null });
+  const card = { front: 'Order of the planets?', back: 'Mercury, Venus, Earth' };
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { ...card, mnemonic: '<b>My Very</b> Educated Mother' },
+  });
+  assert.equal((await ok('cards.get', { id })).extra.mnemonic, 'My Very Educated Mother');
+  await ok('cards.update', { id, card });
+  assert.equal((await ok('cards.get', { id })).extra.mnemonic, 'My Very Educated Mother', 'kept when not sent');
+  await ok('cards.update', { id, card: { ...card, mnemonic: '' } });
+  assert.ok(!('mnemonic' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
 test('the card editor saves key terms from ==term== in the back and clears them with the marks', async () => {
@@ -524,6 +556,12 @@ test('progress lists every deck with learned vs remaining, and the hardest cards
   assert.deepEqual(p.decks.map((d: { id: number }) => d.id).sort(), decks.map((d: { id: number }) => d.id).sort());
   for (const d of p.decks) assert.equal(d.learned + d.remaining, d.cards);
   assert.equal(p.retention.weeks.length, 12);
+  // This week's goal (#214): the decks' card goals added up, and 3 to 7 sessions.
+  assert.equal(
+    p.week.cards.target,
+    p.decks.reduce((n: number, d: { week: { target: number } }) => n + d.week.target, 0),
+  );
+  assert.ok(p.week.sessions.target >= 3 && p.week.sessions.target <= 7);
   assert.ok(Array.isArray(p.studyDays) && Array.isArray(p.hardest));
   await ok('study.choose', { source: { kind: 'hardest' } });
   assert.deepEqual((await ok('state.get')).source, { kind: 'hardest' });
@@ -670,4 +708,29 @@ test('three mix-ups of two cards bring a compare-card offer; the card is added o
   await ok('cards.update', { id, card: { front: card.target, back: 'Both change things.', type: 'basic' } });
   assert.equal((await ok('cards.get', { id })).extra.twin, card.extra.twin, 'kept by the card editor');
   assert.deepEqual(await ok('confusions.dismiss', { a: a.id, b: b.id }), { ok: true });
+});
+
+test('teach-back: a mastered tag is offered, gives its key points, and its missed cards make a practice session', async () => {
+  const deck = await ok('decks.create', { name: 'Teach', language: null });
+  const ids: number[] = [];
+  for (const [front, back] of [
+    ['What makes ATP?', 'The mitochondrion'],
+    ['What builds proteins?', 'The ribosome'],
+    ['What holds DNA?', 'The nucleus'],
+  ])
+    ids.push((await ok('cards.add', { deckId: deck.id, card: { front, back, tags: 'organelles' } })).id);
+  assert.deepEqual(await ok('teachback.topics'), [], 'not mastered yet');
+  for (const itemId of ids)
+    await ok('attempt.record', { sessionId: 'tb', itemId, format: 'typed', correct: true, responseMs: 1, xp: 0 });
+  assert.deepEqual(await ok('teachback.topics'), [{ tag: 'organelles', cards: 3 }]);
+  const points = await ok('teachback.points', { tag: 'organelles' });
+  assert.deepEqual(
+    points.map((p: { text: string }) => p.text),
+    ['The mitochondrion', 'The ribosome', 'The nucleus'],
+  );
+  const plan = await ok('teachback.practice', { ids: [ids[1]] });
+  assert.equal(plan.practice, true);
+  assert.deepEqual(Object.keys(plan.items).map(Number), [ids[1]]);
+  const none = await handle('teachback.practice', { ids: [] });
+  assert.equal(!none.ok && none.error.code, 'invalid_input');
 });

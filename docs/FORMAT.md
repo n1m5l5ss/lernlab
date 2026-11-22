@@ -68,7 +68,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong". The card type `myth` (November 2026): an older reader studies it as a basic card (front: the myth, back: why it is wrong). The card type `explain` and `keyPoints` (November 2026, `key_points` in CSV): an older reader ignores the points and studies a basic card (front: the question, back: the model explanation, or the key points one per line when there is none). The card type `twin` and `twin` (November 2026): an older reader ignores the second side and studies a basic card (front: the first side, back: the answer). `keyTerms` on cards (November 2026, `key_terms` in CSV): the key terms of the answer, highlighted when it shows; an older reader ignores it and shows the answer without a highlight. The card type `worked` and `workedSteps` (November 2026, `worked_steps` in CSV): an older reader ignores the steps and studies a basic card (front: the problem, back: the answer).
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong". The card type `myth` (November 2026): an older reader studies it as a basic card (front: the myth, back: why it is wrong). The card type `explain` and `keyPoints` (November 2026, `key_points` in CSV): an older reader ignores the points and studies a basic card (front: the question, back: the model explanation, or the key points one per line when there is none). The card type `twin` and `twin` (November 2026): an older reader ignores the second side and studies a basic card (front: the first side, back: the answer). `keyTerms` on cards (November 2026, `key_terms` in CSV): the key terms of the answer, highlighted when it shows; an older reader ignores it and shows the answer without a highlight. The card type `worked` and `workedSteps` (November 2026, `worked_steps` in CSV): an older reader ignores the steps and studies a basic card (front: the problem, back: the answer). `mnemonic` on cards (November 2026, the same name in CSV): a memory aid shown only after a miss or a hint; an older reader ignores it. `requires` (November 2026): an older reader ignores it and keeps the deck's order.
 
 ### manifest.json
 
@@ -128,12 +128,14 @@ Each line is one card. Only `front` is required.
 | `example` | Example sentence. Mark the studied word with `<b>…</b>` to get fill-the-gap rounds |
 | `exampleTranslation` | Translation of the example |
 | `explanation` | Shown after answering (rule, rationale) |
-| `notes` | Extra notes, mnemonics |
+| `notes` | Extra notes |
+| `mnemonic` | A memory aid for the card, plain text with `**bold**`, `*italic*` and `` `code` ``, at most 300 characters. It is never shown before a recall attempt: only after a miss or when the learner asks for a hint, and no longer by itself once the card was recalled twice in a row (optional, added after v1 was published; older readers ignore it) |
 | `category` | Group for sorting rounds (`der`/`die`/`das`, `Storage`/`Compute`, `Cardio`…) |
 | `choices` | Multiple choice / multi-select: the choices, separated by `|` |
 | `correct` | Multiple choice: the correct choices as 1-based numbers or as texts, separated by `|` |
 | `keyPoints` | Explain card: its 2–5 key points, separated by `|`: `Earth is tilted\|The tilt changes the angle of sunlight`. See [Explain cards](#explain-cards) (optional, added after v1 was published; older readers ignore it) |
 | `twin` | Compare card: the second thing, shown beside the front: `effect: a result`. See [Compare cards](#compare-cards) (optional, added after v1 was published; older readers ignore it) |
+| `requires` | What to learn first: fronts of other cards of the deck or tags, separated by `|`: `Derivative\|#functions`. See [Prerequisites](#prerequisites) (optional, added after v1 was published; older readers ignore it) |
 | `keyTerms` | The key terms of the answer, separated by `|`: `mitochondrion\|ATP`. They are highlighted when the answer shows. See [Key terms](#key-terms) (optional, added after v1 was published; older readers ignore it) |
 | `workedSteps` | Worked example: its 2–8 solution steps, separated by `|`, each `what you do :: result`: `Subtract 3 from both sides :: 2x = 8\|Divide both sides by 2 :: x = 4`. See [Worked examples](#worked-examples) (optional, added after v1 was published; older readers ignore it) |
 | `corrections` | Multiple choice: a correction per wrong choice, in the order of `choices`, separated by `|`: `Many people think EC2 is serverless. In fact you manage its servers.\|\|\|RDS is a database.` See [Corrections for wrong choices](#corrections-for-wrong-choices) (optional, added after v1 was published; older readers ignore it) |
@@ -227,6 +229,20 @@ A card of type `explain` asks a why or how question. Its back is a model explana
 - A session asks you to type your explanation, then shows the back and the key points. You tick the points you covered: all of them is Good, some is Hard, none is Again, and only with every point ticked can you say "That was easy" (Easy, once you have reviewed the card before). It is a normal recall with one grade per day, with no timer. Explain cards have no question variants, and they are left out of games, guess-first rounds, distractors and mock exams, which need a short answer.
 - A basic card tagged `why` or `how` is never flipped either: you type an explanation before its back shows, then rate yourself as on a flip card. (A short back is still typed and checked.)
 - Exported to Anki, an explain card is a basic card with its key points under the notes (or as its back when it has none).
+
+## Prerequisites
+
+Any card can say what to learn first in `requires`: the fronts of other cards of the same deck, or tags, separated by `|`.
+
+```json
+{"front":"Chain rule","back":"Outer derivative times inner derivative","requires":"Derivative|#functions"}
+```
+
+- A name is matched to a card's front first (ignoring case and punctuation), then to a tag, which stands for every card with that tag. `#functions` always means the tag.
+- New cards are met after the cards they require were recalled (answered from memory once). This only orders new cards: a card whose basics are not ready moves to the end of the queue and is still met when nothing else is left. Nothing is locked.
+- Cards tagged `key-term` are met before the other new cards.
+- When a due card that was forgotten twice or more requires cards you know only weakly, a session shows those first as quick multiple-choice questions; a required card that is due is reviewed before the card that needs it.
+- Deck files are untrusted: at most 10 names of 200 characters, plain text. Names that match nothing are ignored, a card never requires itself, and a link that would close a circle is dropped.
 
 ## Compare cards
 
@@ -329,7 +345,8 @@ Recognised column names (case-insensitive):
 | `example` | sentence, context |
 | `example translation` | sentence meaning, example_translation |
 | `explanation` | grammar, rule, why, rationale |
-| `notes` | note, hint, mnemonic, extra |
+| `notes` | note, hint, extra |
+| `mnemonic` | mnemonics, memory aid (before November 2026 a `mnemonic` column was read as notes) |
 | `category` | class, gender, article, group |
 | `tags` | tag, labels (space- or comma-separated) |
 | `type` | card type, kind (`mcq`, `order`, `cloze`) |
@@ -340,6 +357,7 @@ Recognised column names (case-insensitive):
 | `corrections` | misconceptions, choice feedback, wrong choice feedback: see [Corrections for wrong choices](#corrections-for-wrong-choices) |
 | `key_points` | key points, keypoints: see [Explain cards](#explain-cards) |
 | `twin` | compare with, compare_with: see [Compare cards](#compare-cards) |
+| `requires` | prerequisites, learn first: see [Prerequisites](#prerequisites) |
 | `key_terms` | key terms, keyterms: see [Key terms](#key-terms) |
 | `worked_steps` | worked steps, solution steps: see [Worked examples](#worked-examples) |
 | `tolerance` | tol |

@@ -161,6 +161,11 @@ test('docs/FORMAT.md is marked version 1 and lists exactly the schema fields', (
     .find((l) => l.startsWith('| `twin` |'));
   assert.match(twin ?? '', /optional, added after v1 was published; older readers ignore it/);
   assert.ok(!cardSchema.required.includes('twin'), 'a second side is optional');
+  const requires = section('### cards.jsonl')
+    .split('\n')
+    .find((l) => l.startsWith('| `requires` |'));
+  assert.match(requires ?? '', /optional, added after v1 was published; older readers ignore it/);
+  assert.ok(!cardSchema.required.includes('requires'), 'prerequisites are optional');
   const workedSteps = section('### cards.jsonl')
     .split('\n')
     .find((l) => l.startsWith('| `workedSteps` |'));

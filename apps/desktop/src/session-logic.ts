@@ -184,3 +184,9 @@ export function asksConfidenceHere(itemId: number, day: string, index: number): 
 
 export const confidenceKey = (key: string): Confidence | null =>
   /^[1-5]$/.test(key) ? (Number(key) as Confidence) : null;
+
+/** A card's label in the sorting round: the planner's pick (a category or a category-like tag, #211), else its category. */
+export const sprintLabel = (
+  labels: Record<number, string> | undefined,
+  item: { id: number; category: string | null },
+): string | null => labels?.[item.id] ?? item.category;

@@ -11,6 +11,7 @@ export const TWIN_MAX_LENGTH = 500;
 
 /** The second side in its one canonical form: plain text that stays the same when read again. */
 export function cleanTwin(text: string | undefined): string {
+  if (!text) return ''; // most cards have none: keep imports fast
   let s = stripHtml(text ?? '');
   for (let next = stripHtml(s); next !== s; next = stripHtml(s)) s = next;
   return stripHtml(s.slice(0, TWIN_MAX_LENGTH));

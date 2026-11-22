@@ -382,3 +382,18 @@ test('a worked example: steps written in rows, saved as one line, previewed as t
     problem: 'workedSteps',
   });
 });
+
+test('the mnemonic is a field of every card type, saved as written and never part of the preview', () => {
+  const f = form({
+    front: 'Order of the planets?',
+    back: 'Mercury, Venus, Earth',
+    mnemonic: 'My Very Educated Mother',
+  });
+  assert.equal(fieldsToSave(f).mnemonic, 'My Very Educated Mother');
+  assert.equal(fieldsToSave({ ...f, type: 'cloze' }).mnemonic, 'My Very Educated Mother');
+  const p = previewOf(f, deck)!;
+  assert.equal(p.item.extra.mnemonic, 'My Very Educated Mother');
+  assert.ok(!JSON.stringify(p.view).includes('Educated'), 'it only shows in a session, after a miss or a hint');
+  const saved = { ...p.item, tags: [], suspended: false, starred: false } as unknown as Parameters<typeof formFor>[0];
+  assert.equal(formFor(saved).mnemonic, 'My Very Educated Mother');
+});

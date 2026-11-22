@@ -133,3 +133,28 @@ test('question levels: the mix of recall, apply and analyse answers per deck, on
   assert.deepEqual(p.decks.find((d) => d.id === exam.id)!.levels, { recall: 6, apply: 1, analyse: 1 });
   assert.equal(p.decks.find((d) => d.id === plain.id)!.levels, null);
 });
+
+test('this week: a goal for new cards and sessions from each deck’s goal, exam date and pace (#214)', () => {
+  const w = journey(getDb(), now).week;
+  assert.equal(w.start, '2026-11-23');
+  // Exam deck: 4 left to its goal of 8, 4 first recalled since Monday → 8 at the start of the week, all asked
+  // for (under the floor of 10). Plain deck: all 4 cards. No session history: 3 sessions.
+  assert.deepEqual(w.cards, { target: 12, done: 4 });
+  assert.deepEqual(w.sessions, { target: 3, done: 1 });
+  assert.deepEqual([w.days, w.minutes], [1, 15]);
+  assert.equal(w.exam, null);
+});
+
+test('this week: an exam date spreads the cards over the weeks left and names the next exam (#214)', () => {
+  const settings = JSON.stringify({ newPerDay: 10, goal: { label: 'Exam', words: 8 }, examDate: '2026-12-20' });
+  getDb().prepare('UPDATE decks SET settings = ? WHERE id = ?').run(settings, exam.id);
+  const w = journey(getDb(), now).week;
+  // 8 cards over 4 weeks: 2 for the exam deck, plus the plain deck's 4.
+  assert.deepEqual(w.cards, { target: 6, done: 4 });
+  assert.deepEqual(w.exam, { deck: 'Exam deck', date: '2026-12-20', days: 25 });
+  // Earlier weeks' sessions raise the session goal: 4 a week on average → 5.
+  getDb()
+    .prepare('INSERT OR REPLACE INTO days(day, xp, sessions, seconds) VALUES (?, 0, 8, 60), (?, 0, 8, 60)')
+    .run('2026-11-17', '2026-11-03');
+  assert.deepEqual(journey(getDb(), now).week.sessions, { target: 5, done: 1 });
+});

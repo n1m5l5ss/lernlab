@@ -40,10 +40,16 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **Ask each card in several ways:** add apply and analyse questions to a card ("A patient has X. Which drug?", "What if the dose doubles?"). Sessions take turns asking them, so you learn the idea and not just the wording, and the card keeps one schedule.
 - **Learn from common mix-ups:** a multiple-choice card can explain why a wrong choice is wrong ("Many people think X. In fact Y."). Pick it and you see that note with the right answer, not just "wrong". Myth cards ask "True or myth?", then why.
 - **Learn from your own mix-ups:** when your wrong answer is another card's answer, LernLab remembers the pair. The two cards become each other's wrong choice and are asked next to each other, and after three mix-ups you can add a compare card that shows both side by side.
+- **Tell look-alikes apart:** the sorting round asks "Which one is this?" about the categories you mix up most (art styles, species, problem types), from a card's category or its tags. New words in a language deck are met in themed groups and mixed only in review.
+- **Related cards stay fresh:** review a few cards of a small group ("Capital of …") and the rest of the group gets a quick question within a day or two, without changing its schedule.
+- **Basics first:** a card can say which cards or tags to learn first. New cards then come after their basics were recalled, key terms come first, and nothing is ever locked.
 - **How sure were you?** After about 1 in 4 recall answers, one optional tap from 1 to 5. A confident miss comes back once later in the session; at the end of a session you can say whether you'll know each new card tomorrow, and the next session shows how that went. Progress shows how often each rating was right at the next review. It never changes the schedule.
 - **Explain it:** why and how cards where you write an explanation, then tick the key points you covered; that sets the grade, so you can't fool yourself with a quick flip.
 - **Better cards:** mark the key part of an answer as `==term==` and it is highlighted when the answer shows. The card editor and the import preview suggest splitting an answer over 40 words, adding a picture to a card about an idea, and describing or dropping a picture that doesn't help. The rules run on your computer and never stop you saving.
 - **Worked examples that fade:** for maths, science, code and accounting. Study a solved problem, then fill in its last step, then the last two, until you solve it alone. Only the whole problem changes your schedule.
+- **Try first:** in a deck you mark as maths or science, a new unit opens with a problem to try before the lesson, then its worked solution. Optional, no grade, no clock.
+- **Mnemonics that fade:** give a card a memory aid. It shows only after a miss or when you ask for a hint, never before you try, and stops showing by itself once you get the card right twice in a row.
+- **Teach it back:** for a tag you know well, explain it to a beginner in about a minute, typed or recorded, then tick the key points you left out and practise those cards. Nothing is saved or graded.
 - **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark, a score by topic and by question level.
 - **Honest grading:**
   - you type or say the answer, and LernLab grades it;
@@ -54,6 +60,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - **calm mode** hides XP, levels, combos and celebrations and keeps your progress, for people who prefer no game elements;
   - once per session you can swap a round for another format;
   - a streak with freezes (one missed day doesn't wipe you out);
+  - a goal for this week (new cards and sessions) worked out from your deck goals and exam dates, and a progress card you can print or save as a picture or PDF, made on your computer;
   - an if-then study plan in your own words ("After I finish dinner, I'll study for 5 minutes"), which the daily reminder shows;
   - rescue rounds when you're struggling;
   - a quick action round when your attention drifts.

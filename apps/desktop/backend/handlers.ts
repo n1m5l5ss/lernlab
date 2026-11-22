@@ -64,6 +64,7 @@ import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
+import { TEACH_POINTS_MAX, teachBackPoints, teachBackTopics } from '@lernlab/core/teachback';
 import { setOcclusionMode, withOcclusionBoxes } from '@lernlab/core/occlusion';
 import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
 import { buildExam, recordExam, type Exam } from '@lernlab/core/examplan';
@@ -141,7 +142,9 @@ const cardInput = v.object({
   corrections: text,
   keyPoints: text,
   twin: text,
+  requires: text,
   workedSteps: text,
+  mnemonic: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -453,6 +456,8 @@ export const handlers = {
           corrections: opt(b.corrections),
           keyPoints: opt(b.keyPoints),
           twin: opt(b.twin),
+          mnemonic: opt(b.mnemonic),
+          requires: opt(b.requires),
           // The editor writes key terms in the back as ==term==, so the back alone says which there are.
           keyTerms: '',
           workedSteps: opt(b.workedSteps),
@@ -603,6 +608,14 @@ export const handlers = {
       return planSession(length, getDb(), new Date(), body?.deckId, { practice: !!body?.practice });
     },
   ),
+  /* ── Teach-back (#208): explain a mastered tag, then compare with its key points. Nothing is saved. ── */
+  'teachback.topics': h(v.none, () => teachBackTopics()),
+  'teachback.points': h(v.object({ tag: v.string(100) }), ({ tag }) => teachBackPoints(tag)),
+  /** Practise the cards behind the missed points: a practice session, so the schedule stays as it is. */
+  'teachback.practice': h(v.object({ ids: v.array(v.id, TEACH_POINTS_MAX) }), ({ ids }) => {
+    if (!ids.length) throw new AppError('invalid_input', 'No cards to practise');
+    return planSession('mini', getDb(), new Date(), undefined, { practice: true, cards: ids });
+  }),
   'attempt.record': h(
     v.object({
       sessionId: v.string(100),

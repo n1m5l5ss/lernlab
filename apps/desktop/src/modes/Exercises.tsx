@@ -16,6 +16,7 @@ import { pickedCorrections } from '@lernlab/core/misconceptions';
 import { CONFIDENCE_LEVELS, type Confidence } from '@lernlab/core/confidence';
 import type { Level } from '@lernlab/core/variants';
 import { markAnswer } from '@lernlab/core/keyterms';
+import { mnemonicHtml, mnemonicOf, showsMnemonic } from '@lernlab/core/mnemonic';
 import { checkTyped, plainAnswer } from '../typed-logic';
 import { CodeBlock, CodeLine } from '../code-block';
 
@@ -477,6 +478,7 @@ export function Flip({
                 <Rich html={item.notes || item.grammar} />
               </div>
             )}
+            <MnemonicNote ctx={ctx} item={item} attempted />
           </Feedback>
         )}
       </div>
@@ -891,6 +893,7 @@ export function TypedEngine({
               )}
             </div>
           )}
+          <MnemonicNote ctx={ctx} item={item} attempted={phase !== 'answer'} asked={hintLevel > 0} />
           {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
         </Feedback>
       )}
@@ -1337,6 +1340,30 @@ export function Lesson({
           {t('ex.lesson.gotIt')} <span className="kbd">{t('keys.enter')}</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The card's mnemonic (#221): only once an answer is given or shown, or after the learner asked for a hint,
+ * and by itself only until the card was recalled twice in a row since its last miss.
+ */
+export function MnemonicNote({
+  ctx,
+  item,
+  attempted,
+  asked,
+}: {
+  ctx: Pick<Ctx, 'mnemonicRun'>;
+  item: Item;
+  attempted: boolean;
+  asked?: boolean;
+}) {
+  const { t } = useTranslation();
+  if (!showsMnemonic(item, ctx.mnemonicRun?.(item.id), { attempted, asked })) return null;
+  return (
+    <div className="mnemonic small">
+      <span className="mnemonic-lead">{t('ex.mnemonic.lead')}</span> <Rich html={mnemonicHtml(mnemonicOf(item))} />
     </div>
   );
 }

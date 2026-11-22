@@ -9,7 +9,7 @@ import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
 import { keyPointsAsBack, parseKeyPoints } from './explain';
 
-/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `twin`, `keyTerms`, `workedSteps`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `twin`, `keyTerms`, `workedSteps`, `mnemonic`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
 const FROM_EXTRA = {
   choices: 'choices',
   correct: 'correct',
@@ -20,8 +20,10 @@ const FROM_EXTRA = {
   corrections: 'corrections',
   keyPoints: 'keyPoints',
   twin: 'twin',
+  requires: 'requires',
   keyTerms: 'keyTerms',
   workedSteps: 'workedSteps',
+  mnemonic: 'mnemonic',
   tolerance: 'tolerance',
   code: 'code',
   codeLang: 'codeLang',

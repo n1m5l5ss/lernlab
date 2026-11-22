@@ -6,6 +6,7 @@ import { getDb, type DB } from './db';
 import { host } from './host';
 import {
   allItems,
+  cardsScope,
   currentSource,
   freshPerDeck,
   scopeFor,
@@ -25,7 +26,7 @@ import {
 import { getDeck } from './library';
 import * as gen from './exercises';
 import { qa } from './cards';
-import { GUESS_MAX, pickGuessRound, topicIsNew, topicName } from './guess';
+import { GUESS_MAX, neverAnswered, pickGuessRound, pickTryFirst, topicIsNew, topicName } from './guess';
 import { variantIndex, variantsOf } from './variants';
 import { askedOwnWay } from './explain';
 import { isWorked } from './worked';
@@ -33,6 +34,9 @@ import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
 import { confusionMap, keepClose } from './confusions';
+import { recentlyAnswered, RELATED_MAX, restOfFamilies } from './family';
+import { basicsFirst, BASICS_MAX, isKeyTerm, LAPSES_WEAK, RECALLED, requiresGraph } from './requires';
+import { categoryLabels, confusableLabels, labelMisses, ROUND_MAX, themedFirst } from './discriminate';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
 const SIZES: Record<
@@ -68,17 +72,21 @@ export function planSession(
   d: DB = getDb(),
   now = new Date(),
   sourceArg?: number | null | StudySource,
-  { practice = false }: { practice?: boolean } = {},
+  {
+    practice = false,
+    cards,
+  }: { practice?: boolean; /** Only these cards (teach-back's missed points). */ cards?: number[] } = {},
 ): SessionPlan {
-  const source: StudySource =
-    sourceArg === undefined
+  const source: StudySource = cards
+    ? { kind: 'all' }
+    : sourceArg === undefined
       ? currentSource(d)
       : sourceArg === null
         ? { kind: 'all' }
         : typeof sourceArg === 'number'
           ? { kind: 'deck', deckId: sourceArg }
           : sourceArg;
-  const scope = scopeFor(source, d);
+  const scope = cards ? cardsScope(cards) : scopeFor(source, d);
   const deckId = source.kind === 'deck' ? source.deckId : null;
   const deck = deckId ? getDeck(deckId, d) : null;
   const settings = getSettings(d);
@@ -104,14 +112,36 @@ export function planSession(
   const mixups = confusionMap(d);
   const mc = (id: number, direction: 'de2en' | 'en2de') => gen.mc(get(id), pool, direction, mixups.get(id));
   const truefalse = (id: number) => gen.truefalse(get(id), pool, mixups.get(id));
+  // Prerequisite links (#207): what each card requires, and how well those basics are known.
+  const links = requiresGraph(pool);
+  const basics = links.size ? srsInfo([...new Set([...links.keys(), ...[...links.values()].flat()])], d) : {};
+  const dueNow = practice ? [] : dueItemIds(d, now, size.due, scope).filter(has);
   const due = keepClose(
     practice
       ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
-      : dueItemIds(d, now, size.due, scope).filter(has),
+      : basicsFirst(dueNow, links, (id) => !dueNow.includes(id)), // a due basic is reviewed before what builds on it
     mixups,
   );
   const leftovers = practice ? [] : learningTodayIds(d, now, scope).filter((id) => has(id) && notGrammar(id));
-  const fresh = practice ? [] : freshPerDeck(d, now, scope, size.fresh, (id) => get(id).deckId);
+  // New vocabulary is met in themed groups (#211): the next new word's theme first, then the deck's order.
+  const fresh = practice
+    ? []
+    : freshPerDeck(
+        d,
+        now,
+        scope,
+        size.fresh,
+        (id) => get(id).deckId,
+        // Then the basics first: key terms, and each card after the cards it requires were recalled. An order,
+        // never a lock: cards whose basics are not ready wait at the end and are still met.
+        (ids) =>
+          basicsFirst(
+            themedFirst(ids.filter(has).map(get)),
+            links,
+            (id) => (basics[id]?.mastery ?? 0) >= RECALLED,
+            (id) => isKeyTerm(get(id)),
+          ),
+      );
   const learned = learnedIds(d, 300, scope).filter((id) => has(id) && notGrammar(id));
   const upcoming = newItemIds(d, 40, undefined, scope).filter(has);
   const group = length === 'mini' || practice ? null : nextGrammarGroup(d, now, scope);
@@ -146,15 +176,15 @@ export function planSession(
   }
 
   // 2. Category sprint: sort cards into their category (der/die/das, IaaS/PaaS/SaaS…) on the clock.
+  //    It takes the categories (or category-like tags) the learner mixes up most (#211). Tags: no clock.
   if (size.sprint) {
-    const withCat = [...new Set([...known, ...fresh, ...upcoming])].filter((id) => get(id).category && notOwnWay(id));
-    const freq = new Map<string, number>();
-    withCat.forEach((id) => freq.set(get(id).category!, (freq.get(get(id).category!) ?? 0) + 1));
-    const cats = [...freq.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 4)
-      .map(([c]) => c);
-    const sprintIds = shuffle(withCat.filter((id) => cats.includes(get(id).category!))).slice(0, 30);
+    const labels = categoryLabels([...new Set([...known, ...fresh, ...upcoming])].map(get));
+    const cats = confusableLabels(labels, mixups, labels.size ? labelMisses(d, now) : []);
+    const byTag = [...labels].some(([id, l]) => cats.includes(l) && get(id).category !== l);
+    const sprintIds = shuffle([...labels.keys()].filter((id) => cats.includes(labels.get(id)!))).slice(
+      0,
+      byTag ? ROUND_MAX : 30,
+    );
     if (cats.length >= 2 && sprintIds.length >= 4) {
       const label =
         lang === 'de' && cats.every((c) => ['der', 'die', 'das'].includes(c)) ? say('sortGender') : say('sort');
@@ -162,11 +192,34 @@ export function planSession(
         id: bid(),
         kind: 'gender',
         title: 'Category sprint',
-        teacher: label,
+        teacher: byTag ? { key: 'teacher.block.tellApart' } : label,
         itemIds: sprintIds,
-        seconds: arcadeSeconds(size.sprint, settings), // 0: timers off, one untimed pass
+        seconds: byTag ? 0 : arcadeSeconds(size.sprint, settings), // 0: timers off, one untimed pass
+        choices: cats,
+        labels: Object.fromEntries(sprintIds.map((id) => [id, labels.get(id)!])),
       });
     }
+  }
+
+  // 2a. Basics first (#207): a due card that keeps lapsing gets its weak basics looked at before the reviews.
+  //     Recognition only, so no basic is graded before its own review day.
+  if (links.size && !practice && pool.filter((p) => plain(p.id)).length >= 4) {
+    const taken = new Set([...due, ...leftovers, ...fresh]);
+    const weak = (id: number) =>
+      (basics[id]?.reps ?? -1) >= 0 && (basics[id].mastery < RECALLED || basics[id].lapses > 0);
+    const lapsing = due.filter((id) => (basics[id]?.lapses ?? 0) >= LAPSES_WEAK);
+    const look = [...new Set(lapsing.flatMap((id) => links.get(id) ?? []))]
+      .filter((id) => has(id) && plain(id) && !taken.has(id) && weak(id))
+      .slice(0, BASICS_MAX);
+    if (look.length)
+      blocks.push({
+        id: bid(),
+        kind: 'drill',
+        format: 'mc',
+        title: 'Basics first',
+        teacher: { key: 'teacher.block.basics' },
+        exercises: look.map((id) => mc(id, 'de2en')),
+      });
   }
 
   // 3. Due reviews, first half: recall (typed, or flip and self-grade for long answers).
@@ -184,16 +237,53 @@ export function planSession(
       exercises: dueA.map(review),
     });
 
+  // 3a. The rest of a closely related group (#223): when some cards of a family ("Capital of …" with one tag)
+  //     are reviewed now or were in the last day or two, its other learned cards get one recognition question.
+  //     Recognition never grades: their real reviews stay on their own days.
+  if (!practice && learned.length && pool.filter((p) => plain(p.id)).length >= 4) {
+    const answered = recentlyAnswered(d, now);
+    const practised = [
+      ...new Set([...due, ...[...answered].filter(([id, a]) => a.graded && has(id)).map(([id]) => id)]),
+    ];
+    const taken = new Set([...due, ...leftovers, ...fresh]);
+    const eligible = new Set(learned.filter((id) => plain(id) && !taken.has(id) && !answered.has(id)));
+    const related = shuffle(restOfFamilies(practised.map(get), pool).filter((id) => eligible.has(id))).slice(
+      0,
+      RELATED_MAX[length],
+    );
+    if (related.length)
+      blocks.push({
+        id: bid(),
+        kind: 'drill',
+        format: 'mc',
+        title: 'Related cards',
+        teacher: { key: 'teacher.block.related' },
+        exercises: related.map((id) => mc(id, 'de2en')),
+      });
+  }
+
   // 4a. Guess first: the first new cards of a new topic (concepts, facts, maths) are asked before they are met.
-  const guess = fresh.length ? pickGuessRound(fresh.map(get), pool, (t) => topicIsNew(t, d), GUESS_MAX[length]) : null;
+  // In a deck marked maths or science, a new unit opens with one of its problems instead (try first, #218).
+  const isNew = (t: Parameters<typeof topicIsNew>[0]) => topicIsNew(t, d);
+  const tryFirst = fresh.length
+    ? pickTryFirst(
+        fresh.map(get),
+        pool,
+        isNew,
+        (id) => !!getDeck(id, d)?.settings.subject,
+        (id) => neverAnswered(id, d),
+      )
+    : null;
+  const guess = tryFirst ?? (fresh.length ? pickGuessRound(fresh.map(get), pool, isNew, GUESS_MAX[length]) : null);
   if (guess) {
     const topic = topicName(guess.topic, getDeck(guess.topic.deckId, d)?.name ?? '');
     blocks.push({
       id: bid(),
       kind: 'guess',
-      title: 'Guess first',
-      teacher: { key: 'teacher.block.guess', params: { topic } },
+      title: tryFirst ? 'Try first' : 'Guess first',
+      teacher: { key: tryFirst ? 'teacher.block.tryFirst' : 'teacher.block.guess', params: { topic } },
       topic,
+      ...(tryFirst && { tryFirst: true }),
       itemIds: guess.ids,
     });
   }

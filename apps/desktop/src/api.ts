@@ -27,6 +27,10 @@ export const api = {
   dismissTwin: (body: InputOf<'confusions.dismiss'>) => call('confusions.dismiss', body),
   summary: () => call('summary.today'),
   progress: () => call('progress.get'),
+  /** Teach-back (#208): mastered tags, a tag's key points, and a practice session over missed cards. */
+  teachTopics: () => call('teachback.topics'),
+  teachPoints: (tag: string) => call('teachback.points', { tag }),
+  teachPractice: (ids: number[]) => call('teachback.practice', { ids }),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),
   appInfo: () => call('app.info'),
   /** The hour you usually study, from local sessions (#204). */
@@ -50,6 +54,8 @@ export const api = {
   activate: (id: number | null) => call('decks.activate', { id }),
   chooseSource: (source: StudySource) => call('study.choose', { source }),
   /** Save the CSV template (column names and three example cards). */
+  /** Save a picture made in this window (the progress card, #214) as a file. Nothing is sent anywhere. */
+  savePicture: (name: string, png: Uint8Array) => saveFile(name, png, 'image/png'),
   downloadTemplate: () => saveFile(CSV_TEMPLATE_NAME, CSV_TEMPLATE, 'text/csv'),
   exportDeck: async (id: number, format: 'csv' | 'lernpack' | 'apkg') => {
     const f = await call('decks.export', { id, format });

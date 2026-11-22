@@ -13,3 +13,6 @@ export const CJK_SHORT = '日本語の練習';
 
 /** An explain card's key points (#199), learning content like the strings above. */
 export const KEY_POINTS = ['Earth is tilted', 'The tilt changes the angle of sunlight', 'Not the distance to the sun'];
+
+/** Deck names for the progress card (#214): the learner's own words, like the strings above. */
+export const DECK_NAMES = ['Biology', 'Spanish'];

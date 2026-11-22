@@ -13,8 +13,10 @@ import { formatBox, modeOf, parseBox } from './occlusion';
 import { cleanVariants, takesVariants } from './variants';
 import { cleanCorrections, isMyth } from './misconceptions';
 import { cleanKeyTerms, markedTerms } from './keyterms';
+import { cleanMnemonic } from './mnemonic';
 import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
 import { cleanTwin } from './twin';
+import { cleanRequires } from './requires';
 import { cleanWorkedSteps, parseWorkedSteps } from './worked';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
@@ -32,6 +34,8 @@ export type DeckSettings = {
   rate?: number;
   /** Exam simulator: question count, minutes and pass mark (defaults fill in what is missing). */
   exam?: Partial<ExamSettings>;
+  /** A maths or science deck: a new unit opens with a problem to try before its cards (guess.ts, #218). */
+  subject?: 'maths' | 'science';
 };
 
 /**
@@ -66,6 +70,8 @@ export function cleanDeckSettings(input: Record<string, unknown>): Partial<Recor
     out.rate = Number.isFinite(n) ? Math.round(Math.max(0.5, Math.min(1.5, n)) * 20) / 20 : undefined;
   }
   if ('exam' in input) out.exam = cleanExamSettings(input.exam);
+  if ('subject' in input)
+    out.subject = input.subject === 'maths' || input.subject === 'science' ? input.subject : undefined;
   return out;
 }
 
@@ -110,10 +116,14 @@ export type NormalizedCard = {
   keyPoints?: string;
   /** compare cards: the second thing, shown beside the front: "effect: a result" (twin.ts). '' clears it. */
   twin?: string;
+  /** What to learn first: fronts of other cards of the deck or tags, "Derivative|#functions" (requires.ts). '' clears it. */
+  requires?: string;
   /** Key terms of the answer, highlighted when it shows: "mitochondrion|ATP" (keyterms.ts). In the back, ==term== says the same. '' clears them. */
   keyTerms?: string;
   /** worked examples: 2–8 solution steps, "Subtract 3 from both sides :: 2x = 8|…" (worked.ts). '' clears them. */
   workedSteps?: string;
+  /** A memory aid, shown only after a miss or as a hint and faded after two correct answers in a row (mnemonic.ts). Plain text; '' clears it. */
+  mnemonic?: string;
   /** Other ways to ask the question, with a level: "apply: A patient has X. Which mechanism? | analyse: …" (variants.ts). '' clears them. */
   variants?: string;
   tolerance?: string; // numeric cards: "0.05" (absolute) or "2%"
@@ -291,9 +301,12 @@ const clean = (s: string | undefined) => sanitizeHtml(markdownLite(String(s ?? '
 export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: NormalizedCard, id = 0): Item | null {
   const front = clean(c.front);
   const back = clean(c.back);
-  if (!stripHtml(front) && !/\{\{c\d+::/.test(front)) return null;
+  // Stripped once: an import runs this for every card (bench "import 10k").
+  const frontText = stripHtml(front);
+  const backText = stripHtml(back);
+  if (!frontText && !/\{\{c\d+::/.test(front)) return null;
   const tags = (c.tags ?? []).map((t) => t.trim()).filter(Boolean);
-  const kind = detectKind(stripHtml(front), stripHtml(back), tags, deck.language, c);
+  const kind = detectKind(frontText, backText, tags, deck.language, c);
   const extra: Record<string, string> = { ...(c.extra ?? {}) };
   if (c.choices) extra.choices = sanitizeHtml(c.choices);
   if (c.correct) extra.correct = c.correct;
@@ -315,6 +328,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
       : '';
   if (keyPoints) extra.keyPoints = keyPoints;
   else delete extra.keyPoints;
+  // Prerequisites (requires.ts): names of cards or tags, as plain text; any card may have them.
+  const requires = cleanRequires(c.requires ?? extra.requires);
+  if (requires) extra.requires = requires;
+  else delete extra.requires;
   // A compare card (twin.ts): a basic card with a second side, kept while the card stays a basic card.
   const twin =
     kind === 'card' && !myth && !keyPoints && ['', 'twin', 'basic'].includes((c.type ?? '').toLowerCase())
@@ -329,11 +346,15 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
       : '';
   if (workedSteps) extra.workedSteps = workedSteps;
   else delete extra.workedSteps;
+  // The card's mnemonic (mnemonic.ts): plain text, for every kind of card.
+  const mnemonic = cleanMnemonic(c.mnemonic ?? extra.mnemonic);
+  if (mnemonic) extra.mnemonic = mnemonic;
+  else delete extra.mnemonic;
   // Key terms of a plain-text answer (keyterms.ts): the ones marked in the back, or else the card's field.
-  const marked = markedTerms(back);
-  const keyTerms = ['code', 'cloze', 'mcq', 'order'].includes(kind)
-    ? ''
-    : cleanKeyTerms(marked.length ? marked.join('|') : (c.keyTerms ?? extra.keyTerms), stripHtml(back));
+  const marked = back.includes('<mark>') ? markedTerms(back) : [];
+  const givenTerms = marked.length ? marked.join('|') : (c.keyTerms ?? extra.keyTerms);
+  const keyTerms =
+    !givenTerms || ['code', 'cloze', 'mcq', 'order'].includes(kind) ? '' : cleanKeyTerms(givenTerms, backText);
   if (keyTerms) extra.keyTerms = keyTerms;
   else delete extra.keyTerms;
   const variants = cleanVariants(c.variants ?? extra.variants);
@@ -363,7 +384,7 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   delete extra.occlusionMode;
   if (kind === 'occlusion' && box)
     Object.assign(extra, { occlusion: formatBox(box), occlusionGroup: group, occlusionMode: mode });
-  const { article, word } = splitArticle(stripHtml(front));
+  const { article, word } = splitArticle(frontText);
   const example = clean(c.example);
   const isNoun = kind === 'noun';
   return {
@@ -372,9 +393,9 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
     lang: deck.language,
     deck: c.subdeck ?? deck.name,
     kind,
-    target: kind === 'cloze' ? front : stripHtml(front),
+    target: kind === 'cloze' ? front : frontText,
     article: isNoun ? article : null,
-    word: isNoun ? word : stripHtml(front),
+    word: isNoun ? word : frontText,
     // A code card's back is its expected output: plain text with its line breaks (shown as text, never as HTML).
     meaning:
       kind === 'code'
@@ -382,10 +403,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
         : ['cloze', 'mcq', 'order'].includes(kind)
           ? back
           : // A back that is only the key points (what older readers get) is no model explanation of its own.
-            keyPoints && stripHtml(back) === stripHtml(keyPointsAsBack(parseKeyPoints(keyPoints)))
+            keyPoints && backText === stripHtml(keyPointsAsBack(parseKeyPoints(keyPoints)))
             ? ''
             : // A worked example without a back: its answer is the last step's result (older readers get it too).
-              stripHtml(back) || (workedSteps ? parseWorkedSteps(workedSteps).at(-1)!.result : ''),
+              backText || (workedSteps ? parseWorkedSteps(workedSteps).at(-1)!.result : ''),
     sentenceHtml: example,
     sentence: stripHtml(example),
     sentenceMeaning: stripHtml(c.exampleTranslation ?? ''),

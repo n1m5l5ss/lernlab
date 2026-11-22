@@ -92,21 +92,24 @@ These come from a review of the research on remembering, understanding and stayi
 **Tier 2: good evidence, more effort or fewer subjects**
 
 - [x] **Example ladder:** worked examples that fade step by step (#206).
-- [ ] **Prerequisite links:** learn the basics first, without locking anything.
-- [ ] **Teach-back:** explain a topic aloud, then check yourself against its key points.
+- [x] **Teach-back:** explain a topic aloud, then check yourself against its key points (#208). The assistant as a curious student is not built yet.
+- [x] **Prerequisite links:** learn the basics first, without locking anything (#207).
 - [ ] **Case chains:** one scenario with linked questions.
 - [ ] **Translate between representations,** such as graph and equation.
-- [ ] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme.
+- [x] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme (#211).
 - [x] **Card-quality checker** and key-term highlight (#212).
 - [ ] **Pattern feedback** at the end of a session.
-- [ ] **Weekly goals** and a progress card you can print or share.
+- [x] **Weekly goals** and a progress card you can print or share (#214). The buddy file is not built.
 - [ ] **"Learn how to learn":** see spacing work on yourself.
 - [x] **Calm mode,** rewards that say what they are for, and one round swap per session (#216).
 - [ ] **Sleep bridge:** learn in the evening, check in the morning.
 
 **Tier 3: weaker evidence, niche or large**
 
-- [ ] Try first for maths and science; concept map from memory; sketch pad; fading mnemonics; "say it aloud" on a few cards; cover related card families; study together on one computer; "act it out" cards; an optional quiet minute.
+- [x] **Cover related card families:** when some cards of a small group are reviewed, the rest get a quick question within a day or two (#223).
+- [x] **Try first for maths and science:** a problem to try before a new unit's lesson, then the worked solution (#218).
+- [x] **Fading mnemonics:** a card's mnemonic shows only after a miss or a hint, and fades after 2 correct answers in a row (#221).
+- [ ] Concept map from memory; sketch pad; "say it aloud" on a few cards; study together on one computer; "act it out" cards; an optional quiet minute.
 
 ## Avoid
 

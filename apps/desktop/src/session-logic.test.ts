@@ -9,6 +9,7 @@ import {
   RETRY_GAP,
   Relearn,
   answerKind,
+  sprintLabel,
   asRepeat,
   CONFIDENCE_SHARE,
   asksConfidence,
@@ -368,4 +369,10 @@ test('"How sure were you?" is asked on about 1 in 4 recall answers, the same way
     varies((k) => asksConfidenceHere(42, '2026-11-24', k)),
     'by position',
   );
+});
+
+test("the sorting round asks for the label the planner picked, else the card's category", () => {
+  assert.equal(sprintLabel({ 7: 'Baroque' }, { id: 7, category: null }), 'Baroque');
+  assert.equal(sprintLabel({ 7: 'Baroque' }, { id: 8, category: 'der' }), 'der');
+  assert.equal(sprintLabel(undefined, { id: 8, category: null }), null);
 });

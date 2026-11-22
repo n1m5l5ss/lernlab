@@ -40,6 +40,8 @@ export type Ctx = {
   override: (itemId: number, practice?: boolean) => void;
   combo: number;
   missed: Set<number>;
+  /** A card's correct recalls in a row since its last miss, this session's answers included; undefined while never missed (core/mnemonic.ts). */
+  mnemonicRun?: (itemId: number) => number | undefined;
   /**
    * "How sure were you?" (#205): save the learner's 1–5 rating of their last answer to this card. Only set
    * where the session asks it (a real recall answer, the setting on); never changes the schedule.

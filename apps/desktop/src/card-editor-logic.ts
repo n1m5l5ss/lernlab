@@ -48,6 +48,8 @@ export const EMPTY = {
   exampleTranslation: '',
   explanation: '',
   notes: '',
+  /** A memory aid: shown in a session only after a miss or a hint (core/mnemonic.ts). */
+  mnemonic: '',
   category: '',
   tags: '',
   image: '',
@@ -55,6 +57,8 @@ export const EMPTY = {
   audio: '',
   video: '',
   alt: '',
+  /** What to learn first: fronts of other cards or tags, separated by | (core/requires.ts). */
+  requires: '',
   type: 'basic' as CardType,
   choices: '',
   correct: '',
@@ -85,6 +89,7 @@ export const formFor = (c: FullCard): Form => ({
   exampleTranslation: c.sentenceMeaning,
   explanation: c.grammar,
   notes: c.notes,
+  mnemonic: c.extra.mnemonic ?? '',
   category: c.category ?? '',
   tags: c.tags.join(' '),
   image: c.image ?? '',
@@ -92,6 +97,7 @@ export const formFor = (c: FullCard): Form => ({
   audio: c.audio ?? '',
   video: c.video ?? '',
   alt: c.extra.alt ?? '',
+  requires: c.extra.requires ?? '',
   type: isMyth(c)
     ? 'myth'
     : isExplain(c)

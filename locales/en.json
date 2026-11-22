@@ -396,6 +396,11 @@
       "exportAnki": "Export for Anki",
       "subdeckHint": "Use :: for a sub-deck, for example Medicine::Cardio.",
       "examDate": "Exam date (optional)",
+      "subject": "Subject",
+      "subjectOther": "Something else",
+      "subjectMaths": "Maths",
+      "subjectScience": "Science",
+      "subjectHint": "In a maths or science deck, a new unit that has a worked example opens with that problem to try before the lesson. It is optional and never counts.",
       "voiceTitle": "Reading aloud",
       "voiceHint": "Cards without a recording are read by a voice on your computer.",
       "voice": "Voice",
@@ -461,6 +466,7 @@
         "exampleTranslation": "Example translation",
         "explanation": "Explanation",
         "notes": "Notes",
+        "mnemonic": "Mnemonic",
         "category": "Category",
         "tags": "Tags",
         "image": "Image",
@@ -701,6 +707,8 @@
       "backPlaceholder": "Definition or answer",
       "alt": "Also accept (separate with |)",
       "altPlaceholder": "colour|color",
+      "requires": "Learn first (fronts of other cards or #tags, separate with |)",
+      "requiresPlaceholder": "Derivative|#functions",
       "explanation": "Explanation",
       "explanationPlaceholder": "Why it is right – shown after answering",
       "example": "Example sentence (mark the word with <b>…</b> for fill-the-gap)",
@@ -771,7 +779,10 @@
       "preview": "Preview",
       "previewQuestion": "Preview · question",
       "previewAnswer": "Preview · answer",
-      "moreFields": "More: explanation, example, category, tags",
+      "moreFields": "More: explanation, example, mnemonic, category, tags",
+      "mnemonic": "Mnemonic",
+      "mnemonicPlaceholder": "A memory aid, like “My Very Educated Mother…”",
+      "mnemonicHint": "Shown only after a miss or when you ask for a hint, never before you try. It stops showing by itself once you get the card right twice in a row.",
       "previewShuffled": "When you study, the order is shuffled.",
       "alsoAccepted": "Also accepted: {{answers}}",
       "problem": {
@@ -848,6 +859,40 @@
       "learned_other": "cards learned · {{count, number}} left",
       "perWeek": "cards learned a week (last 4 weeks)",
       "recalled": "of reviews recalled (12 weeks)"
+    },
+    "week": {
+      "title": "This week’s goal",
+      "cards": "New cards",
+      "sessions": "Sessions",
+      "of": "{{done, number}} of {{target, number}}",
+      "reached": "{{done, number}} of {{target, number}} · reached",
+      "exam_one": "Next exam: {{deck}} on {{date}}, in {{count}} day.",
+      "exam_other": "Next exam: {{deck}} on {{date}}, in {{count}} days.",
+      "how": "The goal is worked out fresh each Monday from your deck goals, exam dates and recent pace. A slow week is never owed: what is left is spread over the weeks that remain."
+    },
+    "card": {
+      "open": "Progress card",
+      "title": "Your progress card",
+      "lead": "Print it or save it to show a teacher, a parent or a friend. It is made on this computer; nothing is sent anywhere.",
+      "heading": "My study progress",
+      "weekOf": "Week of {{date}}",
+      "learned_one": "card learned so far",
+      "learned_other": "cards learned so far",
+      "days": "days this week",
+      "daysValue_one": "{{count}} of 7",
+      "daysValue_other": "{{count}} of 7",
+      "minutes_one": "minute this week",
+      "minutes_other": "minutes this week",
+      "recalled": "of reviews recalled",
+      "decks": "Decks",
+      "deckLearned_one": "{{learned, number}} of {{count, number}} card learned",
+      "deckLearned_other": "{{learned, number}} of {{count, number}} cards learned",
+      "footer": "Made with LernLab on {{date}}",
+      "save": "Save as picture (PNG)",
+      "print": "Print or save as PDF",
+      "close": "Close",
+      "saved": "Picture saved.",
+      "failed": "The picture could not be made. Printing still works."
     },
     "decksTitle": "Your decks",
     "noDecks": "No decks yet. Import or create one on the Decks screen.",
@@ -1173,6 +1218,9 @@
       "boss": "Your hardest cards. Three lives – have fun with it!",
       "sortGender": "Der, die or das? As fast as you can!",
       "sort": "Sort each card into its group. Fast!",
+      "tellApart": "Which group does each one belong to? Take your time.",
+      "related": "A quick look at cards related to the ones you reviewed.",
+      "basics": "One of today's cards keeps slipping. First a look at what it builds on.",
       "match": "Match the pairs – against the clock!",
       "trueFalse": "Quick: does this match?",
       "lesson": "One idea, then practise it right away.",
@@ -1183,7 +1231,8 @@
       "speak": "Say it out loud!",
       "rain": "Type the answers before they land!",
       "rescue": "Quick look back at the hard ones.",
-      "guess": "New topic: {{topic}}. Have a guess before you learn it."
+      "guess": "New topic: {{topic}}. Have a guess before you learn it.",
+      "tryFirst": "New unit: {{topic}}. Try a problem before the lesson."
     },
     "agenda": {
       "today": "Today: {{parts}}.",
@@ -1230,6 +1279,8 @@
       "blitz": "Blitz",
       "listen": "Listen",
       "picture-quiz": "Picture quiz",
+      "related-cards": "Related cards",
+      "basics-first": "Basics first",
       "fill-the-gap": "Fill the gap",
       "speak": "Speak",
       "recall": "Recall",
@@ -1237,7 +1288,8 @@
       "boss": "Boss fight",
       "rescue": "Quick rescue",
       "action-round": "Action round",
-      "guess-first": "Guess first"
+      "guess-first": "Guess first",
+      "try-first": "Try first"
     },
     "guess": {
       "title": "Guess first · {{topic}}",
@@ -1252,6 +1304,18 @@
       "toCards": "Meet the new cards",
       "choices": "Choices",
       "gap": "?"
+    },
+    "tryFirst": {
+      "title": "Try first · {{topic}}",
+      "kind": "You haven't learned this yet. Try it anyway: working on a problem first helps the lesson stick, even when you get stuck. Nothing here counts and there is no clock.",
+      "skip": "Skip to the lesson",
+      "yours": "Your attempt",
+      "optional": "Optional. Write as far as you get, or work on paper.",
+      "show": "Show the worked solution",
+      "yourGuess": "Your attempt:\n{{guess}}",
+      "solution": "Worked solution",
+      "compare": "Compare it with your attempt: where did your way differ? You study this example next.",
+      "toCards": "Start the lesson"
     },
     "confidentMiss": "Confident mistakes are the easiest to fix. That one comes back in a moment.",
     "confidentMissBack": "The one you were sure of is back. Another go, just for practice."
@@ -1369,6 +1433,9 @@
       "partly": "Partly",
       "yes": "Knew it"
     },
+    "mnemonic": {
+      "lead": "Your mnemonic:"
+    },
     "typed": {
       "overridden": "Okay – counted as correct.",
       "hint": "Hint: {{hint}}",
@@ -1460,6 +1527,7 @@
   "games": {
     "sprintArticles": "Der, die or das?",
     "sprint": "Sort each card",
+    "whichOne": "Which one is this?",
     "sorted": "Right: {{category}}",
     "itWas": "Not quite. It’s {{category}}",
     "hits": "{{count}} right",
@@ -1563,5 +1631,37 @@
       "image": "This picture is on the internet. To show it, turn on “Allow pictures and sounds from the internet” in Settings.",
       "video": "This video is on the internet. To show it, turn on “Allow pictures and sounds from the internet” in Settings."
     }
+  },
+  "teach": {
+    "title": "Teach it back",
+    "intro": "You know these topics well. Explaining one to a beginner in about {{seconds}} seconds shows what you can say without the cards. It is practice and never changes your schedule.",
+    "cards_one": "{{count}} card",
+    "cards_other": "{{count}} cards",
+    "start": "Explain it",
+    "startFor": "Explain {{tag}}",
+    "kicker": "Teach it back",
+    "prompt": "Explain “{{tag}}” to a beginner in about {{seconds}} seconds. Say it out loud, record yourself or type it. There is no timer: take the time you need.",
+    "typeLabel": "Your explanation",
+    "typePlaceholder": "Start with the main idea, in simple words…",
+    "record": "Record your voice",
+    "recordAgain": "Record again",
+    "stop": "Stop recording ({{time}})",
+    "recording": "Recording. Press Stop recording when you are done.",
+    "recorded": "Recording ready. You can play it on the next step.",
+    "yourRecording": "Your recording",
+    "private": "Your explanation is not saved. The recording stays on this computer and is gone when you leave this screen.",
+    "compare": "Compare with the key points",
+    "back": "Back to Progress",
+    "checkNote": "Read or play your explanation again and compare it with the key points. Tick the ones you left out.",
+    "yours": "Your explanation",
+    "missedLegend": "Tick the points you missed",
+    "noPoints": "This topic has no key points to compare with yet.",
+    "missedCount_one": "{{count}} card is worth another look.",
+    "missedCount_other": "{{count}} cards are worth another look.",
+    "allCovered": "Nothing ticked: you covered every point.",
+    "practise_one": "Practise {{count}} card",
+    "practise_other": "Practise {{count}} cards",
+    "done": "Done",
+    "again": "Explain it again"
   }
 }

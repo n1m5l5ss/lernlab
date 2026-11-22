@@ -8,6 +8,7 @@ import { qa } from './cards';
 import { DEFAULT_REMINDER_TIME } from './reminder';
 import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
+import { withMnemonicRuns } from './mnemonic';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 import { LEVELS } from './variants';
 import { noteConfusion } from './confusions';
@@ -136,6 +137,9 @@ export function hardestCards(limit: number, d: DB = getDb()): { id: number; laps
 }
 
 /** Turn a study source into a query scope. Only numbers are written into SQL; tags are matched in code. */
+/** Just these cards, whatever their deck. */
+export const cardsScope = (ids: number[]): Scope => ({ source: { kind: 'all' }, where: idList(ids) });
+
 export function scopeFor(source: StudySource, d: DB = getDb()): Scope {
   switch (source.kind) {
     case 'deck':
@@ -362,11 +366,14 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
 }
 
 export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
-  return withOcclusionBoxes(
-    d
-      .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
-      .all()
-      .map(rowToItem),
+  return withMnemonicRuns(
+    withOcclusionBoxes(
+      d
+        .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
+        .all()
+        .map(rowToItem),
+      d,
+    ),
     d,
   );
 }
@@ -489,19 +496,28 @@ export function grammarItemIds(group: string, d: DB = getDb(), scope?: Scope): n
 export function itemsByIds(ids: number[], d: DB = getDb()): Record<number, Item> {
   if (!ids.length) return {};
   const rows = d.prepare(`${ITEM_SELECT} WHERE i.id IN (${ids.map(() => '?').join(',')})`).all(...ids);
-  return Object.fromEntries(withOcclusionBoxes(rows.map(rowToItem), d).map((i) => [i.id, i]));
+  return Object.fromEntries(withMnemonicRuns(withOcclusionBoxes(rows.map(rowToItem), d), d).map((i) => [i.id, i]));
 }
 
-export function srsInfo(ids: number[], d: DB = getDb()): Record<number, { reps: number; mastery: number }> {
+export function srsInfo(
+  ids: number[],
+  d: DB = getDb(),
+): Record<number, { reps: number; mastery: number; lapses: number }> {
   if (!ids.length) return {};
   const rows = d
     .prepare(
-      `SELECT i.id, COALESCE(s.reps, -1) AS reps, COALESCE(st.mastery, 0) AS mastery FROM items i
+      `SELECT i.id, COALESCE(s.reps, -1) AS reps, COALESCE(st.mastery, 0) AS mastery, COALESCE(s.lapses, 0) AS lapses
+       FROM items i
        LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
        WHERE i.id IN (${ids.map(() => '?').join(',')})`,
     )
     .all(...ids);
-  return Object.fromEntries(rows.map((r: Row) => [Number(r.id), { reps: Number(r.reps), mastery: Number(r.mastery) }]));
+  return Object.fromEntries(
+    rows.map((r: Row) => [
+      Number(r.id),
+      { reps: Number(r.reps), mastery: Number(r.mastery), lapses: Number(r.lapses) },
+    ]),
+  );
 }
 
 /** The source the learner last chose: a deck, all decks, several decks, a tag, starred or hardest cards. */
@@ -513,7 +529,15 @@ export function currentSource(d: DB = getDb()): StudySource {
 }
 
 /** New cards for a session: up to `cap`, and never more than each deck's own new-card limit for today. */
-export function freshPerDeck(d: DB, now: Date, scope: Scope, cap: number, deckOf?: (id: number) => number): number[] {
+/** `order`: a different order to meet the new cards in (the session planner groups new words by theme). */
+export function freshPerDeck(
+  d: DB,
+  now: Date,
+  scope: Scope,
+  cap: number,
+  deckOf?: (id: number) => number,
+  order?: (ids: number[]) => number[],
+): number[] {
   const left = new Map<number, number>();
   const budget = (deck: number) => {
     if (!left.has(deck)) left.set(deck, Math.max(0, deckNewPerDay(deck, d) - introducedTodayCount(d, now, deck)));
@@ -529,7 +553,7 @@ export function freshPerDeck(d: DB, now: Date, scope: Scope, cap: number, deckOf
       decks.set(Number(r.id), Number(r.deck_id));
     deckOf = (id) => decks.get(id)!;
   }
-  for (const id of ids) {
+  for (const id of order ? order(ids) : ids) {
     const deck = deckOf(id);
     if (budget(deck) <= 0) continue;
     left.set(deck, budget(deck) - 1);

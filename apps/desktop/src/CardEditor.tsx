@@ -51,7 +51,17 @@ const ACCEPT: Record<MediaSlot, string> = { image: 'image/*', audio: 'audio/*', 
 type Deck = { id: number; language: string | null };
 /** Open the optional fields when the card already uses one. */
 const hasMore = (f: Form) =>
-  !!(f.alt || f.explanation || f.example || f.exampleTranslation || f.notes || f.category || f.tags);
+  !!(
+    f.alt ||
+    f.explanation ||
+    f.example ||
+    f.exampleTranslation ||
+    f.notes ||
+    f.mnemonic ||
+    f.category ||
+    f.tags ||
+    f.requires
+  );
 
 export function CardEditor({
   card,
@@ -437,8 +447,11 @@ export function CardEditor({
         <summary>{t('browse.editor.moreFields')}</summary>
         {c.type === 'basic' && f('alt', t('browse.editor.alt'), t('browse.editor.altPlaceholder'))}
         {f('explanation', t('browse.editor.explanation'), t('browse.editor.explanationPlaceholder'), true)}
+        {f('requires', t('browse.editor.requires'), t('browse.editor.requiresPlaceholder'))}
         {c.type === 'basic' && f('example', t('browse.editor.example'), t('browse.editor.examplePlaceholder'))}
         {c.type === 'basic' && f('exampleTranslation', t('browse.editor.exampleTranslation'))}
+        {f('mnemonic', t('browse.editor.mnemonic'), t('browse.editor.mnemonicPlaceholder'))}
+        <p className="small muted editor-format">{t('browse.editor.mnemonicHint')}</p>
         <div className="row" style={{ gap: 'var(--space-3)' }}>
           <div className="grow">
             {f('category', t('browse.editor.category'), t('browse.editor.categoryPlaceholder'))}
