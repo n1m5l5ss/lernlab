@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SessionLength, SessionPlan } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
@@ -25,7 +25,7 @@ import { formatDate, setLanguage } from './i18n';
 import { applyTheme } from './theme';
 import { applyDisplay } from './display';
 import { allowRemoteMedia } from './remote-media';
-import { hashFor, isStartHash, routeFromHash, type Route } from './routes';
+import { hashFor, isStartHash, mayStartFromShortcut, routeFromHash, type Route } from './routes';
 import { markOnce, MARKS } from './perf';
 import { Together, type TogetherPlans } from './Together';
 
@@ -52,6 +52,9 @@ export function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [route, setRoute] = useState<Route>(() => routeFromHash(location.hash));
   const [full, setFull] = useState<FullScreen | null>(null);
+  // What the hash listener (set up once) needs to know about now.
+  const now = useRef<{ open: FullScreen['name'] | null; route: Route }>({ open: null, route });
+  now.current = { open: full?.name ?? null, route };
   const [error, setError] = useState('');
   /** Closed this launch: never shown twice, even if saving that failed. */
   const [whatsNewClosed, setWhatsNewClosed] = useState(false);
@@ -118,6 +121,11 @@ export function App() {
     });
     const onHash = () => {
       if (isStartHash(location.hash)) {
+        // The shortcut never throws away a session, an exam or a teach-back, and never fires from a text box.
+        if (!mayStartFromShortcut(now.current.open, document.activeElement)) {
+          history.replaceState(null, '', hashFor(now.current.route));
+          return;
+        }
         history.replaceState(null, '', hashFor('home'));
         setRoute('home');
         start('standard');

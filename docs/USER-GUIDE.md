@@ -395,6 +395,6 @@ When you ask the assistant for cards (for example from a PDF or a web page), to 
 | `Tab` | Show a hint, then the answer, when you type an answer |
 | `Ctrl+Enter` / `Cmd+Enter` in a session | **Check my explanation** on an Explain it card; **Show the worked solution** in a Try first round |
 | `Esc` | Leave a session |
-| `Ctrl+Enter` / `Cmd+Enter` on Home | Start a session (desktop app, **File → Start session**) |
-| `Ctrl+Shift+L` / `Cmd+Shift+L` | Start a session from anywhere, even when LernLab is in the background (desktop app) |
+| `Ctrl+Enter` / `Cmd+Enter` | Start a session (desktop app, **File → Start session**). It does nothing during a session (alone or together), a mock exam, a teach-back or a concept map, or while you type in a text box |
+| `Ctrl+Shift+L` / `Cmd+Shift+L` | Start a session from anywhere, even when LernLab is in the background (desktop app); the same exceptions apply |
 | `Ctrl+O` / `Cmd+O` | Import a deck file (desktop app) |
