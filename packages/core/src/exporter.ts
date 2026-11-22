@@ -20,6 +20,7 @@ const FROM_EXTRA = {
   corrections: 'corrections',
   keyPoints: 'keyPoints',
   twin: 'twin',
+  requires: 'requires',
   keyTerms: 'keyTerms',
   workedSteps: 'workedSteps',
   mnemonic: 'mnemonic',

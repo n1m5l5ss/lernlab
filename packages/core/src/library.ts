@@ -16,6 +16,7 @@ import { cleanKeyTerms, markedTerms } from './keyterms';
 import { cleanMnemonic } from './mnemonic';
 import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
 import { cleanTwin } from './twin';
+import { cleanRequires } from './requires';
 import { cleanWorkedSteps, parseWorkedSteps } from './worked';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
@@ -115,6 +116,8 @@ export type NormalizedCard = {
   keyPoints?: string;
   /** compare cards: the second thing, shown beside the front: "effect: a result" (twin.ts). '' clears it. */
   twin?: string;
+  /** What to learn first: fronts of other cards of the deck or tags, "Derivative|#functions" (requires.ts). '' clears it. */
+  requires?: string;
   /** Key terms of the answer, highlighted when it shows: "mitochondrion|ATP" (keyterms.ts). In the back, ==term== says the same. '' clears them. */
   keyTerms?: string;
   /** worked examples: 2–8 solution steps, "Subtract 3 from both sides :: 2x = 8|…" (worked.ts). '' clears them. */
@@ -322,6 +325,10 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
       : '';
   if (keyPoints) extra.keyPoints = keyPoints;
   else delete extra.keyPoints;
+  // Prerequisites (requires.ts): names of cards or tags, as plain text; any card may have them.
+  const requires = cleanRequires(c.requires ?? extra.requires);
+  if (requires) extra.requires = requires;
+  else delete extra.requires;
   // A compare card (twin.ts): a basic card with a second side, kept while the card stays a basic card.
   const twin =
     kind === 'card' && !myth && !keyPoints && ['', 'twin', 'basic'].includes((c.type ?? '').toLowerCase())

@@ -25,6 +25,7 @@ const TEXT_FIELDS = [
   'corrections',
   'keyPoints',
   'twin',
+  'requires',
   'keyTerms',
   'workedSteps',
   'mnemonic',

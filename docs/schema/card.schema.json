@@ -56,6 +56,10 @@
       "description": "Optional, added after v1 was published; older readers ignore it. Explain card: the 2–5 key points a good explanation covers, separated by |. The learner ticks the ones they covered. Plain text with **bold**, *italic* and `code`, at most 300 characters each; a card with fewer than two keeps none. Without a back, writers put the points in the back, one per line starting with \"• \", so older readers can still study the card. Example: \"Earth is tilted|The tilt changes the angle of sunlight|Not the distance to the sun\"",
       "type": "string"
     },
+    "requires": {
+      "description": "Optional, added after v1 was published; older readers ignore it. What to learn first: fronts of other cards of the deck or its tags (#tag always means a tag), separated by |. New cards are met after the cards they require were recalled; nothing is locked. Names that match nothing are ignored, and a link that closes a circle is dropped. Plain text, at most 10 names of 200 characters.",
+      "type": "string"
+    },
     "twin": {
       "description": "Optional, added after v1 was published; older readers ignore it. Compare card: the second thing, shown beside the front; the back says what the two share and the one key difference. Plain text, at most 500 characters.",
       "type": "string"

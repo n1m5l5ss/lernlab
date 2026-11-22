@@ -35,6 +35,7 @@ import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
 import { confusionMap, keepClose } from './confusions';
 import { recentlyAnswered, RELATED_MAX, restOfFamilies } from './family';
+import { basicsFirst, BASICS_MAX, isKeyTerm, LAPSES_WEAK, RECALLED, requiresGraph } from './requires';
 import { categoryLabels, confusableLabels, labelMisses, ROUND_MAX, themedFirst } from './discriminate';
 import type { Block, Exercise, Item, SessionLength, SessionPlan } from './types';
 
@@ -111,10 +112,14 @@ export function planSession(
   const mixups = confusionMap(d);
   const mc = (id: number, direction: 'de2en' | 'en2de') => gen.mc(get(id), pool, direction, mixups.get(id));
   const truefalse = (id: number) => gen.truefalse(get(id), pool, mixups.get(id));
+  // Prerequisite links (#207): what each card requires, and how well those basics are known.
+  const links = requiresGraph(pool);
+  const basics = links.size ? srsInfo([...new Set([...links.keys(), ...[...links.values()].flat()])], d) : {};
+  const dueNow = practice ? [] : dueItemIds(d, now, size.due, scope).filter(has);
   const due = keepClose(
     practice
       ? shuffle(pool.filter((i) => i.kind !== 'grammar').map((i) => i.id)).slice(0, size.due + size.fresh)
-      : dueItemIds(d, now, size.due, scope).filter(has),
+      : basicsFirst(dueNow, links, (id) => !dueNow.includes(id)), // a due basic is reviewed before what builds on it
     mixups,
   );
   const leftovers = practice ? [] : learningTodayIds(d, now, scope).filter((id) => has(id) && notGrammar(id));
@@ -127,7 +132,15 @@ export function planSession(
         scope,
         size.fresh,
         (id) => get(id).deckId,
-        (ids) => themedFirst(ids.filter(has).map(get)),
+        // Then the basics first: key terms, and each card after the cards it requires were recalled. An order,
+        // never a lock: cards whose basics are not ready wait at the end and are still met.
+        (ids) =>
+          basicsFirst(
+            themedFirst(ids.filter(has).map(get)),
+            links,
+            (id) => (basics[id]?.mastery ?? 0) >= RECALLED,
+            (id) => isKeyTerm(get(id)),
+          ),
       );
   const learned = learnedIds(d, 300, scope).filter((id) => has(id) && notGrammar(id));
   const upcoming = newItemIds(d, 40, undefined, scope).filter(has);
@@ -186,6 +199,27 @@ export function planSession(
         labels: Object.fromEntries(sprintIds.map((id) => [id, labels.get(id)!])),
       });
     }
+  }
+
+  // 2a. Basics first (#207): a due card that keeps lapsing gets its weak basics looked at before the reviews.
+  //     Recognition only, so no basic is graded before its own review day.
+  if (links.size && !practice && pool.filter((p) => plain(p.id)).length >= 4) {
+    const taken = new Set([...due, ...leftovers, ...fresh]);
+    const weak = (id: number) =>
+      (basics[id]?.reps ?? -1) >= 0 && (basics[id].mastery < RECALLED || basics[id].lapses > 0);
+    const lapsing = due.filter((id) => (basics[id]?.lapses ?? 0) >= LAPSES_WEAK);
+    const look = [...new Set(lapsing.flatMap((id) => links.get(id) ?? []))]
+      .filter((id) => has(id) && plain(id) && !taken.has(id) && weak(id))
+      .slice(0, BASICS_MAX);
+    if (look.length)
+      blocks.push({
+        id: bid(),
+        kind: 'drill',
+        format: 'mc',
+        title: 'Basics first',
+        teacher: { key: 'teacher.block.basics' },
+        exercises: look.map((id) => mc(id, 'de2en')),
+      });
   }
 
   // 3. Due reviews, first half: recall (typed, or flip and self-grade for long answers).

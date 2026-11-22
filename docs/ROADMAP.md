@@ -92,8 +92,8 @@ These come from a review of the research on remembering, understanding and stayi
 **Tier 2: good evidence, more effort or fewer subjects**
 
 - [x] **Example ladder:** worked examples that fade step by step (#206).
-- [ ] **Prerequisite links:** learn the basics first, without locking anything.
 - [x] **Teach-back:** explain a topic aloud, then check yourself against its key points (#208). The assistant as a curious student is not built yet.
+- [x] **Prerequisite links:** learn the basics first, without locking anything (#207).
 - [ ] **Case chains:** one scenario with linked questions.
 - [ ] **Translate between representations,** such as graph and equation.
 - [x] **Discrimination rounds** for look-alike categories; new vocabulary stays grouped by theme (#211).

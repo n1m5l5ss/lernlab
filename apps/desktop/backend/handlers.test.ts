@@ -140,6 +140,24 @@ test('the card editor saves, keeps and clears question variants', async () => {
   assert.ok(!('variants' in (await ok('cards.get', { id })).extra), 'cleared');
 });
 
+test('the card editor saves, keeps and clears what a card requires', async () => {
+  const deck = await ok('decks.create', { name: 'Calculus', language: null });
+  const card = { front: 'Chain rule', back: 'outer times inner' };
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { ...card, requires: '<b>Derivative</b>|#functions|' },
+  });
+  assert.equal((await ok('cards.get', { id })).extra.requires, 'Derivative|#functions');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal(
+    (await ok('cards.get', { id })).extra.requires,
+    'Derivative|#functions',
+    'kept when the field is not sent',
+  );
+  await ok('cards.update', { id, card: { ...card, requires: '' } });
+  assert.ok(!('requires' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('the card editor saves, keeps and clears corrections for wrong choices', async () => {
   const deck = await ok('decks.create', { name: 'Cloud quiz', language: null });
   const card = { front: 'Serverless?', back: '', type: 'mcq', choices: 'EC2|Lambda', correct: '2' };

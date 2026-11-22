@@ -499,16 +499,25 @@ export function itemsByIds(ids: number[], d: DB = getDb()): Record<number, Item>
   return Object.fromEntries(withMnemonicRuns(withOcclusionBoxes(rows.map(rowToItem), d), d).map((i) => [i.id, i]));
 }
 
-export function srsInfo(ids: number[], d: DB = getDb()): Record<number, { reps: number; mastery: number }> {
+export function srsInfo(
+  ids: number[],
+  d: DB = getDb(),
+): Record<number, { reps: number; mastery: number; lapses: number }> {
   if (!ids.length) return {};
   const rows = d
     .prepare(
-      `SELECT i.id, COALESCE(s.reps, -1) AS reps, COALESCE(st.mastery, 0) AS mastery FROM items i
+      `SELECT i.id, COALESCE(s.reps, -1) AS reps, COALESCE(st.mastery, 0) AS mastery, COALESCE(s.lapses, 0) AS lapses
+       FROM items i
        LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
        WHERE i.id IN (${ids.map(() => '?').join(',')})`,
     )
     .all(...ids);
-  return Object.fromEntries(rows.map((r: Row) => [Number(r.id), { reps: Number(r.reps), mastery: Number(r.mastery) }]));
+  return Object.fromEntries(
+    rows.map((r: Row) => [
+      Number(r.id),
+      { reps: Number(r.reps), mastery: Number(r.mastery), lapses: Number(r.lapses) },
+    ]),
+  );
 }
 
 /** The source the learner last chose: a deck, all decks, several decks, a tag, starred or hardest cards. */

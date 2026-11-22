@@ -57,6 +57,8 @@ export const EMPTY = {
   audio: '',
   video: '',
   alt: '',
+  /** What to learn first: fronts of other cards or tags, separated by | (core/requires.ts). */
+  requires: '',
   type: 'basic' as CardType,
   choices: '',
   correct: '',
@@ -95,6 +97,7 @@ export const formFor = (c: FullCard): Form => ({
   audio: c.audio ?? '',
   video: c.video ?? '',
   alt: c.extra.alt ?? '',
+  requires: c.extra.requires ?? '',
   type: isMyth(c)
     ? 'myth'
     : isExplain(c)
