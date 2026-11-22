@@ -25,7 +25,7 @@ import {
 import { getDeck } from './library';
 import * as gen from './exercises';
 import { qa } from './cards';
-import { GUESS_MAX, pickGuessRound, topicIsNew, topicName } from './guess';
+import { GUESS_MAX, neverAnswered, pickGuessRound, pickTryFirst, topicIsNew, topicName } from './guess';
 import { variantIndex, variantsOf } from './variants';
 import { askedOwnWay } from './explain';
 import { isWorked } from './worked';
@@ -224,15 +224,27 @@ export function planSession(
   }
 
   // 4a. Guess first: the first new cards of a new topic (concepts, facts, maths) are asked before they are met.
-  const guess = fresh.length ? pickGuessRound(fresh.map(get), pool, (t) => topicIsNew(t, d), GUESS_MAX[length]) : null;
+  // In a deck marked maths or science, a new unit opens with one of its problems instead (try first, #218).
+  const isNew = (t: Parameters<typeof topicIsNew>[0]) => topicIsNew(t, d);
+  const tryFirst = fresh.length
+    ? pickTryFirst(
+        fresh.map(get),
+        pool,
+        isNew,
+        (id) => !!getDeck(id, d)?.settings.subject,
+        (id) => neverAnswered(id, d),
+      )
+    : null;
+  const guess = tryFirst ?? (fresh.length ? pickGuessRound(fresh.map(get), pool, isNew, GUESS_MAX[length]) : null);
   if (guess) {
     const topic = topicName(guess.topic, getDeck(guess.topic.deckId, d)?.name ?? '');
     blocks.push({
       id: bid(),
       kind: 'guess',
-      title: 'Guess first',
-      teacher: { key: 'teacher.block.guess', params: { topic } },
+      title: tryFirst ? 'Try first' : 'Guess first',
+      teacher: { key: tryFirst ? 'teacher.block.tryFirst' : 'teacher.block.guess', params: { topic } },
       topic,
+      ...(tryFirst && { tryFirst: true }),
       itemIds: guess.ids,
     });
   }

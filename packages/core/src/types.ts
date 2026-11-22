@@ -185,7 +185,16 @@ export type Block =
   | { id: string; kind: 'ignition'; title: string; teacher: Line; exercises: Exercise[] }
   | { id: string; kind: 'learn'; title: string; teacher: Line; exercises: Exercise[] }
   /** Guess first: a new topic's questions before its cards are met. Practice only, never graded (guess.ts). */
-  | { id: string; kind: 'guess'; title: string; teacher: Line; topic: string; itemIds: number[] }
+  | {
+      id: string;
+      kind: 'guess';
+      title: string;
+      teacher: Line;
+      topic: string;
+      itemIds: number[];
+      /** Try first (#218): one worked example of a maths or science unit, tried before the lesson. */
+      tryFirst?: boolean;
+    }
   | { id: string; kind: 'drill'; format: Format; title: string; teacher: Line; exercises: Exercise[] }
   /**
    * The sorting round. `choices` and `labels` (discriminate.ts): the labels to choose from and each card's own,

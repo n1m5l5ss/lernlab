@@ -396,6 +396,11 @@
       "exportAnki": "Export for Anki",
       "subdeckHint": "Use :: for a sub-deck, for example Medicine::Cardio.",
       "examDate": "Exam date (optional)",
+      "subject": "Subject",
+      "subjectOther": "Something else",
+      "subjectMaths": "Maths",
+      "subjectScience": "Science",
+      "subjectHint": "In a maths or science deck, a new unit that has a worked example opens with that problem to try before the lesson. It is optional and never counts.",
       "voiceTitle": "Reading aloud",
       "voiceHint": "Cards without a recording are read by a voice on your computer.",
       "voice": "Voice",
@@ -1185,7 +1190,8 @@
       "speak": "Say it out loud!",
       "rain": "Type the answers before they land!",
       "rescue": "Quick look back at the hard ones.",
-      "guess": "New topic: {{topic}}. Have a guess before you learn it."
+      "guess": "New topic: {{topic}}. Have a guess before you learn it.",
+      "tryFirst": "New unit: {{topic}}. Try a problem before the lesson."
     },
     "agenda": {
       "today": "Today: {{parts}}.",
@@ -1240,7 +1246,8 @@
       "boss": "Boss fight",
       "rescue": "Quick rescue",
       "action-round": "Action round",
-      "guess-first": "Guess first"
+      "guess-first": "Guess first",
+      "try-first": "Try first"
     },
     "guess": {
       "title": "Guess first · {{topic}}",
@@ -1255,6 +1262,18 @@
       "toCards": "Meet the new cards",
       "choices": "Choices",
       "gap": "?"
+    },
+    "tryFirst": {
+      "title": "Try first · {{topic}}",
+      "kind": "You haven't learned this yet. Try it anyway: working on a problem first helps the lesson stick, even when you get stuck. Nothing here counts and there is no clock.",
+      "skip": "Skip to the lesson",
+      "yours": "Your attempt",
+      "optional": "Optional. Write as far as you get, or work on paper.",
+      "show": "Show the worked solution",
+      "yourGuess": "Your attempt:\n{{guess}}",
+      "solution": "Worked solution",
+      "compare": "Compare it with your attempt: where did your way differ? You study this example next.",
+      "toCards": "Start the lesson"
     },
     "confidentMiss": "Confident mistakes are the easiest to fix. That one comes back in a moment.",
     "confidentMissBack": "The one you were sure of is back. Another go, just for practice."

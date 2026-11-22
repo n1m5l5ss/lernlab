@@ -3565,6 +3565,23 @@ textarea.input.code-input {
   overflow-wrap: anywhere;
   color: var(--color-text);
 }
+/* Try first (modes/Guess.tsx, #218): room to write an attempt, kept as written next to the solution. */
+.try-input {
+  min-height: 120px;
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+.try-yours {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.try-solution {
+  margin-top: var(--space-3);
+  font-weight: 700;
+}
+.guess-answer .worked-steps {
+  margin-bottom: var(--space-3);
+}
 /* Worked examples that fade (modes/Worked.tsx, #206): the steps of a solved problem, the last ones typed. */
 .worked-card .prompt {
   text-align: start;

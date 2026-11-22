@@ -107,7 +107,8 @@ These come from a review of the research on remembering, understanding and stayi
 **Tier 3: weaker evidence, niche or large**
 
 - [x] **Cover related card families:** when some cards of a small group are reviewed, the rest get a quick question within a day or two (#223).
-- [ ] Try first for maths and science; concept map from memory; sketch pad; fading mnemonics; "say it aloud" on a few cards; study together on one computer; "act it out" cards; an optional quiet minute.
+- [x] **Try first for maths and science:** a problem to try before a new unit's lesson, then the worked solution (#218).
+- [ ] Concept map from memory; sketch pad; fading mnemonics; "say it aloud" on a few cards; study together on one computer; "act it out" cards; an optional quiet minute.
 
 ## Avoid
 

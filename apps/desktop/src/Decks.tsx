@@ -30,6 +30,7 @@ type Form = {
   goalLabel: string;
   goalWords: string;
   examDate: string;
+  subject: string;
   voice: string;
   rate: string;
   examQuestions: string;
@@ -47,6 +48,7 @@ const formFor = (d?: DeckRow): Form => ({
   goalLabel: d?.settings.goal?.label ?? '',
   goalWords: d?.settings.goal?.words ? String(d.settings.goal.words) : '',
   examDate: d?.settings.examDate ?? '',
+  subject: d?.settings.subject ?? '',
   ...examForm(examSettings(d?.settings.exam)),
 });
 const examForm = (e: ExamSettings) => ({
@@ -327,6 +329,7 @@ function DeckEditor({
       newPerDay: Number(f.newPerDay),
       goal: f.goalLabel.trim() ? { label: f.goalLabel, words: Number(f.goalWords) || 0 } : null,
       examDate: f.examDate,
+      subject: f.subject,
       voice: f.voice,
       rate: Number(f.rate),
       exam: { questions: f.examQuestions, minutes: f.examMinutes, passMark: f.examPassMark },
@@ -374,6 +377,22 @@ function DeckEditor({
         })}
         {field('examDate', t('decks.editor.examDate'), { type: 'date' })}
       </div>
+      <label className="deck-field">
+        <span>{t('decks.editor.subject')}</span>
+        <select
+          className="input"
+          value={f.subject}
+          aria-describedby="deck-subject-hint"
+          onChange={(e) => set('subject', e.target.value)}
+        >
+          <option value="">{t('decks.editor.subjectOther')}</option>
+          <option value="maths">{t('decks.editor.subjectMaths')}</option>
+          <option value="science">{t('decks.editor.subjectScience')}</option>
+        </select>
+      </label>
+      <p id="deck-subject-hint" className="small muted">
+        {t('decks.editor.subjectHint')}
+      </p>
       <fieldset className="deck-voice">
         <legend>{t('decks.editor.examTitle')}</legend>
         <p className="small muted">{t('decks.editor.examHint')}</p>

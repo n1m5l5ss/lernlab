@@ -32,6 +32,8 @@ export type DeckSettings = {
   rate?: number;
   /** Exam simulator: question count, minutes and pass mark (defaults fill in what is missing). */
   exam?: Partial<ExamSettings>;
+  /** A maths or science deck: a new unit opens with a problem to try before its cards (guess.ts, #218). */
+  subject?: 'maths' | 'science';
 };
 
 /**
@@ -66,6 +68,8 @@ export function cleanDeckSettings(input: Record<string, unknown>): Partial<Recor
     out.rate = Number.isFinite(n) ? Math.round(Math.max(0.5, Math.min(1.5, n)) * 20) / 20 : undefined;
   }
   if ('exam' in input) out.exam = cleanExamSettings(input.exam);
+  if ('subject' in input)
+    out.subject = input.subject === 'maths' || input.subject === 'science' ? input.subject : undefined;
   return out;
 }
 
