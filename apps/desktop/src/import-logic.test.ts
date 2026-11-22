@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { MAPPABLE_FIELDS } from '@lernlab/core/importpreview';
 import type { ImportReport } from '@lernlab/core/importer';
-import { MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './import-logic';
+import { CSV_OPTIONAL, CSV_REQUIRED, MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './import-logic';
 
 test('the mapping menu lists every field the importer can map', () => {
   assert.deepEqual([...MAPPABLE].sort(), Object.keys(MAPPABLE_FIELDS).sort());
@@ -65,4 +65,12 @@ test('the report counts added and updated cards and groups skips by reason', () 
   assert.equal(reportLines({ ...r, format: 'apkg', reviews: 1234 }).reviews, 1234, 'Anki reviews brought over');
   const clean = reportLines({ ...r, skipped: [], skippedCount: 0, mediaMissing: 0, missingMedia: [], warnings: [] });
   assert.deepEqual([clean.skipped, clean.moreSkipped, clean.warnings], [[], 0, []]);
+});
+
+test('the column help under the file box names every column the importer can map', () => {
+  assert.equal(CSV_REQUIRED, 'front, back');
+  const listed = `${CSV_REQUIRED}, ${CSV_OPTIONAL}`.split(', ');
+  assert.deepEqual([...listed].sort(), Object.values(MAPPABLE_FIELDS).sort());
+  for (const name of ['twin', 'requires', 'case', 'graph', 'mnemonic', 'key_terms', 'worked_steps', 'key_points'])
+    assert.ok(listed.includes(name), name);
 });

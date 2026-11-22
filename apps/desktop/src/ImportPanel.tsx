@@ -10,12 +10,7 @@ import { AnkiImport } from './AnkiImport';
 import { formatNumber } from './i18n';
 import { rovingIndex } from './keys-logic';
 import type { ImportReport as Report } from '@lernlab/core/importer';
-import { MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './import-logic';
-
-/** CSV column names are file format, not text: they stay in English in every language. */
-const CSV_REQUIRED = 'front, back';
-const CSV_OPTIONAL =
-  'example, explanation, notes, category, tags, image, image_alt, audio, video, alt_answers, variants, type, choices, correct, corrections, key_points, key_terms, worked_steps, mnemonic, case, graph, steps';
+import { CSV_OPTIONAL, CSV_REQUIRED, MAPPABLE, defaultTarget, fieldOf, reportLines, setColumn } from './import-logic';
 
 type AppState = OutputOf<'state.get'>;
 type Source = { file: File } | { text: string };

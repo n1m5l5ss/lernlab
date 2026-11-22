@@ -100,6 +100,9 @@ const COLUMNS: Record<string, string[]> = {
   extra: [],
 };
 
+/** Every card field the CSV reader knows, with the column names it accepts (the first is the usual one). */
+export const CSV_FIELD_NAMES: Readonly<Record<string, readonly string[]>> = COLUMNS;
+
 export function csvToCards(text: string): {
   cards: NormalizedCard[];
   /** The 1-based line in the file each card starts on. */

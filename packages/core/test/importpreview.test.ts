@@ -187,3 +187,37 @@ test('a column of worked steps is recognised', () => {
   const known = previewFile('Maths.csv', strToU8('front,back,worked_steps\nSolve,x = 4,Subtract :: 2x = 8|x = 4\n'));
   assert.equal(known.table?.fields.workedSteps, 2);
 });
+
+test('every card column the CSV reader recognises can be chosen in the column mapping', async () => {
+  const { CSV_FIELD_NAMES } = await import('../src/formats/csv');
+  const { MAPPABLE_FIELDS } = await import('../src/importpreview');
+  const mappable: Record<string, string> = MAPPABLE_FIELDS;
+  for (const [field, names] of Object.entries(CSV_FIELD_NAMES)) {
+    if (!names.length) continue; // `extra` collects unknown columns; it has no column of its own
+    assert.ok(Object.hasOwn(mappable, field), `the mapping list is missing the CSV column "${names[0]}" (${field})`);
+    assert.ok(names.includes(mappable[field]), `${field}: the reader does not know the header "${mappable[field]}"`);
+  }
+  for (const field of ['twin', 'requires', 'case', 'graph', 'mnemonic', 'keyTerms', 'workedSteps', 'keyPoints'])
+    assert.ok(Object.hasOwn(mappable, field), field);
+});
+
+test('columns mapped by hand to a compare side and to "learn first" reach the cards', () => {
+  const csv = 'affect;effect;Verb and noun;#basics\nimply;infer;Speaker and listener;#basics\n';
+  const mapping = { header: false, fields: { front: 0, twin: 1, back: 2, requires: 3 } };
+  const preview = previewFile('Pairs.csv', strToU8(csv), mapping);
+  assert.deepEqual(preview.table?.fields, { front: 0, twin: 1, back: 2, requires: 3 });
+  const res = importFile('Pairs.csv', mapFile('Pairs.csv', strToU8(csv), mapping));
+  assert.equal(res.added, 2);
+  const extras = getDb()
+    .prepare('SELECT extra FROM items WHERE deck_id = ? ORDER BY ord')
+    .all(res.deck.id)
+    .map((r) => JSON.parse(String(r.extra)));
+  assert.deepEqual(
+    extras.map((e) => e.twin),
+    ['effect', 'infer'],
+  );
+  assert.ok(
+    extras.every((e) => String(e.requires).includes('basics')),
+    JSON.stringify(extras),
+  );
+});

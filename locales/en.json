@@ -520,7 +520,15 @@
         "workedSteps": "Worked steps",
         "case": "Case",
         "graph": "Graph",
-        "keyTerms": "Key terms to highlight"
+        "keyTerms": "Key terms to highlight",
+        "twin": "Compare with (second side)",
+        "requires": "Learn first",
+        "tolerance": "Tolerance (number answer)",
+        "code": "Code",
+        "codeLang": "Code language",
+        "occlusion": "Occlusion box",
+        "occlusionGroup": "Occlusion picture group",
+        "occlusionMode": "Occlusion mode"
       },
       "hints": {
         "title": "Tips for better cards",
