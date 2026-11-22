@@ -225,8 +225,10 @@ The **…** button on a deck in **Decks** opens the deck settings: its name, the
 - **Progress card**: press **Progress card** next to this week's goal for a one-page summary to show a teacher, a parent or a friend: cards learned, days and minutes this week, the share of reviews recalled, this week's goal, the next exam and your top decks. **Save as picture (PNG)** saves an image file; **Print or save as PDF** opens your system's print window, where you can also choose to save a PDF (the card prints on a light page). The card is made on your computer and nothing is sent anywhere. It shows no XP or levels, so it is the same in calm mode.
 - **Study days**: a calendar of the last year;
 - **Memory**: the share of reviews you recalled, week by week, against your target;
+- **After time away: your own numbers**: how often you recalled a card after 1 to 6 days, 7 to 29 days and 30 days or more away, next to repeats on the same day. A row shows its share once it has 20 answers. After time away, only real reviews count (your first answer of the day, never practice or games); same-day repeats include cards brought back in a session. It covers your most recent recall answers (up to 2,000, from the last year). It is a record of what happened, not an experiment: each row holds different cards. Same-day repeats usually look best because the answer is still fresh; the rows after time away show what has lasted.
 - **How sure you were**: for each rating from 1 to 5, how often those cards were right at their next review ("Cards you rated 5 were right 93% of the time at their next review; rated 4, 61%"). A rating shows a bar once 5 of its cards have come back. It shows whether your feeling of knowing can be trusted: if your 5s are often wrong, study a bit longer before you move on;
 - your hardest cards, with **Study these** to start a session with them;
+- **How LernLab helps you remember**: four short notes you can open (recall, spacing, mixing, and why "feels easy" can mislead);
 - your streak, your streak freezes and your badges.
 
 A card counts as learned once you have recalled it from memory, not just recognised it.

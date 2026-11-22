@@ -38,6 +38,7 @@ import { LEVELS, type Level } from './variants';
 import { RECALL_FORMATS } from './types';
 import { calibration, calibrationCounts } from './confidence';
 import { WEEK_GOAL, weekCardTarget, weekSessionTarget } from './weekgoal';
+import { spacingCounts, spacingReport } from './spacing';
 
 /** Badge ids, in display order. Their names and descriptions live in locales/<code>.json under badges.<id>. */
 export const ACHIEVEMENTS = [
@@ -683,6 +684,8 @@ export function journey(d: DB = getDb(), now = new Date()) {
     },
     /** How sure you were (1–5) against how often you were right at the next review (#205). */
     calibration: calibration(calibrationCounts(d)),
+    /** Recall after days, weeks and months away, next to repeats on the same day (#215). */
+    spacing: spacingReport(spacingCounts(d, now)),
     hardest: hard.map((h) => ({
       ...h,
       front: plain(text.get(h.id)?.target),

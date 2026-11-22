@@ -66,6 +66,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
   - **calm mode** hides XP, levels, combos and celebrations and keeps your progress, for people who prefer no game elements;
   - once per session you can swap a round for another format;
   - a streak with freezes (one missed day doesn't wipe you out);
+  - Progress shows how well your own cards held up after days, weeks and months away, with a short explanation of why LernLab asks, spaces and mixes;
   - the summary says how a session went, not only the score: mix-ups between similar cards, a tag that holds most misses, misses you were sure of, with one next step;
   - a goal for this week (new cards and sessions) worked out from your deck goals and exam dates, and a progress card you can print or save as a picture or PDF, made on your computer;
   - an if-then study plan in your own words ("After I finish dinner, I'll study for 5 minutes"), which the daily reminder shows;
@@ -219,7 +220,7 @@ Three ready-made decks in [`examples/`](examples/) show what LernLab can do. Dow
 | [Networking essentials](examples/networking-essentials.lernpack) | 38 cards for entry-level networking exams: ports, OSI layers, IP addressing, exam-style questions |
 | [Chemistry: the first 20 elements](examples/chemistry-first-20-elements.lernpack) | 36 cards: element names and symbols, metals and nonmetals, atoms and bonds |
 
-There are more small decks (German, AWS, biology) and a template in [`examples/README.md`](examples/README.md). The full format spec is in [docs/FORMAT.md](docs/FORMAT.md).
+There are more small decks (German, AWS, biology, and [a deck about how to study](examples/learn-how-to-learn.csv)) and a template in [`examples/README.md`](examples/README.md). The full format spec is in [docs/FORMAT.md](docs/FORMAT.md).
 
 ### The `.lernpack` format
 

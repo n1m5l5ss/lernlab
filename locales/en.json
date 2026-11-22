@@ -934,6 +934,51 @@
       "saved": "Picture saved.",
       "failed": "The picture could not be made. Printing still works."
     },
+    "spacing": {
+      "title": "After time away: your own numbers",
+      "empty_one": "Once you have reviewed {{count}} card that had been away for a while, this shows how many you still recalled.",
+      "empty_other": "Once you have {{count}} reviews of cards that had been away for a while, this shows how many you still recalled.",
+      "lead": {
+        "days_one": "After 1 to 6 days away, you recalled {{percent}} of {{count, number}} review.",
+        "days_other": "After 1 to 6 days away, you recalled {{percent}} of {{count, number}} reviews.",
+        "weeks_one": "After 1 to 4 weeks away, you still recalled {{percent}} of {{count, number}} review.",
+        "weeks_other": "After 1 to 4 weeks away, you still recalled {{percent}} of {{count, number}} reviews.",
+        "months_one": "After a month or more away, you still recalled {{percent}} of {{count, number}} review.",
+        "months_other": "After a month or more away, you still recalled {{percent}} of {{count, number}} reviews."
+      },
+      "group": {
+        "sameDay": "Repeated on the same day",
+        "days": "After 1 to 6 days",
+        "weeks": "After 7 to 29 days",
+        "months": "After 30 days or more"
+      },
+      "value_one": "{{percent}} of {{count, number}} answer",
+      "value_other": "{{percent}} of {{count, number}} answers",
+      "few_one": "{{count, number}} answer so far; shown from {{min}}",
+      "few_other": "{{count, number}} answers so far; shown from {{min}}",
+      "sameDay": "Repeats on the same day usually go better, because the answer is still fresh. That feels like knowing, but the numbers after time away show what has lasted.",
+      "note": "These are your own most recent recall answers (up to {{max, number}}, from the last year). After time away, only your first answer of the day counts. This is a record, not an experiment: each row holds different cards, so the rows can’t be compared like a test."
+    },
+    "methods": {
+      "title": "How LernLab helps you remember",
+      "lead": "Four ideas from research on learning shape every session.",
+      "recall": {
+        "title": "Recall, not rereading",
+        "body": "Pulling an answer out of your memory strengthens it more than reading it again. So LernLab asks first and shows the answer after, and games never count as knowing a card."
+      },
+      "spacing": {
+        "title": "Spacing, not cramming",
+        "body": "A card comes back when you are close to forgetting it: after a day, then some days, then weeks. Cramming feels better on the day, but in studies spaced reviews are remembered for longer. The numbers above show how your own cards held up after time away."
+      },
+      "mixing": {
+        "title": "Mixing, not one thing at a time",
+        "body": "Sessions mix cards and formats. Mixed practice feels harder while you do it, and in studies it helps people tell similar things apart later, most of all for look-alikes."
+      },
+      "easy": {
+        "title": "“Feels easy” can mislead",
+        "body": "Rereading and quick repeats feel smooth, and that is easy to mistake for knowing. Effort while you recall is a good sign, and a miss followed by the answer still helps. “How sure were you?” lets you check the feeling against what you really recalled."
+      }
+    },
     "decksTitle": "Your decks",
     "noDecks": "No decks yet. Import or create one on the Decks screen.",
     "deck": {

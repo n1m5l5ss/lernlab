@@ -26,6 +26,8 @@ Each one is built from a folder in [`decks/`](decks/) with a `manifest.json` and
 
 [german-colours-with-pictures.lernpack](german-colours-with-pictures.lernpack) is the same colours deck as LernLab exports it: a `.lernpack` version 1 package with `manifest.json`, `cards.jsonl` and `media/`. `npx tsx scripts/build-example-lernpack.ts` rebuilds it too.
 
+[learn-how-to-learn.csv](learn-how-to-learn.csv) is a deck about studying itself (#215): 16 cards on recall, spacing, mixing and why "feels easy" can mislead, to study with LernLab like any other deck.
+
 The unzipped versions are in [`decks/`](decks/), so you can see exactly how a package looks. The plain spreadsheet files (`*.csv`, `*.tsv`) in this folder also import on their own.
 
 To make your own: download `template.zip`, unzip it, edit `cards.csv` in Excel or Google Sheets, drop your pictures into `media/images/`, zip the folder again and import it. The full format is in [docs/FORMAT.md](../docs/FORMAT.md).

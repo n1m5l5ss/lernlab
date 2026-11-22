@@ -10,6 +10,9 @@ import { heatColumn, heatmapWeeks, levelMix, monthStarts, recallRate } from './p
 import { Button, LevelTag, ProgressBar, ProgressCard } from './components';
 import { cardFacts, cardFileName, cardSvg, goalShare, type CardText } from './progress-card';
 import { applyTheme } from './theme';
+import { SPACING } from '@lernlab/core/spacing';
+
+const SPACING_MIN = SPACING.minAnswers;
 
 type Journey = OutputOf<'progress.get'>;
 type DeckJourney = Journey['decks'][number];
@@ -69,8 +72,10 @@ export function Progress({
 
       <StudyDays p={p} />
       <Retention p={p} />
+      <Spacing p={p} />
       <Calibration p={p} />
       <Hardest p={p} onStudy={onStudyHardest} />
+      <Methods />
       <TeachTopics onTeach={onTeach} />
     </div>
   );
@@ -215,6 +220,66 @@ function WeekGoal({ p }: { p: Journey }) {
           </Button>
         </div>
       </dialog>
+    </section>
+  );
+}
+
+/**
+ * Your own numbers (#215): how often you recalled a card after days, weeks or months away, next to repeats on the
+ * same day. A share shows only with enough answers behind it, and the text says what the numbers are: what
+ * happened to different cards, not an experiment.
+ */
+function Spacing({ p }: { p: Journey }) {
+  const { t } = useTranslation();
+  const s = p.spacing;
+  return (
+    <section className="panel journey-panel" aria-labelledby="journey-spacing">
+      <h2 id="journey-spacing">{t('progress.spacing.title')}</h2>
+      <p className="journey-lead">
+        {s.longest
+          ? t(`progress.spacing.lead.${s.longest.key}`, {
+              percent: formatPercent(s.longest.rate!),
+              count: s.longest.answers,
+            })
+          : t('progress.spacing.empty', { count: SPACING_MIN })}
+      </p>
+      <ul className="week-goal-list">
+        {s.groups.map((g) => {
+          const label = t(`progress.spacing.group.${g.key}`);
+          const value =
+            g.rate === null
+              ? t('progress.spacing.few', { count: g.answers, min: SPACING_MIN })
+              : t('progress.spacing.value', { percent: formatPercent(g.rate), count: g.answers });
+          return (
+            <li key={g.key}>
+              <span className="progress-card-row">
+                <b>{label}</b>
+                <span>{value}</span>
+              </span>
+              <ProgressBar label={label} value={Math.round((g.rate ?? 0) * 100)} max={100} valueText={value} />
+            </li>
+          );
+        })}
+      </ul>
+      {s.longest && s.sameDay && <p className="muted">{t('progress.spacing.sameDay')}</p>}
+      <p className="muted small">{t('progress.spacing.note', { max: SPACING.maxAnswers })}</p>
+    </section>
+  );
+}
+
+/** How LernLab's methods work (#215): four short notes, closed until opened. Text only; nothing is loaded. */
+function Methods() {
+  const { t } = useTranslation();
+  return (
+    <section className="panel journey-panel methods" aria-labelledby="journey-methods">
+      <h2 id="journey-methods">{t('progress.methods.title')}</h2>
+      <p className="journey-lead">{t('progress.methods.lead')}</p>
+      {(['recall', 'spacing', 'mixing', 'easy'] as const).map((m) => (
+        <details key={m}>
+          <summary>{t(`progress.methods.${m}.title`)}</summary>
+          <p>{t(`progress.methods.${m}.body`)}</p>
+        </details>
+      ))}
     </section>
   );
 }

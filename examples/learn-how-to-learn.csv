@@ -1,0 +1,17 @@
+type,front,back,category,choices,correct,explanation,steps,tags
+,What is retrieval practice?,Pulling an answer out of memory instead of reading it again,Recall,,,Testing yourself is a way to learn and not only a way to check.,,recall
+,What is the testing effect?,Being tested on something makes you remember it longer than studying it again,Recall,,,,,recall
+,Why does rereading feel like it works?,The text becomes familiar and familiar feels like knowing,Recall,,,Recognising a page is easier than recalling what it says.,,recall why
+,What is spacing?,Spreading reviews of the same thing over days and weeks,Spacing,,,,,spacing
+,What is cramming?,Studying the same thing many times in one sitting,Spacing,,,,,spacing
+,When is the best time to review something?,Shortly before you would forget it,Spacing,,,A little forgetting makes the review harder and more useful.,,spacing
+mcq,You have 2 hours for one topic before an exam next month. Which plan helps you remember most on exam day?,,,One 2-hour session tonight|Four 30-minute sessions spread over the month|Two hours of rereading the night before|One 2-hour session the morning of the exam,2,Spread over time the same 2 hours are remembered for longer. The night before feels best but fades fastest.,,spacing
+,What is interleaving?,"Mixing different topics or problem types in one session, not finishing one before the next",Mixing,,,,,mixing
+,Why does mixed practice help with look-alikes?,You have to notice what tells them apart each time,Mixing,,,In a block of one type you already know which type comes next.,,mixing why
+mcq,"During practice, mixing feels harder and your score is lower than in blocks. What does that tell you?",,,Mixing is not working for you|Nothing yet: how practice feels is a poor guide to what you will remember later|You should go back to blocks|You are tired,2,Blocks look better while you practise and mixing looks better on a later test.,,mixing
+,What is a desirable difficulty?,Effort while learning that slows you down now but helps you remember later,Feels easy,,,"Recalling, spacing and mixing are examples.",,feels-easy
+,What is the illusion of knowing?,Feeling sure you know something because it is familiar or was just in front of you,Feels easy,,,,,feels-easy
+,How can you check whether you really know something?,Close the book and try to say or write it from memory,Feels easy,,,Then compare with the source.,,feels-easy recall
+,You miss a card and then see the answer. Was that a waste?,No. A wrong try followed by the answer helps you remember it,Feels easy,,,Mistakes you were sure of are corrected especially well.,,feels-easy
+,What does sleep do for what you learned today?,It helps to keep it: memories are strengthened during sleep,Habits,,,A short review the next morning uses this.,,habits
+,Which works better: one long session a week or a few minutes most days?,A few minutes most days,Habits,,,Short sessions give you spacing for free.,,habits spacing
