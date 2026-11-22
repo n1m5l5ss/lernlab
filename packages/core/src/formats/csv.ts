@@ -86,6 +86,7 @@ const COLUMNS: Record<string, string[]> = {
   keyPoints: ['key_points', 'key points', 'keypoints'],
   twin: ['twin', 'compare with', 'compare_with'],
   keyTerms: ['key_terms', 'key terms', 'keyterms'],
+  workedSteps: ['worked_steps', 'worked steps', 'solution steps'],
   tolerance: ['tolerance', 'tol'],
   code: ['code', 'snippet', 'source code'],
   codeLang: ['code_lang', 'code language', 'programming language'],
@@ -169,6 +170,7 @@ export function csvToCards(text: string): {
       keyPoints: get(r, 'keyPoints') || undefined,
       twin: get(r, 'twin') || undefined,
       keyTerms: get(r, 'keyTerms') || undefined,
+      workedSteps: get(r, 'workedSteps') || undefined,
       tolerance: get(r, 'tolerance') || undefined,
       code: 'code' in columns ? r[columns.code] || undefined : undefined, // untrimmed: indentation matters
       codeLang: get(r, 'codeLang') || undefined,
@@ -200,6 +202,7 @@ const CSV_COLUMNS: [string, (c: NormalizedCard) => string | number | undefined][
   ['key_points', (c) => c.keyPoints],
   ['twin', (c) => c.twin],
   ['key_terms', (c) => c.keyTerms],
+  ['worked_steps', (c) => c.workedSteps],
   ['steps', (c) => c.steps],
   ['tolerance', (c) => c.tolerance],
   ['code', (c) => c.code],

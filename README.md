@@ -43,6 +43,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **How sure were you?** After about 1 in 4 recall answers, one optional tap from 1 to 5. A confident miss comes back once later in the session; at the end of a session you can say whether you'll know each new card tomorrow, and the next session shows how that went. Progress shows how often each rating was right at the next review. It never changes the schedule.
 - **Explain it:** why and how cards where you write an explanation, then tick the key points you covered; that sets the grade, so you can't fool yourself with a quick flip.
 - **Better cards:** mark the key part of an answer as `==term==` and it is highlighted when the answer shows. The card editor and the import preview suggest splitting an answer over 40 words, adding a picture to a card about an idea, and describing or dropping a picture that doesn't help. The rules run on your computer and never stop you saving.
+- **Worked examples that fade:** for maths, science, code and accounting. Study a solved problem, then fill in its last step, then the last two, until you solve it alone. Only the whole problem changes your schedule.
 - **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark, a score by topic and by question level.
 - **Honest grading:**
   - you type or say the answer, and LernLab grades it;

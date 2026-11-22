@@ -31,6 +31,7 @@ export const MAPPABLE: MappableField[] = [
   'corrections',
   'keyPoints',
   'keyTerms',
+  'workedSteps',
 ];
 
 export type Fields = ColumnMapping['fields'];

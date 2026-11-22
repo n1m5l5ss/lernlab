@@ -177,6 +177,18 @@ test('the card editor saves, keeps and clears key points; attempts may say "easy
   assert.equal(!wrong.ok && wrong.error.code, 'invalid_input');
 });
 
+test('the card editor saves, keeps and clears worked steps', async () => {
+  const deck = await ok('decks.create', { name: 'Algebra', language: null });
+  const card = { front: 'Solve 2x + 3 = 11', back: 'x = 4', type: 'worked' };
+  const steps = 'Subtract 3 :: <b>2x = 8</b>|x = 4';
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, workedSteps: steps } });
+  assert.equal((await ok('cards.get', { id })).extra.workedSteps, 'Subtract 3 :: 2x = 8|x = 4');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.workedSteps, 'Subtract 3 :: 2x = 8|x = 4', 'kept');
+  await ok('cards.update', { id, card: { ...card, type: 'basic' } });
+  assert.ok(!('workedSteps' in (await ok('cards.get', { id })).extra), 'a basic card has none');
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');

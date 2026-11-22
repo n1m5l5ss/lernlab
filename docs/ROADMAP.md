@@ -91,7 +91,7 @@ These come from a review of the research on remembering, understanding and stayi
 
 **Tier 2: good evidence, more effort or fewer subjects**
 
-- [ ] **Example ladder:** worked examples that fade step by step.
+- [x] **Example ladder:** worked examples that fade step by step (#206).
 - [ ] **Prerequisite links:** learn the basics first, without locking anything.
 - [ ] **Teach-back:** explain a topic aloud, then check yourself against its key points.
 - [ ] **Case chains:** one scenario with linked questions.

@@ -26,6 +26,7 @@ const TEXT_FIELDS = [
   'keyPoints',
   'twin',
   'keyTerms',
+  'workedSteps',
   'tolerance',
   'code',
   'codeLang',

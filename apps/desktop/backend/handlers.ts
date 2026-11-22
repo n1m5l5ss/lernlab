@@ -141,6 +141,7 @@ const cardInput = v.object({
   corrections: text,
   keyPoints: text,
   twin: text,
+  workedSteps: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -454,6 +455,7 @@ export const handlers = {
           twin: opt(b.twin),
           // The editor writes key terms in the back as ==term==, so the back alone says which there are.
           keyTerms: '',
+          workedSteps: opt(b.workedSteps),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);

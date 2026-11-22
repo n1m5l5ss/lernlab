@@ -68,7 +68,7 @@ What LernLab writes when it exports: `manifest.json`, `cards.jsonl`, a matching 
 - **Readers are lenient about `deck`.** Writers must include it (the schema requires it), but LernLab still imports a manifest without `deck` and names the deck after the file. A `deck` that is not an object is refused (`not_lernpack`).
 - A reader refuses a package whose `version` is higher than the one it knows, with a message that a newer app is needed. It never guesses.
 - A writer adds only optional fields within version 1. Anything an old reader would get wrong if it ignored it (a new required field, a changed meaning) needs version 2.
-- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong". The card type `myth` (November 2026): an older reader studies it as a basic card (front: the myth, back: why it is wrong). The card type `explain` and `keyPoints` (November 2026, `key_points` in CSV): an older reader ignores the points and studies a basic card (front: the question, back: the model explanation, or the key points one per line when there is none). The card type `twin` and `twin` (November 2026): an older reader ignores the second side and studies a basic card (front: the first side, back: the answer). `keyTerms` on cards (November 2026, `key_terms` in CSV): the key terms of the answer, highlighted when it shows; an older reader ignores it and shows the answer without a highlight.
+- Optional fields added since version 1 was published: `imageAlt` on cards (November 2026, `image_alt` in CSV); `tolerance` and the card type `numeric` (November 2026); `code`, `codeLang` and the card type `code` (November 2026); `occlusion`, `occlusionGroup`, `occlusionMode` and the card type `occlusion` (November 2026, image occlusion; still version 1). An older reader studies a numeric card as a basic card, a code card as a basic card without its code, and an occlusion card as a basic card with the whole image (front: the question, back: the box's label) and no box hidden. `variants` on cards (November 2026, the same text in CSV): other ways to ask a card's question; an older reader ignores it and asks the card's own question. `corrections` on multiple-choice cards (November 2026, the same text in CSV): a correction per wrong choice; an older reader ignores it and says a plain "wrong". The card type `myth` (November 2026): an older reader studies it as a basic card (front: the myth, back: why it is wrong). The card type `explain` and `keyPoints` (November 2026, `key_points` in CSV): an older reader ignores the points and studies a basic card (front: the question, back: the model explanation, or the key points one per line when there is none). The card type `twin` and `twin` (November 2026): an older reader ignores the second side and studies a basic card (front: the first side, back: the answer). `keyTerms` on cards (November 2026, `key_terms` in CSV): the key terms of the answer, highlighted when it shows; an older reader ignores it and shows the answer without a highlight. The card type `worked` and `workedSteps` (November 2026, `worked_steps` in CSV): an older reader ignores the steps and studies a basic card (front: the problem, back: the answer).
 
 ### manifest.json
 
@@ -120,7 +120,7 @@ Each line is one card. Only `front` is required.
 | Field | Meaning |
 |---|---|
 | `id` | Stable id so updates keep progress. Write a string; readers also accept a number |
-| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)), `myth` (see [Myth cards](#myth-cards)), `explain` (see [Explain cards](#explain-cards)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card, two or more `keyPoints` an explain card, `twin` a compare card (`twin`, see [Compare cards](#compare-cards)) |
+| `type` | `basic` (default), `cloze`, `mcq`, `order`, `numeric` (see [Math and numeric cards](#math-and-numeric-cards)), `code` (see [Code cards](#code-cards)), `occlusion` (see [Image occlusion cards](#image-occlusion-cards)), `myth` (see [Myth cards](#myth-cards)), `explain` (see [Explain cards](#explain-cards)), `worked` (see [Worked examples](#worked-examples)). Without it the type comes from the content: `{{c1::…}}` makes a cloze, `choices` an mcq, `steps` an order card, `code` a code card, `occlusion` with an `image` an occlusion card, two or more `keyPoints` an explain card, two or more `workedSteps` a worked example, `twin` a compare card (`twin`, see [Compare cards](#compare-cards)) |
 | `front` | Term, question or prompt (required, not empty). Cloze: text with `{{c1::answer}}` or `{{c1::answer::hint}}` (Anki syntax) |
 | `back` | Definition or answer |
 | `altAnswers` | Other accepted answers, separated by `|` (e.g. `colour|color`) |
@@ -135,6 +135,7 @@ Each line is one card. Only `front` is required.
 | `keyPoints` | Explain card: its 2–5 key points, separated by `|`: `Earth is tilted\|The tilt changes the angle of sunlight`. See [Explain cards](#explain-cards) (optional, added after v1 was published; older readers ignore it) |
 | `twin` | Compare card: the second thing, shown beside the front: `effect: a result`. See [Compare cards](#compare-cards) (optional, added after v1 was published; older readers ignore it) |
 | `keyTerms` | The key terms of the answer, separated by `|`: `mitochondrion\|ATP`. They are highlighted when the answer shows. See [Key terms](#key-terms) (optional, added after v1 was published; older readers ignore it) |
+| `workedSteps` | Worked example: its 2–8 solution steps, separated by `|`, each `what you do :: result`: `Subtract 3 from both sides :: 2x = 8\|Divide both sides by 2 :: x = 4`. See [Worked examples](#worked-examples) (optional, added after v1 was published; older readers ignore it) |
 | `corrections` | Multiple choice: a correction per wrong choice, in the order of `choices`, separated by `|`: `Many people think EC2 is serverless. In fact you manage its servers.\|\|\|RDS is a database.` See [Corrections for wrong choices](#corrections-for-wrong-choices) (optional, added after v1 was published; older readers ignore it) |
 | `steps` | Ordering card: steps in the correct order, separated by `|` |
 | `tolerance` | Numeric card: how far off a typed number may be, `0.05` (in the card's unit) or `1%` (optional, added after v1 was published) |
@@ -241,6 +242,21 @@ A card of type `twin` puts two things that are easy to mix up side by side. Its 
 - A session shows both sides and asks "What do they share? What is the one key difference?". You answer in your head, show the back and rate yourself as on a flip card. It is a normal recall with one grade per day. Compare cards stay out of games, wrong choices, guess rounds and mock exams.
 - LernLab offers to add one after you mixed up the same two cards three times. Which cards you mix up stays on your computer; it is not part of a deck file.
 - Exported to Anki, a compare card is a basic card with its front and back.
+## Worked examples
+
+A card of type `worked` holds one solved problem: the problem on the front, the answer on the back and the solution in `workedSteps`, 2–8 steps separated by `|`. Each step is `what you do :: result`:
+
+```json
+{"type":"worked","front":"Solve 2x + 3 = 11","back":"x = 4","workedSteps":"Subtract 3 from both sides :: 2x = 8|Divide both sides by 2 :: x = 4"}
+```
+
+- In CSV, put `worked` in the `type` column and the steps in a `worked_steps` column. Two or more steps make a worked example even without a type.
+- The first `::` splits a step; a step without `::` is only a result. A step without a result is dropped, a ninth step and later ones too. With fewer than two steps, the card is a basic card and keeps none. Steps are plain text with `**bold**`, `*italic*`, `` `code` `` and math in `\( … \)`; what you do is at most 300 characters, a result at most 200. A `|` can't be part of a step.
+- The back may be empty: it is then the last step's result. An older reader studies a basic card with the problem and this answer.
+- **The ladder.** A session first shows the full example to study. Next it shows all steps but the last and you type the last result; then the last two; and so on until you solve the whole problem. A rung done right moves you one up, a miss one down, so a problem you can no longer solve fades its first steps back in. The rungs are practice: they never grade the card and it stays a new (or due) card. Only solving the whole problem is a recall with one grade per day: every step right is Good, right with a small slip is Hard, a wrong step is Again. There is no timer.
+- A typed step is checked like a typed answer: a result that is a number with an optional unit (`9.81 m/s^2`) by its value, a formula by its LaTeX source, anything else as text, where a small typo is a slip and spaces never matter (`x=4` is `x = 4`).
+- Worked examples have no question variants, and they are left out of games, guess-first rounds, distractors and mock exams.
+- Exported to Anki, a worked example is a basic card with its steps under the notes, numbered.
 
 ## Math and numeric cards
 
@@ -325,6 +341,7 @@ Recognised column names (case-insensitive):
 | `key_points` | key points, keypoints: see [Explain cards](#explain-cards) |
 | `twin` | compare with, compare_with: see [Compare cards](#compare-cards) |
 | `key_terms` | key terms, keyterms: see [Key terms](#key-terms) |
+| `worked_steps` | worked steps, solution steps: see [Worked examples](#worked-examples) |
 | `tolerance` | tol |
 | `code` | snippet, source code: a code card's code (quote it to keep line breaks; a line starting with `#` inside quotes is code, not a comment) |
 | `code_lang` | code language, programming language |

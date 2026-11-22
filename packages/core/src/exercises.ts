@@ -7,6 +7,7 @@ import { variantsOf } from './variants';
 import { correctionHtml, correctionsOf, isMyth } from './misconceptions';
 import { askedOwnWay, asksWhy, isExplain, keyPointHtml, keyPointsOf } from './explain';
 import { isTwin } from './twin';
+import { isWorked, stepHtml, workedStepsOf } from './worked';
 import type { Exercise, Item } from './types';
 
 const ARTS = ['der', 'die', 'das'] as const;
@@ -160,6 +161,22 @@ export function explain(item: Item, k = 0): Exercise {
   };
 }
 
+/**
+ * A worked example on its rung (worked.ts): the last `rung` steps are blank. Without a rung (the card was not
+ * loaded for a session) it is the whole problem.
+ */
+export function worked(item: Item): Extract<Exercise, { type: 'worked' }> {
+  const steps = workedStepsOf(item);
+  return {
+    type: 'worked',
+    itemId: item.id,
+    prompt: item.target,
+    steps: steps.map((s) => ({ label: stepHtml(s.label), result: s.result, resultHtml: stepHtml(s.result) })),
+    blanks: Math.min(steps.length, Math.max(0, item.rung ?? steps.length)),
+    answer: item.meaning,
+  };
+}
+
 /** A myth card's recall: reject the statement, then say why (the card's back). */
 export const myth = (item: Item): Exercise => ({
   type: 'myth',
@@ -245,15 +262,17 @@ export const recall = (item: Item, variant = 0): Exercise =>
       ? explain(item)
       : isTwin(item)
         ? twin(item)
-        : item.kind === 'mcq'
-          ? mcq(item)
-          : item.kind === 'order'
-            ? order(item)
-            : item.kind === 'code'
-              ? codeExercise(item)
-              : item.kind === 'occlusion'
-                ? typed(item)
-                : null) ?? recallBasic(item, variant);
+        : isWorked(item)
+          ? worked(item)
+          : item.kind === 'mcq'
+            ? mcq(item)
+            : item.kind === 'order'
+              ? order(item)
+              : item.kind === 'code'
+                ? codeExercise(item)
+                : item.kind === 'occlusion'
+                  ? typed(item)
+                  : null) ?? recallBasic(item, variant);
 
 /** A basic card: typed when the answer is short, explained first when tagged why/how, otherwise flipped. */
 function recallBasic(item: Item, variant: number): Exercise {

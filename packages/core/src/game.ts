@@ -20,6 +20,8 @@ export const XP_WEIGHT: Record<Format, number> = {
   blitz: 0.5,
   mcq: 1.5,
   order: 1.5,
+  worked: 2,
+  ladder: 1,
 };
 
 /** XP for one answer. Errors never cost XP; combos add a little (capped). */

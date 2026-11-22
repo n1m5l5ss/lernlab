@@ -20,6 +20,7 @@ import {
   newItemIds,
   nextGrammarGroup,
   srsInfo,
+  withRungs,
 } from './learn';
 import { getDeck } from './library';
 import * as gen from './exercises';
@@ -27,6 +28,7 @@ import { qa } from './cards';
 import { GUESS_MAX, pickGuessRound, topicIsNew, topicName } from './guess';
 import { variantIndex, variantsOf } from './variants';
 import { askedOwnWay } from './explain';
+import { isWorked } from './worked';
 import { arcadeSeconds, dayKey } from './game';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
@@ -81,7 +83,7 @@ export function planSession(
   const deck = deckId ? getDeck(deckId, d) : null;
   const settings = getSettings(d);
   const size = SIZES[length];
-  const pool = allItems(d, scope);
+  const pool = withRungs(allItems(d, scope), d); // worked examples are asked on their rung of the ladder
   const deckIds = [...new Set(pool.map((i) => i.deckId))];
   // Several decks in one language still get that language's voice and teacher; mixed languages get neither.
   const poolDecks = deckIds.map((id) => getDeck(id, d));
@@ -340,7 +342,9 @@ export function planSession(
   }
 
   // 12. Recall today's new cards: first real test, writes their first grade.
-  const recallIds = [...new Set([...fresh, ...leftovers])];
+  // A worked example is asked once a session (above), except right after it was studied: then its last step.
+  const nextRung = (id: number) => (get(id).rung === 0 ? gen.worked({ ...get(id), rung: 1 }) : null);
+  const recallIds = [...new Set([...fresh, ...leftovers])].filter((id) => !isWorked(get(id)) || get(id).rung === 0);
   if (recallIds.length) {
     blocks.push({
       id: bid(),
@@ -348,8 +352,10 @@ export function planSession(
       format: 'typed',
       title: 'Recall',
       teacher: say('recall'),
-      exercises: keepClose(shuffle(recallIds), mixups).map((id, i) =>
-        i % 3 === 2 && notOwnWay(id) ? (gen.cloze(get(id)) ?? gen.recall(get(id))) : gen.recall(get(id)),
+      exercises: keepClose(shuffle(recallIds), mixups).map(
+        (id, i) =>
+          nextRung(id) ??
+          (i % 3 === 2 && notOwnWay(id) ? (gen.cloze(get(id)) ?? gen.recall(get(id))) : gen.recall(get(id))),
       ),
     });
   }
@@ -394,6 +400,7 @@ export function planSession(
     if ('exercises' in b) b.exercises.forEach((e) => 'itemId' in e && ids.add(e.itemId));
   }
   const items = itemsByIds([...ids], d);
+  for (const it of Object.values(items)) if (byId.has(it.id)) it.rung = byId.get(it.id)!.rung;
   const extras: Record<number, Item> = {};
   for (const it of shuffle(pool.filter((p) => p.kind !== 'grammar')).slice(0, 60))
     if (!items[it.id]) extras[it.id] = it;

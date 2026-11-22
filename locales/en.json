@@ -480,6 +480,7 @@
         "variants": "Question variants",
         "corrections": "Corrections for wrong choices",
         "keyPoints": "Key points",
+        "workedSteps": "Worked steps",
         "keyTerms": "Key terms to highlight"
       },
       "hints": {
@@ -620,7 +621,23 @@
         "code": "Code (output, missing token or line order)",
         "occlusion": "Image occlusion (hide parts of a picture)",
         "myth": "Myth (a common misconception to reject)",
-        "explain": "Explain it (a why or how question with key points)"
+        "explain": "Explain it (a why or how question with key points)",
+        "worked": "Worked example (a solved problem whose steps fade)"
+      },
+      "worked": {
+        "problem": "Problem",
+        "problemPlaceholder": "Solve 2x + 3 = 11",
+        "answer": "Final answer (optional)",
+        "answerPlaceholder": "x = 4 (left empty: the last step's result)",
+        "title": "Solution steps",
+        "help": "2 to 8 steps, in order. Learners first study the full example, then type the last result, then the last two, and so on until they solve it all. Only the whole problem changes the schedule.",
+        "label": "Step {{n}}: what you do",
+        "labelPlaceholder": "Subtract 3 from both sides",
+        "result": "Step {{n}}: the result",
+        "resultPlaceholder": "2x = 8",
+        "remove": "Remove step {{n}}",
+        "add": "Add a step",
+        "full": "A worked example can hold {{count}} steps."
       },
       "explain": "Question (why or how)",
       "explainPlaceholder": "Why do we have seasons?",
@@ -765,7 +782,8 @@
         "tolerance": "Write the tolerance as a number like 0.05 or a percentage like 1%, or it is left out.",
         "code": "Add the output, a gap like {{open}}token{{close}} in the code, or at least two lines to put in order.",
         "occlusion": "Add an image, draw at least one box and give each box a label.",
-        "keyPoints": "Write at least two key points, or this card is studied as a basic card."
+        "keyPoints": "Write at least two key points, or this card is studied as a basic card.",
+        "workedSteps": "Write at least two steps with a result, or this card is studied as a basic card."
       },
       "hints": {
         "title": "Tips for this card",
@@ -1309,6 +1327,39 @@
       "gapDown": "You rated {{before}} before and {{after}} after. Explaining often shows what is still unclear: that is how it helps.",
       "gapUp": "You rated {{before}} before and {{after}} after: explaining made it clearer.",
       "gapSame": "You rated {{before}} before and after."
+    },
+    "worked": {
+      "title": {
+        "study": "Worked example · study it",
+        "fade": "Worked example · finish it",
+        "whole": "Solve it yourself"
+      },
+      "intro": {
+        "study": "Read each step and make sure you see why it follows. Next, you fill in the last step yourself.",
+        "fade_one": "The first steps are done. Fill in the last step. This is practice.",
+        "fade_other": "The first steps are done. Fill in the last {{count}} steps. This is practice.",
+        "whole_one": "Solve the whole problem, one step at a time.",
+        "whole_other": "Solve the whole problem, one step at a time."
+      },
+      "step": "Step {{n}}",
+      "resultOf": "Result of step {{n}}",
+      "placeholder": "Type the result of this step…",
+      "later": "Comes next",
+      "right": "Right:",
+      "wrong": "The result is:",
+      "iWasRight": "I was right about step {{n}}",
+      "dontKnow": "I don't know this step",
+      "studied": "I've studied it",
+      "result": {
+        "fade": {
+          "right": "Every step right. Next time, one more step is yours.",
+          "wrong": "Not yet. Next time, the example shows one more step."
+        },
+        "whole": {
+          "right": "Solved on your own.",
+          "wrong": "Not yet. Next time, the example shows the first step again."
+        }
+      }
     },
     "flip": {
       "title": "Recall · think of the answer",

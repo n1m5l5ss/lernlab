@@ -2059,10 +2059,19 @@ mark {
 .editor-variant select.input {
   width: auto;
 }
-.editor-keypoint {
+.editor-keypoint,
+.editor-worked-step {
   display: flex;
   gap: var(--space-2);
   align-items: center;
+}
+/* What you do gets more room than its result. */
+.editor-worked-step .input:first-of-type {
+  flex: 2;
+}
+.editor-worked-step .input {
+  flex: 1;
+  min-width: 0;
 }
 /* The label quotes the choice: keep its own case. */
 .editor-correction .lbl {
@@ -3555,6 +3564,54 @@ textarea.input.code-input {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--color-text);
+}
+/* Worked examples that fade (modes/Worked.tsx, #206): the steps of a solved problem, the last ones typed. */
+.worked-card .prompt {
+  text-align: start;
+  margin-bottom: var(--space-3);
+}
+.worked-steps {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding-inline-start: var(--space-6);
+  text-align: start;
+}
+.worked-step {
+  padding-inline-start: var(--space-2);
+}
+.worked-step::marker {
+  color: var(--muted);
+  font-weight: 700;
+}
+.worked-label {
+  font-size: var(--text-body);
+}
+.worked-result {
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.worked-step .input {
+  margin-top: var(--space-1);
+}
+.worked-later {
+  font-size: var(--text-body);
+}
+.worked-mark.right {
+  color: var(--color-correct);
+}
+.worked-mark.wrong {
+  color: var(--color-incorrect);
+}
+.worked-yours {
+  display: block;
+  font-weight: 400;
+}
+.worked-card .feedback .ans {
+  margin-top: var(--space-2);
+  font-size: var(--text-body);
+  font-weight: 500;
 }
 .explain-points {
   margin: var(--space-3) 0 0;

@@ -194,6 +194,32 @@ test('corrections: any text gives plain-text corrections, cleaning is stable and
   );
 });
 
+const {
+  cleanWorkedSteps,
+  parseWorkedSteps,
+  stepHtml,
+  WORKED_STEPS_MAX,
+  WORKED_LABEL_MAX_LENGTH,
+  WORKED_RESULT_MAX_LENGTH,
+} = await import('../src/worked');
+test('worked steps: any text gives at most eight plain-text steps, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const list = parseWorkedSteps(text);
+      assert.ok(list.length <= WORKED_STEPS_MAX);
+      for (const s of list) {
+        assert.ok(s.result && s.result.length <= WORKED_RESULT_MAX_LENGTH && !s.result.includes('|'));
+        assert.ok(s.label.length <= WORKED_LABEL_MAX_LENGTH && !s.label.includes('|') && !s.label.includes('::'));
+        for (const t of [s.label, s.result]) assert.equal(sanitizeHtml(stepHtml(t)), stepHtml(t), 'already safe HTML');
+      }
+      const line = cleanWorkedSteps(text);
+      assert.equal(cleanWorkedSteps(line), line, 'cleaning twice changes nothing');
+      assert.deepEqual(parseWorkedSteps(line), list.length >= 2 ? list : []);
+    }),
+    params(RUNS * 2),
+  );
+});
+
 test('key points: any text gives at most five plain-text points, cleaning is stable and the HTML stays safe', () => {
   fc.assert(
     fc.property(hostileText, (text) => {

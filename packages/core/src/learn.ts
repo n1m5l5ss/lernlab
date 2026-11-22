@@ -11,6 +11,7 @@ import { withOcclusionBoxes } from './occlusion';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 import { LEVELS } from './variants';
 import { noteConfusion } from './confusions';
+import { isWorked, rungOf, workedStepsOf } from './worked';
 
 export type Settings = {
   deck: string;
@@ -275,7 +276,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     // Code and occlusion cards are question cards in every format they are asked in.
     if (
       a.format === 'intro' ||
-      ((['mcq', 'order', 'flip'].includes(a.format) || ['code', 'occlusion'].includes(String(item.kind))) &&
+      ((['mcq', 'order', 'flip', 'worked'].includes(a.format) || ['code', 'occlusion'].includes(String(item.kind))) &&
         !a.genderOnly)
     )
       introduce(a.itemId, d, now);
@@ -368,6 +369,25 @@ export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
       .map(rowToItem),
     d,
   );
+}
+
+/**
+ * Set each worked example's rung (worked.ts) from its ladder answers in the attempts log: right moves one up,
+ * wrong one down. One query, and none when the cards hold no worked example.
+ */
+export function withRungs<T extends Item>(items: T[], d: DB = getDb()): T[] {
+  const ladders = items.filter(isWorked);
+  if (!ladders.length) return items;
+  const answers = new Map<number, boolean[]>(ladders.map((i) => [i.id, []]));
+  for (const r of d
+    .prepare(
+      `SELECT item_id, correct FROM attempts WHERE format IN ('worked', 'ladder')
+       AND item_id IN (${ladders.map((i) => Number(i.id)).join(',')}) ORDER BY id`,
+    )
+    .all())
+    answers.get(Number(r.item_id))?.push(Number(r.correct) === 1);
+  for (const i of ladders) i.rung = rungOf(answers.get(i.id)!, workedStepsOf(i).length);
+  return items;
 }
 
 /** End of the current learning day (4 a.m. next morning), used as the "due" cutoff. */
