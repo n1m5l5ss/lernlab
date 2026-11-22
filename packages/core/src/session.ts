@@ -31,6 +31,7 @@ import { variantIndex, variantsOf } from './variants';
 import { askedOwnWay } from './explain';
 import { isWorked } from './worked';
 import { addDays, arcadeSeconds, dayKey } from './game';
+import { isAction, markActOut } from './actout';
 import { SAY_ALOUD_DAYS, markSayAloud, sayAloudCap, sayAloudCards } from './sayaloud';
 import { shuffle, stripHtml } from './text';
 import { tomorrowUnsure } from './tomorrow';
@@ -503,6 +504,8 @@ export function planSession(
       markSayAloud(finalBlocks, missed, starred);
     }
   }
+  // A few action cards (tagged `action`, or verbs in a language deck) ask to be acted out (#225).
+  if (settings.actOut) markActOut(finalBlocks, (id) => has(id) && isAction(get(id)));
   for (const b of finalBlocks) {
     if ('itemIds' in b) b.itemIds.forEach((i) => ids.add(i));
     if ('exercises' in b) b.exercises.forEach((e) => 'itemId' in e && ids.add(e.itemId));

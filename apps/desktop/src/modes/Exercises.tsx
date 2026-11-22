@@ -208,6 +208,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
           <Rich html={item.notes || item.grammar} />
         </div>
       )}
+      {ex.actOut && <ActOut />}
       <div className="actions" style={{ justifyContent: 'center' }}>
         {ctx.lang && (
           <button className="audio" onClick={() => sayFront(ctx, item)}>
@@ -479,6 +480,7 @@ export function Flip({
               </div>
             )}
             <MnemonicNote ctx={ctx} item={item} attempted />
+            {ex.actOut && <ActOut />}
           </Feedback>
         )}
       </div>
@@ -624,6 +626,8 @@ type TypedProps = {
   render: (input: React.ReactElement) => React.ReactElement;
   onNext: (r: { correct: boolean }) => void;
   revealAudio?: boolean;
+  /** One of a few action cards (#225): once the answer shows, ask to act it out and wait for Continue. */
+  actOut?: boolean;
 };
 
 function Umlauts({ lang, onAdd }: { lang: string | null; onAdd: (c: string) => void }) {
@@ -693,6 +697,7 @@ export function TypedEngine({
   render,
   onNext,
   revealAudio,
+  actOut,
 }: TypedProps) {
   const { t } = useTranslation();
   const item = ctx.item(itemId);
@@ -718,7 +723,7 @@ export function TypedEngine({
     finalCorrect.current = correct;
     setPhase('done');
     if (ctx.lang) say(accepted[0], 0.95, ctx.lang, item.deckId);
-    if (delay > 0 && !asksSure) setTimeout(() => onNext({ correct }), delay);
+    if (delay > 0 && !asksSure && !actOut) setTimeout(() => onNext({ correct }), delay);
   };
   const rateSure = (n: Confidence, how: ConfidencePick) => {
     setSure(n);
@@ -899,6 +904,7 @@ export function TypedEngine({
             </div>
           )}
           <MnemonicNote ctx={ctx} item={item} attempted={phase !== 'answer'} asked={hintLevel > 0} />
+          {actOut && phase === 'done' && <ActOut />}
           {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
         </Feedback>
       )}
@@ -942,6 +948,7 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
       requireArticle={ex.requireArticle}
       hint={ex.hint}
       onNext={onNext}
+      actOut={ex.actOut && !boss}
       render={(input) => (
         <>
           <div className="blocktitle">
@@ -1347,6 +1354,12 @@ export function Lesson({
       </div>
     </div>
   );
+}
+
+/** "Act it out" (#225), shown with the answer of a few action cards. A prompt only: nothing is checked. */
+function ActOut() {
+  const { t } = useTranslation();
+  return <div className="act-out">{t('ex.actOut')}</div>;
 }
 
 /**

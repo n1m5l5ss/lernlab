@@ -52,6 +52,7 @@ Anki has the best scheduler there is, but reviewing in it means flipping one car
 - **Mnemonics that fade:** give a card a memory aid. It shows only after a miss or when you ask for a hint, never before you try, and stops showing by itself once you get the card right twice in a row.
 - **Teach it back:** for a tag you know well, explain it to a beginner in about a minute, typed or recorded, then tick the key points you left out and practise those cards. Nothing is saved or graded.
 - **Say a few answers aloud:** on a few starred or recently missed flip cards, a session asks you to say the answer out loud before you show it. No microphone, and never on every card.
+- **Act it out:** a few cards tagged `action`, and a few verbs in language decks, ask you to do or mime the action when the answer shows.
 - **Mock exams:** a tutor mode that explains each answer and counts toward your reviews, and a timed mode like the real thing, with flags, a pass mark, a score by topic and by question level.
 - **Honest grading:**
   - you type or say the answer, and LernLab grades it;

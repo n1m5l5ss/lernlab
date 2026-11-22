@@ -126,7 +126,8 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
     | 'confidence'
     | 'calm'
     | 'sleepBridge'
-    | 'sayAloud';
+    | 'sayAloud'
+    | 'actOut';
   const check = (key: Toggle, id: string, disabled = false) => (
     <input
       id={id}
@@ -269,6 +270,9 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
         </Row>
         <Row id="set-say-aloud" label={t('settings.sayAloud')} hint={t('settings.sayAloudHint')}>
           {check('sayAloud', 'set-say-aloud')}
+        </Row>
+        <Row id="set-act-out" label={t('settings.actOut')} hint={t('settings.actOutHint')}>
+          {check('actOut', 'set-act-out')}
         </Row>
         <Row id="set-calm" label={t('settings.calm')} hint={t('settings.calmHint')}>
           {check('calm', 'set-calm')}

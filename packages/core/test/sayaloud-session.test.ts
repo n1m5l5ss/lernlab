@@ -77,3 +77,28 @@ test('the setting turns it off', () => {
   setMeta(getDb(), 'settings', { ...getSettings(), sayAloud: false });
   assert.equal(flipsOf().filter((e) => e.sayAloud).length, 0);
 });
+
+test('"act it out": a few verbs of a language deck and cards tagged action are marked; the setting turns it off', () => {
+  setMeta(getDb(), 'settings', { ...getSettings(), sayAloud: true, actOut: true });
+  const german = createDeck('German verbs', 'de');
+  upsertCards(
+    german,
+    ['laufen', 'springen', 'essen', 'trinken', 'schlafen', 'lesen', 'singen', 'tanzen'].map((front, i) => ({
+      sourceId: `v${i}`,
+      front,
+      back: `to verb${i}`,
+    })),
+  );
+  const plan = () =>
+    planSession('standard', getDb(), now, german.id, { practice: true })
+      .blocks.flatMap((b) => ('exercises' in b ? b.exercises : []))
+      .filter((e) => e.type === 'typed' || e.type === 'flip' || e.type === 'intro');
+  const asked = plan();
+  const cards = new Set(asked.map((e) => e.itemId)).size;
+  const acted = asked.filter((e) => e.actOut);
+  assert.ok(cards >= 2 && acted.length >= 1, 'verbs are action cards');
+  assert.ok(acted.length <= sayAloudCap(cards));
+  assert.equal(new Set(acted.map((e) => e.itemId)).size, acted.length, 'each card once');
+  setMeta(getDb(), 'settings', { ...getSettings(), actOut: false });
+  assert.equal(plan().filter((e) => e.actOut).length, 0);
+});

@@ -110,7 +110,11 @@ export const FORMAT_LEVEL: Partial<Record<Format, number>> = {
 };
 
 export type Exercise =
-  | { type: 'intro'; itemId: number }
+  | {
+      type: 'intro';
+      itemId: number;
+      /** Ask the learner to act the card out (a few action cards only, actout.ts). */ actOut?: boolean;
+    }
   | { type: 'mc'; itemId: number; direction: 'de2en' | 'en2de'; prompt: string; options: string[]; answerIndex: number }
   | {
       type: 'typed';
@@ -124,6 +128,7 @@ export type Exercise =
       codeLang?: string;
       /** Asked with one of the card's question variants (variants.ts): its level. */
       level?: Level;
+      actOut?: boolean;
     }
   | {
       type: 'cloze';
@@ -150,6 +155,7 @@ export type Exercise =
       level?: Level;
       /** Ask the learner to say the answer aloud before showing it (a few cards only, sayaloud.ts). */
       sayAloud?: boolean;
+      actOut?: boolean;
     }
   | { type: 'truefalse'; itemId: number; front: string; shown: string; isTrue: boolean }
   /** A myth card (misconceptions.ts): "True or myth?" about the statement, then why (its back). A real recall. */

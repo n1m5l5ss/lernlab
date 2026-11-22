@@ -65,6 +65,8 @@ export type Settings = {
   morningTime: string;
   /** Ask for the answer out loud on a few flip cards, starred or recently missed (#222). On by default. */
   sayAloud: boolean;
+  /** Ask to act out a few action cards: tagged `action`, or verbs in a language deck (#225). On by default. */
+  actOut: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -97,6 +99,7 @@ export const DEFAULT_SETTINGS: Settings = {
   sleepBridge: false,
   morningTime: DEFAULT_MORNING_TIME,
   sayAloud: true,
+  actOut: true,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
