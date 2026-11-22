@@ -137,8 +137,30 @@ export function openAppDbReadonly(file = resolve(dataDir(), 'lernlab.db')): DB {
   }
 }
 
+/** Run before the app database closes: connections that read it (learners.ts) close first. */
+const closing: (() => void)[] = [];
+export const onAppDbClose = (fn: () => void) => void closing.push(fn);
+
+/**
+ * Another learner's data set, used instead of the app database while `fn` runs (learners.ts, #224): their
+ * own progress database and their own folder for daily summaries. `fn` must finish before it returns.
+ */
+let acting: { db: DB; dir: string } | null = null;
+export function actAs<T>(target: { db: DB; dir: string }, fn: () => T): T {
+  if (acting) throw new Error('Already acting as a learner');
+  acting = target;
+  try {
+    const out = fn();
+    if (out instanceof Promise) throw new Error('A learner request must not be asynchronous');
+    return out;
+  } finally {
+    acting = null;
+  }
+}
+
 /** Close the app database (to swap its file); the next getAppDb() opens it again. */
 export function closeAppDb(): void {
+  for (const fn of closing) fn();
   try {
     if (db) optimizeDb(db);
   } catch {
@@ -229,7 +251,7 @@ function checkpointLater(d: DB, autoCheckpoint: number): void {
 const mediaPath = (name: string) => resolve(mediaDir(), basename(name));
 
 export const nodeHost: Host = {
-  db: () => getAppDb(),
+  db: () => acting?.db ?? getAppDb(),
   openSqliteBytes,
   buildSqliteBytes,
   media: {
@@ -237,9 +259,10 @@ export const nodeHost: Host = {
     size: (name) => statSync(mediaPath(name), { throwIfNoEntry: false })?.size ?? null,
     read: (name) => (existsSync(mediaPath(name)) ? readFileSync(mediaPath(name)) : null),
     write: (name, data) => writeFileSync(mediaPath(name), data),
+    remove: (name) => rmSync(mediaPath(name), { force: true }),
   },
   saveProgressSnapshot(day, json) {
-    const dir = resolve(dataDir(), 'progress');
+    const dir = resolve(acting?.dir ?? dataDir(), 'progress');
     mkdirSync(dir, { recursive: true });
     writeFileSync(resolve(dir, `${day}.json`), json);
   },

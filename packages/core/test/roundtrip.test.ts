@@ -86,6 +86,19 @@ upsertCards(deck, [
     workedSteps: 'Subtract 3, "both sides" :: 2x = 8|Divide by 2 :: x = 4',
     rank: 7,
   },
+  {
+    front: 'Which artery, "most likely"?',
+    back: 'Right coronary artery',
+    case: 'A man, 58, has "crushing" chest pain, with ST elevation in II, III and aVF.',
+    rank: 8,
+  },
+  {
+    front: 'Which function is this, "exactly"?',
+    back: 'y = 2x + 1',
+    type: 'translate',
+    graph: 'y = 2x + 1; x = -3..3',
+    rank: 9,
+  },
 ]);
 
 /** Every stored card field except the row's own id, deck, order and timestamps; the deck's own name reads <deck>. */
@@ -104,7 +117,7 @@ test('.lernpack: export then import into a new deck gives identical cards, with 
   const pack = exportDeck(deck.id, 'lernpack');
   assert.equal(pack.name, 'Biology.lernpack');
   const r = importFile(pack.name, pack.data, { deckName: 'Biology copy' });
-  assert.equal(r.added, 8);
+  assert.equal(r.added, 10);
   assert.equal(r.media, 4);
   assert.equal(r.mediaMissing, 0);
   assert.deepEqual(cardsOf(r.deck.id, 'Biology copy'), original);
@@ -160,6 +173,8 @@ test('.lernpack: cards.csv beside cards.jsonl, media sorted into images/, audio/
     'key_terms',
     'worked_steps',
     'mnemonic',
+    'case',
+    'graph',
     'audio',
     'video',
     'id',
@@ -176,7 +191,7 @@ test('.lernpack: its cards.csv alone imports to identical cards, with media', ()
   const { 'cards.jsonl': _jsonl, ...rest } = files;
   const r = importFile('csv-only.lernpack', zipSync(rest as Zippable), { deckName: 'Biology from CSV' });
   assert.equal(r.format, 'lernpack');
-  assert.equal(r.added, 8);
+  assert.equal(r.added, 10);
   assert.equal(r.media, 4);
   assert.equal(r.mediaMissing, 0);
   assert.deepEqual(cardsOf(r.deck.id, 'Biology from CSV'), original);
@@ -187,7 +202,7 @@ test('CSV: export then import into a new deck gives identical cards (media files
   assert.equal(csv.name, 'Biology.csv');
   const r = importFile('Fresh.csv', csv.data);
   assert.equal(r.deck.name, 'Fresh');
-  assert.equal(r.added, 8);
+  assert.equal(r.added, 10);
   const copy = cardsOf(r.deck.id, 'Fresh');
   // A plain CSV carries the file name of a picture, not the picture itself.
   assert.equal(r.mediaMissing, 4);
@@ -248,16 +263,25 @@ test('a mnemonic is stored with its card (so the round trips above carry it)', (
   assert.deepEqual(original.map((c) => extraOf(c).mnemonic).filter(Boolean), ['Ribosome, "rib" = build, with commas']);
 });
 
-test('the CSV template imports as three example cards', () => {
+test('a case is stored with its card, and the front stays the question alone (so the round trips above carry it)', () => {
+  const withCase = original.filter((c) => extraOf(c).case);
+  assert.deepEqual(
+    withCase.map((c) => [extraOf(c).case, (c as { target?: unknown }).target]),
+    [['A man, 58, has "crushing" chest pain, with ST elevation in II, III and aVF.', 'Which artery, "most likely"?']],
+  );
+});
+
+test('the CSV template imports as four example cards', () => {
   const lines = CSV_TEMPLATE.trim().split('\n');
-  assert.equal(lines.length, 4, 'a header and three example rows');
+  assert.equal(lines.length, 5, 'a header and four example rows');
   assert.match(lines[0], /^front,back,/);
   assert.ok(lines[0].split(',').includes('image_alt'), 'the template shows the image description column');
   assert.ok(lines[0].split(',').includes('variants'), 'the template shows the question variants column');
   assert.ok(lines[0].split(',').includes('corrections'), 'the template shows the corrections column');
+  assert.ok(lines[0].split(',').includes('key_points'), 'the template shows the key points column');
   for (const l of lines) assert.equal(l.split(',').length, lines[0].split(',').length, l);
   const r = importFile('template.csv', strToU8(CSV_TEMPLATE));
-  assert.equal(r.added, 3);
+  assert.equal(r.added, 4);
   const kinds = getDb()
     .prepare('SELECT kind FROM items WHERE deck_id = ? ORDER BY ord')
     .all(r.deck.id)
@@ -267,4 +291,26 @@ test('the CSV template imports as three example cards', () => {
   assert.match(String(s3?.extra), /apply: Which AWS service .* \| analyse: /);
   const quiz = getDb().prepare("SELECT extra FROM items WHERE deck_id = ? AND kind = 'mcq'").get(r.deck.id);
   assert.match(JSON.parse(String(quiz?.extra)).corrections, /^Many people think EC2 is serverless\./);
+  // The explain card: a why question, a model answer on the back and its key points.
+  const explain = getDb()
+    .prepare("SELECT target, meaning, extra FROM items WHERE deck_id = ? AND extra LIKE '%keyPoints%'")
+    .all(r.deck.id);
+  assert.equal(explain.length, 1);
+  assert.match(String(explain[0].target), /^Why /);
+  assert.match(String(explain[0].meaning), /tilted axis/);
+  assert.equal(String(JSON.parse(String(explain[0].extra)).keyPoints).split('|').length, 3);
+});
+
+test('the import preview maps every column of the CSV template, key points included', async () => {
+  const { previewFile } = await import('../src/importpreview');
+  const p = previewFile('template.csv', strToU8(CSV_TEMPLATE));
+  assert.equal(p.total, 4);
+  assert.ok(p.table?.header);
+  const names = p.table!.columns.map((c) => c.name);
+  assert.equal(p.table!.fields.keyPoints, names.indexOf('key_points'));
+  assert.deepEqual(
+    Object.values(p.table!.fields).sort((a, b) => a - b),
+    names.map((_, i) => i),
+    'no template column is left unmapped',
+  );
 });

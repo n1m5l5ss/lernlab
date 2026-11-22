@@ -12,7 +12,10 @@ import { stripHtml } from './text';
 import { countHints, type HintCount } from './cardquality';
 import { UserError } from './errors';
 
-/** Card fields a column can be mapped to, with the CSV header the CSV reader knows them by. */
+/**
+ * Card fields a column can be mapped to, with the CSV header the CSV reader knows them by: every field of
+ * CSV_FIELD_NAMES (formats/csv.ts); a test fails when a new CSV column is missing here.
+ */
 export const MAPPABLE_FIELDS = {
   front: 'front',
   back: 'back',
@@ -42,6 +45,16 @@ export const MAPPABLE_FIELDS = {
   keyPoints: 'key_points',
   keyTerms: 'key_terms',
   workedSteps: 'worked_steps',
+  case: 'case',
+  graph: 'graph',
+  twin: 'twin',
+  requires: 'requires',
+  tolerance: 'tolerance',
+  code: 'code',
+  codeLang: 'code_lang',
+  occlusion: 'occlusion',
+  occlusionGroup: 'occlusion_group',
+  occlusionMode: 'occlusion_mode',
 } as const;
 export type MappableField = keyof typeof MAPPABLE_FIELDS;
 

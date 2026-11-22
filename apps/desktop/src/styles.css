@@ -2070,6 +2070,53 @@ kbd {
 .mnemonic-lead {
   font-weight: 700;
 }
+/* The learner's own sketch (#220): a small framed picture with the answer; the pad's offer on a new card. */
+.sketchcue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  text-align: start;
+}
+.sketchcue-lead {
+  font-weight: 700;
+  color: var(--color-text);
+}
+.sketchcue img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+}
+.sketchcue-text {
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.sketchcue-remove {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.btn.sketch-btn {
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-caption);
+}
+.sketchoffer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.sketchoffer .sketchcue {
+  align-items: center;
+  margin-top: 0;
+}
 /* A key term (==term== in a card): shown by weight and an underline as well as a tint, never by colour alone. */
 mark {
   padding: 0 0.15em;
@@ -3638,6 +3685,13 @@ textarea.input.code-input {
   font-size: var(--text-body);
   line-height: 1.5;
 }
+.explain-voice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
 .explain-understand {
   display: grid;
   gap: var(--space-1);
@@ -3654,6 +3708,161 @@ textarea.input.code-input {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--color-text);
+}
+/* The case of a case chain (components/CasePanel.tsx, #209), above each of its questions. */
+.case-panel {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+  text-align: start;
+}
+.case-panel-label {
+  font-size: calc(12px * var(--text-scale));
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: var(--space-1);
+}
+.case-panel-text {
+  font-size: var(--text-body);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+/* Concept map from memory (ConceptMap.tsx, components/ConceptMapView.tsx, #219). */
+.cmap-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: start;
+}
+.cmap-panel h2 {
+  margin: 0;
+}
+.cmap-terms,
+.cmap-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: var(--space-2);
+}
+.cmap-terms {
+  flex-wrap: wrap;
+}
+.cmap-terms li {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-subtle);
+}
+.cmap-list {
+  flex-direction: column;
+}
+.cmap-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  overflow-wrap: anywhere;
+}
+.cmap-add {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+.cmap-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.cmap-figure {
+  margin: 0;
+}
+.cmap-figure figcaption {
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+.cmap-view {
+  max-width: 100%;
+  height: auto;
+  align-self: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+.cmap-view-link line {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+.cmap-view-matched line {
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+.cmap-view-missing line {
+  stroke-dasharray: 7 5;
+}
+.cmap-view-extra line {
+  stroke-dasharray: 2 4;
+}
+.cmap-view-arrow {
+  fill: var(--color-text-muted);
+}
+.cmap-view-node {
+  fill: var(--color-subtle);
+  stroke: var(--color-border-strong);
+}
+.cmap-view-term {
+  fill: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.cmap-view-label {
+  fill: var(--color-text);
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: var(--color-bg);
+  stroke-width: 3px;
+}
+.deck-maps {
+  font-family: var(--font-mono, monospace);
+}
+/* A card's graph (components/GraphPlot.tsx, #210): a curve on a light grid, drawn from tokens only. */
+.graph-plot {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+.graph-plot-box {
+  fill: none;
+}
+.graph-plot-grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+.graph-plot-axis {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+.graph-plot-line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.graph-plot-dot {
+  fill: var(--color-accent);
+}
+.graph-plot-tick {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
 }
 /* Try first (modes/Guess.tsx, #218): room to write an attempt, kept as written next to the solution. */
 .try-input {
@@ -3962,4 +4171,99 @@ textarea.input.code-input {
 .summary-patterns-next .btn {
   display: block;
   margin-top: var(--space-3);
+}
+/* AI requests: study aids. Lists show the card's entries now above one line per proposed entry. */
+.request-now-list {
+  padding-inline-start: var(--space-5);
+}
+.request-lines {
+  min-height: 0;
+  resize: vertical;
+  font: inherit;
+}
+.request-choices {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  gap: var(--space-3);
+}
+.request-choices legend {
+  padding: 0 var(--space-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.request-extra {
+  grid-column: 2 / -1;
+}
+
+/* How LernLab's methods work (#215). */
+.methods details {
+  border-top: 1px solid var(--color-border);
+}
+.methods summary {
+  min-height: var(--size-min-target);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+.methods summary::before {
+  content: '▸';
+  width: 1ch;
+  color: var(--color-text-muted);
+}
+.methods details[open] summary::before {
+  content: '▾';
+}
+.methods summary::-webkit-details-marker {
+  display: none;
+}
+.methods details p {
+  margin: 0 0 var(--space-4);
+  max-width: 70ch;
+  color: var(--color-text-muted);
+}
+/* Study together (#224): the start panel on Home, the hand-over screen, and the people list in Settings. */
+.together-start {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.together-start h2,
+.together-start p {
+  margin: 0;
+}
+.learners {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.learners li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  overflow-wrap: anywhere;
+}
+.learners-add {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.learners-add .field {
+  flex: 1;
+}
+.learners-add .field {
+  flex-direction: column;
+  align-items: stretch;
+  border: none;
+  padding: 0;
 }

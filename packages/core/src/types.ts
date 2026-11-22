@@ -50,7 +50,12 @@ export type Item = {
   rung?: number;
   /** Cards with a mnemonic: correct recalls in a row since the last miss; absent while never missed (added when cards are loaded for study, mnemonic.ts). */
   mnemonicRun?: number;
+  /** The learner's own sketch for the card, if they made one (added when cards are loaded for study, sketch.ts). */
+  sketch?: Sketch;
 };
+
+/** A learner's picture cue for a card: a PNG in the media folder ('' when only described) and its description. */
+export type Sketch = { file: string; text: string };
 
 /** Exercise formats. Only RECALL formats may write a spaced-repetition grade. */
 export type Format =

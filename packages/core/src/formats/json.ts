@@ -29,6 +29,8 @@ const TEXT_FIELDS = [
   'keyTerms',
   'workedSteps',
   'mnemonic',
+  'case',
+  'graph',
   'tolerance',
   'code',
   'codeLang',

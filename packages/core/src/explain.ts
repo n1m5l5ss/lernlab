@@ -7,6 +7,8 @@
 import { correctionHtml } from './misconceptions';
 import { isMyth } from './misconceptions';
 import { isWorked } from './worked';
+import { hasCase } from './cases';
+import { hasGraph } from './graph';
 import { stripHtml } from './text';
 import { isTwin } from './twin';
 import type { Item } from './types';
@@ -52,9 +54,15 @@ export const keyPointsOf = (item: Pick<Item, 'extra'>): string[] => parseKeyPoin
 /** An explain card: a basic card whose extra fields hold its key points (cardToItem keeps them only then). */
 export const isExplain = (item: Pick<Item, 'extra'>): boolean => !!item.extra?.keyPoints;
 
-/** Myth, explain, compare and worked-example cards are asked only in their own way: no games, distractors, guess rounds or exams. */
-export const askedOwnWay = (item: Pick<Item, 'extra'>): boolean =>
+/** Myth, explain, compare and worked-example cards have their own exercise; they are never an exam question. */
+export const ownExercise = (item: Pick<Item, 'extra'>): boolean =>
   isMyth(item) || isExplain(item) || isTwin(item) || isWorked(item);
+
+/**
+ * Cards asked only in their own way: no games, distractors or guess rounds. Those with their own exercise, and
+ * the questions of a case (cases.ts) or about a graph (graph.ts), which make no sense without it.
+ */
+export const askedOwnWay = (item: Pick<Item, 'extra'>): boolean => ownExercise(item) || hasCase(item) || hasGraph(item);
 
 /** Cards tagged `why` or `how` are explained before the answer shows, never flipped. */
 export const asksWhy = (item: Pick<Item, 'tags'>): boolean => item.tags.some((t) => /^(why|how)$/i.test(t.trim()));

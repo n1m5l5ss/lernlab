@@ -19,6 +19,9 @@ import {
   fieldsToSave,
   keyPointRows,
   workedRows,
+  showCase,
+  showGraph,
+  graphProblem,
   previewOf,
   removeVariant,
   showImageAlt,
@@ -40,6 +43,10 @@ import {
   type WorkedStep,
 } from '@lernlab/core/worked';
 import { Media, Rich } from './rich';
+import { CaseFor } from './case-view';
+import { isTranslate } from '@lernlab/core/translate';
+import { CASE_MAX_LENGTH } from '@lernlab/core/cases';
+import { GRAPH_MAX_LENGTH } from '@lernlab/core/graph';
 import { CodeBlock } from './code-block';
 import { OcclusionEditor } from './occlusion';
 import { newGroupId, occlusionCards, shapesFor, shapesReady } from './occlusion-logic';
@@ -358,6 +365,51 @@ export function CardEditor({
       <p className="small muted editor-format">
         {t('browse.editor.formatHint', { tags: SAFE_TAGS.map((x) => `<${x}>`).join(' ') })}
       </p>
+      {showCase(c) && (
+        <>
+          <label className="lbl" htmlFor={`${uid}-case`}>
+            {t('browse.editor.case.label')}
+          </label>
+          <textarea
+            id={`${uid}-case`}
+            className="input"
+            maxLength={CASE_MAX_LENGTH}
+            value={c.case}
+            aria-describedby={`${uid}-case-hint`}
+            placeholder={t('browse.editor.case.placeholder')}
+            onChange={(e) => set('case', e.target.value)}
+          />
+          <p id={`${uid}-case-hint`} className="small muted">
+            {t('browse.editor.case.hint')}
+          </p>
+        </>
+      )}
+      {showGraph(c) && (
+        <>
+          <label className="lbl" htmlFor={`${uid}-graph`}>
+            {t('browse.editor.graph.label')}
+          </label>
+          <input
+            id={`${uid}-graph`}
+            className="input"
+            maxLength={GRAPH_MAX_LENGTH}
+            value={c.graph}
+            spellCheck={false}
+            aria-describedby={`${uid}-graph-hint`}
+            aria-invalid={graphProblem(c) || undefined}
+            placeholder={t('browse.editor.graph.placeholder')}
+            onChange={(e) => set('graph', e.target.value)}
+          />
+          <p id={`${uid}-graph-hint`} className="small muted">
+            {t('browse.editor.graph.hint')}
+          </p>
+          {graphProblem(c) && (
+            <p className="editor-dup small" role="status">
+              {t('browse.editor.graph.problem')}
+            </p>
+          )}
+        </>
+      )}
       {showVariants(c) && <VariantsField variants={c.variants} onChange={(v) => set('variants', v)} />}
       <span className="lbl">{t('browse.editor.media')}</span>
       <div className={`editor-drop${dragging ? ' over' : ''}`}>
@@ -766,7 +818,11 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
     <section className="editor-preview" aria-label={t('browse.editor.preview')}>
       <div>
         <span className="lbl">{t('browse.editor.previewQuestion')}</span>
-        <div className="editor-preview-side">{question}</div>
+        <div className="editor-preview-side">
+          <CaseFor item={preview.item} />
+          {question}
+          {isTranslate(preview.item) && <p className="small muted">{t('browse.editor.translateNote')}</p>}
+        </div>
       </div>
       <div>
         <span className="lbl">{t('browse.editor.previewAnswer')}</span>

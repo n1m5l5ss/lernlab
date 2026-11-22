@@ -3,11 +3,26 @@ import type { StudySource } from '@lernlab/core/learn';
 import type { BulkAction } from '@lernlab/core/browse';
 import type { ColumnMapping } from '@lernlab/core/importpreview';
 
-import type { InputOf } from '../backend/handlers';
+import type { InputOf, OutputOf } from '../backend/handlers';
 import { CSV_TEMPLATE, CSV_TEMPLATE_NAME } from '@lernlab/core/csvtemplate';
 import { call, saveFile } from './bridge';
 
 let chain = Promise.resolve();
+
+/**
+ * Study together (#224): whose turn it is. While set, answers go to that learner's own progress. It is read
+ * when an answer is given, not when it is sent, so an answer still on its way keeps its owner.
+ */
+let acting: string | null = null;
+export const setActingLearner = (id: string | null) => {
+  acting = id;
+};
+type StudyChannel = InputOf<'together.as'>['channel'];
+/** A study request for the learner whose turn it was (`who`), or for the owner. */
+const study = <C extends StudyChannel>(who: string | null, channel: C, input: InputOf<C>) =>
+  (who
+    ? call('together.as', { learnerId: who, channel, input: input as Record<string, unknown> })
+    : (call as (c: C, i: InputOf<C>) => Promise<unknown>)(channel, input)) as Promise<OutputOf<C>>;
 
 export const api = {
   state: () => call('state.get'),
@@ -17,6 +32,11 @@ export const api = {
   startImport: () => call('import.anki', {}),
   session: (length: SessionLength, practice = false) => call('session.plan', { length, practice }),
   finish: (body: Parameters<typeof call<'session.finish'>>[1]) => call('session.finish', body),
+  /** Study together (#224): people on this computer, and a deck's session or its end for one of them. */
+  addLearner: (name: string) => call('learners.add', { name }),
+  removeLearner: (id: string) => call('learners.remove', { id }),
+  sessionFor: (who: string | null, deckId: number) => study(who, 'session.plan', { length: 'mini', deckId }),
+  finishFor: (who: string | null, body: InputOf<'session.finish'>) => study(who, 'session.finish', body),
   examStart: (deckId: number) => call('exam.start', { deckId }),
   examSubmit: (body: InputOf<'exam.submit'>) => call('exam.submit', body),
   stats: () => call('stats.get'),
@@ -31,6 +51,9 @@ export const api = {
   teachTopics: () => call('teachback.topics'),
   teachPoints: (tag: string) => call('teachback.points', { tag }),
   teachPractice: (ids: number[]) => call('teachback.practice', { ids }),
+  /** Concept map from memory (#219): topics with an author's map, and one map to draw and compare. */
+  mapTopics: () => call('conceptmap.topics'),
+  mapGet: (deckId: number, topic: string) => call('conceptmap.get', { deckId, topic }),
   saveSettings: (s: Record<string, unknown>) => call('settings.save', s),
   appInfo: () => call('app.info'),
   /** The hour you usually study, from local sessions (#204). */
@@ -53,7 +76,7 @@ export const api = {
   deleteDeck: (id: number) => call('decks.delete', { id }),
   activate: (id: number | null) => call('decks.activate', { id }),
   chooseSource: (source: StudySource) => call('study.choose', { source }),
-  /** Save the CSV template (column names and three example cards). */
+  /** Save the CSV template (column names and four example cards). */
   /** Save a picture made in this window (the progress card, #214) as a file. Nothing is sent anywhere. */
   savePicture: (name: string, png: Uint8Array) => saveFile(name, png, 'image/png'),
   downloadTemplate: () => saveFile(CSV_TEMPLATE_NAME, CSV_TEMPLATE, 'text/csv'),
@@ -93,6 +116,9 @@ export const api = {
   uploadMedia: async (file: File) =>
     call('media.upload', { name: file.name, data: new Uint8Array(await file.arrayBuffer()) }),
   saveRecording: async (audio: Blob) => call('media.record', { data: new Uint8Array(await audio.arrayBuffer()) }),
+  /** Keep a drawing (PNG bytes), a description, or both as the learner's own cue for a card (#220). */
+  saveSketch: (itemId: number, data: Uint8Array | null, text: string) => call('sketch.save', { itemId, data, text }),
+  removeSketch: (itemId: number) => call('sketch.remove', { itemId }),
   downloadSummary: async () => {
     const s = await call('summary.today');
     saveFile(`lernlab-${s.date}.json`, JSON.stringify(s, null, 2), 'application/json');
@@ -103,8 +129,9 @@ export const api = {
 type CardInput = InputOf<'cards.add'>['card'];
 
 export function sendOverride(itemId: number) {
+  const who = acting;
   chain = chain.then(() =>
-    call('attempt.override', { itemId }).then(
+    study(who, 'attempt.override', { itemId }).then(
       () => {},
       () => {},
     ),
@@ -113,8 +140,9 @@ export function sendOverride(itemId: number) {
 
 /** "How sure were you?" (#205), queued after the answer it belongs to. */
 export function sendConfidence(c: InputOf<'attempt.confidence'>) {
+  const who = acting;
   chain = chain.then(() =>
-    call('attempt.confidence', c).then(
+    study(who, 'attempt.confidence', c).then(
       () => {},
       () => {},
     ),
@@ -123,8 +151,9 @@ export function sendConfidence(c: InputOf<'attempt.confidence'>) {
 
 // Attempts are sent in order in the background so answering never waits for the app.
 export function sendAttempt(a: Attempt) {
+  const who = acting;
   chain = chain.then(() =>
-    call('attempt.record', a).then(
+    study(who, 'attempt.record', a as InputOf<'attempt.record'>).then(
       () => {},
       () => {},
     ),

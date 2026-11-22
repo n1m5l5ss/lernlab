@@ -6,6 +6,7 @@ import {
   draftOf,
   editCard,
   editChange,
+  editCorrection,
   editValue,
   fieldText,
   keptCards,
@@ -116,4 +117,35 @@ test('a merge or tidy-up: the user leaves cards out; with none left there is not
   const t = toggleId(draftOf(tidy), 1);
   assert.deepEqual(acceptedBody(tidy, t), { cardIds: [4], action: { kind: 'tag', tag: 'exam' }, note: undefined });
   assert.equal(acceptedBody(tidy, toggleId(t, 0)), null);
+});
+
+test('study aids are typed one per line; corrections keep their place per choice', () => {
+  const aids: AiRequest = {
+    ...base,
+    kind: 'edit_card',
+    cardId: 7,
+    changes: { variants: ['apply: A', 'analyse: B'], corrections: ['wrong 1', '', 'wrong 3'], mnemonic: 'aid' },
+  };
+  let d = draftOf(aids);
+  assert.equal(d.changes.variants, 'apply: A\nanalyse: B');
+  d = editChange(d, 'variants', 'apply: A\n\n  recall: C  \n');
+  d = editCorrection(d, 2, 'better 3');
+  d = editCorrection(d, 4, 'for\nchoice 5');
+  assert.deepEqual(acceptedBody(aids, d), {
+    cardId: 7,
+    changes: {
+      variants: ['apply: A', 'recall: C'],
+      corrections: ['wrong 1', '', 'better 3', '', 'for choice 5'],
+      mnemonic: 'aid',
+    },
+    note: undefined,
+  });
+  const many = editChange(d, 'variants', Array.from({ length: 30 }, (_, i) => `recall: ${i}`).join('\n'));
+  assert.equal((acceptedBody(aids, many)!.changes as { variants: string[] }).variants.length, 8);
+
+  const points: AiRequest = { ...base, kind: 'edit_card', cardId: 7, changes: { keyPoints: ['a', 'b', 'c'] } };
+  assert.equal(acceptedBody(points, editChange(draftOf(points), 'keyPoints', 'only one')), null);
+  assert.deepEqual(acceptedBody(points, editChange(draftOf(points), 'keyPoints', 'a\nb'))!.changes, {
+    keyPoints: ['a', 'b'],
+  });
 });

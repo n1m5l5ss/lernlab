@@ -17,6 +17,8 @@ import {
   type WorkedStep,
 } from '@lernlab/core/worked';
 import { stripHtml } from '@lernlab/core/text';
+import { cleanGraph } from '@lernlab/core/graph';
+import { isTranslate } from '@lernlab/core/translate';
 import { cardHints, type CardHint } from '@lernlab/core/cardquality';
 import { answerSource, markAnswer } from '@lernlab/core/keyterms';
 import type { Shape } from './occlusion-logic';
@@ -25,7 +27,7 @@ import type { OutputOf } from '../backend/handlers';
 
 type FullCard = OutputOf<'cards.get'>;
 export type CardType =
-  'basic' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code' | 'occlusion' | 'myth' | 'explain' | 'worked';
+  'basic' | 'cloze' | 'mcq' | 'order' | 'numeric' | 'code' | 'occlusion' | 'myth' | 'explain' | 'worked' | 'translate';
 export const CARD_TYPES: CardType[] = [
   'basic',
   'cloze',
@@ -37,6 +39,7 @@ export const CARD_TYPES: CardType[] = [
   'myth',
   'explain',
   'worked',
+  'translate',
 ];
 const STORED_TYPES = new Set<string>(CARD_TYPES);
 export type MediaSlot = 'image' | 'audio' | 'video';
@@ -77,6 +80,10 @@ export const EMPTY = {
   keyPoints: [] as string[],
   /** worked: its solution steps (rows being edited may still be empty). */
   workedSteps: [] as WorkedStep[],
+  /** The case this question belongs to (cases.ts); cards of the deck with the same case form a chain. */
+  case: '',
+  /** A graph drawn with the front (graph.ts): a function of x or a list of points, as one line of text. */
+  graph: '',
 };
 export type Form = typeof EMPTY & { id?: number; suspended?: boolean; starred?: boolean; item?: FullCard };
 
@@ -104,9 +111,11 @@ export const formFor = (c: FullCard): Form => ({
       ? 'explain'
       : isWorked(c)
         ? 'worked'
-        : STORED_TYPES.has(c.kind)
-          ? (c.kind as CardType)
-          : 'basic',
+        : isTranslate(c)
+          ? 'translate'
+          : STORED_TYPES.has(c.kind)
+            ? (c.kind as CardType)
+            : 'basic',
   choices: c.extra.choices ?? '',
   correct: c.extra.correct ?? '',
   steps: c.extra.steps ?? '',
@@ -120,6 +129,8 @@ export const formFor = (c: FullCard): Form => ({
   corrections: correctionsOf(c),
   keyPoints: keyPointsOf(c),
   workedSteps: workedStepsOf(c),
+  case: c.extra.case ?? '',
+  graph: c.extra.graph ?? '',
   suspended: c.suspended,
   starred: c.starred,
   item: c,
@@ -133,7 +144,7 @@ export const showVariants = (f: Pick<Form, 'type'>) =>
   f.type !== 'myth' &&
   f.type !== 'explain' &&
   f.type !== 'worked' &&
-  takesVariants(f.type === 'basic' ? 'card' : f.type);
+  takesVariants(f.type === 'basic' || f.type === 'translate' ? 'card' : f.type);
 export const canAddVariant = (list: Variant[]) => list.length < VARIANTS_MAX;
 /** A new question starts as apply: the card's own question already covers recall. */
 export const addVariant = (list: Variant[]): Variant[] =>
@@ -145,6 +156,15 @@ export const removeVariant = (list: Variant[], i: number): Variant[] => list.fil
 /** The key point rows to show: at least two, as an explain card needs. */
 export const keyPointRows = (list: string[]): string[] =>
   list.length >= KEY_POINTS_MIN ? list : [...list, ...Array<string>(KEY_POINTS_MIN - list.length).fill('')];
+
+/** A case is for cards asked as a written question (core drops it from the others). */
+export const showCase = (f: Pick<Form, 'type'>) => !['cloze', 'order', 'code', 'occlusion'].includes(f.type);
+
+/** A graph is for basic, translate, numeric and multiple-choice cards (core drops it from the others). */
+export const showGraph = (f: Pick<Form, 'type'>) => ['basic', 'translate', 'numeric', 'mcq'].includes(f.type);
+/** The graph line is written but does not read: the editor says so (the card saves without a graph). */
+export const graphProblem = (f: Pick<Form, 'type' | 'graph'>) =>
+  showGraph(f) && !!f.graph.trim() && !cleanGraph(f.graph);
 
 /** The worked-step rows to show: at least two, as a worked example needs. */
 export const workedRows = (list: WorkedStep[]): WorkedStep[] =>
@@ -181,6 +201,8 @@ export function fieldsToSave(f: Form) {
     variants: showVariants(f) ? formatVariants(f.variants) : '',
     keyPoints: f.type === 'explain' ? formatKeyPoints(f.keyPoints) : '',
     workedSteps: f.type === 'worked' ? formatWorkedSteps(f.workedSteps.filter((s) => s.result.trim())) : '',
+    case: showCase(f) ? f.case : '',
+    graph: showGraph(f) ? f.graph : '',
     corrections:
       f.type === 'mcq'
         ? formatCorrections(f.corrections, mcqOf({ extra: { choices: f.choices, correct: f.correct }, meaning: '' }))

@@ -17,7 +17,10 @@ import { cleanMnemonic } from './mnemonic';
 import { cleanKeyPoints, keyPointsAsBack, parseKeyPoints } from './explain';
 import { cleanTwin } from './twin';
 import { cleanRequires } from './requires';
+import { cleanGraph } from './graph';
 import { cleanWorkedSteps, parseWorkedSteps } from './worked';
+import { cleanCase, questionOf } from './cases';
+import { cleanMaps } from './conceptmap';
 import type { Item, ItemKind } from './types';
 import { UserError } from './errors';
 import { cleanExamSettings, type ExamSettings } from './exam';
@@ -36,6 +39,8 @@ export type DeckSettings = {
   exam?: Partial<ExamSettings>;
   /** A maths or science deck: a new unit opens with a problem to try before its cards (guess.ts, #218). */
   subject?: 'maths' | 'science';
+  /** The author's concept maps, as text: "# topic" then one "A --label--> B" link per line (conceptmap.ts, #219). */
+  maps?: string;
 };
 
 /**
@@ -72,6 +77,7 @@ export function cleanDeckSettings(input: Record<string, unknown>): Partial<Recor
   if ('exam' in input) out.exam = cleanExamSettings(input.exam);
   if ('subject' in input)
     out.subject = input.subject === 'maths' || input.subject === 'science' ? input.subject : undefined;
+  if ('maps' in input) out.maps = (typeof input.maps === 'string' && cleanMaps(input.maps)) || undefined;
   return out;
 }
 
@@ -104,7 +110,7 @@ export type NormalizedCard = {
   group?: string; // lesson group, e.g. "G01" (taught together as a mini-lesson)
   rank?: number; // frequency rank / introduction order
   extra?: Record<string, string>;
-  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image), myth (a misconception to reject), explain (a why/how question checked against key points), worked (a solved problem whose steps fade). */
+  /** Card type: basic (default), cloze, mcq (choices + correct), order (steps), numeric (a number as the back), code, occlusion (a box on the image), myth (a misconception to reject), explain (a why/how question checked against key points), worked (a solved problem whose steps fade), translate (two representations of one idea, asked in both directions). */
   type?: string;
   choices?: string; // "A|B|C|D"
   correct?: string; // "2|4" (1-based) or the correct choice texts
@@ -120,6 +126,10 @@ export type NormalizedCard = {
   requires?: string;
   /** Key terms of the answer, highlighted when it shows: "mitochondrion|ATP" (keyterms.ts). In the back, ==term== says the same. '' clears them. */
   keyTerms?: string;
+  /** Case chains: the case this question belongs to; cards of a deck with the same case form a chain (cases.ts). '' clears it. */
+  case?: string;
+  /** A graph LernLab draws with the front: "y = x^2 - 1; x = -3..3" or points "(0,1) (1,3)" (graph.ts). '' clears it. */
+  graph?: string;
   /** worked examples: 2–8 solution steps, "Subtract 3 from both sides :: 2x = 8|…" (worked.ts). '' clears them. */
   workedSteps?: string;
   /** A memory aid, shown only after a miss or as a hint and faded after two correct answers in a row (mnemonic.ts). Plain text; '' clears it. */
@@ -241,7 +251,7 @@ export function detectKind(
   c?: NormalizedCard,
 ): ItemKind {
   const t = (c?.type ?? '').toLowerCase();
-  if (t === 'myth' || t === 'explain' || t === 'twin' || t === 'worked') return 'card';
+  if (t === 'myth' || t === 'explain' || t === 'twin' || t === 'worked' || t === 'translate') return 'card';
   if (t === 'mcq' || t === 'multi' || t === 'choice' || c?.choices) return 'mcq';
   if (t === 'order' || t === 'sequence' || c?.steps) return 'order';
   if ((t === 'numeric' || t === 'number') && parseQuantity(back)) return 'numeric';
@@ -350,6 +360,16 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   const mnemonic = cleanMnemonic(c.mnemonic ?? extra.mnemonic);
   if (mnemonic) extra.mnemonic = mnemonic;
   else delete extra.mnemonic;
+  // A translate card (translate.ts): a basic card with a flag, set by its type; kept while no other type is given.
+  const own = myth || !!keyPoints || !!twin || !!workedSteps;
+  if (kind === 'card' && !own && (c.type ? c.type.toLowerCase() === 'translate' : extra.translate === '1'))
+    extra.translate = '1';
+  else if (extra.translate !== undefined) delete extra.translate;
+  // A graph drawn with the front (graph.ts), on cards asked as a written question. Read only when there is one.
+  const rawGraph = c.graph ?? extra.graph;
+  const graph = rawGraph && ['card', 'numeric', 'mcq'].includes(kind) ? cleanGraph(rawGraph) : '';
+  if (graph) extra.graph = graph;
+  else if (rawGraph !== undefined) delete extra.graph;
   // Key terms of a plain-text answer (keyterms.ts): the ones marked in the back, or else the card's field.
   const marked = back.includes('<mark>') ? markedTerms(back) : [];
   const givenTerms = marked.length ? marked.join('|') : (c.keyTerms ?? extra.keyTerms);
@@ -384,7 +404,15 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
   delete extra.occlusionMode;
   if (kind === 'occlusion' && box)
     Object.assign(extra, { occlusion: formatBox(box), occlusionGroup: group, occlusionMode: mode });
-  const { article, word } = splitArticle(frontText);
+  // A question of a case (cases.ts): the case as plain text, on cards asked as a written question. A front that starts
+  // with the case (what older readers get) is the question alone.
+  const rawCase = c.case ?? extra.case; // most cards have none: nothing is cleaned for them
+  const caseText =
+    rawCase && !['grammar', 'cloze', 'order', 'code', 'occlusion'].includes(kind) ? cleanCase(rawCase) : '';
+  if (caseText) extra.case = caseText;
+  else if (rawCase !== undefined) delete extra.case;
+  const question = caseText ? questionOf(frontText, caseText) : frontText;
+  const { article, word } = splitArticle(question);
   const example = clean(c.example);
   const isNoun = kind === 'noun';
   return {
@@ -393,9 +421,9 @@ export function cardToItem(deck: Pick<Deck, 'id' | 'name' | 'language'>, c: Norm
     lang: deck.language,
     deck: c.subdeck ?? deck.name,
     kind,
-    target: kind === 'cloze' ? front : frontText,
+    target: kind === 'cloze' ? front : question,
     article: isNoun ? article : null,
-    word: isNoun ? word : frontText,
+    word: isNoun ? word : question,
     // A code card's back is its expected output: plain text with its line breaks (shown as text, never as HTML).
     meaning:
       kind === 'code'

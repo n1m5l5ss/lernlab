@@ -65,9 +65,11 @@ import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
+import { MAP_TOPIC_MAX_LENGTH, mapFor, mapTopics } from '@lernlab/core/conceptmap';
 import { TEACH_POINTS_MAX, teachBackPoints, teachBackTopics } from '@lernlab/core/teachback';
 import { setOcclusionMode, withOcclusionBoxes } from '@lernlab/core/occlusion';
 import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
+import { SKETCH, removeSketch, saveSketch } from '@lernlab/core/sketch';
 import { buildExam, recordExam, type Exam } from '@lernlab/core/examplan';
 import { EXAM_MODES } from '@lernlab/core/exam';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
@@ -105,6 +107,14 @@ import { patternsOf } from '@lernlab/core/patterns';
 import { reportTomorrowCheck, saveTomorrowCheck, TOMORROW_ANSWERS, TOMORROW_MAX } from '@lernlab/core/tomorrow';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
+import {
+  addLearner,
+  asLearner,
+  cleanLearnerName,
+  LEARNER_NAME_MAX,
+  listLearners,
+  removeLearner,
+} from '@lernlab/storage-sqlite/learners';
 import { asRequest, checkBody } from './ai-requests';
 
 /** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
@@ -147,6 +157,8 @@ const cardInput = v.object({
   requires: text,
   workedSteps: text,
   mnemonic: text,
+  case: text,
+  graph: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -266,12 +278,23 @@ function assistantCommand(): AssistantCommand | null {
 type Handler<I, O> = { input: Check<I>; run: (input: I) => O | Promise<O> };
 const h = <I, O>(input: Check<I>, run: (input: I) => O | Promise<O>): Handler<I, O> => ({ input, run });
 
+/** What another learner can do in a session (together.as). All of them answer at once (no promises). */
+export const AS_LEARNER = [
+  'session.plan',
+  'attempt.record',
+  'attempt.override',
+  'attempt.confidence',
+  'session.finish',
+] as const;
+
 export const handlers = {
   'state.get': h(v.none, () => ({
     ...appState(),
     importing: importStatus.running,
     /** Changes an AI assistant proposed, waiting for the user (#148). */
     aiRequests: countAiRequests(),
+    /** Other people who study on this computer (#224): id and name only. */
+    learners: listLearners().map(({ id, name }) => ({ id, name })),
     languages: LANGUAGES,
     welcome: needsWelcome(getDb()),
     /** "What's new in X.Y.Z" on the first launch after an update, or null (issue #58). */
@@ -463,6 +486,8 @@ export const handlers = {
           // The editor writes key terms in the back as ==term==, so the back alone says which there are.
           keyTerms: '',
           workedSteps: opt(b.workedSteps),
+          case: opt(b.case),
+          graph: opt(b.graph),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);
@@ -597,6 +622,15 @@ export const handlers = {
   'media.record': h(v.object({ data: v.bytes(2 * RECORDING_MAX_BYTES) }), ({ data }) => ({
     file: saveRecording(data),
   })),
+  /**
+   * The learner's own sketch for a card (#220): a PNG drawn on the pad, a description, or both. The engine checks
+   * the bytes. Stored only: no answer is logged and the schedule stays as it is.
+   */
+  'sketch.save': h(
+    v.object({ itemId: v.id, data: v.nullable(v.bytes(SKETCH.maxBytes)), text: v.string(2000) }),
+    ({ itemId, data, text }) => saveSketch(itemId, data, text),
+  ),
+  'sketch.remove': h(v.object({ itemId: v.id }), ({ itemId }) => removeSketch(itemId)),
 
   /* ── Study ── */
   'session.plan': h(
@@ -610,6 +644,26 @@ export const handlers = {
       return planSession(length, getDb(), new Date(), body?.deckId, { practice: !!body?.practice });
     },
   ),
+  /* ── Study together (#224): other learners on this computer, each with their own progress ── */
+  'learners.add': h(v.object({ name: v.string(LEARNER_NAME_MAX * 4) }), ({ name }) => {
+    const { id, name: saved } = addLearner(name);
+    return { id, name: saved };
+  }),
+  /** Removes the learner with their progress and backups. The screen asks first; it cannot be undone. */
+  'learners.remove': h(v.object({ id: v.string(40) }), ({ id }) => removeLearner(id)),
+  /**
+   * One study request as another learner: it reads the same cards and writes only that learner's own
+   * progress database. Only the requests a session needs; anything that edits cards or settings is not here.
+   */
+  'together.as': h(
+    v.object({ learnerId: v.string(40), channel: v.oneOf(...AS_LEARNER), input: v.optional(v.record) }),
+    ({ learnerId, channel, input }): unknown => {
+      const handler = handlers[channel] as Handler<unknown, unknown>;
+      const checked = handler.input(input);
+      // A new plan opens the learner's database anew, so it sees the cards as they are now.
+      return asLearner(learnerId, () => handler.run(checked), channel === 'session.plan');
+    },
+  ),
   /* ── Teach-back (#208): explain a mastered tag, then compare with its key points. Nothing is saved. ── */
   'teachback.topics': h(v.none, () => teachBackTopics()),
   'teachback.points': h(v.object({ tag: v.string(100) }), ({ tag }) => teachBackPoints(tag)),
@@ -617,6 +671,13 @@ export const handlers = {
   'teachback.practice': h(v.object({ ids: v.array(v.id, TEACH_POINTS_MAX) }), ({ ids }) => {
     if (!ids.length) throw new AppError('invalid_input', 'No cards to practise');
     return planSession('mini', getDb(), new Date(), undefined, { practice: true, cards: ids });
+  }),
+  /* ── Concept map from memory (#219): topics with an author's map, and one map to draw and compare. Nothing is saved. ── */
+  'conceptmap.topics': h(v.none, () => mapTopics(listDecks())),
+  'conceptmap.get': h(v.object({ deckId: v.id, topic: v.string(MAP_TOPIC_MAX_LENGTH) }), ({ deckId, topic }) => {
+    const map = mapFor(getDeck(deckId), topic);
+    if (!map) throw new AppError('map_not_found', 'This deck has no concept map for that topic');
+    return map;
   }),
   'attempt.record': h(
     v.object({
@@ -760,6 +821,7 @@ export const handlers = {
     next.reminder = next.reminder === true;
     next.reminderTime = cleanReminderTime(next.reminderTime);
     next.sleepBridge = next.sleepBridge === true;
+    next.learnerName = cleanLearnerName(String(next.learnerName ?? ''));
     next.morningTime = cleanMorningTime(next.morningTime);
     next.planAfter = cleanPlanText(next.planAfter);
     next.planMinutes = cleanPlanMinutes(next.planMinutes);

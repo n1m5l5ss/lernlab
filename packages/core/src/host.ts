@@ -27,6 +27,8 @@ export interface MediaStore {
   size(name: string): number | null;
   read(name: string): Uint8Array | null;
   write(name: string, data: Uint8Array): void;
+  /** Optional. Delete a file; no error if it is not there. Without it, a removed file stays on disk unused. */
+  remove?(name: string): void;
 }
 
 export interface Host {

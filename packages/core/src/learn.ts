@@ -9,6 +9,7 @@ import { DEFAULT_MORNING_TIME, DEFAULT_REMINDER_TIME } from './reminder';
 import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
 import { withMnemonicRuns } from './mnemonic';
+import { withSketches } from './sketch';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
 import { LEVELS } from './variants';
 import { noteConfusion } from './confusions';
@@ -59,6 +60,8 @@ export type Settings = {
   confidence: boolean;
   /** Calm mode (#216): hide XP, levels, combos and celebrations. XP is still counted, so nothing is lost. Off by default. */
   calm: boolean;
+  /** What to call this computer's first learner when two study together (#224). '' until they give a name. */
+  learnerName: string;
   /** Sleep bridge (#217, sleep.ts): new cards in the evening, a short check the next morning. Off by default. */
   sleepBridge: boolean;
   /** When the morning check is offered by the reminder, "HH:MM" in local time. */
@@ -98,6 +101,7 @@ export const DEFAULT_SETTINGS: Settings = {
   remoteMedia: false,
   confidence: true,
   calm: false,
+  learnerName: '',
   sleepBridge: false,
   morningTime: DEFAULT_MORNING_TIME,
   sayAloud: true,
@@ -381,12 +385,15 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
 }
 
 export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
-  return withMnemonicRuns(
-    withOcclusionBoxes(
-      d
-        .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
-        .all()
-        .map(rowToItem),
+  return withSketches(
+    withMnemonicRuns(
+      withOcclusionBoxes(
+        d
+          .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
+          .all()
+          .map(rowToItem),
+        d,
+      ),
       d,
     ),
     d,
@@ -511,7 +518,8 @@ export function grammarItemIds(group: string, d: DB = getDb(), scope?: Scope): n
 export function itemsByIds(ids: number[], d: DB = getDb()): Record<number, Item> {
   if (!ids.length) return {};
   const rows = d.prepare(`${ITEM_SELECT} WHERE i.id IN (${ids.map(() => '?').join(',')})`).all(...ids);
-  return Object.fromEntries(withMnemonicRuns(withOcclusionBoxes(rows.map(rowToItem), d), d).map((i) => [i.id, i]));
+  const items = withSketches(withMnemonicRuns(withOcclusionBoxes(rows.map(rowToItem), d), d), d);
+  return Object.fromEntries(items.map((i) => [i.id, i]));
 }
 
 export function srsInfo(

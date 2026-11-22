@@ -1,6 +1,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  SPOKEN_MAX,
+  addSpoken,
+  canCheck,
+  speechGone,
   explainKey,
   explainResult,
   explainStart,
@@ -93,4 +97,35 @@ test('boss rounds and relearning ask explain cards and why/how cards as explanat
   assert.equal(recallFor(card({ tags: ['why'] })).type, 'explain');
   assert.equal(recallFor(card({ tags: ['why'], meaning: 'tilt' })).type, 'typed', 'a short answer is still typed');
   assert.notEqual(recallFor(card({})).type, 'explain');
+});
+
+test('what you say is added to the explanation, after what is already there', () => {
+  assert.equal(addSpoken('', '  the earth is tilted '), 'the earth is tilted');
+  assert.equal(
+    addSpoken('The earth is tilted.', 'so the sun is higher in summer'),
+    'The earth is tilted. so the sun is higher in summer',
+  );
+  assert.equal(addSpoken('First line\n', 'second'), 'First line\nsecond');
+  assert.equal(addSpoken('typed', '   '), 'typed');
+});
+
+test('a spoken explanation is capped like a typed one and cannot carry markup into the page', () => {
+  const long = addSpoken('a'.repeat(SPOKEN_MAX - 3), 'bcdefgh');
+  assert.equal(long.length, SPOKEN_MAX);
+  assert.equal(addSpoken('', 'x\u0000y\u0007z'), 'xyz');
+  // It stays plain text: the screen shows it as text, so tags are kept as characters and never parsed.
+  assert.equal(addSpoken('', '<b>hi</b>'), '<b>hi</b>');
+});
+
+test('speech that cannot work switches to typing; a pause or a cough does not', () => {
+  for (const e of ['not-allowed', 'service-not-allowed', 'network', 'audio-capture', 'language-not-supported'])
+    assert.equal(speechGone(e), true, e);
+  for (const e of ['no-speech', 'aborted', undefined]) assert.equal(speechGone(e), false, String(e));
+});
+
+test('saying the explanation enables the same Check as typing it, and the grade comes from the ticks alone', () => {
+  const said = { ...explainStart(2), text: addSpoken('', 'because of the tilt') };
+  assert.equal(canCheck(said), true);
+  assert.equal(key(said, 'Enter', { ctrl: true }), 'check');
+  assert.deepEqual(explainResult({ ...said, step: 'check' }), explainResult({ ...explainStart(2), step: 'check' }));
 });

@@ -2,17 +2,19 @@
 // points you covered (all → Good, some → Hard, none → Again; "That was easy" only with every point). A real
 // recall, logged like a flip answer: one FSRS grade per card per day. No clock. A basic card tagged why/how
 // has no key points: you explain first, then rate yourself as on a flip card.
-import { useEffect, useId, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { UNDERSTANDING_SCALE, type ExplainOutcome } from '@lernlab/core/explain';
 import type { Exercise } from '@lernlab/core/types';
 import { markAnswer } from '@lernlab/core/keyterms';
 import { useKeys, type Ctx } from '../ctx';
+import { recognizer } from '../audio';
 import { Media, Rich } from '../rich';
 import { textPx } from '../display';
 import { formatNumber } from '../i18n';
 import { Feedback, KeyPointChecklist, LevelTag, SegmentedControl } from '../components';
 import {
+  addSpoken,
   canCheck,
   explainKey,
   explainResult,
@@ -20,6 +22,7 @@ import {
   gapKey,
   rateResult,
   resultKey,
+  speechGone,
   toggle,
 } from '../explain-logic';
 
@@ -59,14 +62,79 @@ function Understanding({
   );
 }
 
+/**
+ * Say the explanation instead of typing it: the app's speech input (the one "Say it out loud" uses) writes
+ * what it hears into the text box. Without speech input there is no button; when it fails, a line says so and
+ * typing goes on as before. Nothing is recorded or kept beyond the text.
+ */
+function useDictation(lang: string, onHeard: (said: string) => void) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rec = useMemo<any | null>(() => {
+    try {
+      return recognizer(lang);
+    } catch {
+      return null;
+    }
+  }, [lang]);
+  const [state, setState] = useState<'idle' | 'listening' | 'gone'>('idle');
+  const heard = useRef(onHeard);
+  heard.current = onHeard;
+  const stop = () => {
+    try {
+      rec?.stop();
+    } catch {
+      /* not listening */
+    }
+  };
+  useEffect(
+    () => () => {
+      try {
+        rec?.abort();
+      } catch {
+        /* not listening */
+      }
+    },
+    [rec],
+  );
+  const start = () => {
+    if (!rec) return;
+    rec.continuous = true;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onresult = (e: any) => {
+      for (let i = e.resultIndex ?? 0; i < e.results.length; i++)
+        if (e.results[i].isFinal !== false) heard.current(String(e.results[i][0]?.transcript ?? ''));
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    rec.onerror = (e: any) => setState(speechGone(e?.error) ? 'gone' : 'idle');
+    rec.onend = () => setState((s) => (s === 'listening' ? 'idle' : s));
+    try {
+      rec.start();
+      setState('listening');
+    } catch {
+      /* already started */
+    }
+  };
+  return { available: !!rec, state, toggle: () => (state === 'listening' ? stop() : start()), stop };
+}
+
+const MicIcon = () => (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+    <rect x="9" y="3" width="6" height="11" rx="3" />
+    <path d="M5 11a7 7 0 0 0 14 0M12 18v3" strokeLinecap="round" />
+  </svg>
+);
+
 export function Explain({ ex, ctx, onNext, format = 'flip' }: Props) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const item = ctx.item(ex.itemId);
   const points = ex.points.length;
   const [s, setS] = useState(() => explainStart(points));
   const shown = useRef(performance.now());
   const box = useRef<HTMLTextAreaElement>(null);
   const after = useRef<HTMLDivElement>(null);
+  const voice = useDictation(ctx.lang ?? i18n.language, (said) =>
+    setS((cur) => (cur.step === 'write' ? { ...cur, text: addSpoken(cur.text, said) } : cur)),
+  );
   // Focus follows the step: the text box, then the first key point (or rating), or Continue.
   useEffect(() => {
     if (s.step === 'write') box.current?.focus();
@@ -84,8 +152,13 @@ export function Explain({ ex, ctx, onNext, format = 'flip' }: Props) {
     });
     if (!o.correct) ctx.missed.add(item.id);
   };
-  const check = () => canCheck(s) && setS({ ...s, step: 'check' });
+  const check = () => {
+    if (!canCheck(s)) return;
+    voice.stop();
+    setS({ ...s, step: 'check' });
+  };
   const giveUp = () => {
+    voice.stop();
     answer({ correct: false, nearMiss: false, easy: false });
     setS({ ...s, step: 'gaveUp' });
   };
@@ -144,6 +217,21 @@ export function Explain({ ex, ctx, onNext, format = 'flip' }: Props) {
               placeholder={t('ex.explain.placeholder')}
               onChange={(e) => setS({ ...s, text: e.target.value })}
             />
+            {voice.available && voice.state !== 'gone' && (
+              <div className="explain-voice">
+                <button className="btn" aria-pressed={voice.state === 'listening'} onClick={voice.toggle}>
+                  <MicIcon /> {t(voice.state === 'listening' ? 'ex.explain.stopListening' : 'ex.explain.say')}
+                </button>
+                <span className="small muted" role="status">
+                  {voice.state === 'listening' ? t('ex.explain.listening') : ''}
+                </span>
+              </div>
+            )}
+            {voice.state === 'gone' && (
+              <p className="small muted" role="status">
+                {t('ex.explain.noSpeech')}
+              </p>
+            )}
           </>
         ) : (
           <>

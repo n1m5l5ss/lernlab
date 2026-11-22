@@ -12,6 +12,7 @@ LernLab has five places, in the sidebar on the left: **Home**, **Decks**, **Card
 - [Edit cards](#edit-cards)
 - [Follow your progress](#follow-your-progress)
 - [Back up and move your data](#back-up-and-move-your-data)
+- [Your AI assistant](#your-ai-assistant)
 - [Settings](#settings)
 - [Keyboard](#keyboard)
 
@@ -81,7 +82,7 @@ Importing the same file again **updates** the cards. It never makes copies, and 
 
 ### Make your own deck file
 
-The easiest way is a spreadsheet. On the Decks screen, press **Download the CSV template**. Fill it in with Excel, LibreOffice or Google Sheets, save it as CSV and import it. The columns are explained in [FORMAT.md](FORMAT.md#csv--tsv).
+The easiest way is a spreadsheet. On the Decks screen, press **Download the CSV template**. Fill it in with Excel, LibreOffice or Google Sheets, save it as CSV and import it. Its example rows show a plain card, a multiple-choice card, a language card and an **Explain it** card: for one of those, write the why or how question in `front`, a model answer in `back` and 2–5 key points in `key_points`, separated by `|`. The columns are explained in [FORMAT.md](FORMAT.md#csv--tsv).
 
 The [`examples/`](../examples/) folder has ready decks to try or copy:
 
@@ -115,7 +116,7 @@ A session is a run of short blocks. Each block lasts about a minute and has its 
 - **Listen** and **Speak** (language decks): answer what you hear, or say the answer out loud;
 - **Category sprint**, **Match pairs**, **True or false** and **Word rain**: quick games;
 - **Which one is this?** The category sprint sorts cards into groups: a card's category, or, in a deck that is not a language deck, tags that split the deck into groups (art styles, bird species, problem types: at least three cards per tag, one such tag per card). It picks up to four groups, starting with the ones you mix up most, from your wrong picks in earlier rounds and from cards you mixed up. A round made from tags has no clock. It is practice: it never changes when a card is due;
-- **New words by theme** (language decks): the next new word sets the theme (its sub-deck and tag), and the other new words of that theme come with it. Themes are mixed later, in review;
+- New words come by theme (language decks): the next new word sets the theme (its sub-deck and tag), and the other new words of that theme come with it. Themes are mixed later, in review;
 - **Related cards**: when you review some cards of a small group that share a tag and the start of the question ("Capital of …"), the group's other cards you have learned get one quick multiple-choice question, so they don't fade while their neighbours are practised. It happens once within a day or two and never changes when those cards are due;
 - **Blitz**: a timed round, only with cards you already know;
 - **Boss fight**: your hardest cards from today, with three lives.
@@ -134,6 +135,7 @@ Some things to know:
 - **Guess first.** When today's new cards start a new topic (a tag, a sub-deck, or a whole new deck, where you haven't seen any of its cards yet), you get 5 to 8 of its questions first, mostly the cards you are about to learn. Type a guess if you like, or just think of one, then press **Show answer** (`Enter`); on a multiple-choice question, pick a choice (or press its number). Wrong guesses are expected and help you learn: guessing first helps you remember those answers later. There is no timer, and nothing you guess is marked or changes when a card is next due. **Skip to the new cards** ends the round at any time. Language decks don't get this round, because you can't guess a foreign word; neither do ordering cards.
 - **Try first.** For maths and science. Open a deck's settings on the Decks screen and set **Subject** to Maths or Science. When today's new cards then start a new unit (a tag or sub-deck you haven't met) that has a worked example, the session opens with that problem before the lesson, in place of the guess round. Write your attempt, or work on paper, and press **Show the worked solution** (`Ctrl + Enter`, or `⌘ + Enter` on a Mac) to compare. Getting stuck is fine: trying first helps the lesson stick. Nothing is checked, saved or graded, there is no clock, and **Skip to the lesson** is always there. The example comes right after, to study. The subject is a setting on your computer; it is not part of a deck file.
 - **Games never count as knowing a card.** Only a real attempt to remember (typing, saying, choosing the answer to a question) moves a card's schedule, and only the first one each day.
+- **Draw it.** When you meet a new card, **Draw it** opens a small sketch pad under the card. Draw what the card means with a mouse, a finger or a pen; a rough sketch is enough, since it is the drawing that helps you remember, not how good it looks. **Undo** takes back the last line and **Clear** starts over. If you can't or don't want to draw, type what your picture would show in **What does it show?** instead; a drawing, a description or both can be saved with **Save sketch**. Every control can be reached with `Tab`. From then on your sketch appears under **Your sketch** once the answer is shown, never before you try. **Draw it again** replaces it, and **Remove sketch** deletes it. A sketch is optional and never holds you up: **Got it** works as before, and nothing about a sketch changes a grade, your points or when a card is next due. Sketches are yours, not the deck's: they stay in your data folder (and in **Export everything** and backups), and are never put into a deck you export as a `.lernpack`, CSV or Anki file. A drawing is saved as a small picture (480 × 320) in the colours of the theme you drew it in.
 - **Swap this round.** Once per session, at the start of a round, you can press **Swap this round** to do it in another format with the same cards. A typed review becomes flip cards you rate yourself (and the other way round, when the answer is short enough to type); a game or a timed round becomes a quiz without a clock, and a quiz becomes match pairs. A swap never changes what counts: recall stays recall, and practice stays practice. New cards, lessons, guess-first rounds, the boss fight and cards with their own way of asking (multiple choice, ordering, code, picture labels, myth and explain cards) can't be swapped, so the button only shows when the round has another format.
 - **What a number is for.** The small number that floats up after an answer names its reason when there is one: answers in a row, a card recalled after a slip earlier in the session, or a whole round right.
 - To stop, press **End session** or `Esc`. Every answer so far is saved, and the session still counts for today.
@@ -163,6 +165,27 @@ If you turn on **Settings → Studying → Offer a quiet minute after new cards*
 
 Tick **Practice** on Home, then press **Start practice**. A practice session lets you cram any cards, for example before a test. Your review schedule stays the same. On the Decks screen, a deck with nothing due shows **Practice** instead of **Study**.
 
+### Study together
+
+Two people can study one deck on one computer, taking turns.
+
+1. Open **Settings → People on this computer**, type the other person's name and click **Add**. A name is enough: there is no account and no password, and nothing goes online. You can give your own name there too, so the screen can say whose turn it is. Up to five other people fit.
+2. On **Home**, a **Study together** panel appears. Choose the deck (and the person, if you added several) and click **Study with …**.
+3. Before each turn the screen says whose turn it is. Pass the keyboard, then click **Start the round**. A turn is one short round. **Stop here** ends the session at any hand-over; everything answered so far is kept.
+
+Each person gets their own rounds, planned from their own due and new cards, and each answer is saved only to the progress of the person whose turn it was: their own schedule (a card is graded once a day per person), streak, minutes and XP. Games stay practice for both. LernLab shows no scores side by side and names no winner; while one person answers, the other can listen and explain afterwards.
+
+The other person studies your decks: the cards, their pictures and your deck settings are shared, and only you can edit them. For now they study in **Study together** only; they have no Home, Progress screen or settings of their own.
+
+Where their data is and what covers it:
+
+- Their progress is in its own folder, `learners/` inside your LernLab data folder. Your own data stays where it was and is not changed by adding someone.
+- LernLab backs up each person's progress once a day in that folder (the last 7 are kept).
+- **Back up now**, **Restore a backup**, **Export everything** and **Import a zip…** cover your own data only and leave the other person's progress as it is. After a restore, their progress still fits every card that still exists.
+- **Remove …** in Settings deletes that person's progress and its backups for good, after asking.
+- **Delete all my data** deletes the other people and their progress too.
+- An AI assistant you connect reads your own data only.
+
 ### Take a mock exam
 
 On the **Decks** screen, press **Exam** on a deck. The questions come from that deck's cards, and the deck's tags become the topics in your score. In the deck's settings you can set the number of **Questions**, the **Minutes (timed mode)** and the **Pass mark (%)**.
@@ -186,27 +209,40 @@ Studying on a day keeps your streak going. The day starts at 4 a.m., so a late-n
 
 **Cards** lists every card. Search with the box at the top, or filter by **Deck**, **Tag** and **State** (**New**, **Learning**, **Known**, **Suspended**, **Starred**).
 
-- Select a card to edit it, or press **+ Add card**. A card can be **Basic** (front and back), **Cloze** (a gap in the front, like `{{c1::word}}`), **Multiple choice**, **Put steps in order** or **Number answer** (a number with an optional unit, like `9.81 m/s^2`, and an optional tolerance, like `0.05` or `1%`). You may leave the unit out when you answer; `1500 m` counts for `1.5 km`.
+### Card types
+
+- Select a card to edit it, or press **+ Add card**. A card can be **Basic** (front and back), **Cloze** (a gap in the front, like `{{c1::word}}`), **Multiple choice**, **Put steps in order** or **Number answer** (a number with an optional unit, like `9.81 m/s^2`, and an optional tolerance, like `0.05` or `1%`). You may leave the unit out when you answer; `1500 m` counts for `1.5 km`. The **Card type** menu also has **Code**, **Image occlusion**, **Myth**, **Explain it**, **Worked example** and **Translate**, described below.
 - **Myth** cards hold a common misconception: write the myth on the front ("We only use 10% of our brains.") and why it is wrong on the back. In a session you first answer **True** or **Myth** (`1` or `2`). Pick **Myth**, think of why, press **Show why** (`Space`) and rate yourself, as on any card you recall in your head. Pick **True** and you see why it is a myth; the card comes back soon. It counts like any other card, once a day. Myths are never used in games or mock exams, so you never see one presented as a fact. In a CSV, put `myth` in the `type` column.
-- **Explain it** cards ask a why or how question ("Why do we have seasons?"). Write a model answer on the back and 2–5 **key points** a good explanation covers. In a session you type your explanation first (`Ctrl + Enter`, or `⌘ + Enter` on a Mac, to check it; **I don't know yet** shows the answer and brings the card back soon). Then you see the model answer and tick the key points you covered: all of them counts as Good, some as Hard, none as Again. With every point ticked you can also press **That was easy**. There is no timer, and the card counts once a day like any other. If you like, rate "How well do you understand this?" from 1 to 7 before you write and again after you tick: explaining often shows a gap you didn't notice. These ratings are not saved and never change your schedule. Explain cards are never used in games, distractors or mock exams.
-- **Learn first** (under **More fields**): write the fronts of other cards of the deck, or tags as `#tag`, separated by `|`, for example `Derivative|#functions`. New cards are then met after the cards they build on were answered from memory once. It is only an order: when nothing else is new, the card comes anyway, and nothing is locked. Cards tagged `key-term` are met before the other new cards. If a card you keep forgetting builds on cards you know only weakly, a session starts with a quick **Basics first** look at those (it does not change when they are due). In files the field is `requires` ([FORMAT.md](FORMAT.md#prerequisites)).
-- A **compare card** (see [The summary](#the-summary)) is edited like a basic card: its front is the first side, its back the answer. The second side comes from a deck file's `twin` field ([FORMAT.md](FORMAT.md#compare-cards)) or from the card LernLab made.
-- A **Worked example** holds one solved problem, for maths, science, code or accounting. Write the problem, then 2–8 **solution steps**: what you do ("Subtract 3 from both sides") and its result ("2x = 8"). In a session you first study the full example. The next time, the last step is blank and you type its result (`Enter` to check); then the last two, and so on, until you solve the whole problem with no step shown. Get a rung right and you climb one; miss one and the example shows one more step next time. The rungs are practice. Only solving the whole problem counts for your schedule, once a day like any other card: every step right is Good, a small slip is Hard, a wrong step is Again. Numbers are checked by value (`1500 m` counts for `1.5 km`) and spaces never matter. If the checker was too strict about a step, press **I was right** next to it. There is no timer, and worked examples are never used in games or mock exams. In a CSV, put `worked` in the `type` column and the steps in `worked_steps`, like `Subtract 3 from both sides :: 2x = 8|Divide both sides by 2 :: x = 4`.
+- **Explain it** cards ask a why or how question ("Why do we have seasons?"). Write a model answer on the back and 2–5 **key points** a good explanation covers. In a session you type your explanation first (`Ctrl + Enter`, or `⌘ + Enter` on a Mac, to check it; **I don't know yet** shows the answer and brings the card back soon). You can also press **Say it instead** and speak: your words appear in the box, where you can correct them, and no recording is kept. It uses the same speech input as "Say it out loud"; where that isn't available, the button is missing or a line tells you to type. Then you see the model answer and tick the key points you covered: all of them counts as Good, some as Hard, none as Again. With every point ticked you can also press **That was easy**. There is no timer, and the card counts once a day like any other. If you like, rate "How well do you understand this?" from 1 to 7 before you write and again after you tick: explaining often shows a gap you didn't notice. These ratings are not saved and never change your schedule. Explain cards are never used in games, distractors or mock exams.
 - A basic card tagged `why` or `how` is never just flipped: you write an explanation before its back shows, then rate yourself as usual (a short answer is still typed and checked).
+- A **Worked example** holds one solved problem, for maths, science, code or accounting. Write the problem, then 2–8 **solution steps**: what you do ("Subtract 3 from both sides") and its result ("2x = 8"). In a session you first study the full example. The next time, the last step is blank and you type its result (`Enter` to check); then the last two, and so on, until you solve the whole problem with no step shown. Get a rung right and you climb one; miss one and the example shows one more step next time. The rungs are practice. Only solving the whole problem counts for your schedule, once a day like any other card: every step right is Good, a small slip is Hard, a wrong step is Again. Numbers are checked by value (`1500 m` counts for `1.5 km`) and spaces never matter. If the checker was too strict about a step, press **I was right** next to it. There is no timer, and worked examples are never used in games or mock exams. In a CSV, put `worked` in the `type` column and the steps in `worked_steps`, like `Subtract 3 from both sides :: 2x = 8|Divide both sides by 2 :: x = 4`.
+- A **translate card** has two forms of one idea on its two sides: a graph and its formula, a formula and its diagram, an example and the name of the concept. Choose **Translate** as the card type. The card is asked both ways, in turn: one review shows the front and asks for the back, the next shows the back and asks for the front. The second way is a self-check: recall the other side (sketch the graph on paper if it is one), show it, and rate yourself. Both ways count like any other review, once a day.
+- A **compare card** (see [The summary](#the-summary)) is edited like a basic card: its front is the first side, its back the answer. The second side comes from a deck file's `twin` field ([FORMAT.md](FORMAT.md#compare-cards)) or from the card LernLab made.
 - A **Code** card holds a snippet and its language (Python, JavaScript, SQL and more are coloured). Add the output and you predict what the code prints; put a gap like `{{c1::range}}` in the code and you type the missing token; leave both out and you put the lines in order. Code is never run. Typed code answers must match exactly, but spacing around punctuation and line breaks doesn't matter, so `0 1 2` counts for three lines of output. The rules are in [FORMAT.md](FORMAT.md#code-cards).
 - An **Image occlusion** card hides parts of a picture. Add an image, then drag on it to draw a box over each part (or press **Add box**), and give each box a label. Tab to a box to move it with the arrow keys, resize it with Shift + arrow keys or remove it with Delete. Choose **Hide one** (the other boxes show their labels) or **Hide all** (every box is hidden). Each box becomes its own card: you type the hidden label. The rules are in [FORMAT.md](FORMAT.md#image-occlusion-cards).
 - Write math in LaTeX between `\( … \)` in a line, or `\[ … \]` on its own line: `\( \frac{1}{2} mv^2 \)`. When the answer is a formula, type its LaTeX; spaces and braces around one symbol don't matter. The rules are in [FORMAT.md](FORMAT.md#math-and-numeric-cards).
-- **Common mix-ups** (Multiple choice cards): under the choices, each wrong choice has a box. Write why it is wrong, ideally as "Many people think X. In fact Y, because Z." When someone picks that choice, they see your note under **A common mix-up**, followed by the right answer, instead of a plain "wrong". It changes nothing about the grade. Leave a box empty for a plain answer. In a CSV, put them in a `corrections` column, one per choice in the order of the choices, separated by `|` like the choices: `Many people think EC2 is serverless. In fact you patch its servers.|||RDS is a database.` ([FORMAT.md](FORMAT.md#corrections-for-wrong-choices)).
+
+### Extra fields on a card
+
+These work on top of a card's type.
+
 - **Other ways to ask** (Basic and Number answer cards): press **Add a question** to ask the same thing in new words, with the same answer. Pick its level: **Recall** (the fact in other words), **Apply** (a situation where the answer is needed: "A patient has X. Which drug?") or **Analyse** (a prediction or a why: "What happens if the dose doubles?"). A card holds up to 8. The card keeps one schedule; your sessions take turns asking its questions, so you learn the idea and not just the wording. In a CSV, put them in a `variants` column: `apply: A patient has X. Which drug? | analyse: What if the dose doubles?` ([FORMAT.md](FORMAT.md#question-variants)).
+- **Common mix-ups** (Multiple choice cards): under the choices, each wrong choice has a box. Write why it is wrong, ideally as "Many people think X. In fact Y, because Z." When someone picks that choice, they see your note under **A common mix-up**, followed by the right answer, instead of a plain "wrong". It changes nothing about the grade. Leave a box empty for a plain answer. In a CSV, put them in a `corrections` column, one per choice in the order of the choices, separated by `|` like the choices: `Many people think EC2 is serverless. In fact you patch its servers.|||RDS is a database.` ([FORMAT.md](FORMAT.md#corrections-for-wrong-choices)).
+- A **case chain** is a short case with a few linked questions, as in medicine, law or certification exams: "A 58-year-old man has crushing chest pain…", then *What is the most likely diagnosis?*, *Which artery is blocked?*, *What do you do first?* Make one card per question and paste the same text into **Case (optional)** on each. The case shows above the question whenever the card is asked. Each question is its own card: it comes back when it is due and counts once a day, like any other. Questions of one case that come up in the same round are asked together, in order, and a mock exam asks the whole case together. Case questions are never used in games, where the case would be missing. In a CSV, repeat the case in a `case` column on each of its rows.
+- A card can have a **graph** that LernLab draws with the front. In **Graph (optional)**, write a function of x, such as `y = x^2 - 1` or `y = sin(x); x = 0..6.3`, or points to join, such as `(0,1) (1,3) (2,5)`. You can use `+ - * / ^`, brackets, `pi`, `e` and `sqrt`, `sin`, `cos`, `tan`, `abs`, `exp`, `ln`, `log`; add `; x = -3..3` or `; y = 0..10` to choose the part that shows. Basic, translate, numeric and multiple-choice cards can have a graph, so "Which function is drawn?" works with typed answers or with choices. Screen readers hear a few points of the graph, not its formula. Cards with a graph are not used in games, where the graph would be missing. In a CSV, use a `graph` column, and `translate` in the `type` column.
+- **Learn first** (under **More**): write the fronts of other cards of the deck, or tags as `#tag`, separated by `|`, for example `Derivative|#functions`. New cards are then met after the cards they build on were answered from memory once. It is only an order: when nothing else is new, the card comes anyway, and nothing is locked. Cards tagged `key-term` are met before the other new cards. If a card you keep forgetting builds on cards you know only weakly, a session starts with a quick **Basics first** look at those (it does not change when they are due). In files the field is `requires` ([FORMAT.md](FORMAT.md#prerequisites)).
 - **Key terms:** put `==` around the key part of an answer, like `It builds ==proteins== from amino acids`, and it is highlighted when the answer shows. It works in the back, the explanation and the notes, and in a CSV. The marks are not part of the answer you type ([FORMAT.md](FORMAT.md#key-terms)).
-- **Tips for this card:** under the preview, the editor may suggest a better card. An answer over 40 words: split it into two cards? A picture with no description: does it help the answer? Describe it if it does, and leave it out if it only decorates. A card about an idea (a why or how card, or an answer of a sentence or more) with no picture: a diagram could help. These are suggestions from simple rules on your computer; you can always save the card as it is. In a language deck, hearing a word and reading it at the same time is never flagged, because there it helps. The import preview counts the same tips for the whole file under **Tips for better cards**, and you can import first and change cards later.
 - **Mnemonic** (under **More**): a memory aid for the card, like "My Very Educated Mother…" for the planets. A mnemonic is a support, not the answer, so LernLab never shows it before you try. After a miss it appears with the answer under **Your mnemonic**, and again on your next answers until you get the card right twice in a row; then it stays hidden unless you miss the card again. When you type an answer, **Hint** (`Tab`) shows it too. It never changes your grade. In a CSV, put it in a `mnemonic` column.
+
+### Tips, media and many cards at once
+
+- **Tips for this card:** under the preview, the editor may suggest a better card. An answer over 40 words: split it into two cards? A picture with no description: does it help the answer? Describe it if it does, and leave it out if it only decorates. A card about an idea (a why or how card, or an answer of a sentence or more) with no picture: a diagram could help. These are suggestions from simple rules on your computer; you can always save the card as it is. In a language deck, hearing a word and reading it at the same time is never flagged, because there it helps. The import preview counts the same tips for the whole file under **Tips for better cards**, and you can import first and change cards later.
 - Drop an image, GIF, audio or video file on the editor to add it to the card.
 - Press **Record** to record your own voice on a card (up to a minute), **Play** to hear it and **Record again** to redo it. Cards with a recording play it instead of the computer voice. The first time, your system asks whether LernLab may use the microphone.
 - Tick several cards to add or remove a tag, move them to another deck, suspend them or delete them. A backup is saved before a delete.
 - **☆ Star** marks a card, so you can study your starred cards from Home. **Suspend** keeps a card out of your sessions.
 
-The **…** button on a deck in **Decks** opens the deck settings: its name, the language of the cards, new cards per day, a goal and an exam date, the voice that reads cards aloud, **Export .lernpack**, **Export CSV**, **Export for Anki** and **Delete**.
+The **…** button on a deck in **Decks** opens the deck settings: its name, the language of the cards, its **Subject** (Maths or Science turns on [Try first](#during-a-session)), new cards per day, a goal and an exam date, **Concept maps (optional)** (see [Draw the map from memory](#draw-the-map-from-memory)), the voice that reads cards aloud, **Export .lernpack**, **Export CSV**, **Export for Anki** and **Delete**.
 
 ## Follow your progress
 
@@ -222,8 +258,10 @@ The **…** button on a deck in **Decks** opens the deck settings: its name, the
 - **Progress card**: press **Progress card** next to this week's goal for a one-page summary to show a teacher, a parent or a friend: cards learned, days and minutes this week, the share of reviews recalled, this week's goal, the next exam and your top decks. **Save as picture (PNG)** saves an image file; **Print or save as PDF** opens your system's print window, where you can also choose to save a PDF (the card prints on a light page). The card is made on your computer and nothing is sent anywhere. It shows no XP or levels, so it is the same in calm mode.
 - **Study days**: a calendar of the last year;
 - **Memory**: the share of reviews you recalled, week by week, against your target;
+- **After time away: your own numbers**: how often you recalled a card after 1 to 6 days, 7 to 29 days and 30 days or more away, next to repeats on the same day. A row shows its share once it has 20 answers. After time away, only real reviews count (your first answer of the day, never practice or games); same-day repeats include cards brought back in a session. It covers your most recent recall answers (up to 2,000, from the last year). It is a record of what happened, not an experiment: each row holds different cards. Same-day repeats usually look best because the answer is still fresh; the rows after time away show what has lasted.
 - **How sure you were**: for each rating from 1 to 5, how often those cards were right at their next review ("Cards you rated 5 were right 93% of the time at their next review; rated 4, 61%"). A rating shows a bar once 5 of its cards have come back. It shows whether your feeling of knowing can be trusted: if your 5s are often wrong, study a bit longer before you move on;
 - your hardest cards, with **Study these** to start a session with them;
+- **How LernLab helps you remember**: four short notes you can open (recall, spacing, mixing, and why "feels easy" can mislead);
 - your streak, your streak freezes and your badges.
 
 A card counts as learned once you have recalled it from memory, not just recognised it.
@@ -238,6 +276,28 @@ Explaining something to someone else shows what you really know. When you know m
 4. Tick the points you missed. **Practise … cards** starts a practice session with just the cards behind them.
 
 Nothing here is saved or graded, and it never changes when your cards come back. Your text and your recording stay on your computer and are gone when you leave the screen.
+
+
+### Draw the map from memory
+
+A concept map shows how the ideas of a topic connect: *Mitochondrion → makes → ATP*. When a deck has a concept map from its author, Progress lists its topic under **Draw the map from memory**.
+
+1. Press **Draw it**. You see the topic's terms, in A–Z order.
+2. Add the links you remember: choose a term under **From**, type how it relates (for example "makes"; you can leave this empty), choose the other term under **To**, and press **Add link**. Your links appear as a list, with **Remove** beside each, and as a picture below. Everything works with the keyboard and a screen reader; the picture shows the same links as the list.
+3. Press **Compare with the author's map**. The two maps appear side by side, and below them three lists: links in both maps, links only in the author's map, and links only in yours. For a link in both, you see your words next to the author's.
+
+This is practice: there is no timer, nothing is graded, and your schedule does not change. A map can be drawn in more than one good way, so a link that is only in yours is not marked wrong. LernLab places the terms in the picture itself; you cannot move them.
+
+**Writing a map for your deck.** Open the deck's settings on the Decks page and fill in **Concept maps (optional)**. Start a map with `#` and its topic, then write one link per line:
+
+```
+# Cell energy
+Glucose --is broken down in--> Mitochondrion
+Mitochondrion --makes--> ATP
+Oxygen --> Mitochondrion
+```
+
+A map needs at least two links and can have up to 16 terms and 30 links. The note under the field says how many maps LernLab reads. Maps travel with the deck in a LernLab deck file (`.lernpack`).
 
 ## Back up and move your data
 
@@ -287,7 +347,7 @@ In the desktop app, **File → Use a different data folder…** moves LernLab to
 
 ### Delete everything
 
-**Settings → Your data → Delete all my data** removes every deck, card, answer, setting and media file. Type `DELETE` to confirm. Your backups are deleted too, so this can't be undone.
+**Settings → Your data → Delete all my data** removes every deck, card, answer, setting and media file. Type `DELETE` to confirm. Your backups are deleted too, and so are the other people you added for Study together, with their progress. This can't be undone.
 
 ## Your AI assistant
 
@@ -295,10 +355,11 @@ LernLab has no AI of its own, but you can connect one you already use (Claude De
 
 ### AI requests
 
-When you ask the assistant for cards (for example from a PDF or a web page), to fix or merge cards, to tag, star, suspend or move them, to change your goals, to plan a deck toward an exam, or to export a deck, it cannot do it itself. Its proposals appear under **AI requests** in the sidebar, one card each, with the assistant's note on where they come from:
+When you ask the assistant for cards (for example from a PDF or a web page), to fix or merge cards, to add study aids to your cards, to tag, star, suspend or move them, to change your goals, to plan a deck toward an exam, or to export a deck, it cannot do it itself. Its proposals appear under **AI requests** in the sidebar, one card each, with the assistant's note on where they come from:
 
 - Edit the deck name and any card, untick the cards you don't want, then click **Add N cards**. The cards start as new cards.
 - A fix shows each field as it is now above the proposed text. Change the text if you like, then click **Save the fix**. The card keeps its progress.
+- Study aids for a card you already have are a fix too: other ways to ask its question, why each wrong choice of a multiple-choice card is wrong, key points and a model explanation for an explain card, what to learn first, a memory aid and key terms. Each field shows what the card has now above the suggestion, one entry per line (corrections: one row per wrong choice). Suggestions are cleaned to plain text and cut to the same limits as an imported deck. Accepting never counts as a review and never changes when the card comes back.
 - A merge shows the card to keep and its duplicates. The duplicates you leave ticked are suspended and tagged `merged`, never deleted; find them in the card browser by that tag.
 - Tagging, starring, suspending or moving cards lists the cards it touches. Untick any you want left alone.
 - New goals or a study plan show what you have now next to the proposed values. Change any value, then click **Use these goals** or **Save the plan**.
@@ -307,12 +368,17 @@ When you ask the assistant for cards (for example from a PDF or a web page), to 
 
 ## Settings
 
-- **Language and display**: interface language, theme (**Match my computer**, **Light** or **Dark**), text size and **Reduce motion**.
-- **Studying**: daily goal, default session length, timers (**Off**, **Relaxed**, **Normal**, **Challenge**), new cards per day, target memory retention, **Ask how sure I was** (on by default: about 1 answer in 4 asks; off: never), **Calm mode** (see below), sound effects, and the teacher's voice for language decks.
+- **Language and display**: interface language, theme (**Match my computer**, **Light** or **Dark**), text size, **Reduce motion**, sound effects, and the teacher's voice for language decks.
+- **Studying**: daily goal, default session length, timers (**Off**, **Relaxed**, **Normal**, **Challenge**), new cards per day and target memory retention, then six switches:
+  - **Ask how sure I was** (on by default: about 1 answer in 4 asks; off: never);
+  - **Say a few answers aloud** and **Act out a few action cards** (both on by default; see [During a session](#during-a-session));
+  - **Offer a quiet minute after new cards** (off by default; see [The summary](#the-summary));
+  - **Calm mode** and **Evening and morning rhythm** (both off by default; see below).
 - **Calm mode** (off by default) is for studying without game elements. It hides XP, your level, combos, the floating numbers, level and badge news, confetti and the level-up sound, in sessions, on the summary and on Home. Everything about your learning stays: answers recalled, new cards, missed cards, your streak and freezes, study days and the Progress screen (badges you earn still appear there). XP is still counted quietly, so nothing is lost if you turn calm mode off again. LernLab has no leaderboards, with or without calm mode.
 - **Evening and morning rhythm** (off by default) lets sleep help your memory. After an evening session (from 5 p.m.), new cards wait for the next evening, and your next session before 5 p.m. starts with a short check of last night's new cards and the ones you got wrong. The check is a normal review on a new day. Nothing is locked: if you did not study the evening before, new cards come at any time. With the daily reminder on, **Offer the morning check at** adds a morning notification, shown only when cards from last night are waiting and you have not studied yet. In the deck list, a deck whose exam is within three days shows a short note that sleep is part of studying.
 - **Study plan**: your if-then plan and backup plan, a preview of what the reminder will say, the hour you usually study, and the habit note on Home. See [Study plan](#study-plan).
 - **Reminders** (desktop app): a daily reminder at a time you choose, and opening LernLab when you log in.
+- **People on this computer**: your own name, and the people you study with (see [Study together](#study-together)).
 - **Your data**: the data folder, backups, restore, export, import and delete.
 - **AI assistant**: let an AI assistant you use (Claude Desktop, the ChatGPT desktop app, Hermes Agent or any other app that supports MCP) read your decks, cards and study history. Off until you turn it on. LernLab itself stays offline, but whatever the assistant reads is sent to that assistant's AI company. When it is on, Settings shows the snippet to paste into the assistant's MCP settings; see [AI-ASSISTANTS.md](AI-ASSISTANTS.md). Turn it off and every request from the assistant is refused.
 - **Updates and privacy**: automatic updates and beta updates. LernLab goes online only to check for updates, to load a deck from the gallery when you ask, and for an AI assistant you connect and turn on. Some shared decks link pictures, videos or sounds from websites instead of including them. Those stay off, and the card shows a note, until you turn on **Allow pictures and sounds from the internet**. LernLab warns you first: each such card then contacts that website, which sees your IP address, and the content comes from the deck's author, not from LernLab.
@@ -325,8 +391,10 @@ When you ask the assistant for cards (for example from a PDF or a web page), to 
 | `1`–`5` | When **How sure were you?** shows after a typed or ordering answer: rate and continue |
 | `Enter` | Start a session on Home; check or continue in a session; **Done** on the summary |
 | `Space` | Flip a card or replay audio; **One more round** on the summary |
+| `1`–`3` | Rate a flip card after **Show answer**: **Didn't know**, **Partly**, **Knew it** |
 | `Tab` | Show a hint, then the answer, when you type an answer |
+| `Ctrl+Enter` / `Cmd+Enter` in a session | **Check my explanation** on an Explain it card; **Show the worked solution** in a Try first round |
 | `Esc` | Leave a session |
-| `Ctrl+Enter` / `Cmd+Enter` | Start a session (desktop app, **File → Start session**) |
-| `Ctrl+Shift+L` / `Cmd+Shift+L` | Start a session from anywhere, even when LernLab is in the background (desktop app) |
+| `Ctrl+Enter` / `Cmd+Enter` | Start a session (desktop app, **File → Start session**). It does nothing during a session (alone or together), a mock exam, a teach-back or a concept map, or while you type in a text box |
+| `Ctrl+Shift+L` / `Cmd+Shift+L` | Start a session from anywhere, even when LernLab is in the background (desktop app); the same exceptions apply |
 | `Ctrl+O` / `Cmd+O` | Import a deck file (desktop app) |

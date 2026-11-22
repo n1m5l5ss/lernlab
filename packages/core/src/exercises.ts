@@ -5,7 +5,7 @@ import { hasMath, splitMath } from './math';
 import { codeTask, GAP } from './code';
 import { variantsOf } from './variants';
 import { correctionHtml, correctionsOf, isMyth } from './misconceptions';
-import { askedOwnWay, asksWhy, isExplain, keyPointHtml, keyPointsOf } from './explain';
+import { ownExercise, asksWhy, isExplain, keyPointHtml, keyPointsOf } from './explain';
 import { isTwin } from './twin';
 import { isWorked, stepHtml, workedStepsOf } from './worked';
 import type { Exercise, Item } from './types';
@@ -39,7 +39,7 @@ function pickDistractors(
       (p) =>
         p.id !== item.id &&
         !['grammar', 'mcq', 'order', 'code', 'occlusion'].includes(p.kind) &&
-        !askedOwnWay(p) &&
+        !ownExercise(p) && // a case question's answer can still be a wrong choice
         key(p) &&
         !seen.has(key(p).toLowerCase()),
     )
@@ -142,6 +142,21 @@ export function flip(item: Item, k = 0): Exercise {
     answer: q.answer,
     reverse,
     ...(v && { level: v.level }),
+  };
+}
+
+/**
+ * A translate card asked the other way round (translate.ts): the side the usual question (qa) gives as the
+ * answer is shown, and the learner recalls the other side, then checks it and rates themselves.
+ */
+export function otherWay(item: Item): Exercise {
+  const toFront = qa(item).prompt === item.target; // the usual way asks the front, so this one asks the back
+  return {
+    type: 'flip',
+    itemId: item.id,
+    prompt: toFront ? item.meaning : item.target,
+    answer: toFront ? item.target : item.meaning,
+    reverse: toFront,
   };
 }
 

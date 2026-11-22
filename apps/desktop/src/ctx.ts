@@ -1,5 +1,5 @@
 import type { Line } from '@lernlab/core/teacher';
-import type { Format, Item, SessionPlan } from '@lernlab/core/types';
+import type { Format, Item, SessionPlan, Sketch } from '@lernlab/core/types';
 import type { Level } from '@lernlab/core/variants';
 import type { Confidence } from '@lernlab/core/confidence';
 import type { TextTeacher } from './lines';
@@ -47,6 +47,15 @@ export type Ctx = {
    * where the session asks it (a real recall answer, the setting on); never changes the schedule.
    */
   confidence?: (itemId: number, value: Confidence) => void;
+  /**
+   * The learner's own sketches (#220): the one for a card (this session's changes included), saving a drawing
+   * (PNG bytes), a description or both, and removing it. Never an answer; never changes the schedule.
+   */
+  sketches?: {
+    of: (itemId: number) => Sketch | undefined;
+    save: (itemId: number, picture: Uint8Array | null, text: string) => Promise<void>;
+    remove: (itemId: number) => Promise<void>;
+  };
   /** Show a line in the speech bubble (a core Line, or text already translated). */
   teacher: (line: Line | string) => void;
   settings: { sound: boolean; teacherVoice: boolean; questionTimer?: number; blitzSeconds?: number };

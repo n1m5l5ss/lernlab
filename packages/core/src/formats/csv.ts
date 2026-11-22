@@ -89,6 +89,8 @@ const COLUMNS: Record<string, string[]> = {
   requires: ['requires', 'prerequisites', 'learn first'],
   keyTerms: ['key_terms', 'key terms', 'keyterms'],
   workedSteps: ['worked_steps', 'worked steps', 'solution steps'],
+  case: ['case', 'scenario', 'vignette'],
+  graph: ['graph', 'plot'],
   tolerance: ['tolerance', 'tol'],
   code: ['code', 'snippet', 'source code'],
   codeLang: ['code_lang', 'code language', 'programming language'],
@@ -97,6 +99,9 @@ const COLUMNS: Record<string, string[]> = {
   occlusionMode: ['occlusion_mode', 'occlusion mode'],
   extra: [],
 };
+
+/** Every card field the CSV reader knows, with the column names it accepts (the first is the usual one). */
+export const CSV_FIELD_NAMES: Readonly<Record<string, readonly string[]>> = COLUMNS;
 
 export function csvToCards(text: string): {
   cards: NormalizedCard[];
@@ -175,6 +180,8 @@ export function csvToCards(text: string): {
       keyTerms: get(r, 'keyTerms') || undefined,
       workedSteps: get(r, 'workedSteps') || undefined,
       mnemonic: get(r, 'mnemonic') || undefined,
+      case: get(r, 'case') || undefined,
+      graph: get(r, 'graph') || undefined,
       tolerance: get(r, 'tolerance') || undefined,
       code: 'code' in columns ? r[columns.code] || undefined : undefined, // untrimmed: indentation matters
       codeLang: get(r, 'codeLang') || undefined,
@@ -209,6 +216,8 @@ const CSV_COLUMNS: [string, (c: NormalizedCard) => string | number | undefined][
   ['requires', (c) => c.requires],
   ['key_terms', (c) => c.keyTerms],
   ['worked_steps', (c) => c.workedSteps],
+  ['case', (c) => c.case],
+  ['graph', (c) => c.graph],
   ['steps', (c) => c.steps],
   ['tolerance', (c) => c.tolerance],
   ['code', (c) => c.code],

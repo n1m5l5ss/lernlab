@@ -1,6 +1,6 @@
 # Future features from learning science
 
-*Research done on November 21, 2026, against LernLab 1.1.1. Nothing here is built or scheduled yet. Each item can become a GitHub issue when someone picks it up.*
+*Research done on November 21, 2026, against LernLab 1.1.1. Nothing here was built when it was written. Since then most of the list has shipped: the [roadmap](ROADMAP.md) says which items are done, with their issue numbers, and which parts are still open.*
 
 This document lists features LernLab could add, based on peer-reviewed research on how people **remember**, **understand** and **keep studying**. It leaves out everything LernLab already has (see the [roadmap](ROADMAP.md) "Done" sections) and everything already planned under "Later". Planned items that the new research supports are listed briefly at the end.
 
