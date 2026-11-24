@@ -1,7 +1,7 @@
 // The example decks in examples/ import cleanly, and each .lernpack is in step with its folder in examples/decks/.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { strFromU8, unzipSync, zipSync, type Zippable } from 'fflate';
@@ -31,9 +31,9 @@ const POLISHED = [
 ];
 
 function zipFolder(folder: string, base = folder, files: Zippable = {}): Zippable {
-  for (const name of readdirSync(folder)) {
-    const path = join(folder, name);
-    if (statSync(path).isDirectory()) zipFolder(path, base, files);
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    const path = join(folder, entry.name);
+    if (entry.isDirectory()) zipFolder(path, base, files);
     else files[relative(base, path).split('\\').join('/')] = new Uint8Array(readFileSync(path));
   }
   return files;

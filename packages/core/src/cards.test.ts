@@ -86,6 +86,7 @@ test('cloze parsing', () => {
 test('sanitizer strips scripts and attributes', () => {
   assert.equal(sanitizeHtml('<b onclick="x()">hi</b><script>alert(1)</script><img src=x onerror=y>'), '<b>hi</b>');
   assert.equal(sanitizeHtml('<a href="javascript:x">link</a>'), 'link');
+  assert.ok(!/<script/i.test(sanitizeHtml('<scr<script>x</script>ipt>alert(1)</scr<script>y</script>ipt>')));
 });
 
 test('sanitizer keeps only the safe list, bare, and never lets a tag rebuild itself', () => {

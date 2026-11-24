@@ -205,8 +205,13 @@ const BARE_TAG = new RegExp(`<(?!/?(?:${SAFE_TAGS.join('|')})>)`, 'gi');
  * Any `<` left that is not one of those bare tags becomes `&lt;`, so no tag can be rebuilt from pieces.
  */
 export function sanitizeHtml(html: string): string {
-  return html
-    .replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, '')
+  // Drop code blocks with their content, again and again until none is left, so pieces can't join into a new one.
+  let text = html;
+  for (let prev = ''; prev !== text;) {
+    prev = text;
+    text = text.replace(/<(script|style|iframe|object|embed)[\s\S]*?<\/\1>/gi, '');
+  }
+  return text
     .replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi, (tag, name: string) => {
       const n = name.toLowerCase();
       if (!ALLOWED.has(n)) return '';
