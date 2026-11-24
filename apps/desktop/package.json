@@ -27,12 +27,12 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
-    "@hono/node-server": "2.1.9",
+    "@hono/node-server": "2.1.11",
     "@lernlab/core": "*",
     "@lernlab/storage-sqlite": "*",
     "@lernlab/ui": "*",
     "@modelcontextprotocol/sdk": "1.32.2",
-    "@storybook/react-vite": "10.6.7",
+    "@storybook/react-vite": "10.6.8",
     "@types/canvas-confetti": "^1.9.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
@@ -48,8 +48,8 @@
     "playwright-core": "1.65.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
-    "react-i18next": "18.0.2",
-    "storybook": "10.6.7",
+    "react-i18next": "18.0.3",
+    "storybook": "10.6.8",
     "vite": "8.3.8"
   },
   "build": {
