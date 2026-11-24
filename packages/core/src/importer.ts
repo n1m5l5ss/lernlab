@@ -22,6 +22,7 @@ import { importAnkiHistory } from './ankihistory';
 import { jsonToCard, parseJson } from './formats/json';
 import { IMPORT_LIMITS, isNestedZip, listZip, mediaProblem, readZip, type MediaProblem } from './formats/zip';
 import { UserError } from './errors';
+import { stripHtml } from './text';
 
 export { IMPORT_LIMITS } from './formats/zip';
 
@@ -362,7 +363,7 @@ export async function importFromAnki(
       tags: n.tags,
       subdeck: deckOf[n.noteId] ?? source,
       group: n.tags.find((t) => /^G\d+$/.test(t)),
-      rank: parseInt(f('Rank').replace(/<[^>]+>/g, ''), 10) || 0,
+      rank: parseInt(stripHtml(f('Rank')), 10) || 0,
       extra: reading ? { reading } : undefined,
     } as NormalizedCard;
   });
