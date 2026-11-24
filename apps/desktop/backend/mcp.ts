@@ -27,7 +27,7 @@ import { getDeck } from '@lernlab/core/library';
 import { InvalidInput } from './validate';
 import { f, type Input, type Json, type Shape } from './fields';
 import { addAiRequest, listAiRequests } from '@lernlab/storage-sqlite/airequests';
-import type { AiRequestBody } from '@lernlab/core/airequests';
+import { fitChangesFor, type AiRequestBody, type CardChanges } from '@lernlab/core/airequests';
 import { asRequest, checkBody, REQUEST_BODIES } from './ai-requests';
 import pkg from '../package.json';
 
@@ -122,6 +122,15 @@ const needCards = (d: DB, ids: number[]) => {
       throw new UserError('card_not_found', `There is no card with id ${id}.`);
 };
 
+/** Refuse aids that do not fit the card (corrections on a card without choices, …), so the assistant can fix them. */
+const needFit = (d: DB, id: number, changes: CardChanges) => {
+  const unfit = fitChangesFor(id, changes, d)?.unfit ?? [];
+  if (unfit.length)
+    throw new InvalidInput(
+      `${unfit.join(', ')} does not fit this card: variants are for cards answered in writing, corrections for the wrong choices of a multiple-choice card, keyPoints for explain cards, keyTerms for words that stand in the back. Check the card with get_card.`,
+    );
+};
+
 export const TOOLS = {
   get_overview: withDeckText(
     tool(
@@ -180,7 +189,7 @@ export const TOOLS = {
   ),
   get_card: withDeckText(
     tool(
-      'Everything about one card: fields, tags, star, suspended, media files, its memory forecast (next due date and the chance of recalling it now, from FSRS), and the exact wrong answers the learner gave.',
+      'Everything about one card: fields, tags, star, suspended, media files, its choices (multiple choice) and study aids (question variants, corrections, key points, what to learn first, memory aid, key terms), its memory forecast (next due date and the chance of recalling it now, from FSRS), and the exact wrong answers the learner gave.',
       { id: f.id('The card id (from search_cards).') },
       ({ id }, { db, now }) => {
         const card = cardDetails(db, id, now);
@@ -240,11 +249,12 @@ export const TOOLS = {
     },
   ),
   propose_card_fix: tool(
-    'Propose a fix to one card (a typo, a clearer answer, a better example, tags). Only the fields you give change; its learning progress stays. Nothing changes until the user accepts it in LernLab → AI requests.',
+    'Propose a fix or study aids for one card: a typo, a clearer answer, a better example, tags; other ways to ask the question (variants); why each wrong choice of a multiple-choice card is wrong (corrections); key points and a model explanation (back) for an explain card; what to learn first (requires), a memory aid (mnemonic) and key terms. Only the fields you give change; its learning progress and schedule stay. Nothing changes until the user accepts it in LernLab → AI requests.',
     REQUEST_BODIES.edit_card,
     (input, { db }) => {
       needCards(db, [input.cardId]);
       if (!Object.keys(input.changes).length) throw new InvalidInput('changes must change at least one field');
+      needFit(db, input.cardId, input.changes);
       return propose({ kind: 'edit_card', ...input });
     },
   ),
@@ -254,6 +264,7 @@ export const TOOLS = {
     (input, { db }) => {
       needCards(db, [input.keepId, ...input.mergeIds]);
       if (!input.mergeIds.some((id) => id !== input.keepId)) throw new InvalidInput('mergeIds must name other cards');
+      if (input.changes) needFit(db, input.keepId, input.changes);
       return propose({ kind: 'merge_cards', ...input });
     },
   ),

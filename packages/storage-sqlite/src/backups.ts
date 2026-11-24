@@ -27,6 +27,7 @@ import { UserError } from '@lernlab/core/errors';
 import { BUNDLE_FORMAT, BUNDLE_VERSION, packDataBundle, unpackDataBundle } from '@lernlab/core/formats/databundle';
 import { backupAppDb, backupStamp, closeAppDb, dataDir, getAppDb, mediaDir, openReadonly } from './index';
 import { aiRequestsDir } from './airequests';
+import { learnersDir } from './learners';
 
 export const DAILY_KEEP = 7;
 const appFile = () => resolve(dataDir(), 'lernlab.db');
@@ -218,13 +219,14 @@ export function importAllData(bytes: Uint8Array): { safety: string; counts: Coun
 }
 
 /**
- * Delete decks, cards, progress, settings, media, daily summaries, waiting AI requests and every backup, and start empty.
+ * Delete decks, cards, progress, settings, media, daily summaries, waiting AI requests, every backup and the
+ * other learners on this computer (their names, progress and backups, #224), and start empty.
  * Nothing is kept, so this cannot be undone; the screen warns about that before asking.
  */
 export function deleteAllData(): { ok: true } {
   closeAppDb();
   for (const suffix of ['', '-wal', '-shm']) rmSync(appFile() + suffix, { force: true });
-  for (const dir of [mediaDir(), progressDir(), backupsDir(), aiRequestsDir()])
+  for (const dir of [mediaDir(), progressDir(), backupsDir(), aiRequestsDir(), learnersDir()])
     rmSync(dir, { recursive: true, force: true });
   getAppDb(appFile());
   return { ok: true };

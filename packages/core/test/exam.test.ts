@@ -14,20 +14,20 @@ const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
 const { importFile } = await import('../src/importer');
 const { recordAttempt } = await import('../src/learn');
-const { createDeck, updateDeck } = await import('../src/library');
+const { createDeck, updateDeck, upsertCards } = await import('../src/library');
 const { buildExam, recordExam } = await import('../src/examplan');
 const { getDb } = await import('../src/db');
 const { dayKey } = await import('../src/game');
 after(() => cleanupTempDir(dir));
 
 const csv = [
-  'front,back,tags,type,choices,correct,explanation',
-  'Object storage?,S3,storage,,,,',
-  'Block storage?,EBS,storage,,,,',
-  'File storage?,EFS,storage,,,,',
-  'Users and roles?,IAM,security,,,,',
-  'Pick TWO serverless services,,compute,mcq,Lambda|EC2|Fargate|EBS,1|3,Both run code without servers to manage.',
-  'Which is a database?,DynamoDB,,,,,',
+  'front,back,tags,type,choices,correct,explanation,corrections',
+  'Object storage?,S3,storage,,,,,',
+  'Block storage?,EBS,storage,,,,,',
+  'File storage?,EFS,storage,,,,,',
+  'Users and roles?,IAM,security,,,,,',
+  'Pick TWO serverless services,,compute,mcq,Lambda|EC2|Fargate|EBS,1|3,Both run code without servers to manage.,|Many people think **EC2** is serverless. In fact you run its servers.',
+  'Which is a database?,DynamoDB,,,,,,',
 ].join('\n');
 const { deck } = importFile('Cloud.csv', strToU8(`${csv}\n`));
 const ids = getDb()
@@ -48,8 +48,15 @@ test('an exam asks multiple-choice questions from the deck, with tags as topics'
   assert.deepEqual(multi.correct.map((i) => multi.choices[i]).sort(), ['Fargate', 'Lambda']);
   assert.match(multi.explanation, /without servers/);
   assert.deepEqual(multi.topics, ['compute']);
+  assert.equal(
+    multi.corrections?.[multi.choices.indexOf('EC2')],
+    'Many people think <b>EC2</b> is serverless. In fact you run its servers.',
+    "a wrong choice's correction goes with it, for tutor mode",
+  );
+  assert.equal(multi.corrections?.[multi.choices.indexOf('EBS')], '');
   const basic = exam.questions.find((q) => q.stem === 'Object storage?')!;
   assert.equal(basic.choices[basic.correct[0]], 'S3');
+  assert.ok(!('corrections' in basic), 'cards without corrections have none');
 
   updateDeck(deck.id, { settings: { exam: { questions: 3, minutes: 5, passMark: 80 } } });
   const short = buildExam(deck.id, getDb());
@@ -88,6 +95,28 @@ test('handing in an exam scores it and logs practice attempts that never change 
   assert.equal(logged.length, 3, 'every question is logged, answered or not');
   assert.ok(logged.every((r) => r.practice === 1 && r.grade === null));
   assert.equal(score.reviewed, 0);
+});
+
+test('a card with question variants is asked in one of its wordings, with its level, and logged with it', () => {
+  const pharma = createDeck('Pharma', null);
+  upsertCards(pharma, [
+    { front: 'Beta blocker', back: 'propranolol', variants: 'apply: Angina & asthma? | analyse: Dose doubles?' },
+    { front: 'Statin', back: 'atorvastatin' },
+    { front: 'ACE inhibitor', back: 'ramipril' },
+  ]);
+  const beta = Number(getDb().prepare("SELECT id FROM items WHERE target = 'Beta blocker'").get()!.id);
+  const stems = new Set<string>();
+  for (let i = 0; i < 40 && stems.size < 3; i++) {
+    const q = buildExam(pharma.id, getDb()).questions.find((x) => x.itemId === beta)!;
+    stems.add(`${q.level ?? 'own'}:${q.stem}`);
+    assert.equal(q.choices[q.correct[0]], 'propranolol', 'the answer stays the same');
+  }
+  assert.deepEqual([...stems].sort(), ['analyse:Dose doubles?', 'apply:Angina &amp; asthma?', 'own:Beta blocker']);
+  const exam = buildExam(pharma.id, getDb());
+  const asked = exam.questions.map((q) => ({ ...q, level: 'apply' as const }));
+  recordExam(exam.id, asked, [], 70, 'timed', getDb(), at);
+  const levels = getDb().prepare('SELECT level FROM attempts WHERE session_id = ?').all(exam.id);
+  assert.ok(levels.length === 3 && levels.every((r) => r.level === 'apply'));
 });
 
 test('an empty deck gives an empty exam', () => {

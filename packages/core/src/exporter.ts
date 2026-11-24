@@ -7,14 +7,26 @@ import { writeLernpack } from './formats/lernpack';
 import { writeApkg } from './formats/apkgwrite';
 import { cardsToCsv } from './formats/csv';
 import { UserError } from './errors';
+import { keyPointsAsBack, parseKeyPoints } from './explain';
+import { frontWithCase } from './cases';
 
-/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
+/** Extra keys the card fields `choices`, `correct`, `steps`, `altAnswers`, `imageAlt`, `variants`, `corrections`, `keyPoints`, `twin`, `keyTerms`, `workedSteps`, `mnemonic`, `case`, `graph`, `tolerance`, `code`, `codeLang` and the occlusion fields are stored under. */
 const FROM_EXTRA = {
   choices: 'choices',
   correct: 'correct',
   steps: 'steps',
   alt: 'altAnswers',
   imageAlt: 'imageAlt',
+  variants: 'variants',
+  corrections: 'corrections',
+  keyPoints: 'keyPoints',
+  twin: 'twin',
+  requires: 'requires',
+  keyTerms: 'keyTerms',
+  workedSteps: 'workedSteps',
+  mnemonic: 'mnemonic',
+  case: 'case',
+  graph: 'graph',
   tolerance: 'tolerance',
   code: 'code',
   codeLang: 'codeLang',
@@ -35,15 +47,33 @@ export function rowToCard(row: Row, deckName: string): NormalizedCard {
   const r = row as unknown as ItemRow;
   const extra: Record<string, string> = JSON.parse(r.extra ?? '{}');
   const fields: Partial<NormalizedCard> = {};
+  const myth = extra.myth === '1';
+  delete extra.myth;
+  const translate = extra.translate === '1';
+  delete extra.translate;
   for (const [key, field] of Object.entries(FROM_EXTRA)) {
     if (extra[key]) fields[field] = extra[key];
     delete extra[key];
   }
   return {
     sourceId: String(r.id),
-    type: ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind) ? r.kind : undefined,
-    front: r.target,
-    back: r.meaning,
+    type: myth
+      ? 'myth'
+      : fields.keyPoints
+        ? 'explain'
+        : fields.twin
+          ? 'twin'
+          : fields.workedSteps
+            ? 'worked'
+            : translate
+              ? 'translate'
+              : ['mcq', 'order', 'cloze', 'numeric', 'code', 'occlusion'].includes(r.kind)
+                ? r.kind
+                : undefined,
+    // A question of a case: older readers and Anki get the case before the question (read back in, it is dropped).
+    front: frontWithCase(fields.case ?? '', r.target),
+    // An explain card without a model explanation: older readers and Anki get its key points as the back.
+    back: !r.meaning && fields.keyPoints ? keyPointsAsBack(parseKeyPoints(fields.keyPoints)) : r.meaning,
     ...fields,
     example: r.sentence_html || undefined,
     exampleTranslation: r.sentence_meaning || undefined,
@@ -86,7 +116,13 @@ export function exportDeck(
     return { name: `${safe}.apkg`, data: writeApkg(deck.name, cards, media), type: 'application/zip' };
   const data = writeLernpack(
     {
-      deck: { name: deck.name, language: deck.language, description: deck.description, goal: deck.settings.goal },
+      deck: {
+        name: deck.name,
+        language: deck.language,
+        description: deck.description,
+        goal: deck.settings.goal,
+        maps: deck.settings.maps,
+      },
       generator: 'LernLab',
     },
     cards,

@@ -7,12 +7,15 @@ import { useTranslation } from 'react-i18next';
 import { isRight, type ExamMode } from '@lernlab/core/exam';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
-import { Feedback, SegmentedControl } from './components';
+import { CasePanel, Feedback, LevelTag, SegmentedControl } from './components';
 import { useKeys } from './ctx';
+import { GraphOf } from './graph-view';
 import { clock, reviewRows, secondsLeft, toggleChoice, type ReviewFilter } from './exam-logic';
 import { formatNumber } from './i18n';
 import { controlOwnsKey } from './keys-logic';
 import { Rich } from './rich';
+import { WrongChoice } from './modes/Exercises';
+import { pickedCorrections } from '@lernlab/core/misconceptions';
 
 type ExamData = OutputOf<'exam.start'>;
 type Score = OutputOf<'exam.submit'>;
@@ -231,6 +234,25 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
             {score.weak.length ? score.weak.map(topic).join(' · ') : t('exam.noWeak', { mark: score.passMark })}
           </p>
         </section>
+        {score.levels.length > 0 && (
+          <section className="panel exam-topics" aria-labelledby="exam-levels">
+            <h2 id="exam-levels">{t('exam.byLevel')}</h2>
+            <p className="muted small">{t('exam.byLevelHint')}</p>
+            <ul>
+              {score.levels.map((x) => (
+                <li key={x.level}>
+                  <b>
+                    <LevelTag level={x.level}>{t(`levels.${x.level}`)}</LevelTag>
+                  </b>
+                  <div className="meter" aria-hidden="true">
+                    <i style={{ width: `${x.percent}%` }} />
+                  </div>
+                  <span>{t('exam.topicScore', { count: x.correct, total: x.total, percent: x.percent })}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         {missed.length > 0 && (
           <section className="panel summary-missed" aria-labelledby="exam-missed">
             <h2 id="exam-missed">{t('exam.missed', { count: missed.length })}</h2>
@@ -328,7 +350,19 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
         <div className="panel ex-card">
           <div className="blocktitle">
             {multi ? t('exam.chooseMany', { count: q.correct.length }) : t('exam.chooseOne')}
+            {q.level && (
+              <>
+                {' '}
+                <LevelTag level={q.level}>{t(`levels.${q.level}`)}</LevelTag>
+              </>
+            )}
           </div>
+          {q.caseText && (
+            <CasePanel label={t('ex.case.label')}>
+              <Rich html={q.caseText} />
+            </CasePanel>
+          )}
+          {q.graph && <GraphOf line={q.graph} />}
           <div className="prompt exam-stem">
             <Rich html={q.stem} />
           </div>
@@ -347,9 +381,14 @@ export function Exam({ deckId, onDone }: { deckId: number; onDone: () => void })
           </div>
           {locked && (
             <Feedback tone={isRight(q, chosen) ? 'right' : 'wrong'}>
-              {isRight(q, chosen)
-                ? t('exam.right')
-                : t('common.correctIs', { answer: q.correct.map((i) => q.choices[i]).join(' + ') })}
+              {isRight(q, chosen) ? (
+                t('exam.right')
+              ) : (
+                <WrongChoice
+                  corrections={pickedCorrections(q.corrections, chosen, q.correct)}
+                  answer={t('common.correctIs', { answer: q.correct.map((i) => q.choices[i]).join(' + ') })}
+                />
+              )}
               {q.explanation && <Rich className="small exam-explanation" html={q.explanation} />}
             </Feedback>
           )}

@@ -6,9 +6,23 @@ import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { localDate, reminderDue } from '@lernlab/core/reminder';
-import { HIDDEN_ARG, linuxAutostartEntry, REMINDER_TICK_MS, reminderText, type ReminderPrefs } from './reminder-policy';
+import type { StudyPlan } from '@lernlab/core/studyplan';
+import {
+  HIDDEN_ARG,
+  linuxAutostartEntry,
+  morningText,
+  REMINDER_TICK_MS,
+  reminderText,
+  type ReminderPrefs,
+} from './reminder-policy';
 
-export type ReminderStatus = ReminderPrefs & { language?: string; studiedToday: boolean };
+export type ReminderStatus = Omit<ReminderPrefs, 'morning'> & {
+  language?: string;
+  plan?: StudyPlan | null;
+  studiedToday: boolean;
+  /** Sleep bridge (#217): the morning check's time and how many of last night's cards wait. */
+  morning?: { time: string; cards: number } | null;
+};
 
 type Deps = {
   /** Reminder settings and whether you studied today, from the data process (null if it is down). */
@@ -22,14 +36,37 @@ type Deps = {
 let prefs: ReminderPrefs | null = null;
 // Keep a reference: a notification that is garbage-collected loses its click handler.
 let shown: Notification | null = null;
+// The date the morning check was last looked at (kept until LernLab closes; it is skipped once you studied).
+let morningChecked: string | undefined;
 
 /** Look at the clock once a minute; show the reminder when its time has come and you have not studied yet. */
 export async function setupReminders(deps: Deps) {
   const first = await deps.status();
   if (first) applyPrefs(first);
 
+  const show = (text: { title: string; body: string }) => {
+    shown = new Notification(text);
+    shown.on('click', () => {
+      deps.startSession();
+      shown = null;
+    });
+    shown.show();
+  };
   const tick = async () => {
     const now = new Date();
+    // The morning check (#217): only with the reminder and the sleep rhythm on, and cards from last night.
+    if (
+      prefs?.morning &&
+      reminderDue({ enabled: prefs.enabled, time: prefs.morning, lastShown: morningChecked }, now)
+    ) {
+      const s = await deps.status();
+      if (!s) return;
+      applyPrefs(s);
+      morningChecked = localDate(now);
+      if (s.enabled && s.morning?.cards && !s.studiedToday && Notification.isSupported())
+        show(morningText(s.language, s.morning.cards));
+      return;
+    }
     if (!prefs || !reminderDue({ ...prefs, lastShown: deps.lastShown() }, now)) return;
     const s = await deps.status();
     if (!s) return; // data process restarting: try again next minute
@@ -37,21 +74,17 @@ export async function setupReminders(deps: Deps) {
     deps.setLastShown(localDate(now)); // checked once a day, shown or not
     if (!s.enabled || s.studiedToday || !Notification.isSupported()) return;
     const dayNumber = Math.floor(now.getTime() / 86_400_000);
-    shown = new Notification(reminderText(s.language, dayNumber));
-    shown.on('click', () => {
-      deps.startSession();
-      shown = null;
-    });
-    shown.show();
+    show(reminderText(s.language, dayNumber, s.plan));
   };
   setInterval(() => void tick(), REMINDER_TICK_MS).unref();
   void tick();
 }
 
 /** New settings were saved (or read): remember them and update the login item when it changed. */
-export function applyPrefs(next: ReminderPrefs) {
+export function applyPrefs(next: ReminderPrefs | ReminderStatus) {
   const changed = prefs?.launchAtLogin !== next.launchAtLogin;
-  prefs = { enabled: next.enabled, time: next.time, launchAtLogin: next.launchAtLogin };
+  const morning = typeof next.morning === 'string' ? next.morning : next.morning?.time;
+  prefs = { enabled: next.enabled, time: next.time, launchAtLogin: next.launchAtLogin, ...(morning && { morning }) };
   if (changed) setLaunchAtLogin(next.launchAtLogin);
 }
 

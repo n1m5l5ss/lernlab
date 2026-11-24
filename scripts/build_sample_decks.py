@@ -93,12 +93,31 @@ def from_existing(folder, src, name, language, description, delimiter=","):
     write_deck(folder, manifest(name, language, description), rows[0], rows[1:])
 
 
+# The columns of the app's CSV template (packages/core/src/csvtemplate.ts) plus `video`, because the zip has a
+# video folder. packages/core/test/example-decks.test.ts checks that every template column is here.
+TEMPLATE_COLUMNS = ["front", "back", "example", "explanation", "category", "tags", "image", "image_alt", "audio", "video",
+                    "type", "choices", "correct", "steps", "alt_answers", "variants", "corrections", "key_points"]
+
+
+def template_row(**cells):
+    return [cells.get(c, "") for c in TEMPLATE_COLUMNS]
+
+
 def template():
     d = write_deck("template", manifest("My deck", None, "Replace this with what the deck is about."),
-                   ["front", "back", "example", "category", "tags", "image", "audio", "video", "type", "choices", "correct"],
-                   [["What is the front?", "The question or the word to learn", "", "basics", "", "", "", "", "", "", ""],
-                    ["Which two are fruits?", "", "", "basics", "", "", "", "", "mcq", "apple|carrot|banana|potato", "1|3"],
-                    ["the dog", "der Hund", "Der Hund bellt.", "animals", "german", "images/dog.jpg", "audio/dog.mp3", "", "", "", ""]])
+                   TEMPLATE_COLUMNS,
+                   [template_row(front="What is the front?", back="The question or the word to learn", category="basics",
+                                 variants="apply: Where does the question of a card go?"),
+                    template_row(front="Which two are fruits?", category="basics", type="mcq",
+                                 choices="apple|carrot|banana|potato", correct="1|3",
+                                 explanation="Apples and bananas grow from a flower and hold seeds.",
+                                 corrections="|A carrot is sweet, but it is a root, not a fruit.||"),
+                    template_row(front="the dog", back="der Hund", example="Der Hund bellt.", category="animals", tags="german",
+                                 image="images/dog.jpg", image_alt="A brown dog", audio="audio/dog.mp3", alt_answers="Hund"),
+                    template_row(front="Why do we have seasons?",
+                                 back="Earth's tilted axis changes how directly sunlight hits each half.",
+                                 category="Earth", tags="science why", type="explain",
+                                 key_points="Earth is tilted|The tilt changes the angle of sunlight|Not the distance to the sun")])
     for sub, kinds in (("images", "jpg, png, webp, gif (animated GIFs work)"), ("audio", "mp3, ogg, m4a, wav"), ("video", "mp4, webm")):
         (d / "media" / sub / "README.txt").write_text(f"Put {sub} here ({kinds}). Refer to them in cards.csv as {sub}/<file name>.\n", encoding="utf-8")
 

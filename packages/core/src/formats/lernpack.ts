@@ -13,7 +13,7 @@ export const LERNPACK_VERSION = 1;
 export type Manifest = {
   format: 'lernpack';
   version: number;
-  deck: { name: string; language?: string | null; description?: string; goal?: DeckSettings['goal'] };
+  deck: { name: string; language?: string | null; description?: string; goal?: DeckSettings['goal']; maps?: string };
   cards: number;
   created: string;
   generator: string;
@@ -47,6 +47,7 @@ export function readLernpack(buf: Uint8Array): Pack {
     language: str(g.language) ?? null,
     description: str(g.description),
     goal: g.goal && typeof g.goal === 'object' ? (g.goal as Manifest['deck']['goal']) : undefined,
+    maps: str(g.maps), // cleaned where the deck is made (importer.ts)
   };
   if (manifest.version > LERNPACK_VERSION)
     throw new UserError('lernpack_too_new', `This deck needs a newer LernLab (format v${manifest.version})`, {

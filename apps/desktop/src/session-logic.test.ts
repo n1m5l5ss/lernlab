@@ -3,15 +3,225 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import en from '../../../locales/en.json';
-import { blockKey, blockProgress, needsRescue, playableOnly, requeue } from './session-logic';
+import {
+  MAX_REPEATS,
+  NEW_CARD_RECALLS,
+  RETRY_GAP,
+  Relearn,
+  answerKind,
+  sprintLabel,
+  asRepeat,
+  CONFIDENCE_SHARE,
+  asksConfidence,
+  asksConfidenceHere,
+  blockKey,
+  confidenceKey,
+  isConfidentMiss,
+  blockProgress,
+  needsRescue,
+  playableOnly,
+  plannedRecalls,
+} from './session-logic';
 
-test('a missed card comes back after three other exercises', () => {
-  const q = requeue(['a', 'b', 'c', 'd', 'e', 'f'], 1, 'b again');
-  assert.deepEqual(q, ['a', 'b', 'c', 'd', 'e', 'b again', 'f']);
+/** Answers other cards until `id` is due again, and counts how many came between. */
+function gapUntilDue(r: Relearn, id: number) {
+  let n = 0;
+  while (r.due() !== id) {
+    r.answered(1000 + n, 'other', true);
+    n++;
+    assert.ok(n < 50, 'the card never came back');
+  }
+  return n;
+}
+
+test('a missed card comes back after 4 to 6 other exercises', () => {
+  for (const [rand, gap] of [
+    [0, 4],
+    [0.5, 5],
+    [0.99, 6],
+  ]) {
+    const r = new Relearn(() => rand);
+    r.answered(7, 'recall', false);
+    assert.equal(gapUntilDue(r, 7), gap);
+  }
+  assert.deepEqual(RETRY_GAP, { min: 4, max: 6 });
 });
 
-test('near the end of a block it comes back last', () => {
-  assert.deepEqual(requeue(['a', 'b', 'c'], 1, 'b again'), ['a', 'b', 'c', 'b again']);
+test('a missed card keeps coming back until it is recalled once, then leaves', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false);
+  gapUntilDue(r, 7);
+  r.shown(7);
+  r.answered(7, 'recall', false); // still wrong
+  gapUntilDue(r, 7);
+  r.shown(7);
+  r.answered(7, 'recall', true);
+  for (let n = 0; n < 20; n++) r.answered(100 + n, 'other', true);
+  assert.equal(r.due(), null, 'recalled once: not shown again this session');
+});
+
+test('a hard card comes back at most 3 times, so it cannot trap the learner', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false);
+  let shows = 0;
+  for (let n = 0; n < 200; n++) {
+    if (r.due() === 7) {
+      r.shown(7);
+      shows++;
+      r.answered(7, 'recall', false);
+    } else r.answered(100 + n, 'other', true);
+  }
+  assert.equal(shows, MAX_REPEATS);
+  assert.equal(MAX_REPEATS, 3);
+});
+
+test('a card answered right the first time is never brought back', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', true);
+  for (let n = 0; n < 20; n++) r.answered(100 + n, 'other', true);
+  assert.equal(r.due(), null);
+});
+
+test('games and recognition never count as recalling a card', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false);
+  r.answered(7, 'other', true); // e.g. multiple choice or a match game
+  assert.equal(gapUntilDue(r, 7), 3, 'still waiting for a real recall');
+});
+
+test('a new card needs 2 correct recalls spread across the session, then is not shown again', () => {
+  assert.equal(NEW_CARD_RECALLS, 2);
+  const r = new Relearn(() => 0.5);
+  r.answered(7, 'meet', true);
+  r.answered(7, 'other', true); // recognise it right away
+  assert.equal(gapUntilDue(r, 7), 4, 'the first recall comes a few exercises after meeting it');
+  r.shown(7);
+  r.answered(7, 'recall', true);
+  assert.equal(gapUntilDue(r, 7), 5, 'then a second one, spaced');
+  r.shown(7);
+  r.answered(7, 'recall', true);
+  for (let n = 0; n < 20; n++) r.answered(100 + n, 'other', true);
+  assert.equal(r.due(), null, 'target met: no drilling');
+});
+
+test("a planned recall (like the Recall block) counts toward a new card's target", () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'meet', true);
+  r.answered(7, 'recall', true); // planned, not a repeat
+  gapUntilDue(r, 7);
+  r.shown(7);
+  r.answered(7, 'recall', true);
+  for (let n = 0; n < 20; n++) r.answered(100 + n, 'other', true);
+  assert.equal(r.due(), null);
+});
+
+test('a new question card first answered in the New cards block also needs 2 recalls', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', true, { fresh: true });
+  assert.equal(gapUntilDue(r, 7), 4);
+});
+
+test('a missed new card still needs its 2 correct recalls, within the repeat limit', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'meet', true);
+  let shows = 0;
+  let right = 0;
+  for (let n = 0; n < 200; n++) {
+    if (r.due() === 7) {
+      r.shown(7);
+      shows++;
+      const ok = shows > 1; // the first try is wrong, the rest right
+      if (ok) right++;
+      r.answered(7, 'recall', ok);
+    } else r.answered(100 + n, 'other', true);
+  }
+  assert.equal(shows, 3);
+  assert.equal(right, 2);
+});
+
+test('a card with a recall still planned later waits for it instead of being added', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false);
+  r.answered(8, 'recall', false);
+  for (let n = 0; n < 5; n++) r.answered(100 + n, 'other', true);
+  assert.equal(
+    r.due((id) => (id === 7 ? 1 : 0)),
+    8,
+  );
+});
+
+test("a new card's planned Recall block counts toward its target, so only the missing recalls are added", () => {
+  const r = new Relearn(() => 0);
+  const planned = (id: number) => (id === 7 ? 1 : 0); // the Recall block near the end
+  r.answered(7, 'meet', true);
+  for (let n = 0; n < 4; n++) r.answered(100 + n, 'other', true);
+  assert.equal(r.due(planned), 7, 'one early recall, a few exercises after meeting it');
+  r.shown(7);
+  r.answered(7, 'recall', true);
+  for (let n = 0; n < 20; n++) r.answered(200 + n, 'other', true);
+  assert.equal(r.due(planned), null, 'the second recall is the planned one');
+  r.answered(7, 'recall', true);
+  assert.equal(r.due(), null);
+});
+
+test('the card waiting longest comes back first', () => {
+  const r = new Relearn(() => 0);
+  r.answered(8, 'recall', false);
+  r.answered(7, 'recall', false);
+  for (let n = 0; n < 6; n++) r.answered(100 + n, 'other', true);
+  assert.equal(r.due(), 8);
+});
+
+test('games between blocks count toward the gap', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false);
+  r.skip(4); // a match game of 4 answers
+  assert.equal(r.due(), 7);
+});
+
+test('at the very end, a card still missed comes back once more if another card comes between', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false);
+  r.answered(8, 'recall', false);
+  assert.equal(r.due(), null, 'not due yet');
+  assert.equal(
+    r.due(() => 0, { ending: true, last: 8 }),
+    7,
+  );
+  r.shown(7);
+  r.answered(7, 'recall', false);
+  assert.equal(
+    r.due(() => 0, { ending: true, last: 7 }),
+    8,
+  );
+  r.shown(8);
+  r.answered(8, 'recall', true);
+  assert.equal(
+    r.due(() => 0, { ending: true, last: 8 }),
+    7,
+  );
+  r.shown(7);
+  r.answered(7, 'recall', true);
+  assert.equal(
+    r.due(() => 0, { ending: true, last: 7 }),
+    null,
+  );
+});
+
+test('at the very end a card never comes back straight after itself, and new-card targets are let go', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false);
+  assert.equal(
+    r.due(() => 0, { ending: true, last: 7 }),
+    null,
+  );
+  const s = new Relearn(() => 0);
+  s.answered(9, 'meet', true);
+  s.answered(9, 'recall', true); // one of two recalls done: the session may simply end
+  assert.equal(
+    s.due(() => 0, { ending: true, last: 1 }),
+    null,
+  );
 });
 
 test('the rescue round starts under 60% with at least 3 answers', () => {
@@ -48,4 +258,121 @@ test('listening and dictation are skipped when the card cannot be played', () =>
     { type: 'typed', itemId: 2 },
     { type: 'listen', itemId: 3 },
   ]);
+});
+
+test('only real recall formats count as recalling a card; meeting a card is not a recall', () => {
+  assert.equal(answerKind('intro'), 'meet');
+  for (const t of ['typed', 'cloze', 'flip', 'mcq', 'order', 'myth', 'explain', 'twin'])
+    assert.equal(answerKind(t), 'recall', t);
+  for (const t of ['mc', 'truefalse', 'listen', 'imagemc', 'unscramble', 'dictation', 'speak', 'lesson'])
+    assert.equal(answerKind(t), 'other', t);
+});
+
+test('planned recalls are counted per card, recognition left out', () => {
+  const planned = plannedRecalls([
+    { type: 'typed', itemId: 1 },
+    { type: 'mc', itemId: 1 },
+    { type: 'cloze', itemId: 1 },
+    { type: 'flip', itemId: 2 },
+    { type: 'lesson' },
+  ]);
+  assert.equal(planned.get(1), 2);
+  assert.equal(planned.get(2), 1);
+  assert.equal(planned.get(3), undefined);
+});
+
+test('a card brought back is practice only: no second grade, no override of the real grade, no timer', () => {
+  const sent: { practice?: boolean }[] = [];
+  const overrides: [number, boolean | undefined][] = [];
+  const ctx = {
+    timer: 8,
+    answer: (a: { itemId: number; practice?: boolean }) => (sent.push(a), 3),
+    override: (id: number, practice?: boolean) => void overrides.push([id, practice]),
+  };
+  const rep = asRepeat<{ itemId: number; practice?: boolean }, typeof ctx>(ctx);
+  assert.equal(rep.timer, 0);
+  assert.equal(rep.answer({ itemId: 7 }), 3, 'XP as for any answer');
+  rep.override(7);
+  assert.deepEqual(sent, [{ itemId: 7, practice: true }]);
+  assert.deepEqual(overrides, [[7, true]]);
+  assert.equal(ctx.timer, 8, 'the normal context is unchanged');
+});
+
+test('a card brought back never asks how sure you were (#205)', () => {
+  const ctx = { timer: 0, answer: () => 0, override: () => {}, confidence: () => {} };
+  assert.equal(asRepeat(ctx).confidence, undefined);
+  assert.equal(typeof ctx.confidence, 'function');
+});
+
+test('"How sure were you?" is asked on real answers only, and only when it is turned on (#205)', () => {
+  assert.equal(asksConfidence({ on: true, practice: false, kind: 'drill' }), true);
+  assert.equal(asksConfidence({ on: true, practice: false, kind: 'learn' }), true);
+  assert.equal(asksConfidence({ on: undefined, practice: false, kind: 'drill' }), true, 'on by default');
+  assert.equal(asksConfidence({ on: false, practice: false, kind: 'drill' }), false);
+  assert.equal(asksConfidence({ on: true, practice: true, kind: 'drill' }), false, 'practice mode');
+  assert.equal(asksConfidence({ on: true, practice: false, kind: 'blitz' }), false, 'timed rounds');
+});
+
+test('the keys 1 to 5 rate how sure you were; other keys do not', () => {
+  assert.deepEqual(['1', '2', '3', '4', '5'].map(confidenceKey), [1, 2, 3, 4, 5]);
+  for (const k of ['0', '6', 'Enter', ' ', 'a', '12']) assert.equal(confidenceKey(k), null);
+});
+
+test('a confident miss is a wrong answer rated 4 or 5', () => {
+  assert.equal(isConfidentMiss(false, 5), true);
+  assert.equal(isConfidentMiss(false, 4), true);
+  assert.equal(isConfidentMiss(false, 3), false);
+  assert.equal(isConfidentMiss(false, undefined), false, 'not rated');
+  assert.equal(isConfidentMiss(true, 5), false);
+});
+
+test('a confident miss comes back later in the session even when a recall of it is planned further on', () => {
+  const r = new Relearn(() => 0);
+  r.answered(7, 'recall', false, { surprise: true });
+  r.answered(8, 'recall', false);
+  for (let n = 0; n < 5; n++) r.answered(100 + n, 'other', true);
+  const planned = () => 1; // both cards have a recall planned in a later block
+  assert.equal(r.due(planned), 7, 'the confident miss does not wait');
+  assert.equal(r.isSurprise(7), true);
+  assert.equal(r.isSurprise(8), false);
+  r.shown(7);
+  assert.equal(r.due(planned), null, 'the other miss waits for its planned recall');
+  // Its second try is practice (asRepeat): right now, and it is done; it is not flagged again.
+  r.answered(7, 'recall', true);
+  for (let n = 0; n < 7; n++) r.answered(200 + n, 'other', true);
+  assert.equal(r.due(), 8);
+});
+
+test('"How sure were you?" is asked on about 1 in 4 recall answers, the same way every time', () => {
+  assert.equal(CONFIDENCE_SHARE, 0.25);
+  // Deterministic: the same card, day and exercise always give the same answer.
+  for (const [id, day, i] of [
+    [7, '2026-11-24', 0],
+    [4181726926398173, '2026-11-25', 12],
+  ] as const)
+    assert.equal(asksConfidenceHere(id, day, i), asksConfidenceHere(id, day, i));
+  // About a quarter over many cards, days and positions, and it varies with each of the three.
+  let asked = 0;
+  const n = 4000;
+  for (let k = 0; k < n; k++) if (asksConfidenceHere(1000 + k * 7919, `2026-11-${10 + (k % 20)}`, k % 30)) asked++;
+  assert.ok(asked / n > 0.2 && asked / n < 0.3, `asked ${asked} of ${n}`);
+  const varies = (f: (k: number) => boolean) => new Set(Array.from({ length: 40 }, (_, k) => f(k))).size === 2;
+  assert.ok(
+    varies((k) => asksConfidenceHere(42 + k, '2026-11-24', 3)),
+    'by card',
+  );
+  assert.ok(
+    varies((k) => asksConfidenceHere(42, `2026-${10 + (k % 3)}-${10 + (k % 18)}`, 3)),
+    'by day',
+  );
+  assert.ok(
+    varies((k) => asksConfidenceHere(42, '2026-11-24', k)),
+    'by position',
+  );
+});
+
+test("the sorting round asks for the label the planner picked, else the card's category", () => {
+  assert.equal(sprintLabel({ 7: 'Baroque' }, { id: 7, category: null }), 'Baroque');
+  assert.equal(sprintLabel({ 7: 'Baroque' }, { id: 8, category: 'der' }), 'der');
+  assert.equal(sprintLabel(undefined, { id: 8, category: null }), null);
 });

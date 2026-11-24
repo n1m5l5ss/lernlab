@@ -1,4 +1,4 @@
-// Card editor: seven card types, a live preview drawn like the real exercise, media by drag and drop,
+// Card editor: ten card types, a live preview drawn like the real exercise, media by drag and drop,
 // and a gentle warning when the deck already has a card with the same front.
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -11,15 +11,42 @@ import { mediaUrl } from './bridge';
 import {
   CARD_TYPES,
   EMPTY,
+  addVariant,
+  canAddVariant,
+  choiceRows,
+  editCorrection,
+  editVariant,
   fieldsToSave,
+  keyPointRows,
+  workedRows,
+  showCase,
+  showGraph,
+  graphProblem,
   previewOf,
+  removeVariant,
   showImageAlt,
+  showVariants,
   sortDrop,
   type Form,
   type MediaSlot,
   type Preview,
 } from './card-editor-logic';
+import { LEVELS, VARIANTS_MAX, type Variant } from '@lernlab/core/variants';
+import { CORRECTION_MAX_LENGTH } from '@lernlab/core/misconceptions';
+import { KEY_POINTS_MAX, KEY_POINTS_MIN, KEY_POINT_MAX_LENGTH } from '@lernlab/core/explain';
+import { ANSWER_WORDS_MAX } from '@lernlab/core/cardquality';
+import {
+  WORKED_LABEL_MAX_LENGTH,
+  WORKED_RESULT_MAX_LENGTH,
+  WORKED_STEPS_MAX,
+  WORKED_STEPS_MIN,
+  type WorkedStep,
+} from '@lernlab/core/worked';
 import { Media, Rich } from './rich';
+import { CaseFor } from './case-view';
+import { isTranslate } from '@lernlab/core/translate';
+import { CASE_MAX_LENGTH } from '@lernlab/core/cases';
+import { GRAPH_MAX_LENGTH } from '@lernlab/core/graph';
 import { CodeBlock } from './code-block';
 import { OcclusionEditor } from './occlusion';
 import { newGroupId, occlusionCards, shapesFor, shapesReady } from './occlusion-logic';
@@ -31,7 +58,17 @@ const ACCEPT: Record<MediaSlot, string> = { image: 'image/*', audio: 'audio/*', 
 type Deck = { id: number; language: string | null };
 /** Open the optional fields when the card already uses one. */
 const hasMore = (f: Form) =>
-  !!(f.alt || f.explanation || f.example || f.exampleTranslation || f.notes || f.category || f.tags);
+  !!(
+    f.alt ||
+    f.explanation ||
+    f.example ||
+    f.exampleTranslation ||
+    f.notes ||
+    f.mnemonic ||
+    f.category ||
+    f.tags ||
+    f.requires
+  );
 
 export function CardEditor({
   card,
@@ -148,7 +185,7 @@ export function CardEditor({
     set(k, !c[k]);
     onSaved();
   };
-  type TextKey = Exclude<keyof typeof EMPTY, 'type'>;
+  type TextKey = Exclude<keyof typeof EMPTY, 'type' | 'variants' | 'corrections' | 'workedSteps'>;
   const f = (k: TextKey, label: string, ph = '', area = false) => (
     <>
       <label className="lbl" htmlFor={`${uid}-${k}`}>
@@ -225,14 +262,26 @@ export function CardEditor({
               ? t('browse.editor.codeTask')
               : occlusion
                 ? t('browse.editor.occlusion.title')
-                : t('browse.editor.front'),
+                : c.type === 'myth'
+                  ? t('browse.editor.myth')
+                  : c.type === 'explain'
+                    ? t('browse.editor.explain')
+                    : c.type === 'worked'
+                      ? t('browse.editor.worked.problem')
+                      : t('browse.editor.front'),
         c.type === 'cloze'
           ? t('browse.editor.clozePlaceholder', CLOZE)
           : c.type === 'code'
             ? t('browse.editor.codeTaskPlaceholder')
             : occlusion
               ? t('browse.editor.occlusion.titlePlaceholder')
-              : t('browse.editor.frontPlaceholder'),
+              : c.type === 'myth'
+                ? t('browse.editor.mythPlaceholder')
+                : c.type === 'explain'
+                  ? t('browse.editor.explainPlaceholder')
+                  : c.type === 'worked'
+                    ? t('browse.editor.worked.problemPlaceholder')
+                    : t('browse.editor.frontPlaceholder'),
         true,
       )}
       {dups.length > 0 && (
@@ -244,6 +293,7 @@ export function CardEditor({
         <>
           {f('choices', t('browse.editor.choices'), t('browse.editor.choicesPlaceholder'))}
           {f('correct', t('browse.editor.correct'), '2|3')}
+          <CorrectionsField form={c} onChange={(v) => set('corrections', v)} />
         </>
       ) : c.type === 'order' ? (
         f('steps', t('browse.editor.steps'), t('browse.editor.stepsPlaceholder'))
@@ -292,6 +342,18 @@ export function CardEditor({
           {f('back', t('browse.editor.number'), t('browse.editor.numberPlaceholder'))}
           {f('tolerance', t('browse.editor.tolerance'), t('browse.editor.tolerancePlaceholder'))}
         </>
+      ) : c.type === 'myth' ? (
+        f('back', t('browse.editor.mythWhy'), t('browse.editor.mythWhyPlaceholder'), true)
+      ) : c.type === 'explain' ? (
+        <>
+          {f('back', t('browse.editor.explainBack'), t('browse.editor.explainBackPlaceholder'), true)}
+          <KeyPointsField points={c.keyPoints} onChange={(v) => set('keyPoints', v)} />
+        </>
+      ) : c.type === 'worked' ? (
+        <>
+          <WorkedStepsField steps={c.workedSteps} onChange={(v) => set('workedSteps', v)} />
+          {f('back', t('browse.editor.worked.answer'), t('browse.editor.worked.answerPlaceholder'), true)}
+        </>
       ) : (
         f(
           'back',
@@ -303,6 +365,52 @@ export function CardEditor({
       <p className="small muted editor-format">
         {t('browse.editor.formatHint', { tags: SAFE_TAGS.map((x) => `<${x}>`).join(' ') })}
       </p>
+      {showCase(c) && (
+        <>
+          <label className="lbl" htmlFor={`${uid}-case`}>
+            {t('browse.editor.case.label')}
+          </label>
+          <textarea
+            id={`${uid}-case`}
+            className="input"
+            maxLength={CASE_MAX_LENGTH}
+            value={c.case}
+            aria-describedby={`${uid}-case-hint`}
+            placeholder={t('browse.editor.case.placeholder')}
+            onChange={(e) => set('case', e.target.value)}
+          />
+          <p id={`${uid}-case-hint`} className="small muted">
+            {t('browse.editor.case.hint')}
+          </p>
+        </>
+      )}
+      {showGraph(c) && (
+        <>
+          <label className="lbl" htmlFor={`${uid}-graph`}>
+            {t('browse.editor.graph.label')}
+          </label>
+          <input
+            id={`${uid}-graph`}
+            className="input"
+            maxLength={GRAPH_MAX_LENGTH}
+            value={c.graph}
+            spellCheck={false}
+            aria-describedby={`${uid}-graph-hint`}
+            aria-invalid={graphProblem(c) || undefined}
+            placeholder={t('browse.editor.graph.placeholder')}
+            onChange={(e) => set('graph', e.target.value)}
+          />
+          <p id={`${uid}-graph-hint`} className="small muted">
+            {t('browse.editor.graph.hint')}
+          </p>
+          {graphProblem(c) && (
+            <p className="editor-dup small" role="status">
+              {t('browse.editor.graph.problem')}
+            </p>
+          )}
+        </>
+      )}
+      {showVariants(c) && <VariantsField variants={c.variants} onChange={(v) => set('variants', v)} />}
       <span className="lbl">{t('browse.editor.media')}</span>
       <div className={`editor-drop${dragging ? ' over' : ''}`}>
         <p className="small muted">{uploading ? t('browse.editor.uploading') : t('browse.editor.dropHint')}</p>
@@ -374,12 +482,28 @@ export function CardEditor({
         </section>
       )}
       <CardPreview preview={preview} lang={deck.language} />
+      {!!preview?.hints.length && (
+        // Suggestions only: the card saves and studies the same with or without them.
+        <section className="editor-hints small" role="status" aria-label={t('browse.editor.hints.title')}>
+          <span className="lbl" aria-hidden="true">
+            {t('browse.editor.hints.title')}
+          </span>
+          <ul>
+            {preview.hints.map((h) => (
+              <li key={h}>{t(`browse.editor.hints.${h}`, { words: ANSWER_WORDS_MAX })}</li>
+            ))}
+          </ul>
+        </section>
+      )}
       <details className="editor-more" open={hasMore(card)}>
         <summary>{t('browse.editor.moreFields')}</summary>
         {c.type === 'basic' && f('alt', t('browse.editor.alt'), t('browse.editor.altPlaceholder'))}
         {f('explanation', t('browse.editor.explanation'), t('browse.editor.explanationPlaceholder'), true)}
+        {f('requires', t('browse.editor.requires'), t('browse.editor.requiresPlaceholder'))}
         {c.type === 'basic' && f('example', t('browse.editor.example'), t('browse.editor.examplePlaceholder'))}
         {c.type === 'basic' && f('exampleTranslation', t('browse.editor.exampleTranslation'))}
+        {f('mnemonic', t('browse.editor.mnemonic'), t('browse.editor.mnemonicPlaceholder'))}
+        <p className="small muted editor-format">{t('browse.editor.mnemonicHint')}</p>
         <div className="row" style={{ gap: 'var(--space-3)' }}>
           <div className="grow">
             {f('category', t('browse.editor.category'), t('browse.editor.categoryPlaceholder'))}
@@ -470,6 +594,84 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
             <div className="small">{t('browse.editor.alsoAccepted', { answers: view.also.join(', ') })}</div>
           )}
           {!view.mediaFirst && media}
+        </>
+      );
+      break;
+    case 'myth':
+      question = (
+        <>
+          <div className="blocktitle">{t('ex.myth.title')}</div>
+          {media}
+          <div className="prompt">
+            <Rich html={view.prompt} />
+          </div>
+        </>
+      );
+      answer = (
+        <>
+          {t('ex.myth.because')}
+          <div className="ans">
+            <Rich html={view.answer} />
+          </div>
+        </>
+      );
+      break;
+    case 'explain':
+      question = (
+        <>
+          <div className="blocktitle">{t('ex.explain.title')}</div>
+          {media}
+          <div className="prompt">
+            <Rich html={view.prompt} />
+          </div>
+        </>
+      );
+      answer = (
+        <>
+          {view.answer && (
+            <div className="ans">
+              <Rich html={view.answer} />
+            </div>
+          )}
+          <ul className="explain-points">
+            {view.points.map((p, i) => (
+              <li key={i}>
+                <Rich html={p} />
+              </li>
+            ))}
+          </ul>
+        </>
+      );
+      break;
+    case 'worked':
+      question = (
+        <>
+          <div className="blocktitle">{t('ex.worked.title.study')}</div>
+          {media}
+          <div className="prompt">
+            <Rich html={view.prompt} />
+          </div>
+        </>
+      );
+      answer = (
+        <>
+          <ol className="worked-steps">
+            {view.steps.map((s, i) => (
+              <li key={i} className="worked-step">
+                {s.label && (
+                  <div className="worked-label">
+                    <Rich html={s.label} />
+                  </div>
+                )}
+                <div className="worked-result">
+                  <Rich html={s.result} />
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div className="ans">
+            <Rich html={view.answer} />
+          </div>
         </>
       );
       break;
@@ -616,7 +818,11 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
     <section className="editor-preview" aria-label={t('browse.editor.preview')}>
       <div>
         <span className="lbl">{t('browse.editor.previewQuestion')}</span>
-        <div className="editor-preview-side">{question}</div>
+        <div className="editor-preview-side">
+          <CaseFor item={preview.item} />
+          {question}
+          {isTranslate(preview.item) && <p className="small muted">{t('browse.editor.translateNote')}</p>}
+        </div>
       </div>
       <div>
         <span className="lbl">{t('browse.editor.previewAnswer')}</span>
@@ -633,5 +839,236 @@ function CardPreview({ preview, lang }: { preview: Preview | null; lang: string 
         </div>
       </div>
     </section>
+  );
+}
+
+/** Other ways to ask the card's question, each with its level: add, edit and remove them. */
+function VariantsField({ variants, onChange }: { variants: Variant[]; onChange: (v: Variant[]) => void }) {
+  const { t } = useTranslation();
+  const uid = useId();
+  // The row just added takes the focus, so a keyboard user can type at once.
+  const [added, setAdded] = useState(-1);
+  return (
+    <fieldset className="editor-variants" aria-describedby={`${uid}-help`}>
+      <legend>{t('browse.editor.variants.title')}</legend>
+      <p id={`${uid}-help`} className="small muted">
+        {t('browse.editor.variants.help')}
+      </p>
+      {variants.map((v, i) => {
+        const n = i + 1;
+        return (
+          <div className="editor-variant" key={i}>
+            <label className="sr-only" htmlFor={`${uid}-q${i}`}>
+              {t('browse.editor.variants.question', { n })}
+            </label>
+            <textarea
+              id={`${uid}-q${i}`}
+              rows={2}
+              className="input"
+              value={v.prompt}
+              autoFocus={i === added}
+              placeholder={t(`browse.editor.variants.placeholder.${v.level}`)}
+              onChange={(e) => onChange(editVariant(variants, i, { prompt: e.target.value }))}
+            />
+            <label className="sr-only" htmlFor={`${uid}-l${i}`}>
+              {t('browse.editor.variants.level', { n })}
+            </label>
+            <select
+              id={`${uid}-l${i}`}
+              className="input"
+              value={v.level}
+              onChange={(e) => onChange(editVariant(variants, i, { level: e.target.value as Variant['level'] }))}
+            >
+              {LEVELS.map((l) => (
+                <option key={l} value={l}>
+                  {t(`levels.${l}`)}
+                </option>
+              ))}
+            </select>
+            <button
+              className="btn ghost"
+              onClick={() => onChange(removeVariant(variants, i))}
+              aria-label={t('browse.editor.variants.remove', { n })}
+            >
+              ✕
+            </button>
+          </div>
+        );
+      })}
+      {canAddVariant(variants) ? (
+        <button
+          className="btn ghost"
+          onClick={() => {
+            setAdded(variants.length);
+            onChange(addVariant(variants));
+          }}
+        >
+          {t('browse.editor.variants.add')}
+        </button>
+      ) : (
+        <p className="small muted">{t('browse.editor.variants.full', { count: VARIANTS_MAX })}</p>
+      )}
+    </fieldset>
+  );
+}
+
+/** An explain card's 2–5 key points: the ones a good explanation covers, ticked by the learner after explaining. */
+function KeyPointsField({ points, onChange }: { points: string[]; onChange: (v: string[]) => void }) {
+  const { t } = useTranslation();
+  const uid = useId();
+  const rows = keyPointRows(points);
+  const [added, setAdded] = useState(-1);
+  return (
+    <fieldset className="editor-variants editor-keypoints" aria-describedby={`${uid}-help`}>
+      <legend>{t('browse.editor.keyPoints.title')}</legend>
+      <p id={`${uid}-help`} className="small muted">
+        {t('browse.editor.keyPoints.help')}
+      </p>
+      {rows.map((p, i) => {
+        const n = i + 1;
+        return (
+          <div className="editor-keypoint" key={i}>
+            <label className="sr-only" htmlFor={`${uid}-p${i}`}>
+              {t('browse.editor.keyPoints.point', { n })}
+            </label>
+            <input
+              id={`${uid}-p${i}`}
+              className="input"
+              maxLength={KEY_POINT_MAX_LENGTH}
+              value={p}
+              autoFocus={i === added}
+              placeholder={t('browse.editor.keyPoints.placeholder')}
+              onChange={(e) => onChange(rows.map((x, k) => (k === i ? e.target.value : x)))}
+            />
+            {rows.length > KEY_POINTS_MIN && (
+              <button
+                className="btn ghost"
+                onClick={() => onChange(rows.filter((_, k) => k !== i))}
+                aria-label={t('browse.editor.keyPoints.remove', { n })}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {rows.length < KEY_POINTS_MAX ? (
+        <button
+          className="btn ghost"
+          onClick={() => {
+            setAdded(rows.length);
+            onChange([...rows, '']);
+          }}
+        >
+          {t('browse.editor.keyPoints.add')}
+        </button>
+      ) : (
+        <p className="small muted">{t('browse.editor.keyPoints.full', { count: KEY_POINTS_MAX })}</p>
+      )}
+    </fieldset>
+  );
+}
+
+/** A worked example's 2–8 solution steps: what you do (optional) and its result, which learners type. */
+function WorkedStepsField({ steps, onChange }: { steps: WorkedStep[]; onChange: (v: WorkedStep[]) => void }) {
+  const { t } = useTranslation();
+  const uid = useId();
+  const rows = workedRows(steps);
+  const [added, setAdded] = useState(-1);
+  const edit = (i: number, change: Partial<WorkedStep>) =>
+    onChange(rows.map((x, k) => (k === i ? { ...x, ...change } : x)));
+  return (
+    <fieldset className="editor-variants editor-worked" aria-describedby={`${uid}-help`}>
+      <legend>{t('browse.editor.worked.title')}</legend>
+      <p id={`${uid}-help`} className="small muted">
+        {t('browse.editor.worked.help')}
+      </p>
+      {rows.map((s, i) => {
+        const n = i + 1;
+        return (
+          <div className="editor-worked-step" key={i}>
+            <label className="sr-only" htmlFor={`${uid}-l${i}`}>
+              {t('browse.editor.worked.label', { n })}
+            </label>
+            <input
+              id={`${uid}-l${i}`}
+              className="input"
+              maxLength={WORKED_LABEL_MAX_LENGTH}
+              value={s.label}
+              autoFocus={i === added}
+              placeholder={t('browse.editor.worked.labelPlaceholder')}
+              onChange={(e) => edit(i, { label: e.target.value })}
+            />
+            <label className="sr-only" htmlFor={`${uid}-r${i}`}>
+              {t('browse.editor.worked.result', { n })}
+            </label>
+            <input
+              id={`${uid}-r${i}`}
+              className="input"
+              maxLength={WORKED_RESULT_MAX_LENGTH}
+              value={s.result}
+              placeholder={t('browse.editor.worked.resultPlaceholder')}
+              onChange={(e) => edit(i, { result: e.target.value })}
+            />
+            {rows.length > WORKED_STEPS_MIN && (
+              <button
+                className="btn ghost"
+                onClick={() => onChange(rows.filter((_, k) => k !== i))}
+                aria-label={t('browse.editor.worked.remove', { n })}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {rows.length < WORKED_STEPS_MAX ? (
+        <button
+          className="btn ghost"
+          onClick={() => {
+            setAdded(rows.length);
+            onChange([...rows, { label: '', result: '' }]);
+          }}
+        >
+          {t('browse.editor.worked.add')}
+        </button>
+      ) : (
+        <p className="small muted">{t('browse.editor.worked.full', { count: WORKED_STEPS_MAX })}</p>
+      )}
+    </fieldset>
+  );
+}
+
+/** A short correction for each wrong choice, shown when a learner picks it ("Many people think X. In fact Y."). */
+function CorrectionsField({ form, onChange }: { form: Form; onChange: (v: string[]) => void }) {
+  const { t } = useTranslation();
+  const uid = useId();
+  const wrong = choiceRows(form)
+    .map((row, i) => ({ ...row, i }))
+    .filter((row) => !row.correct);
+  if (!wrong.length) return null;
+  return (
+    <fieldset className="editor-variants editor-corrections" aria-describedby={`${uid}-help`}>
+      <legend>{t('browse.editor.corrections.title')}</legend>
+      <p id={`${uid}-help`} className="small muted">
+        {t('browse.editor.corrections.help')}
+      </p>
+      {wrong.map(({ choice, i }) => (
+        <div className="editor-correction" key={i}>
+          <label className="lbl" htmlFor={`${uid}-c${i}`}>
+            {t('browse.editor.corrections.choice', { choice })}
+          </label>
+          <textarea
+            id={`${uid}-c${i}`}
+            rows={2}
+            maxLength={CORRECTION_MAX_LENGTH}
+            className="input"
+            value={form.corrections[i] ?? ''}
+            placeholder={t('browse.editor.corrections.placeholder')}
+            onChange={(e) => onChange(editCorrection(form.corrections, i, e.target.value))}
+          />
+        </div>
+      ))}
+    </fieldset>
   );
 }

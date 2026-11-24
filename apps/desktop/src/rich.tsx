@@ -6,6 +6,7 @@ import type { Item } from '@lernlab/core/types';
 import { renderCardHtml } from './math-render';
 import { OccludedImage } from './occlusion';
 import { BlockedMedia, mediaSrc } from './remote-media-view';
+import { GraphFor } from './graph-view';
 
 export function Rich({ html, className }: { html: string; className?: string }) {
   const __html = useMemo(() => renderCardHtml(html), [html]);
@@ -13,12 +14,29 @@ export function Rich({ html, className }: { html: string; className?: string }) 
 }
 
 export function Media({ item, size = 'md' }: { item: Item; size?: 'sm' | 'md' | 'lg' }) {
-  if (!item.image && !item.video) return null;
+  // A card's graph (core/graph.ts) belongs to its front like an image, so it shows wherever the image would.
+  const graph = item.extra?.graph ? <GraphFor item={item} small={size === 'sm'} /> : null;
+  if (!item.image && !item.video) return graph;
   // An occlusion card's picture is always shown with its boxes masked.
   if (item.kind === 'occlusion') return <OccludedImage item={item} />;
   const max = size === 'lg' ? 320 : size === 'md' ? 220 : 120;
   const url = mediaSrc((item.video ?? item.image)!);
-  if (!url) return <BlockedMedia kind={item.video ? 'video' : 'image'} />;
+  if (!url)
+    return (
+      <>
+        {graph}
+        <BlockedMedia kind={item.video ? 'video' : 'image'} />
+      </>
+    );
+  return (
+    <>
+      {graph}
+      <MediaFile item={item} url={url} max={max} />
+    </>
+  );
+}
+
+function MediaFile({ item, url, max }: { item: Item; url: string; max: number }) {
   return (
     <div className="media" style={{ maxHeight: max }}>
       {item.video ? (

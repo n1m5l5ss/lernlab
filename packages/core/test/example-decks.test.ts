@@ -1,7 +1,7 @@
 // The example decks in examples/ import cleanly, and each .lernpack is in step with its folder in examples/decks/.
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, relative } from 'node:path';
 import { strFromU8, unzipSync, zipSync, type Zippable } from 'fflate';
@@ -31,9 +31,9 @@ const POLISHED = [
 ];
 
 function zipFolder(folder: string, base = folder, files: Zippable = {}): Zippable {
-  for (const name of readdirSync(folder)) {
-    const path = join(folder, name);
-    if (statSync(path).isDirectory()) zipFolder(path, base, files);
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    const path = join(folder, entry.name);
+    if (entry.isDirectory()) zipFolder(path, base, files);
     else files[relative(base, path).split('\\').join('/')] = new Uint8Array(readFileSync(path));
   }
   return files;
@@ -97,6 +97,18 @@ test('the Spanish deck accepts answers typed without accents or ¿', () => {
   accepts('¿Cómo te llamas?', 'como te llamas');
   accepts('¿Cuánto cuesta?', 'Cuánto cuesta?');
   accepts('perdón', 'perdon');
+});
+
+test('the template deck (folder and zip) has every column of the CSV template, with an explain card', async () => {
+  const { CSV_TEMPLATE } = await import('../src/csvtemplate');
+  const columns = CSV_TEMPLATE.split('\n')[0].split(',');
+  const folder = strFromU8(read('decks/template/cards.csv'));
+  const zipped = strFromU8(unzipSync(read('downloads/template.zip'))['template/cards.csv']);
+  assert.equal(zipped, folder, 'rebuild with scripts/build_sample_decks.py');
+  const header = folder.split(/\r?\n/)[0].split(',');
+  for (const c of columns) assert.ok(header.includes(c), `the template deck is missing the column ${c}`);
+  const r = importFile('template.zip', read('downloads/template.zip'));
+  assert.equal(r.added + r.updated, 4);
 });
 
 test('every other example file in examples/ imports with no skipped rows', () => {

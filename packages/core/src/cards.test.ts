@@ -86,6 +86,7 @@ test('cloze parsing', () => {
 test('sanitizer strips scripts and attributes', () => {
   assert.equal(sanitizeHtml('<b onclick="x()">hi</b><script>alert(1)</script><img src=x onerror=y>'), '<b>hi</b>');
   assert.equal(sanitizeHtml('<a href="javascript:x">link</a>'), 'link');
+  assert.ok(!/<script/i.test(sanitizeHtml('<scr<script>x</script>ipt>alert(1)</scr<script>y</script>ipt>')));
 });
 
 test('sanitizer keeps only the safe list, bare, and never lets a tag rebuild itself', () => {
@@ -109,6 +110,19 @@ test('markdown lite', () => {
     markdownLite('**S3** is *object* storage, see `aws s3 ls`'),
     '<b>S3</b> is <i>object</i> storage, see <code>aws s3 ls</code>',
   );
+});
+
+test('key terms: ==term== is highlighted, comparisons in text and formulas are left alone', () => {
+  assert.equal(markdownLite('The ==mitochondrion== makes ATP'), 'The <mark>mitochondrion</mark> makes ATP');
+  assert.equal(markdownLite('==Paris==, not ==Lyon=='), '<mark>Paris</mark>, not <mark>Lyon</mark>');
+  assert.equal(markdownLite('(==key term==)'), '(<mark>key term</mark>)');
+  for (const s of ['a == b == c', 'a==b and c==d', 'x === y === z', '== loose ==', '====', '\\( a ==b== c \\)'])
+    assert.equal(markdownLite(s), s);
+  // Saved like any other formatting; plain-text uses (typed answers, games) never see the marks.
+  const item = cardToItem({ id: 1, name: 'D', language: null }, { front: 'Capital of France?', back: '==Paris==' })!;
+  assert.equal(item.meaning, 'Paris');
+  assert.equal(item.extra.keyTerms, 'Paris');
+  assert.deepEqual(qa(item).accepted, ['Paris']);
 });
 
 test('image description: plain text, kept only while the card has an image, and the alt text of that image', () => {

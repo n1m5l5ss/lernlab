@@ -1,6 +1,27 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { EMPTY, fieldsToSave, formFor, previewOf, showImageAlt, sortDrop, type Form } from './card-editor-logic';
+import {
+  EMPTY,
+  addVariant,
+  canAddVariant,
+  choiceRows,
+  editCorrection,
+  editVariant,
+  fieldsToSave,
+  formFor,
+  keyPointRows,
+  workedRows,
+  showCase,
+  showGraph,
+  graphProblem,
+  previewOf,
+  removeVariant,
+  showImageAlt,
+  showVariants,
+  sortDrop,
+  type Form,
+} from './card-editor-logic';
+import { VARIANTS_MAX } from '@lernlab/core/variants';
 
 const deck = { id: 1, language: null };
 const form = (f: Partial<Form>): Form => ({ ...EMPTY, ...f });
@@ -170,4 +191,242 @@ test('the image description is asked for only when the card has an image, and is
   const card = { ...previewOf(f, deck)!.item, suspended: false, starred: false };
   assert.equal(formFor(card).imageAlt, 'A red heart', 'an existing description fills the field');
   assert.equal(formFor({ ...card, extra: {} }).imageAlt, '');
+});
+
+test('question variants: added, changed and removed in the form, saved as one line, only on written-question cards', () => {
+  let f = form({ front: 'Beta blocker', back: 'slows the heart' });
+  assert.deepEqual(f.variants, []);
+  f = { ...f, variants: addVariant(f.variants) };
+  assert.deepEqual(f.variants, [{ prompt: '', level: 'apply' }], 'a new question starts as apply');
+  f = { ...f, variants: editVariant(f.variants, 0, { prompt: 'A patient with angina | asthma?' }) };
+  f = { ...f, variants: addVariant(f.variants) };
+  f = { ...f, variants: editVariant(f.variants, 1, { prompt: 'What if the dose doubles?', level: 'analyse' }) };
+  f = { ...f, variants: addVariant(f.variants) }; // left empty
+  assert.equal(
+    fieldsToSave(f).variants,
+    'apply: A patient with angina / asthma? | analyse: What if the dose doubles?',
+    'empty questions are not saved; a | cannot split a question',
+  );
+  assert.equal(previewOf(f, deck)!.item.extra.variants, fieldsToSave(f).variants);
+  assert.deepEqual(
+    removeVariant(f.variants, 0).map((v) => v.prompt),
+    ['What if the dose doubles?', ''],
+  );
+  const card = { ...previewOf(f, deck)!.item, suspended: false, starred: false };
+  assert.deepEqual(formFor(card).variants, [
+    { prompt: 'A patient with angina / asthma?', level: 'apply' },
+    { prompt: 'What if the dose doubles?', level: 'analyse' },
+  ]);
+  assert.equal(fieldsToSave(form({ front: 'x' })).variants, '', 'no questions clears stored ones');
+
+  assert.ok(showVariants(form({ type: 'basic' })) && showVariants(form({ type: 'numeric' })));
+  for (const type of ['cloze', 'mcq', 'order', 'code', 'occlusion'] as const) {
+    assert.equal(showVariants(form({ type })), false, type);
+    assert.equal(fieldsToSave({ ...f, type }).variants, '', `${type} cards ask in their own way`);
+  }
+  const full = Array.from({ length: VARIANTS_MAX }, () => ({ prompt: 'q', level: 'apply' as const }));
+  assert.equal(canAddVariant(full), false);
+  assert.equal(addVariant(full).length, VARIANTS_MAX);
+});
+
+test('corrections: one per wrong choice, written in the form and saved as one line in the order of the choices', () => {
+  let f = form({
+    type: 'mcq',
+    front: 'Which two are serverless?',
+    choices: 'EC2|Lambda|<b>Fargate</b>|RDS',
+    correct: '2|3',
+  });
+  assert.deepEqual(choiceRows(f), [
+    { choice: 'EC2', correct: false },
+    { choice: 'Lambda', correct: true },
+    { choice: 'Fargate', correct: true },
+    { choice: 'RDS', correct: false },
+  ]);
+  assert.deepEqual(f.corrections, []);
+  f = { ...f, corrections: editCorrection(f.corrections, 3, 'RDS is a database | not compute') };
+  assert.deepEqual(f.corrections, ['', '', '', 'RDS is a database | not compute']);
+  f = { ...f, corrections: editCorrection(f.corrections, 0, 'Many people think EC2 is serverless.') };
+  assert.equal(fieldsToSave(f).corrections, 'Many people think EC2 is serverless.|||RDS is a database / not compute');
+  assert.equal(previewOf(f, deck)!.item.extra.corrections, fieldsToSave(f).corrections);
+  const card = { ...previewOf(f, deck)!.item, suspended: false, starred: false };
+  assert.deepEqual(formFor(card).corrections, [
+    'Many people think EC2 is serverless.',
+    '',
+    '',
+    'RDS is a database / not compute',
+  ]);
+  assert.equal(
+    fieldsToSave({ ...f, correct: '1|2|3' }).corrections,
+    '|||RDS is a database / not compute',
+    'a choice marked correct loses its correction',
+  );
+  assert.equal(fieldsToSave({ ...f, type: 'basic' }).corrections, '', 'other card types have no choices');
+  assert.deepEqual(choiceRows(form({ type: 'mcq', choices: 'A|B' })), [
+    { choice: 'A', correct: false },
+    { choice: 'B', correct: false },
+  ]);
+});
+
+test('a myth card: saved as type myth, read back as one, previewed as true-or-myth, without other questions', () => {
+  const f = form({
+    type: 'myth',
+    front: 'We only use 10% of our brains.',
+    back: 'Scans show activity everywhere.',
+    variants: [{ prompt: 'Why?', level: 'apply' }],
+  });
+  assert.equal(showVariants(f), false);
+  assert.equal(fieldsToSave(f).type, 'myth');
+  assert.equal(fieldsToSave(f).variants, '');
+  const p = previewOf(f, deck)!;
+  assert.equal(p.item.extra.myth, '1');
+  assert.deepEqual(p.view, {
+    type: 'myth',
+    prompt: 'We only use 10% of our brains.',
+    answer: 'Scans show activity everywhere.',
+  });
+  assert.equal(formFor({ ...p.item, suspended: false, starred: false }).type, 'myth');
+  assert.equal(formFor({ ...p.item, extra: {}, suspended: false, starred: false }).type, 'basic');
+});
+
+test('an explain card: key points written in rows, saved as one line, previewed with its points, without other questions', () => {
+  assert.deepEqual(keyPointRows([]), ['', ''], 'two rows to start');
+  assert.deepEqual(keyPointRows(['a', 'b', 'c']), ['a', 'b', 'c']);
+  const f = form({
+    type: 'explain',
+    front: 'Why do we have seasons?',
+    back: '',
+    keyPoints: ['Earth is **tilted**', '', 'Not the distance|to the sun'],
+    variants: [{ prompt: 'Why?', level: 'apply' }],
+  });
+  assert.equal(showVariants(f), false);
+  assert.equal(fieldsToSave(f).type, 'explain');
+  assert.equal(fieldsToSave(f).keyPoints, 'Earth is **tilted**|Not the distance/to the sun');
+  assert.equal(fieldsToSave(f).variants, '');
+  assert.equal(fieldsToSave({ ...f, type: 'basic' }).keyPoints, '', 'other types save none');
+  const p = previewOf(f, deck)!;
+  assert.deepEqual(p.view, {
+    type: 'explain',
+    prompt: 'Why do we have seasons?',
+    answer: '',
+    points: ['Earth is <b>tilted</b>', 'Not the distance/to the sun'],
+  });
+  const card = { ...p.item, suspended: false, starred: false };
+  assert.equal(formFor(card).type, 'explain');
+  assert.deepEqual(formFor(card).keyPoints, ['Earth is **tilted**', 'Not the distance/to the sun']);
+  assert.deepEqual(previewOf({ ...f, keyPoints: ['one'] }, deck)!.view, { type: 'problem', problem: 'keyPoints' });
+});
+
+test('key terms: ==term== shows highlighted in the preview answer and comes back as written when the card is edited', () => {
+  const p = previewOf(
+    form({
+      front: 'What does the mitochondrion do in a cell, and why does it matter?',
+      back: 'It makes ==ATP== for the cell, which powers nearly everything',
+    }),
+    deck,
+  )!;
+  assert.equal(p.view.type, 'flip');
+  assert.equal(
+    p.view.type === 'flip' && p.view.answer,
+    'It makes <mark>ATP</mark> for the cell, which powers nearly everything',
+  );
+  const saved = { ...p.item, tags: [], suspended: false, starred: false } as unknown as Parameters<typeof formFor>[0];
+  assert.equal(formFor(saved).back, 'It makes ==ATP== for the cell, which powers nearly everything');
+});
+
+test('the preview carries card-quality hints, and none while the card has a problem to fix first', () => {
+  const long = Array.from({ length: 45 }, (_, i) => `w${i}`).join(' ');
+  assert.deepEqual(previewOf(form({ front: 'Capital of France?', back: 'Paris' }), deck)!.hints, []);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: long }), deck)!.hints, ['split', 'diagram']);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: 'A', image: 'a.png' }), deck)!.hints, ['decorativeImage']);
+  assert.deepEqual(previewOf(form({ front: 'Q?', back: 'A', image: 'a.png', imageAlt: 'A leaf' }), deck)!.hints, []);
+  assert.deepEqual(
+    previewOf(form({ front: 'der Hund', back: 'dog', audio: 'a.mp3' }), { id: 2, language: 'de' })!.hints,
+    [],
+  );
+  assert.deepEqual(previewOf(form({ type: 'cloze', front: 'No gap', back: long }), deck)!.hints, []);
+});
+
+test('a worked example: steps written in rows, saved as one line, previewed as the full example, without other questions', () => {
+  assert.deepEqual(workedRows([]), [
+    { label: '', result: '' },
+    { label: '', result: '' },
+  ]);
+  const f = form({
+    type: 'worked',
+    front: 'Solve 2x + 3 = 11',
+    back: '',
+    workedSteps: [
+      { label: 'Subtract 3 | both sides', result: '2x = 8' },
+      { label: 'no result yet', result: '' },
+      { label: '', result: 'x = **4**' },
+    ],
+    variants: [{ prompt: 'Solve it', level: 'apply' }],
+  });
+  assert.equal(showVariants(f), false);
+  assert.equal(fieldsToSave(f).type, 'worked');
+  assert.equal(fieldsToSave(f).workedSteps, 'Subtract 3 / both sides :: 2x = 8|x = **4**');
+  assert.equal(fieldsToSave(f).variants, '');
+  assert.equal(fieldsToSave({ ...f, type: 'basic' }).workedSteps, '', 'other types save none');
+  const p = previewOf(f, deck)!;
+  assert.deepEqual(p.view, {
+    type: 'worked',
+    prompt: 'Solve 2x + 3 = 11',
+    answer: 'x = **4**',
+    steps: [
+      { label: 'Subtract 3 / both sides', result: '2x = 8' },
+      { label: '', result: 'x = <b>4</b>' },
+    ],
+  });
+  const card = { ...p.item, suspended: false, starred: false };
+  assert.equal(formFor(card).type, 'worked');
+  assert.deepEqual(formFor(card).workedSteps[0], { label: 'Subtract 3 / both sides', result: '2x = 8' });
+  assert.deepEqual(previewOf({ ...f, workedSteps: [{ label: '', result: '1' }] }, deck)!.view, {
+    type: 'problem',
+    problem: 'workedSteps',
+  });
+});
+
+test('the mnemonic is a field of every card type, saved as written and never part of the preview', () => {
+  const f = form({
+    front: 'Order of the planets?',
+    back: 'Mercury, Venus, Earth',
+    mnemonic: 'My Very Educated Mother',
+  });
+  assert.equal(fieldsToSave(f).mnemonic, 'My Very Educated Mother');
+  assert.equal(fieldsToSave({ ...f, type: 'cloze' }).mnemonic, 'My Very Educated Mother');
+  const p = previewOf(f, deck)!;
+  assert.equal(p.item.extra.mnemonic, 'My Very Educated Mother');
+  assert.ok(!JSON.stringify(p.view).includes('Educated'), 'it only shows in a session, after a miss or a hint');
+  const saved = { ...p.item, tags: [], suspended: false, starred: false } as unknown as Parameters<typeof formFor>[0];
+  assert.equal(formFor(saved).mnemonic, 'My Very Educated Mother');
+});
+
+test('a case: saved with question cards, cleared on the others, kept as plain text and shown in the preview', () => {
+  const text = 'A man, 58, has <b>crushing</b> chest pain.';
+  const f = form({ front: 'Most likely diagnosis?', back: 'STEMI', case: text });
+  assert.equal(showCase(f), true);
+  assert.equal(fieldsToSave(f).case, text);
+  assert.equal(showCase({ type: 'cloze' }), false);
+  assert.equal(fieldsToSave({ ...f, type: 'order' }).case, '', 'other types save none');
+  const p = previewOf(f, deck)!;
+  assert.equal(p.item.extra.case, 'A man, 58, has crushing chest pain.');
+  assert.equal(p.item.target, 'Most likely diagnosis?');
+  assert.equal(formFor({ ...p.item, suspended: false, starred: false }).case, 'A man, 58, has crushing chest pain.');
+});
+
+test('a graph and the translate type: saved on cards asked as a question, checked as written, shown in the preview', () => {
+  const f = form({ type: 'translate', front: 'Which function is this?', back: 'y = 2x + 1', graph: 'Y = 2x+1' });
+  assert.equal(showGraph(f), true);
+  assert.equal(graphProblem(f), false);
+  assert.equal(fieldsToSave(f).graph, 'Y = 2x+1');
+  assert.equal(showGraph({ type: 'cloze' }), false);
+  assert.equal(fieldsToSave({ ...f, type: 'order' }).graph, '', 'other types save none');
+  assert.equal(graphProblem({ ...f, graph: 'sin x' }), true);
+  assert.equal(graphProblem({ ...f, graph: '  ' }), false);
+  const p = previewOf(f, deck)!;
+  assert.deepEqual(p.item.extra, { translate: '1', graph: 'y = 2x+1' });
+  assert.equal(p.view.type, 'typed');
+  const again = formFor({ ...p.item, suspended: false, starred: false });
+  assert.deepEqual([again.type, again.graph], ['translate', 'y = 2x+1']);
+  assert.equal(previewOf({ ...f, type: 'basic' }, deck)!.item.extra.translate, undefined);
 });

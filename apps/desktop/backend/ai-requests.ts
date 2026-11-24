@@ -1,7 +1,9 @@
 // The shapes of AI requests (#148), checked with the app's validators wherever one arrives: from the assistant
 // (MCP tools), from a file in ai-requests/ (anything could have written it) and from the window (the user's edits).
 import {
+  AID_LISTS,
   AI_CARDS_MAX,
+  cleanAids,
   GOAL_SESSIONS,
   NEW_PER_DAY_MAX,
   ORGANISE_KINDS,
@@ -16,7 +18,24 @@ import { f, type Field, type Shape } from './fields';
 
 const opt = f.optional;
 
-export const proposedCard = f.object({
+/** Study aids (plain text; formatting and HTML are removed). The same limits as an imported deck's. */
+const requires = opt(
+  f.list(
+    f.text(200, 'The front of another card of the same deck, or a tag as "#tag".'),
+    AID_LISTS.requires,
+    'What to learn first: cards or tags this card builds on. Only orders new cards; never blocks studying.',
+  ),
+);
+const mnemonic = opt(f.text(300, 'A memory aid, shown after a miss or as a hint. "" removes it.'));
+const keyTerms = opt(
+  f.list(
+    f.text(100, 'One word or short phrase exactly as it stands in the back.'),
+    AID_LISTS.keyTerms,
+    'The words a typed answer must contain. Not for cloze, multiple-choice, order or code cards.',
+  ),
+);
+
+const proposedCardShape = f.object({
   front: f.text(2000, 'The question side. Plain text; **bold** and {{c1::cloze}} work as in imported decks.'),
   back: f.text(5000, 'The answer side.'),
   example: opt(f.text(2000, 'An example sentence.')),
@@ -25,21 +44,67 @@ export const proposedCard = f.object({
   notes: opt(f.text(5000, 'Notes.')),
   tags: opt(f.list(f.text(100, 'One tag, no spaces.'), 20, 'Tags.')),
   category: opt(f.text(100, 'A category for sorting rounds (e.g. der/die/das).')),
-  type: opt(f.oneOf(['basic', 'cloze', 'mcq'] as const, 'Card type (default basic).')),
+  type: opt(
+    f.oneOf(
+      ['basic', 'cloze', 'mcq', 'twin'] as const,
+      'Card type (default basic). twin: a compare card for two things that are easy to mix up.',
+    ),
+  ),
+  twin: opt(
+    f.text(
+      500,
+      'For twin: the second thing, shown beside the front ("effect: a result"). The back says what they share and the one key difference.',
+    ),
+  ),
   choices: opt(f.text(2000, 'For mcq: the choices separated by |.')),
   correct: opt(f.text(200, 'For mcq: the correct choice numbers (1-based), separated by |.')),
+  requires,
+  mnemonic,
+  keyTerms,
 });
+/** A field whose value is cleaned (cleanAids) after its shape is checked. */
+const cleaned = <T extends object>(field: Field<T>): Field<T> => ({
+  ...field,
+  check: (value, path) => cleanAids(field.check(value, path)),
+});
+export const proposedCard = cleaned(proposedCardShape);
 /** Changes to an existing card: only the fields given change. */
-export const cardChanges = f.object({
-  front: opt(f.text(2000, 'New question side.')),
-  back: opt(f.text(5000, 'New answer side.')),
-  example: opt(f.text(2000, 'New example sentence.')),
-  exampleTranslation: opt(f.text(2000, 'Its translation.')),
-  explanation: opt(f.text(5000, 'New explanation.')),
-  notes: opt(f.text(5000, 'New notes.')),
-  tags: opt(f.list(f.text(100, 'One tag, no spaces.'), 20, 'The full new list of tags.')),
-  category: opt(f.text(100, 'New category.')),
-});
+export const cardChanges = cleaned(
+  f.object({
+    front: opt(f.text(2000, 'New question side.')),
+    back: opt(f.text(5000, 'New answer side.')),
+    example: opt(f.text(2000, 'New example sentence.')),
+    exampleTranslation: opt(f.text(2000, 'Its translation.')),
+    explanation: opt(f.text(5000, 'New explanation.')),
+    notes: opt(f.text(5000, 'New notes.')),
+    tags: opt(f.list(f.text(100, 'One tag, no spaces.'), 20, 'The full new list of tags.')),
+    category: opt(f.text(100, 'New category.')),
+    variants: opt(
+      f.list(
+        f.text(520, 'One question, starting with its level: "recall: …", "apply: …" or "analyse: …".'),
+        AID_LISTS.variants,
+        "Other ways to ask this card's question (the full new list; the answer stays the back). Only for cards answered in writing: not cloze, multiple-choice, order, code, myth, explain, compare or worked cards.",
+      ),
+    ),
+    corrections: opt(
+      f.list(
+        f.text(500, 'Why this choice is wrong, or "" for none.'),
+        AID_LISTS.corrections,
+        'Multiple-choice cards only: one entry per choice, in the order get_card lists the choices; "" for the right choices.',
+      ),
+    ),
+    keyPoints: opt(
+      f.list(
+        f.text(300, 'One point.'),
+        AID_LISTS.keyPoints,
+        'Explain cards only: the 2 to 5 points a good explanation covers (the full new list). Put the model explanation in back.',
+      ),
+    ),
+    requires,
+    mnemonic,
+    keyTerms,
+  }),
+);
 const ORGANISE_SHAPE = f.object({
   kind: f.oneOf(ORGANISE_KINDS, 'What to do with the cards. There is no delete.'),
   tag: opt(f.text(200, 'For tag and untag: the tag (one word).')),

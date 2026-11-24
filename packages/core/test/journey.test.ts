@@ -89,6 +89,15 @@ test('study days: only days with a session, inside the heatmap window', () => {
   assert.equal(j.heatmapSince, addDays(weekStart(today), -7 * (JOURNEY.heatmapWeeks - 1)));
 });
 
+test('calibration: every rating 1 to 5, empty until answers are rated (#205)', () => {
+  const j = journey(getDb(), now);
+  assert.deepEqual(
+    j.calibration.levels.map((l) => [l.confidence, l.rated, l.rate]),
+    [1, 2, 3, 4, 5].map((c) => [c, 0, null]),
+  );
+  assert.deepEqual(j.calibration.lead, []);
+});
+
 test('retention: share of real reviews recalled, by week, practice left out', () => {
   const j = journey(getDb(), now);
   assert.equal(j.retention.weeks.length, JOURNEY.retentionWeeks);
@@ -108,4 +117,44 @@ test('hardest cards: the ones you lapse on most, at most 20, with readable text'
   assert.equal(j.hardest[0].back, 'answer 4');
   assert.equal(j.hardest[0].lapses, 1);
   assert.ok(JOURNEY.hardest === 20);
+});
+
+test('question levels: the mix of recall, apply and analyse answers per deck, only once a variant was asked', () => {
+  const p0 = journey(getDb(), now);
+  assert.equal(p0.decks.find((d) => d.id === exam.id)!.levels, null, 'no variants asked: nothing to show');
+  const at = new Date(2026, 10, 24, 10);
+  const ask = (itemId: number, format: 'typed' | 'flip' | 'match', level?: 'apply' | 'analyse') =>
+    recordAttempt({ sessionId: 'lv', itemId, format, correct: true, responseMs: 1, xp: 0, level }, getDb(), at);
+  ask(alpha[0], 'typed', 'apply');
+  ask(alpha[1], 'flip', 'analyse');
+  ask(alpha[2], 'match'); // a game: not a question at any level
+  const p = journey(getDb(), now);
+  // Monday's five typed reviews and the practice answer are recall: practising a question is still practice at its level.
+  assert.deepEqual(p.decks.find((d) => d.id === exam.id)!.levels, { recall: 6, apply: 1, analyse: 1 });
+  assert.equal(p.decks.find((d) => d.id === plain.id)!.levels, null);
+});
+
+test('this week: a goal for new cards and sessions from each deck’s goal, exam date and pace (#214)', () => {
+  const w = journey(getDb(), now).week;
+  assert.equal(w.start, '2026-11-23');
+  // Exam deck: 4 left to its goal of 8, 4 first recalled since Monday → 8 at the start of the week, all asked
+  // for (under the floor of 10). Plain deck: all 4 cards. No session history: 3 sessions.
+  assert.deepEqual(w.cards, { target: 12, done: 4 });
+  assert.deepEqual(w.sessions, { target: 3, done: 1 });
+  assert.deepEqual([w.days, w.minutes], [1, 15]);
+  assert.equal(w.exam, null);
+});
+
+test('this week: an exam date spreads the cards over the weeks left and names the next exam (#214)', () => {
+  const settings = JSON.stringify({ newPerDay: 10, goal: { label: 'Exam', words: 8 }, examDate: '2026-12-20' });
+  getDb().prepare('UPDATE decks SET settings = ? WHERE id = ?').run(settings, exam.id);
+  const w = journey(getDb(), now).week;
+  // 8 cards over 4 weeks: 2 for the exam deck, plus the plain deck's 4.
+  assert.deepEqual(w.cards, { target: 6, done: 4 });
+  assert.deepEqual(w.exam, { deck: 'Exam deck', date: '2026-12-20', days: 25 });
+  // Earlier weeks' sessions raise the session goal: 4 a week on average → 5.
+  getDb()
+    .prepare('INSERT OR REPLACE INTO days(day, xp, sessions, seconds) VALUES (?, 0, 8, 60), (?, 0, 8, 60)')
+    .run('2026-11-17', '2026-11-03');
+  assert.deepEqual(journey(getDb(), now).week.sessions, { target: 5, done: 1 });
 });

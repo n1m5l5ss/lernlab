@@ -1,6 +1,10 @@
 // Client-side exercise builders (boss, rescue and action rounds are assembled on the fly).
 import { qa } from '@lernlab/core/cards';
-import { codeExercise, hintSource } from '@lernlab/core/exercises';
+import { codeExercise, explain, hintSource, myth, twin, worked } from '@lernlab/core/exercises';
+import { isWorked } from '@lernlab/core/worked';
+import { asksWhy, isExplain } from '@lernlab/core/explain';
+import { isMyth } from '@lernlab/core/misconceptions';
+import { isTwin } from '@lernlab/core/twin';
 import { stripHtml } from '@lernlab/core/text';
 import type { Exercise, Item } from '@lernlab/core/types';
 
@@ -18,9 +22,15 @@ export function typedFor(item: Item): Extract<Exercise, { type: 'typed' }> {
 }
 
 export function recallFor(item: Item): Exercise {
+  if (isMyth(item)) return myth(item);
+  if (isExplain(item)) return explain(item);
+  if (isTwin(item)) return twin(item);
+  if (isWorked(item)) return worked(item); // on the rung the session planned (core/worked.ts)
   const code = item.kind === 'code' ? codeExercise(item) : null;
   if (code) return code;
   const q = qa(item);
+  // A card tagged why/how is explained first (core/explain.ts), unless its short answer is typed as asked.
+  if (asksWhy(item) && !(q.typeable && q.prompt === item.target)) return explain(item);
   return q.typeable
     ? typedFor(item)
     : { type: 'flip', itemId: item.id, prompt: q.prompt, answer: q.answer, reverse: q.prompt === item.meaning };

@@ -28,17 +28,28 @@ type FinishLike = {
   streakChange?: { freezeEarned: boolean; repaired: boolean; repairDone: number | null };
 };
 
-/** The level-up, new badges and streak news this session earned. Empty for an ordinary session. */
-export function summaryMoments(f: SummaryFacts, server: FinishLike | null): Moment[] {
+/**
+ * The level-up, new badges and streak news this session earned. Empty for an ordinary session.
+ * Calm mode (#216) leaves out the level and the badges (badges still show on Progress); streak news is
+ * information about your days, so it stays.
+ */
+export function summaryMoments(f: SummaryFacts, server: FinishLike | null, calm = false): Moment[] {
   const out: Moment[] = [];
-  if (f.levelUp) out.push({ kind: 'level', level: f.levelUp });
-  for (const u of server?.unlocked ?? []) out.push({ kind: 'badge', key: u.key });
+  if (f.levelUp && !calm) out.push({ kind: 'level', level: f.levelUp });
+  if (!calm) for (const u of server?.unlocked ?? []) out.push({ kind: 'badge', key: u.key });
   const s = server?.streakChange;
   if (s?.freezeEarned) out.push({ kind: 'freeze' });
   if (s?.repaired) out.push({ kind: 'repaired' });
   if (s?.repairDone) out.push({ kind: 'repairProgress', done: s.repairDone });
   return out;
 }
+
+/** Whether the summary celebrates (confetti, the level-up sound): a real milestone, and never in calm mode. */
+export const celebrates = (
+  f: Pick<SummaryFacts, 'levelUp'>,
+  server: { goalMetNow?: boolean; unlocked?: unknown[] } | null,
+  calm: boolean,
+) => !calm && !!(server?.goalMetNow || server?.unlocked?.length || f.levelUp);
 
 /** How many missed cards the "come back tomorrow" list shows. */
 export const MISSED_SHOWN = 6;
@@ -69,3 +80,42 @@ export function summaryFacts(
       .slice(0, MISSED_SHOWN),
   };
 }
+
+/** Most new cards the tomorrow check asks about. */
+export const TOMORROW_SHOWN = 12;
+
+/**
+ * "Will you know this tomorrow?" (#205): the new cards met in this session, each with its question only (the
+ * answer stays hidden: a judgement from the question alone predicts recall better). None in practice mode.
+ */
+export function tomorrowCards(
+  result: { practice: boolean; newCards: number[] },
+  items: Record<number, Item>,
+  qa: (item: Item) => { prompt: string },
+): { id: number; prompt: string }[] {
+  if (result.practice) return [];
+  return [...new Set(result.newCards)]
+    .filter((id) => items[id])
+    .slice(0, TOMORROW_SHOWN)
+    .map((id) => ({ id, prompt: qa(items[id]).prompt }));
+}
+
+type Group = { cards: number; reviewed: number; right: number };
+/** How the last check held up: each answer (yes, unsure, no) whose cards have come back, with how many were right. */
+export function tomorrowReport(groups: Record<'yes' | 'unsure' | 'no', Group>) {
+  return (['yes', 'unsure', 'no'] as const)
+    .filter((answer) => groups[answer].reviewed > 0)
+    .map((answer) => ({ answer, reviewed: groups[answer].reviewed, right: groups[answer].right }));
+}
+
+/**
+ * The quiet minute (#226): after a session that taught new cards, an optional minute of rest with eyes
+ * closed. The evidence is mixed (a preregistered replication found d = 0.09, a meta-analysis d = 0.38
+ * [Humiston et al. 2019]), so it is off by default, says "may help", and can be ended at any time.
+ */
+export const QUIET_SECONDS = 60;
+export const offersQuietMinute = (result: { practice: boolean; introduced: number }, on: boolean): boolean =>
+  on && !result.practice && result.introduced > 0;
+/** Whole seconds of rest left. */
+export const quietLeft = (startedAt: number, now: number): number =>
+  Math.max(0, QUIET_SECONDS - Math.floor((now - startedAt) / 1000));

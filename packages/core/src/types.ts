@@ -1,6 +1,7 @@
 import type { Line } from './teacher';
 import type { Article } from './text';
 import type { OcclusionBox } from './occlusion';
+import type { Level } from './variants';
 
 export type ItemKind =
   | 'noun'
@@ -45,7 +46,16 @@ export type Item = {
   group: string | null; // grammar group, e.g. "G01"
   /** Occlusion cards: the boxes of the card's group, itself included (added when cards are loaded for study). */
   occlusionBoxes?: OcclusionBox[];
+  /** Worked examples: the rung of the ladder the learner is on (worked.ts; added when a session is planned). */
+  rung?: number;
+  /** Cards with a mnemonic: correct recalls in a row since the last miss; absent while never missed (added when cards are loaded for study, mnemonic.ts). */
+  mnemonicRun?: number;
+  /** The learner's own sketch for the card, if they made one (added when cards are loaded for study, sketch.ts). */
+  sketch?: Sketch;
 };
+
+/** A learner's picture cue for a card: a PNG in the media folder ('' when only described) and its description. */
+export type Sketch = { file: string; text: string };
 
 /** Exercise formats. Only RECALL formats may write a spaced-repetition grade. */
 export type Format =
@@ -65,9 +75,22 @@ export type Format =
   | 'truefalse'
   | 'blitz'
   | 'mcq'
-  | 'order';
+  | 'order'
+  /** A worked example solved whole (a real recall), and one of its faded rungs (practice): worked.ts. */
+  | 'worked'
+  | 'ladder';
 
-export const RECALL_FORMATS: Format[] = ['typed', 'cloze', 'dictation', 'speak', 'boss', 'flip', 'mcq', 'order'];
+export const RECALL_FORMATS: Format[] = [
+  'typed',
+  'cloze',
+  'dictation',
+  'speak',
+  'boss',
+  'flip',
+  'mcq',
+  'order',
+  'worked',
+];
 
 /** Mastery ladder: L0 seen → L1 recognised → L2 discriminated → L3 recalled → L4 in context → L5 spoken. */
 export const FORMAT_LEVEL: Partial<Record<Format, number>> = {
@@ -88,10 +111,15 @@ export const FORMAT_LEVEL: Partial<Record<Format, number>> = {
   blitz: 1,
   mcq: 3,
   order: 4,
+  worked: 4,
 };
 
 export type Exercise =
-  | { type: 'intro'; itemId: number }
+  | {
+      type: 'intro';
+      itemId: number;
+      /** Ask the learner to act the card out (a few action cards only, actout.ts). */ actOut?: boolean;
+    }
   | { type: 'mc'; itemId: number; direction: 'de2en' | 'en2de'; prompt: string; options: string[]; answerIndex: number }
   | {
       type: 'typed';
@@ -103,6 +131,9 @@ export type Exercise =
       /** Code cards: the snippet to read (predict its output) and its language. */
       code?: string;
       codeLang?: string;
+      /** Asked with one of the card's question variants (variants.ts): its level. */
+      level?: Level;
+      actOut?: boolean;
     }
   | {
       type: 'cloze';
@@ -120,10 +151,54 @@ export type Exercise =
   | { type: 'dictation'; itemId: number; sentence: string; translation: string }
   | { type: 'speak'; itemId: number; prompt: string; expected: string }
   | { type: 'lesson'; group: string; title: string; text: string; examples: { de: string; en: string }[] }
-  | { type: 'flip'; itemId: number; prompt: string; answer: string; reverse: boolean }
+  | {
+      type: 'flip';
+      itemId: number;
+      prompt: string;
+      answer: string;
+      reverse: boolean;
+      level?: Level;
+      /** Ask the learner to say the answer aloud before showing it (a few cards only, sayaloud.ts). */
+      sayAloud?: boolean;
+      actOut?: boolean;
+    }
   | { type: 'truefalse'; itemId: number; front: string; shown: string; isTrue: boolean }
+  /** A myth card (misconceptions.ts): "True or myth?" about the statement, then why (its back). A real recall. */
+  | { type: 'myth'; itemId: number; statement: string; why: string }
+  /**
+   * Explain first (explain.ts): type an explanation, then see the answer and tick the key points covered
+   * (safe HTML; none for a basic card tagged why/how, which is self-graded as usual). A real recall.
+   */
+  | { type: 'explain'; itemId: number; prompt: string; answer: string; points: string[]; level?: Level }
+  /**
+   * A compare card (twin.ts): two things side by side (safe HTML); say what they share and the one key
+   * difference, then check against the answer ('' for none) and rate yourself. A real recall.
+   */
+  | { type: 'twin'; itemId: number; left: string; right: string; answer: string }
+  /**
+   * A worked example (worked.ts): its first steps are shown, the last `blanks` are typed (0: study the full
+   * example; all of them: the whole problem, the only real recall). label and resultHtml are safe HTML; result
+   * is the plain text a typed step is checked against. answer is the card's back.
+   */
+  | {
+      type: 'worked';
+      itemId: number;
+      prompt: string;
+      steps: { label: string; result: string; resultHtml: string }[];
+      blanks: number;
+      answer: string;
+    }
   | { type: 'imagemc'; itemId: number; options: string[]; answerIndex: number }
-  | { type: 'mcq'; itemId: number; stem: string; choices: string[]; correct: number[]; explanation: string }
+  /** corrections: per choice, safe HTML shown when that wrong choice is picked ('' for none; misconceptions.ts). */
+  | {
+      type: 'mcq';
+      itemId: number;
+      stem: string;
+      choices: string[];
+      correct: number[];
+      explanation: string;
+      corrections?: string[];
+    }
   /** codeLang: the steps are lines of code in this language (order the lines). */
   | { type: 'order'; itemId: number; prompt: string; steps: string[]; shuffled: number[]; codeLang?: string };
 
@@ -131,8 +206,32 @@ export type Exercise =
 export type Block =
   | { id: string; kind: 'ignition'; title: string; teacher: Line; exercises: Exercise[] }
   | { id: string; kind: 'learn'; title: string; teacher: Line; exercises: Exercise[] }
+  /** Guess first: a new topic's questions before its cards are met. Practice only, never graded (guess.ts). */
+  | {
+      id: string;
+      kind: 'guess';
+      title: string;
+      teacher: Line;
+      topic: string;
+      itemIds: number[];
+      /** Try first (#218): one worked example of a maths or science unit, tried before the lesson. */
+      tryFirst?: boolean;
+    }
   | { id: string; kind: 'drill'; format: Format; title: string; teacher: Line; exercises: Exercise[] }
-  | { id: string; kind: 'gender'; title: string; teacher: Line; itemIds: number[]; seconds: number }
+  /**
+   * The sorting round. `choices` and `labels` (discriminate.ts): the labels to choose from and each card's own,
+   * when the planner picked them; without them the round sorts by the cards' categories. seconds 0: no clock.
+   */
+  | {
+      id: string;
+      kind: 'gender';
+      title: string;
+      teacher: Line;
+      itemIds: number[];
+      seconds: number;
+      choices?: string[];
+      labels?: Record<number, string>;
+    }
   | { id: string; kind: 'match'; title: string; teacher: Line; itemIds: number[] }
   | { id: string; kind: 'rain'; title: string; teacher: Line; itemIds: number[]; seconds: number }
   | { id: string; kind: 'boss'; title: string; teacher: Line; itemIds: number[]; lives: number }
@@ -174,6 +273,10 @@ export type Attempt = {
   genderOnly?: boolean;
   /** Practice mode: recorded for history and XP, but never touches the schedule. */
   practice?: boolean;
+  /** The level of the question variant that was asked (variants.ts); none for the card's own question. */
+  level?: Level;
+  /** The learner said it was easy (explain cards, every key point ticked): Easy for a card reviewed before. */
+  easy?: boolean;
 };
 
 export type DaySummary = {

@@ -8,6 +8,10 @@ import { stripHtml } from '../text';
 import { sha1Hex } from '../sha1';
 import { mediaKind, type NormalizedCard } from '../library';
 import { DECK_SEPARATOR } from '../decktree';
+import { parseVariants } from '../variants';
+import { parseCorrections } from '../misconceptions';
+import { keyPointsAsBack, parseKeyPoints } from '../explain';
+import { parseWorkedSteps, workedStepsAsText } from '../worked';
 
 /** A LernLab card id in a note's guid, so importing the package back updates the same cards. */
 export const GUID_PREFIX = 'lernlab-';
@@ -129,6 +133,32 @@ CREATE INDEX ix_notes_csum ON notes (csum);`;
 /** Plain text in an Anki field, which Anki reads as HTML. */
 const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const escapeAttr = (s: string) => escapeHtml(s).replace(/"/g, '&quot;');
+/**
+ * Anki has no question variants, corrections for wrong choices or key points: they go under the notes, one
+ * per line ("apply: …", "EC2: Many people think…", "• Earth is tilted"), so they are not lost.
+ */
+const notesOf = (c: NormalizedCard) => {
+  const choices = (c.choices ?? '').split('|').map((x) => x.trim());
+  const corrections = parseCorrections(c.corrections).map((text, i) =>
+    text && choices[i] ? `${choices[i]}: ${escapeHtml(text)}` : '',
+  );
+  // An explain card's key points, unless they already are its back (it had no model explanation).
+  const points = parseKeyPoints(c.keyPoints);
+  const pointsLine =
+    points.length && c.back !== keyPointsAsBack(points)
+      ? escapeHtml(keyPointsAsBack(points)).replace(/\n/g, '<br>')
+      : '';
+  return [
+    c.notes ?? '',
+    ...parseVariants(c.variants).map((v) => escapeHtml(`${v.level}: ${v.prompt}`)),
+    ...corrections,
+    pointsLine,
+    // A worked example's steps, numbered ("1. Divide by 2: x = 4").
+    escapeHtml(workedStepsAsText(parseWorkedSteps(c.workedSteps))).replace(/\n/g, '<br>'),
+  ]
+    .filter(Boolean)
+    .join('<br>');
+};
 
 /** The cloze numbers in a text: {{c1::…}} and {{c3::…}} give cards with ord 0 and 2. */
 const clozeOrds = (text: string) => {
@@ -214,7 +244,7 @@ export function writeApkg(
         c.example ?? '',
         escapeHtml(c.exampleTranslation ?? ''),
         c.explanation ?? '',
-        c.notes ?? '',
+        notesOf(c),
         ...mediaField(c),
       ];
       const sort = stripHtml(front);

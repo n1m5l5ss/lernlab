@@ -1,5 +1,5 @@
 // Import screen logic: column mapping edits, the target deck and the report lines. No React here.
-import type { ColumnMapping, MappableField } from '@lernlab/core/importpreview';
+import { MAPPABLE_FIELDS, type ColumnMapping, type MappableField } from '@lernlab/core/importpreview';
 import type { ImportReport } from '@lernlab/core/importer';
 import type { SkipCode } from '@lernlab/core/library';
 
@@ -11,6 +11,7 @@ export const MAPPABLE: MappableField[] = [
   'exampleTranslation',
   'explanation',
   'notes',
+  'mnemonic',
   'category',
   'tags',
   'image',
@@ -27,7 +28,28 @@ export const MAPPABLE: MappableField[] = [
   'correct',
   'steps',
   'altAnswers',
+  'variants',
+  'corrections',
+  'keyPoints',
+  'keyTerms',
+  'workedSteps',
+  'case',
+  'graph',
+  'twin',
+  'requires',
+  'tolerance',
+  'code',
+  'codeLang',
+  'occlusion',
+  'occlusionGroup',
+  'occlusionMode',
 ];
+
+/** The column help under the file box. CSV column names are file format, not text: they stay in English in every language. */
+export const CSV_REQUIRED = 'front, back';
+export const CSV_OPTIONAL = MAPPABLE.filter((f) => f !== 'front' && f !== 'back')
+  .map((f) => MAPPABLE_FIELDS[f])
+  .join(', ');
 
 export type Fields = ColumnMapping['fields'];
 

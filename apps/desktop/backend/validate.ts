@@ -24,6 +24,13 @@ export const v = {
   id: ((value, path = '') =>
     Number.isSafeInteger(value) && (value as number) > 0 ? (value as number) : fail(path, 'an id')) as Check<number>,
   boolean: ((value, path = '') => (typeof value === 'boolean' ? value : fail(path, 'true or false'))) as Check<boolean>,
+  /** A whole number from `min` to `max`. */
+  int:
+    (min: number, max: number): Check<number> =>
+    (value, path = '') =>
+      Number.isInteger(value) && (value as number) >= min && (value as number) <= max
+        ? (value as number)
+        : fail(path, `a whole number from ${min} to ${max}`),
   bytes:
     (maxBytes: number): Check<Uint8Array> =>
     (value, path = '') =>

@@ -4,7 +4,27 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createElement as h, type ReactElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { Button, Card, Feedback, Input, ProgressBar, SegmentedControl, Select, Sidebar } from './index';
+import { parseGraph, plotGraph } from '@lernlab/core/graph';
+import { layoutTerms } from '@lernlab/core/conceptmap';
+import {
+  Button,
+  Card,
+  CasePanel,
+  ConceptMapView,
+  ConfidenceRow,
+  Feedback,
+  GraphPlot,
+  Input,
+  KeyPointChecklist,
+  LevelTag,
+  Misconception,
+  SideBySide,
+  ProgressBar,
+  SegmentedControl,
+  Select,
+  Sidebar,
+  SketchPad,
+} from './index';
 
 const html = (el: ReactElement) => renderToStaticMarkup(el);
 
@@ -118,4 +138,138 @@ test('Sidebar is a named navigation landmark that marks the current page', () =>
   assert.match(out, /<a class="nav-link" href="#\/home" aria-current="page"><svg aria-hidden="true"/);
   assert.match(out, /<a class="nav-link" href="#\/decks"><svg/);
   assert.match(out, /<div class="grow"><\/div><a class="nav-link footer" href="#\/settings">/);
+});
+
+test('ConfidenceRow is a labelled radio group of 1 to 5 with one tab stop, named for screen readers', () => {
+  const names = ['1 guess', '2', '3', '4', '5 certain'];
+  const props = { id: 'cf', label: 'How sure?', low: 'Guess', high: 'Certain', names, onPick: () => {} };
+  const none = html(h(ConfidenceRow, { ...props, value: null }));
+  assert.match(none, /<span id="cf" class="confidenceLabel">How sure\?<\/span>/);
+  assert.match(none, /role="radiogroup" aria-labelledby="cf"/);
+  assert.equal(none.match(/role="radio"/g)?.length, 5);
+  assert.match(none, /aria-checked="false" aria-label="1 guess" tabindex="0"[^>]*>1</);
+  assert.equal(none.match(/tabindex="0"/g)?.length, 1);
+  assert.match(none, />Guess<.*>Certain</);
+  const four = html(h(ConfidenceRow, { ...props, value: 4 }));
+  assert.match(four, /aria-checked="true" aria-label="4" tabindex="0"/);
+  assert.match(four, /aria-label="1 guess" tabindex="-1"/);
+});
+
+test('LevelTag shows the level word with a class per level', () => {
+  assert.equal(
+    html(h(LevelTag, { level: 'apply', children: 'Apply' })),
+    '<span class="level-tag level-apply">Apply</span>',
+  );
+});
+
+test('CasePanel is a labelled region with the case text', () => {
+  assert.equal(
+    html(h(CasePanel, { label: 'Case', children: 'A man has chest pain.' })),
+    '<section class="case-panel" aria-label="Case"><div class="case-panel-label" aria-hidden="true">Case</div>' +
+      '<div class="case-panel-text">A man has chest pain.</div></section>',
+  );
+});
+
+test('GraphPlot is one image with a text alternative; grid, ticks and curve are hidden from screen readers', () => {
+  const plot = plotGraph(parseGraph('(0,0) (1,2)')!);
+  const out = html(h(GraphPlot, { plot, label: 'A line through (0, 0) and (1, 2)' }));
+  assert.match(
+    out,
+    /^<svg class="graph-plot" viewBox="0 0 320 220" width="320" height="220" role="img" aria-label="A line through \(0, 0\) and \(1, 2\)">/,
+  );
+  assert.equal(out.match(/<path class="graph-plot-line"/g)?.length, 1);
+  assert.equal(out.match(/<circle class="graph-plot-dot"/g)?.length, 2);
+  assert.match(out, /<g aria-hidden="true">/);
+  assert.match(out, /<text class="graph-plot-tick"[^>]*>0\.5<\/text>/);
+});
+
+test('ConceptMapView is one image with a text alternative; a link shows its tone by line style, not colour alone', () => {
+  const nodes = layoutTerms(['Glucose', 'ATP']);
+  const links = [{ from: 'glucose', to: 'ATP', label: 'becomes', tone: 'missing' as const }];
+  const out = html(h(ConceptMapView, { nodes, links, label: "The author's map: 1 link" }));
+  assert.match(
+    out,
+    /^<svg class="cmap-view" viewBox="0 0 360 260" width="360" height="260" role="img" aria-label="The author&#x27;s map: 1 link">/,
+  );
+  assert.match(out, /<g aria-hidden="true">/);
+  assert.match(out, /<g class="cmap-view-link cmap-view-missing"><line /);
+  assert.match(out, /<text class="cmap-view-label"[^>]*>becomes<\/text>/);
+  assert.equal(out.match(/<rect class="cmap-view-node"/g)?.length, 2);
+  // A link to a term the picture does not have is left out; a long term is cut (the list has it in full).
+  const odd = html(
+    h(ConceptMapView, {
+      nodes: layoutTerms(['A very long term that will not fit']),
+      links: [{ from: 'x', to: 'y', label: '' }],
+      label: 'x',
+    }),
+  );
+  assert.ok(!odd.includes('<line') && odd.includes('A very long term …'));
+});
+
+test('Misconception shows the lead, the correction and then the right answer', () => {
+  assert.equal(
+    html(h(Misconception, { lead: 'A common mix-up', answer: 'Correct: B', children: 'Many people think A.' })),
+    '<span class="misconception-lead">A common mix-up</span><div class="misconception">Many people think A.</div>' +
+      '<div class="misconception-answer">Correct: B</div>',
+  );
+});
+
+test('SideBySide is a labelled group with the two sides', () => {
+  assert.equal(
+    html(h(SideBySide, { label: 'The two to compare', left: 'affect', right: 'effect', lang: 'en' })),
+    '<div class="side-by-side" role="group" aria-label="The two to compare">' +
+      '<div class="side-by-side-item" lang="en">affect</div><div class="side-by-side-item" lang="en">effect</div></div>',
+  );
+});
+
+test('KeyPointChecklist is a fieldset of labelled checkboxes, one per key point', () => {
+  const out = html(
+    h(KeyPointChecklist, {
+      legend: 'Tick what you covered',
+      points: ['Tilt', 'Angle'],
+      checked: [true],
+      onToggle: () => {},
+    }),
+  );
+  assert.match(out, /^<fieldset class="keypoints"><legend>Tick what you covered<\/legend><ul>/);
+  const boxes = [
+    ...out.matchAll(/<input type="checkbox" id="([^"]+)"( checked="")?\/><label for="([^"]+)">(\w+)<\/label>/g),
+  ];
+  assert.deepEqual(
+    boxes.map((m) => [!!m[2], m[1] === m[3], m[4]]),
+    [
+      [true, true, 'Tilt'],
+      [false, true, 'Angle'],
+    ],
+  );
+});
+
+test('SketchPad names its drawing area, offers words instead, and has nothing to save while empty', () => {
+  const labels = {
+    canvas: 'Drawing area',
+    hint: 'Draw or describe',
+    undo: 'Undo',
+    clear: 'Clear',
+    text: 'What does it show?',
+    textHint: 'Optional',
+    save: 'Save',
+    cancel: 'Cancel',
+  };
+  const pad = (more: object = {}) =>
+    html(h(SketchPad, { id: 'p', width: 480, height: 320, maxText: 200, labels, onSave() {}, onCancel() {}, ...more }));
+  const empty = pad();
+  assert.match(empty, /<canvas[^>]*role="img"[^>]*aria-label="Drawing area"[^>]*aria-describedby="p-hint"/);
+  assert.match(empty, /<canvas[^>]*width="480" height="320"/);
+  assert.match(empty, /<label for="p-text">What does it show\?<\/label>/);
+  assert.match(empty, /<input maxLength="200"[^>]*id="p-text"[^>]*aria-describedby="p-text-hint"/);
+  assert.match(empty, /<button type="button" disabled="" class="btn">Undo<\/button>/);
+  assert.match(empty, /<button type="button" disabled="" class="btn">Clear<\/button>/);
+  assert.match(empty, /<button type="button" disabled="" class="btn primary">Save<\/button>/);
+  assert.match(empty, /<button type="button" class="btn ghost">Cancel<\/button>/);
+
+  const drawn = pad({ initial: [[[1, 1]]], error: 'Too big' });
+  assert.match(drawn, /<button type="button" class="btn">Undo<\/button>/);
+  assert.match(drawn, /<button type="button" class="btn primary">Save<\/button>/);
+  assert.match(drawn, /role="alert">Too big</);
+  assert.doesNotMatch(pad({ initial: [[[1, 1]]], busy: true }), /<button type="button" class="btn/);
 });

@@ -5,7 +5,11 @@
 import { getDb, type DB } from './db';
 import { host } from './host';
 import { qa } from './cards';
-import { backText, mc, mcq } from './exercises';
+import { asHtml, backText, mc, mcq } from './exercises';
+import { variantsOf } from './variants';
+import { ownExercise } from './explain';
+import { caseHtml, caseOf, chainOf, hasCase } from './cases';
+import { graphOf, hasGraph } from './graph';
 import { allItems, deckNewPerDay, introducedTodayCount, recordAttempt } from './learn';
 import { getDeck, type Deck } from './library';
 import { shuffle, stripHtml } from './text';
@@ -33,26 +37,48 @@ export type ExamAnswer = { itemId: number; chosen: number[]; ms: number };
 
 /** One card as a multiple-choice question, or null when the deck has nothing to choose from. */
 function question(item: Item, pool: Item[]): ExamQuestion | null {
-  const base = { itemId: item.id, explanation: item.grammar || item.notes, topics: item.tags };
+  const about = { itemId: item.id, explanation: item.grammar || item.notes, topics: item.tags };
+  const withGraph = hasGraph(item) ? { ...about, graph: graphOf(item) } : about;
+  // The graph belongs to the front: it shows when the question asks from there.
+  const fromFront = item.kind === 'mcq' || stripHtml(qa(item).answer) === backText(item);
+  const base = fromFront ? withGraph : about;
   if (item.kind === 'mcq') {
     const ex = mcq(item);
-    return ex?.type === 'mcq' ? { ...base, stem: ex.stem, choices: ex.choices, correct: ex.correct } : null;
+    if (ex?.type !== 'mcq') return null;
+    const { stem, choices, correct, corrections } = ex;
+    return { ...base, stem, choices, correct, ...(corrections && { corrections }) };
   }
   // Ask from the side the card asks from (qa): the shorter side is the answer.
-  const ex = mc(item, pool, stripHtml(qa(item).answer) === backText(item) ? 'de2en' : 'en2de');
+  const ex = mc(item, pool, fromFront ? 'de2en' : 'en2de');
   if (ex.type !== 'mc' || ex.options.length < 2) return null;
-  return { ...base, stem: ex.prompt, choices: ex.options, correct: [ex.answerIndex] };
+  // A card with question variants is asked in one of its wordings, picked at random (the card's own is one).
+  const variants = variantsOf(item);
+  const v = variants[Math.floor(Math.random() * (variants.length + 1)) - 1];
+  const asked = v ? { stem: asHtml(v.prompt), level: v.level } : { stem: ex.prompt };
+  return { ...base, ...asked, choices: ex.options, correct: [ex.answerIndex] };
 }
 
 export function buildExam(deckId: number, d: DB = getDb()): Exam {
   const deck: Deck | null = getDeck(deckId, d);
   const settings = examSettings(deck?.settings.exam);
-  const pool = allItems(d, deckId).filter((i) => !['grammar', 'order', 'occlusion'].includes(i.kind));
+  // Cards with their own exercise in sessions (myth, explain…) are neither questions nor answers in an exam.
+  const pool = allItems(d, deckId).filter(
+    (i) => !['grammar', 'order', 'occlusion'].includes(i.kind) && !ownExercise(i),
+  );
   const questions: ExamQuestion[] = [];
+  const used = new Set<number>();
   for (const item of shuffle(pool)) {
     if (questions.length >= settings.questions) break;
-    const q = question(item, pool);
-    if (q) questions.push(q);
+    if (used.has(item.id)) continue;
+    // A case is drawn whole, its questions in deck order, when it still fits (or opens the exam).
+    const chain = chainOf(item, pool);
+    const room = settings.questions - questions.length;
+    if (chain.length > room && questions.length) continue;
+    for (const card of chain.slice(0, room)) {
+      used.add(card.id);
+      const q = question(card, pool);
+      if (q) questions.push(hasCase(card) ? { ...q, caseText: caseHtml(caseOf(card)) } : q);
+    }
   }
   return { id: `exam-${host().randomId()}`, deckId, deckName: deck?.name ?? '', settings, questions };
 }
@@ -108,6 +134,7 @@ export function recordExam(
         given: a?.chosen.map((i) => q.choices[i] ?? '').join(' | '),
         xp: 0,
         practice: as === 'practice',
+        level: q.level,
       },
       d,
       now,

@@ -1,6 +1,6 @@
 import { Trans, useTranslation } from 'react-i18next';
 import type React from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { Exercise, Item } from '@lernlab/core/types';
 import { similarity, normalize, stripHtml, type CheckResult } from '@lernlab/core/text';
 import { hasMath } from '@lernlab/core/math';
@@ -11,12 +11,65 @@ import { QuestionTimer, useKeys, type Ctx } from '../ctx';
 import { Media, Rich } from '../rich';
 import { markDiff } from '../diff';
 import { textPx } from '../display';
-import { Feedback } from '../components';
+import { ConfidenceRow, Feedback, LevelTag, Misconception, type ConfidencePick } from '../components';
+import { pickedCorrections } from '@lernlab/core/misconceptions';
+import { CONFIDENCE_LEVELS, type Confidence } from '@lernlab/core/confidence';
+import type { Level } from '@lernlab/core/variants';
+import { markAnswer } from '@lernlab/core/keyterms';
+import { mnemonicHtml, mnemonicOf, showsMnemonic } from '@lernlab/core/mnemonic';
+import { SketchCue, SketchOffer } from './Sketch';
 import { checkTyped, plainAnswer } from '../typed-logic';
 import { CodeBlock, CodeLine } from '../code-block';
 
 type P<E> = { ex: E; ctx: Ctx; onNext: (r: { correct: boolean }) => void };
+
+/** A question asked with one of the card's variants: every answer to it carries the variant's level. */
+const withLevel = (ctx: Ctx, level: Level | undefined): Ctx =>
+  level ? { ...ctx, answer: (a) => ctx.answer({ ...a, level }) } : ctx;
+
+/** The level of a variant question, next to the block title. */
+function QuestionLevel({ level }: { level?: Level }) {
+  const { t } = useTranslation();
+  return level ? (
+    <>
+      {' '}
+      <LevelTag level={level}>{t(`levels.${level}`)}</LevelTag>
+    </>
+  ) : null;
+}
 const now = () => performance.now();
+
+/**
+ * "How sure were you?" under a checked recall answer (#205), when the session asks it (ctx.confidence).
+ * Optional: Continue never waits for it. `keys`: the keys 1 to 5 rate too (only where nothing else uses them).
+ */
+function Sure({
+  ctx,
+  value,
+  onPick,
+  keys,
+}: {
+  ctx: Ctx;
+  value: Confidence | null;
+  onPick: (value: Confidence, how: ConfidencePick) => void;
+  keys: boolean;
+}) {
+  const { t } = useTranslation();
+  const id = useId();
+  if (!ctx.confidence) return null;
+  return (
+    <ConfidenceRow
+      id={id}
+      label={t('ex.confidence.label')}
+      low={t('ex.confidence.low')}
+      high={t('ex.confidence.high')}
+      names={CONFIDENCE_LEVELS.map((n) => t(`ex.confidence.level${n}`))}
+      value={value}
+      onPick={onPick}
+      keys={keys}
+    />
+  );
+}
 
 /** Speaker and microphone icons (outline, like the sidebar's), coloured by the button. */
 const SpeakerIcon = () => (
@@ -78,6 +131,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
   const [guess, setGuess] = useState<string | null>(null);
   const shown = useRef(now());
   const recorded = useRef(false);
+  const [sketching, setSketching] = useState(false); // the sketch pad is open (#220)
 
   useEffect(() => {
     if (phase !== 'card' || recorded.current) return;
@@ -105,6 +159,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
   };
 
   useKeys((e) => {
+    if (sketching) return; // a drawing in progress is never skipped by a stray Enter
     if (phase === 'guess' && ['1', '2', '3'].includes(e.key)) pick(['der', 'die', 'das'][Number(e.key) - 1]);
     else if (phase === 'card' && e.key === 'Enter') onNext({ correct: true });
     else if (phase === 'card' && e.key === ' ') {
@@ -139,7 +194,7 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
         <Article item={item} />
       </div>
       <div className="prompt" style={{ fontSize: textPx(22), margin: '6px 0 16px' }}>
-        <Rich html={item.meaning} />
+        <Rich html={markAnswer(item, item.meaning)} />
       </div>
       {item.sentence && (
         <div style={{ fontSize: textPx(20) }}>
@@ -156,6 +211,8 @@ export function Intro({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'intro' }
           <Rich html={item.notes || item.grammar} />
         </div>
       )}
+      {ex.actOut && <ActOut />}
+      <SketchOffer ctx={ctx} item={item} open={sketching} onOpen={setSketching} />
       <div className="actions" style={{ justifyContent: 'center' }}>
         {ctx.lang && (
           <button className="audio" onClick={() => sayFront(ctx, item)}>
@@ -377,8 +434,10 @@ export function Flip({
   format = 'flip',
 }: P<Extract<Exercise, { type: 'flip' }>> & { format?: 'flip' | 'boss' }) {
   const { t } = useTranslation();
+  ctx = withLevel(ctx, ex.level);
   const item = ctx.item(ex.itemId);
   const [shownAns, setShown] = useState(false);
+  const [sure, setSure] = useState<Confidence | null>(null);
   const shown = useRef(now());
   const rate = (r: 0 | 1 | 2) => {
     if (!shownAns) return;
@@ -391,6 +450,7 @@ export function Flip({
       shownAt: shown.current,
       given: ['no', 'partly', 'yes'][r],
     });
+    if (sure && format === 'flip') ctx.confidence?.(item.id, sure); // after the answer it belongs to
     if (!correct) ctx.missed.add(item.id);
     onNext({ correct });
   };
@@ -403,7 +463,10 @@ export function Flip({
   });
   return (
     <div>
-      <div className="blocktitle">{t('ex.flip.title')}</div>
+      <div className="blocktitle">
+        {t('ex.flip.title')}
+        <QuestionLevel level={ex.level} />
+      </div>
       <div className="card flipcard">
         {!ex.reverse && <Media item={item} size="md" />}
         <div className="prompt" style={{ fontSize: ex.prompt.length > 80 ? textPx(22) : textPx(28) }}>
@@ -412,7 +475,7 @@ export function Flip({
         {shownAns && (
           <Feedback tone="right" style={{ textAlign: 'start' }}>
             <div className="ans">
-              <Rich html={ex.answer} />
+              <Rich html={markAnswer(item, ex.answer)} />
             </div>
             {ex.reverse && <Media item={item} size="sm" />}
             {(item.notes || item.grammar) && (
@@ -420,6 +483,9 @@ export function Flip({
                 <Rich html={item.notes || item.grammar} />
               </div>
             )}
+            <MnemonicNote ctx={ctx} item={item} attempted />
+            {ex.actOut && <ActOut />}
+            <SketchCue ctx={ctx} item={item} attempted />
           </Feedback>
         )}
       </div>
@@ -434,9 +500,104 @@ export function Flip({
           >
             {t('ex.flip.show')} <span className="kbd">{t('keys.space')}</span>
           </button>
-          <span className="small muted">{t('ex.flip.hint')}</span>
+          {ex.sayAloud ? (
+            // One of a few cards to say out loud (#222): a prompt only, nothing listens or checks.
+            <span className="say-aloud">{t('ex.flip.sayAloud')}</span>
+          ) : (
+            <span className="small muted">{t('ex.flip.hint')}</span>
+          )}
         </div>
       ) : (
+        <>
+          {/* The keys 1 to 3 rate the answer here, so how sure you were is a click (or Tab and arrows). */}
+          {format === 'flip' && <Sure ctx={ctx} value={sure} onPick={setSure} keys={false} />}
+          <div className="grade3">
+            <button className="btn rate-no" onClick={() => rate(0)}>
+              {t('ex.flip.no')} <span className="kbd">1</span>
+            </button>
+            <button className="btn rate-partly" onClick={() => rate(1)}>
+              {t('ex.flip.partly')} <span className="kbd">2</span>
+            </button>
+            <button className="btn rate-yes" onClick={() => rate(2)}>
+              {t('ex.flip.yes')} <span className="kbd">3</span>
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ───────────── Myth card: reject the myth, then say why (a real recall, #202) ───────────── */
+export function Myth({
+  ex,
+  ctx,
+  onNext,
+  format = 'flip',
+}: P<Extract<Exercise, { type: 'myth' }>> & { format?: 'flip' | 'boss' }) {
+  const { t } = useTranslation();
+  const item = ctx.item(ex.itemId);
+  // ask → (picked "Myth") why → shown → rated; or ask → (picked "True") fooled.
+  const [step, setStep] = useState<'ask' | 'why' | 'shown' | 'fooled'>('ask');
+  const shown = useRef(now());
+  const record = (correct: boolean, given: string, nearMiss = false) => {
+    ctx.answer({ itemId: item.id, format, correct, nearMiss, shownAt: shown.current, given });
+    if (!correct) ctx.missed.add(item.id);
+  };
+  const pick = (myth: boolean) => {
+    if (step !== 'ask') return;
+    if (myth) return setStep('why');
+    record(false, 'true');
+    setStep('fooled');
+  };
+  const rate = (r: 0 | 1 | 2) => {
+    if (step !== 'shown') return;
+    record(r > 0, ['no', 'partly', 'yes'][r], r === 1);
+    onNext({ correct: r > 0 });
+  };
+  useKeys((e) => {
+    if (step === 'ask' && ['1', '2'].includes(e.key)) pick(e.key === '2');
+    else if (step === 'why' && (e.key === ' ' || e.key === 'Enter')) {
+      e.preventDefault();
+      setStep('shown');
+    } else if (step === 'shown' && ['1', '2', '3'].includes(e.key)) rate((Number(e.key) - 1) as 0 | 1 | 2);
+    else if (step === 'fooled' && e.key === 'Enter') onNext({ correct: false });
+  });
+  return (
+    <div>
+      <div className="blocktitle">{t('ex.myth.title')}</div>
+      <div className="card flipcard">
+        <Media item={item} size="sm" />
+        <div className="prompt" style={{ fontSize: ex.statement.length > 80 ? textPx(22) : textPx(28) }}>
+          <Rich html={ex.statement} />
+        </div>
+        {step === 'why' && <Feedback tone="right">{t('ex.myth.rejected')}</Feedback>}
+        {(step === 'shown' || step === 'fooled') && (
+          <Feedback tone={step === 'shown' ? 'right' : 'wrong'} style={{ textAlign: 'start' }}>
+            {t(step === 'shown' ? 'ex.myth.because' : 'ex.myth.fooled')}
+            <div className="ans">
+              <Rich html={markAnswer(item, ex.why)} />
+            </div>
+          </Feedback>
+        )}
+      </div>
+      {step === 'ask' ? (
+        <div className="actions">
+          <button className="btn" onClick={() => pick(false)}>
+            {t('ex.myth.true')} <span className="kbd">1</span>
+          </button>
+          <button className="btn" onClick={() => pick(true)}>
+            {t('ex.myth.myth')} <span className="kbd">2</span>
+          </button>
+        </div>
+      ) : step === 'why' ? (
+        <div className="actions">
+          <button className="btn primary" onClick={() => setStep('shown')}>
+            {t('ex.myth.show')} <span className="kbd">{t('keys.space')}</span>
+          </button>
+          <span className="small muted">{t('ex.myth.hint')}</span>
+        </div>
+      ) : step === 'shown' ? (
         <div className="grade3">
           <button className="btn rate-no" onClick={() => rate(0)}>
             {t('ex.flip.no')} <span className="kbd">1</span>
@@ -446,6 +607,12 @@ export function Flip({
           </button>
           <button className="btn rate-yes" onClick={() => rate(2)}>
             {t('ex.flip.yes')} <span className="kbd">3</span>
+          </button>
+        </div>
+      ) : (
+        <div className="actions">
+          <button className="btn primary" onClick={() => onNext({ correct: false })}>
+            {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         </div>
       )}
@@ -464,6 +631,8 @@ type TypedProps = {
   render: (input: React.ReactElement) => React.ReactElement;
   onNext: (r: { correct: boolean }) => void;
   revealAudio?: boolean;
+  /** One of a few action cards (#225): once the answer shows, ask to act it out and wait for Continue. */
+  actOut?: boolean;
 };
 
 function Umlauts({ lang, onAdd }: { lang: string | null; onAdd: (c: string) => void }) {
@@ -533,6 +702,7 @@ export function TypedEngine({
   render,
   onNext,
   revealAudio,
+  actOut,
 }: TypedProps) {
   const { t } = useTranslation();
   const item = ctx.item(itemId);
@@ -546,6 +716,10 @@ export function TypedEngine({
   const input = useRef<HTMLInputElement>(null);
   const finalCorrect = useRef(false);
   const coach = ctx.t;
+  // "How sure were you?" (#205): asked once the answer is checked. Then the card waits for a tap (1–5, which
+  // also goes on) or Continue, instead of moving on by itself.
+  const asksSure = !!ctx.confidence && format !== 'boss';
+  const [sure, setSure] = useState<Confidence | null>(null);
   useEffect(() => {
     input.current?.focus();
   }, [phase]);
@@ -554,7 +728,12 @@ export function TypedEngine({
     finalCorrect.current = correct;
     setPhase('done');
     if (ctx.lang) say(accepted[0], 0.95, ctx.lang, item.deckId);
-    if (delay > 0) setTimeout(() => onNext({ correct }), delay);
+    if (delay > 0 && !asksSure && !actOut) setTimeout(() => onNext({ correct }), delay);
+  };
+  const rateSure = (n: Confidence, how: ConfidencePick) => {
+    setSure(n);
+    ctx.confidence?.(itemId, n);
+    if (how === 'tap') onNext({ correct: finalCorrect.current });
   };
 
   const submit = () => {
@@ -729,9 +908,13 @@ export function TypedEngine({
               )}
             </div>
           )}
+          <MnemonicNote ctx={ctx} item={item} attempted={phase !== 'answer'} asked={hintLevel > 0} />
+          {actOut && phase === 'done' && <ActOut />}
+          <SketchCue ctx={ctx} item={item} attempted={phase === 'copy' || phase === 'done'} />
           {phase === 'copy' && <div className="small">{t('ex.typed.copyHint')}</div>}
         </Feedback>
       )}
+      {phase === 'done' && asksSure && <Sure ctx={ctx} value={sure} onPick={rateSure} keys />}
       <div className="actions">
         {phase !== 'done' && (
           <button className="btn primary" onClick={submit}>
@@ -764,13 +947,14 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
   const item = ctx.item(ex.itemId);
   return (
     <TypedEngine
-      ctx={ctx}
+      ctx={withLevel(ctx, ex.level)}
       itemId={ex.itemId}
       format={boss ? 'boss' : 'typed'}
       accepted={ex.accepted}
       requireArticle={ex.requireArticle}
       hint={ex.hint}
       onNext={onNext}
+      actOut={ex.actOut && !boss}
       render={(input) => (
         <>
           <div className="blocktitle">
@@ -781,6 +965,7 @@ export function Typed({ ex, ctx, onNext, boss }: P<Extract<Exercise, { type: 'ty
                 : ctx.lang
                   ? t('ex.typed.titleLanguage')
                   : t('ex.typed.title')}
+            <QuestionLevel level={ex.level} />
           </div>
           {ex.prompt === item.target && <Media item={item} size="sm" />}
           <div className="prompt" style={{ fontSize: ex.prompt.length > 70 ? textPx(22) : undefined }}>
@@ -1177,6 +1362,54 @@ export function Lesson({
   );
 }
 
+/** "Act it out" (#225), shown with the answer of a few action cards. A prompt only: nothing is checked. */
+function ActOut() {
+  const { t } = useTranslation();
+  return <div className="act-out">{t('ex.actOut')}</div>;
+}
+
+/**
+ * The card's mnemonic (#221): only once an answer is given or shown, or after the learner asked for a hint,
+ * and by itself only until the card was recalled twice in a row since its last miss.
+ */
+export function MnemonicNote({
+  ctx,
+  item,
+  attempted,
+  asked,
+}: {
+  ctx: Pick<Ctx, 'mnemonicRun'>;
+  item: Item;
+  attempted: boolean;
+  asked?: boolean;
+}) {
+  const { t } = useTranslation();
+  if (!showsMnemonic(item, ctx.mnemonicRun?.(item.id), { attempted, asked })) return null;
+  return (
+    <div className="mnemonic small">
+      <span className="mnemonic-lead">{t('ex.mnemonic.lead')}</span> <Rich html={mnemonicHtml(mnemonicOf(item))} />
+    </div>
+  );
+}
+
+/**
+ * A wrong multiple-choice answer: the right answer, after the author's correction for each wrong choice
+ * picked (#202) when there is one. Shared with the mock exam's tutor mode.
+ */
+export function WrongChoice({ corrections, answer }: { corrections: string[]; answer: string }) {
+  const { t } = useTranslation();
+  if (!corrections.length) return <>{answer}</>;
+  return (
+    <Misconception lead={t('ex.mcq.mixUp')} answer={answer}>
+      {corrections.map((html, i) => (
+        <p key={i}>
+          <Rich html={html} />
+        </p>
+      ))}
+    </Misconception>
+  );
+}
+
 /* ───────────── Multiple choice / multi-select question (certification style) ───────────── */
 export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) {
   const { t } = useTranslation();
@@ -1247,9 +1480,14 @@ export function Mcq({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'mcq' }>>) 
       </div>
       {done !== null && (
         <Feedback tone={done ? 'right' : 'wrong'}>
-          {done
-            ? ctx.t.right(ctx.combo)
-            : t('common.correctIs', { answer: ex.correct.map((i) => ex.choices[i]).join(' + ') })}
+          {done ? (
+            ctx.t.right(ctx.combo)
+          ) : (
+            <WrongChoice
+              corrections={pickedCorrections(ex.corrections, sel, ex.correct)}
+              answer={t('common.correctIs', { answer: ex.correct.map((i) => ex.choices[i]).join(' + ') })}
+            />
+          )}
           {ex.explanation && (
             <div className="small" style={{ marginTop: 6, fontWeight: 500 }}>
               <Rich html={ex.explanation} />
@@ -1278,7 +1516,13 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
   const { t } = useTranslation();
   const [placed, setPlaced] = useState<number[]>([]);
   const [result, setResult] = useState<boolean | null>(null);
+  const [sure, setSure] = useState<Confidence | null>(null);
   const shown = useRef(now());
+  const rateSure = (n: Confidence, how: ConfidencePick) => {
+    setSure(n);
+    ctx.confidence?.(ex.itemId, n);
+    if (how === 'tap') onNext({ correct: !!result });
+  };
   const step = (s: string) =>
     ex.codeLang !== undefined ? <CodeLine code={s} lang={ex.codeLang} /> : <Rich html={s} />;
   const add = (stepIdx: number) => {
@@ -1298,7 +1542,7 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
         given: p.map((i) => ex.steps[i]).join(' → '),
       });
       if (!ok) ctx.missed.add(ex.itemId);
-      if (ok) setTimeout(() => onNext({ correct: true }), 1000);
+      if (ok && !ctx.confidence) setTimeout(() => onNext({ correct: true }), 1000);
     }
   };
   useKeys((e) => {
@@ -1348,10 +1592,11 @@ export function Order({ ex, ctx, onNext }: P<Extract<Exercise, { type: 'order' }
         </Feedback>
       )}
       {result === true && <Feedback tone="right">{ctx.t.right(ctx.combo)}</Feedback>}
+      {result !== null && <Sure ctx={ctx} value={sure} onPick={rateSure} keys />}
       <div className="actions">
         {result === null && <span className="small muted">{t('ex.order.help')}</span>}
-        {result === false && (
-          <button className="btn primary" onClick={() => onNext({ correct: false })}>
+        {(result === false || (result === true && !!ctx.confidence)) && (
+          <button className="btn primary" onClick={() => onNext({ correct: !!result })}>
             {t('common.continue')} <span className="kbd">{t('keys.enter')}</span>
           </button>
         )}

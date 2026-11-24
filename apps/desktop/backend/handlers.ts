@@ -52,13 +52,24 @@ import {
   stats,
   studiedToday,
 } from '@lernlab/core/progress';
-import { cleanReminderTime } from '@lernlab/core/reminder';
+import { cleanMorningTime, cleanReminderTime } from '@lernlab/core/reminder';
+import { morningCheckIds } from '@lernlab/core/sleep';
+import {
+  cleanPlanMinutes,
+  cleanPlanText,
+  recentSessionStarts,
+  studyPlanOf,
+  usualStudyTime,
+} from '@lernlab/core/studyplan';
 import { MigrationError } from '@lernlab/core/migrate';
 import { UserError as AppError } from '@lernlab/core/errors';
 import { bulkCards, CARD_STATES, findCards, findDuplicates, MAX_ROWS, type BulkAction } from '@lernlab/core/browse';
 import { planSession } from '@lernlab/core/session';
+import { MAP_TOPIC_MAX_LENGTH, mapFor, mapTopics } from '@lernlab/core/conceptmap';
+import { TEACH_POINTS_MAX, teachBackPoints, teachBackTopics } from '@lernlab/core/teachback';
 import { setOcclusionMode, withOcclusionBoxes } from '@lernlab/core/occlusion';
 import { RECORDING_MAX_BYTES, saveRecording } from '@lernlab/core/recording';
+import { SKETCH, removeSketch, saveSketch } from '@lernlab/core/sketch';
 import { buildExam, recordExam, type Exam } from '@lernlab/core/examplan';
 import { EXAM_MODES } from '@lernlab/core/exam';
 import { finishWelcome, needsWelcome, WELCOME_CHOICES } from '@lernlab/core/welcome';
@@ -89,8 +100,21 @@ import pkg from '../package.json';
 import bundledNotes from './whats-new.json';
 import { SAMPLES } from './samples';
 import { InvalidInput, v, type Check } from './validate';
+import { LEVELS } from '@lernlab/core/variants';
+import { rateConfidence } from '@lernlab/core/confidence';
+import { ANSWER_MAX, dismissTwin, makeTwin, twinOffer } from '@lernlab/core/confusions';
+import { patternsOf } from '@lernlab/core/patterns';
+import { reportTomorrowCheck, saveTomorrowCheck, TOMORROW_ANSWERS, TOMORROW_MAX } from '@lernlab/core/tomorrow';
 import { applyAiRequest, cardSnapshots, currentGoals, requestCardIds, SNAPSHOT_MAX } from '@lernlab/core/airequests';
 import { countAiRequests, getAiRequest, listAiRequests, removeAiRequest } from '@lernlab/storage-sqlite/airequests';
+import {
+  addLearner,
+  asLearner,
+  cleanLearnerName,
+  LEARNER_NAME_MAX,
+  listLearners,
+  removeLearner,
+} from '@lernlab/storage-sqlite/learners';
 import { asRequest, checkBody } from './ai-requests';
 
 /** A failure the window can show: `code` is stable (and names its translation), `message` is the English fallback. */
@@ -126,6 +150,15 @@ const cardInput = v.object({
   occlusionGroup: text,
   occlusionMode: text,
   alt: text,
+  variants: text,
+  corrections: text,
+  keyPoints: text,
+  twin: text,
+  requires: text,
+  workedSteps: text,
+  mnemonic: text,
+  case: text,
+  graph: text,
   suspended: v.optional(v.boolean),
   starred: v.optional(v.boolean),
 });
@@ -245,12 +278,23 @@ function assistantCommand(): AssistantCommand | null {
 type Handler<I, O> = { input: Check<I>; run: (input: I) => O | Promise<O> };
 const h = <I, O>(input: Check<I>, run: (input: I) => O | Promise<O>): Handler<I, O> => ({ input, run });
 
+/** What another learner can do in a session (together.as). All of them answer at once (no promises). */
+export const AS_LEARNER = [
+  'session.plan',
+  'attempt.record',
+  'attempt.override',
+  'attempt.confidence',
+  'session.finish',
+] as const;
+
 export const handlers = {
   'state.get': h(v.none, () => ({
     ...appState(),
     importing: importStatus.running,
     /** Changes an AI assistant proposed, waiting for the user (#148). */
     aiRequests: countAiRequests(),
+    /** Other people who study on this computer (#224): id and name only. */
+    learners: listLearners().map(({ id, name }) => ({ id, name })),
     languages: LANGUAGES,
     welcome: needsWelcome(getDb()),
     /** "What's new in X.Y.Z" on the first launch after an update, or null (issue #58). */
@@ -433,6 +477,17 @@ export const handlers = {
           occlusionGroup: opt(b.occlusionGroup),
           occlusionMode: opt(b.occlusionMode),
           altAnswers: opt(b.alt),
+          variants: opt(b.variants),
+          corrections: opt(b.corrections),
+          keyPoints: opt(b.keyPoints),
+          twin: opt(b.twin),
+          mnemonic: opt(b.mnemonic),
+          requires: opt(b.requires),
+          // The editor writes key terms in the back as ==term==, so the back alone says which there are.
+          keyTerms: '',
+          workedSteps: opt(b.workedSteps),
+          case: opt(b.case),
+          graph: opt(b.graph),
           extra: JSON.parse((r.extra as string | null) ?? '{}'),
         },
       ]);
@@ -567,6 +622,15 @@ export const handlers = {
   'media.record': h(v.object({ data: v.bytes(2 * RECORDING_MAX_BYTES) }), ({ data }) => ({
     file: saveRecording(data),
   })),
+  /**
+   * The learner's own sketch for a card (#220): a PNG drawn on the pad, a description, or both. The engine checks
+   * the bytes. Stored only: no answer is logged and the schedule stays as it is.
+   */
+  'sketch.save': h(
+    v.object({ itemId: v.id, data: v.nullable(v.bytes(SKETCH.maxBytes)), text: v.string(2000) }),
+    ({ itemId, data, text }) => saveSketch(itemId, data, text),
+  ),
+  'sketch.remove': h(v.object({ itemId: v.id }), ({ itemId }) => removeSketch(itemId)),
 
   /* ── Study ── */
   'session.plan': h(
@@ -580,6 +644,41 @@ export const handlers = {
       return planSession(length, getDb(), new Date(), body?.deckId, { practice: !!body?.practice });
     },
   ),
+  /* ── Study together (#224): other learners on this computer, each with their own progress ── */
+  'learners.add': h(v.object({ name: v.string(LEARNER_NAME_MAX * 4) }), ({ name }) => {
+    const { id, name: saved } = addLearner(name);
+    return { id, name: saved };
+  }),
+  /** Removes the learner with their progress and backups. The screen asks first; it cannot be undone. */
+  'learners.remove': h(v.object({ id: v.string(40) }), ({ id }) => removeLearner(id)),
+  /**
+   * One study request as another learner: it reads the same cards and writes only that learner's own
+   * progress database. Only the requests a session needs; anything that edits cards or settings is not here.
+   */
+  'together.as': h(
+    v.object({ learnerId: v.string(40), channel: v.oneOf(...AS_LEARNER), input: v.optional(v.record) }),
+    ({ learnerId, channel, input }): unknown => {
+      const handler = handlers[channel] as Handler<unknown, unknown>;
+      const checked = handler.input(input);
+      // A new plan opens the learner's database anew, so it sees the cards as they are now.
+      return asLearner(learnerId, () => handler.run(checked), channel === 'session.plan');
+    },
+  ),
+  /* ── Teach-back (#208): explain a mastered tag, then compare with its key points. Nothing is saved. ── */
+  'teachback.topics': h(v.none, () => teachBackTopics()),
+  'teachback.points': h(v.object({ tag: v.string(100) }), ({ tag }) => teachBackPoints(tag)),
+  /** Practise the cards behind the missed points: a practice session, so the schedule stays as it is. */
+  'teachback.practice': h(v.object({ ids: v.array(v.id, TEACH_POINTS_MAX) }), ({ ids }) => {
+    if (!ids.length) throw new AppError('invalid_input', 'No cards to practise');
+    return planSession('mini', getDb(), new Date(), undefined, { practice: true, cards: ids });
+  }),
+  /* ── Concept map from memory (#219): topics with an author's map, and one map to draw and compare. Nothing is saved. ── */
+  'conceptmap.topics': h(v.none, () => mapTopics(listDecks())),
+  'conceptmap.get': h(v.object({ deckId: v.id, topic: v.string(MAP_TOPIC_MAX_LENGTH) }), ({ deckId, topic }) => {
+    const map = mapFor(getDeck(deckId), topic);
+    if (!map) throw new AppError('map_not_found', 'This deck has no concept map for that topic');
+    return map;
+  }),
   'attempt.record': h(
     v.object({
       sessionId: v.string(100),
@@ -595,10 +694,17 @@ export const handlers = {
       xp: v.number,
       genderOnly: v.optional(v.boolean),
       practice: v.optional(v.boolean),
+      level: v.optional(v.oneOf(...LEVELS)),
+      easy: v.optional(v.boolean),
     }),
     (a) => recordAttempt(a as Attempt),
   ),
   'attempt.override': h(v.object({ itemId: v.id }), ({ itemId }) => overrideToCorrect(itemId)),
+  /** How sure the learner was of their last answer to a card (#205). Stored only; never changes the schedule. */
+  'attempt.confidence': h(
+    v.object({ sessionId: v.string(100), itemId: v.id, confidence: v.int(1, 5) }),
+    ({ sessionId, itemId, confidence }) => rateConfidence(sessionId, itemId, confidence),
+  ),
   'session.finish': h(
     v.object({
       sessionId: v.string(100),
@@ -611,7 +717,28 @@ export const handlers = {
       perfectBlocks: v.number,
       startedAt: v.string(40),
     }),
-    (f) => finishSession(f),
+    // With how yesterday's "Will you know this tomorrow?" guesses held up, once their cards came back (#205).
+    // And the two cards mixed up most, once they were mixed up often enough to offer a compare card (#200).
+    // And what the session's own answers say about how it went (#213); read only.
+    (f) => ({
+      ...finishSession(f),
+      tomorrowCheck: reportTomorrowCheck(),
+      twinOffer: twinOffer(),
+      patterns: patternsOf(f.sessionId),
+    }),
+  ),
+  /** Add the compare card for a confusion pair, with the learner's own answer as its back (#200). */
+  'confusions.twin': h(v.object({ a: v.id, b: v.id, answer: v.string(ANSWER_MAX) }), ({ a, b, answer }) =>
+    makeTwin(a, b, answer),
+  ),
+  /** "Not now": the compare card for this pair is not offered again. */
+  'confusions.dismiss': h(v.object({ a: v.id, b: v.id }), ({ a, b }) => dismissTwin(a, b)),
+  /** "Will you know this tomorrow?" answers for today's new cards (#205). Stored only; no schedule change. */
+  'tomorrow.save': h(
+    v.object({
+      answers: v.array(v.object({ itemId: v.id, answer: v.oneOf(...TOMORROW_ANSWERS) }), TOMORROW_MAX),
+    }),
+    ({ answers }) => saveTomorrowCheck(answers),
   ),
   /** Exam simulator: questions from one deck, with the deck's exam settings. */
   'exam.start': h(v.object({ deckId: v.id }), ({ deckId }) => {
@@ -649,9 +776,14 @@ export const handlers = {
       time: s.reminderTime,
       launchAtLogin: s.launchAtLogin,
       language: s.uiLanguage,
+      plan: studyPlanOf(s),
       studiedToday: studiedToday(),
+      /** Sleep bridge (#217): when the morning check is offered, and how many of last night's cards wait. */
+      morning: s.sleepBridge ? { time: s.morningTime, cards: morningCheckIds().length } : null,
     };
   }),
+  /** The hour you usually start studying ("HH:00"), from local sessions only, or null without a clear pattern. */
+  'plan.suggestTime': h(v.none, () => ({ time: usualStudyTime(recentSessionStarts(getDb())) })),
   /** A copy of the database in backups/: "Back up now", and before an app update is installed. */
   'backup.create': h(v.optional(v.object({ reason: v.optional(v.oneOf('update')) })), (input) => ({
     file: basename(backupAppDb(undefined, input?.reason === 'update' ? 'before-update' : undefined)),
@@ -688,9 +820,21 @@ export const handlers = {
     next.reducedMotion = next.reducedMotion === true;
     next.reminder = next.reminder === true;
     next.reminderTime = cleanReminderTime(next.reminderTime);
+    next.sleepBridge = next.sleepBridge === true;
+    next.learnerName = cleanLearnerName(String(next.learnerName ?? ''));
+    next.morningTime = cleanMorningTime(next.morningTime);
+    next.planAfter = cleanPlanText(next.planAfter);
+    next.planMinutes = cleanPlanMinutes(next.planMinutes);
+    next.planBackup = cleanPlanText(next.planBackup);
+    next.habitNote = next.habitNote !== false;
     next.launchAtLogin = next.launchAtLogin === true;
     next.aiAssistant = next.aiAssistant === true;
     next.remoteMedia = next.remoteMedia === true;
+    next.confidence = next.confidence !== false;
+    next.calm = next.calm === true;
+    next.sayAloud = next.sayAloud !== false;
+    next.actOut = next.actOut !== false;
+    next.quietMinute = next.quietMinute === true;
     setMeta(getDb(), 'settings', next);
     return next;
   }),

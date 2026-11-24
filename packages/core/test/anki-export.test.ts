@@ -142,3 +142,62 @@ test('.apkg: the plain-text back of a code card is escaped, its line breaks kept
   assert.equal(back('What does this print?'), '&lt;b&gt;x&lt;/b&gt; &amp; y<br>ok');
   assert.equal(back('Order'), '1. <b>one</b><br>2. two', 'formatted steps keep their HTML');
 });
+
+test('.apkg: Anki has no question variants, so they are kept under the notes', () => {
+  const vary = createDeck('Variants', null);
+  upsertCards(vary, [{ front: 'Beta blocker', back: 'slows the heart', notes: 'n', variants: 'apply: A <b>&</b> B?' }]);
+  const db = collection(unzipSync(exportDeck(vary.id, 'apkg').data));
+  const fields = String(db.prepare('SELECT flds FROM notes').get()!.flds).split('\x1f');
+  db.close();
+  assert.equal(fields[5], 'n<br>apply: A &amp; B?');
+});
+
+test('.apkg: Anki has no corrections for wrong choices, so they are kept under the notes with their choice', () => {
+  const quiz = createDeck('Corrections', null);
+  upsertCards(quiz, [
+    {
+      front: 'Serverless?',
+      back: '',
+      type: 'mcq',
+      choices: 'EC2|Lambda|RDS',
+      correct: '2',
+      corrections: 'A <b>&</b> B||C',
+    },
+  ]);
+  const db = collection(unzipSync(exportDeck(quiz.id, 'apkg').data));
+  const fields = String(db.prepare('SELECT flds FROM notes').get()!.flds).split('\x1f');
+  db.close();
+  assert.equal(fields[5], 'EC2: A &amp; B<br>RDS: C');
+});
+
+test('.apkg: Anki has no worked examples, so the steps go under the notes, numbered', () => {
+  const deck = createDeck('Worked', null);
+  upsertCards(deck, [
+    { front: 'Solve 2x = 8', back: '', type: 'worked', workedSteps: 'Divide by 2 :: x = 4|Check :: 8 < 9' },
+  ]);
+  const db = collection(unzipSync(exportDeck(deck.id, 'apkg').data));
+  const flds = String(db.prepare('SELECT flds FROM notes').get()!.flds).split('\x1f');
+  db.close();
+  assert.equal(flds[1], '8 &lt; 9');
+  assert.equal(flds[5], '1. Divide by 2: x = 4<br>2. Check: 8 &lt; 9');
+});
+
+test('.apkg: Anki has no key points, so they go under the notes, or become the back when there is none', () => {
+  const deck = createDeck('Explain', null);
+  upsertCards(deck, [
+    { front: 'Why seasons?', back: 'The tilt', type: 'explain', keyPoints: 'Tilt <b>&</b> angle|Not distance' },
+    { front: 'How tides?', back: '', type: 'explain', keyPoints: 'Moon|Spin' },
+  ]);
+  const db = collection(unzipSync(exportDeck(deck.id, 'apkg').data));
+  const notes = db
+    .prepare('SELECT flds FROM notes')
+    .all()
+    .map((r) => String(r.flds).split('\x1f'));
+  db.close();
+  const seasons = notes.find((f) => f[0] === 'Why seasons?')!;
+  assert.equal(seasons[1], 'The tilt');
+  assert.equal(seasons[5], '• Tilt &amp; angle<br>• Not distance');
+  const tides = notes.find((f) => f[0] === 'How tides?')!;
+  assert.equal(tides[1], '• Moon<br>• Spin');
+  assert.equal(tides[5], '', 'not twice');
+});

@@ -7,6 +7,7 @@
 import type { MessagePortMain } from 'electron';
 import { optimizeDb } from '@lernlab/storage-sqlite';
 import { dailyBackup } from '@lernlab/storage-sqlite/backups';
+import { dailyLearnerBackups } from '@lernlab/storage-sqlite/learners';
 import { handle } from './handlers';
 import { getDb } from './storage';
 import { isConnect, parseRequest, type DataMessage } from './data-protocol';
@@ -40,6 +41,11 @@ try {
       dailyBackup();
     } catch (e) {
       console.error('Daily backup failed:', (e as Error).message);
+    }
+    try {
+      dailyLearnerBackups(); // other learners' progress (#224); does nothing when there are none
+    } catch (e) {
+      console.error('Daily backup of other learners failed:', (e as Error).message);
     }
     try {
       optimizeDb(getDb());

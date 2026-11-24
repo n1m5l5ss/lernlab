@@ -16,6 +16,8 @@ import {
   draftOf,
   editCard,
   editChange,
+  editCorrection,
+  isListField,
   editValue,
   keptCards,
   keptIds,
@@ -80,15 +82,71 @@ function Changes({
   return (
     <div className="request-fields">
       {fields.map((field) => {
+        const id = `${p}-${field}`;
+        const value = draft.changes[field] ?? '';
+        if (field === 'corrections' && now?.choices.length) {
+          // One row per wrong choice: the choice, its correction now, and the proposed one.
+          const lines = value.split('\n');
+          return (
+            <fieldset key={field} className="request-field request-choices">
+              <legend>{t('requests.field.corrections')}</legend>
+              {now.choices.map((choice, i) =>
+                now.correct.includes(i) ? null : (
+                  <div key={i} className="request-field">
+                    <label htmlFor={`${id}-${i}`}>{t('requests.wrongChoice', { choice })}</label>
+                    <p className="request-now">
+                      {now.corrections[i] ? t('requests.now', { text: now.corrections[i] }) : t('requests.nowEmpty')}
+                    </p>
+                    <input
+                      id={`${id}-${i}`}
+                      className="input"
+                      value={lines[i] ?? ''}
+                      onChange={(e) => setDraft(editCorrection(draft, i, e.target.value))}
+                    />
+                  </div>
+                ),
+              )}
+            </fieldset>
+          );
+        }
+        if (isListField(field)) {
+          const before = (now?.[field] ?? []).filter(Boolean);
+          return (
+            <div key={field} className="request-field">
+              <label htmlFor={id}>{t(`requests.field.${field}`)}</label>
+              {before.length ? (
+                <>
+                  <p className="request-now" id={`${id}-now`}>
+                    {t('requests.nowList')}
+                  </p>
+                  <ul className="request-now request-now-list" aria-labelledby={`${id}-now`}>
+                    {before.map((line, i) => (
+                      <li key={i}>{line}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p className="request-now">{t('requests.nowEmpty')}</p>
+              )}
+              <textarea
+                id={id}
+                className="input request-lines"
+                rows={Math.max(2, value.split('\n').length)}
+                value={value}
+                onChange={(e) => setDraft(editChange(draft, field, e.target.value))}
+              />
+            </div>
+          );
+        }
         const before = now ? (field === 'tags' ? now.tags.join(' ') : now[field]) : '';
         return (
           <div key={field} className="request-field">
-            <label htmlFor={`${p}-${field}`}>{t(`requests.field.${field}`)}</label>
+            <label htmlFor={id}>{t(`requests.field.${field}`)}</label>
             <p className="request-now">{before ? t('requests.now', { text: before }) : t('requests.nowEmpty')}</p>
             <input
-              id={`${p}-${field}`}
+              id={id}
               className="input"
-              value={draft.changes[field]}
+              value={value}
               onChange={(e) => setDraft(editChange(draft, field, e.target.value))}
             />
           </div>
@@ -308,6 +366,14 @@ function RequestCard({
                 aria-label={t('requests.back', { n: i + 1 })}
                 onChange={(e) => setDraft(editCard(draft, i, { back: e.target.value }))}
               />
+              {(['requires', 'mnemonic', 'keyTerms'] as const).map((field) => {
+                const text = [c[field] ?? []].flat().join(', ');
+                return text ? (
+                  <p key={field} className="request-now request-extra">
+                    {t(`requests.extra.${field}`, { text })}
+                  </p>
+                ) : null;
+              })}
             </li>
           ))}
         </ol>

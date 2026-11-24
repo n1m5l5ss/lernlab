@@ -2,6 +2,7 @@
 // The shapes are checked before they get here (apps/desktop/backend/ai-requests.ts). Card text goes through
 // upsertCards, so it is sanitised exactly like an imported deck, and new cards start new (no schedule).
 import type { DB } from './db';
+import type { Row } from './host';
 import { getDb, setMeta } from './db';
 import {
   cleanDeckSettings,
@@ -19,6 +20,13 @@ import { bulkCards, type BulkAction } from './browse';
 import { rowToCard } from './exporter';
 import { UserError } from './errors';
 import { stripHtml } from './text';
+import { mcqOf } from './cards';
+import { parseVariants, takesVariants, VARIANTS_MAX } from './variants';
+import { formatCorrections, parseCorrections } from './misconceptions';
+import { KEY_POINTS_MAX, KEY_POINTS_MIN, parseKeyPoints } from './explain';
+import { parseRequires, REQUIRES_MAX } from './requires';
+import { cleanMnemonic } from './mnemonic';
+import { cleanKeyTerms, KEY_TERMS_MAX, parseKeyTerms } from './keyterms';
 
 /** A card the assistant proposes. Text may use the same light formatting as imported decks. */
 export type ProposedCard = {
@@ -30,9 +38,17 @@ export type ProposedCard = {
   notes?: string;
   tags?: string[];
   category?: string;
-  type?: 'basic' | 'cloze' | 'mcq';
+  type?: 'basic' | 'cloze' | 'mcq' | 'twin';
+  /** twin (compare) cards: the second thing, shown beside the front (twin.ts). */
+  twin?: string;
   choices?: string;
   correct?: string;
+  /** What to learn first: fronts of other cards of the deck, or tags as "#tag" (requires.ts). */
+  requires?: string[];
+  /** A memory aid, shown after a miss or as a hint (mnemonic.ts). */
+  mnemonic?: string;
+  /** The words an answer must contain, taken from the back (keyterms.ts). */
+  keyTerms?: string[];
 };
 
 export type AiRequestBody =
@@ -63,7 +79,115 @@ export const GOAL_SESSIONS = { min: 1, max: 5 } as const;
 export const NEW_PER_DAY_MAX = 100;
 
 /** Fields an edit may change. Anything left out stays as it is. */
-export type CardChanges = Partial<Omit<ProposedCard, 'type' | 'choices' | 'correct'>>;
+export type CardChanges = Partial<Omit<ProposedCard, 'type' | 'choices' | 'correct'>> & StudyAids;
+/**
+ * Study aids an assistant may propose for a card that exists. Lists, so no separator can be smuggled in;
+ * an empty list (or '') clears the field.
+ */
+export type StudyAids = {
+  /** Other ways to ask the question, each "recall: …", "apply: …" or "analyse: …" (variants.ts). */
+  variants?: string[];
+  /** Multiple-choice cards: why each wrong choice is wrong, one per choice in the card's order, '' for none. */
+  corrections?: string[];
+  /** Explain cards: the 2–5 points a good explanation covers (explain.ts). The model explanation is the back. */
+  keyPoints?: string[];
+};
+/** The list fields of a proposal, with how many entries each may have. */
+export const AID_LISTS = {
+  variants: VARIANTS_MAX,
+  corrections: 12,
+  keyPoints: KEY_POINTS_MAX,
+  requires: REQUIRES_MAX,
+  keyTerms: KEY_TERMS_MAX,
+} as const;
+export type AidList = keyof typeof AID_LISTS;
+export const AID_FIELDS = [...(Object.keys(AID_LISTS) as AidList[]), 'mnemonic'] as const;
+export type AidField = (typeof AID_FIELDS)[number];
+
+/** A list as the one line the importer reads. A '|' inside an entry becomes '/', so it can't split the entry. */
+const asLine = (list: string[]) => list.map((s) => String(s).replace(/\|/g, '/')).join('|');
+
+/**
+ * The study aids of a proposal, cleaned with the functions the importer uses: plain text only (no HTML, no
+ * scripts), repeats and blanks dropped, lengths and counts cut to the importer's limits. Runs wherever a
+ * proposal arrives, so the user reviews exactly the text that would be saved.
+ */
+export function cleanAids<T extends CardChanges>(c: T): T {
+  const out = { ...c };
+  if (c.variants) out.variants = parseVariants(asLine(c.variants)).map((v) => `${v.level}: ${v.prompt}`);
+  if (c.corrections) {
+    // One slot per choice: the position says which choice it is for, so blanks stay (except at the end).
+    const list = parseCorrections(asLine(c.corrections.slice(0, AID_LISTS.corrections)));
+    while (list.length && !list[list.length - 1]) list.pop();
+    out.corrections = list;
+  }
+  if (c.keyPoints) {
+    const points = parseKeyPoints(asLine(c.keyPoints));
+    // Fewer than two points is not an explain card: the proposal is dropped rather than half applied.
+    if (points.length >= KEY_POINTS_MIN) out.keyPoints = points;
+    else delete out.keyPoints;
+  }
+  if (c.requires) out.requires = parseRequires(asLine(c.requires));
+  if (c.keyTerms) out.keyTerms = parseKeyTerms(asLine(c.keyTerms));
+  if (c.mnemonic !== undefined) out.mnemonic = cleanMnemonic(c.mnemonic);
+  return out;
+}
+
+/** Corrections as one slot per choice of this card ('' for none; [] when there are none at all). */
+function correctionSlots(list: string[], mcq: NonNullable<ReturnType<typeof mcqOf>>): string[] {
+  const line = formatCorrections(list, mcq);
+  return line ? parseCorrections(line) : [];
+}
+
+/** The cleaned aids as the card fields the importer takes (one line each). */
+function aidFields(c: CardChanges): Partial<NormalizedCard> {
+  const out: Partial<NormalizedCard> = {};
+  for (const field of Object.keys(AID_LISTS) as AidList[]) {
+    const list = c[field];
+    if (list !== undefined) out[field] = asLine(list);
+  }
+  return out;
+}
+
+/**
+ * The changes that fit this card, and the names of the ones that do not. Variants are for cards asked as a
+ * written question, corrections for multiple-choice cards (wrong choices only), key points for explain
+ * cards, key terms for words that stand in the card's answer. A change never turns a card into another type.
+ */
+export function fitChanges(changes: CardChanges, row: Row): { changes: CardChanges; unfit: AidField[] } {
+  const out = cleanAids(changes);
+  const unfit: AidField[] = [];
+  const drop = (field: AidField) => {
+    delete out[field];
+    unfit.push(field);
+  };
+  const extra = JSON.parse(String(row.extra ?? '{}')) as Record<string, string>;
+  const kind = String(row.kind);
+  const special = extra.myth === '1' || !!extra.keyPoints || !!extra.twin || !!extra.workedSteps;
+  if (out.variants && (!takesVariants(kind) || special)) drop('variants');
+  if (out.corrections) {
+    const mcq = kind === 'mcq' ? mcqOf({ extra, meaning: String(row.meaning ?? '') }) : null;
+    const fitted = mcq ? correctionSlots(out.corrections, mcq) : [];
+    if (!mcq || (out.corrections.some(Boolean) && !fitted.length)) drop('corrections');
+    else out.corrections = fitted;
+  }
+  if (out.keyPoints && !extra.keyPoints) drop('keyPoints');
+  if (out.keyTerms?.length) {
+    const answer = stripHtml(String(out.back ?? row.meaning ?? ''));
+    const terms = ['code', 'cloze', 'mcq', 'order'].includes(kind)
+      ? []
+      : parseKeyTerms(cleanKeyTerms(asLine(out.keyTerms), answer));
+    if (terms.length) out.keyTerms = terms;
+    else drop('keyTerms');
+  }
+  return { changes: out, unfit };
+}
+
+/** The same check for a card by id; null when there is no such card. */
+export function fitChangesFor(id: number, changes: CardChanges, d: DB = getDb()) {
+  const row = d.prepare('SELECT kind, meaning, extra FROM items WHERE id = ?').get(id);
+  return row ? fitChanges(changes, row) : null;
+}
 /** Everything the card browser's bulk actions do, except deleting. */
 export type OrganiseAction = Exclude<BulkAction, { kind: 'delete' }>;
 export const ORGANISE_KINDS = ['tag', 'untag', 'star', 'unstar', 'suspend', 'unsuspend', 'move'] as const;
@@ -95,8 +219,14 @@ function editCard(id: number, changes: CardChanges, d: DB) {
   const row = d.prepare('SELECT * FROM items WHERE id = ?').get(id);
   if (!row) throw new UserError('card_not_found', 'Card not found');
   const deck = getDeck(Number(row.deck_id), d)!;
-  const defined = Object.fromEntries(Object.entries(changes).filter(([, v]) => v !== undefined));
-  upsertCards(deck, [{ ...rowToCard(row, deck.name), ...defined, sourceId: id }], d);
+  // Checked against the card as it is now: the request may be old, or come from a file anyone could write.
+  const { variants, corrections, keyPoints, requires, keyTerms, ...text } = fitChanges(changes, row).changes;
+  const defined = Object.fromEntries(Object.entries(text).filter(([, v]) => v !== undefined));
+  const card = rowToCard(row, deck.name);
+  // An explain card without a model explanation carries its old key points as the back: not with new points.
+  if (keyPoints && !row.meaning) card.back = '';
+  const aids = aidFields({ variants, corrections, keyPoints, requires, keyTerms });
+  upsertCards(deck, [{ ...card, ...defined, ...aids, sourceId: id }], d);
   return deck.id;
 }
 
@@ -105,8 +235,14 @@ const needCards = (ids: number[], d: DB) => {
   if (found.length !== ids.length) throw new UserError('card_not_found', 'Card not found');
 };
 
-const toCard = (requestId: string, deckName: string, c: ProposedCard, i: number): NormalizedCard => ({
+const toCard = (
+  requestId: string,
+  deckName: string,
+  { requires, keyTerms, ...c }: ProposedCard,
+  i: number,
+): NormalizedCard => ({
   ...c,
+  ...aidFields(cleanAids({ requires, keyTerms })),
   type: c.type === 'basic' ? undefined : c.type,
   // One id per request and position: accepting the same request twice can't add the cards twice.
   sourceId: stableId(`${deckName}\u0000ai\u0000${requestId}\u0000${i}`),
@@ -201,6 +337,16 @@ export type CardSnapshot = {
   tags: string[];
   suspended: boolean;
   starred: boolean;
+  /** Multiple-choice cards: the choices in the card's order, and which are right (0-based). */
+  choices: string[];
+  correct: number[];
+  variants: string[];
+  /** One per choice ('' for none). */
+  corrections: string[];
+  keyPoints: string[];
+  requires: string[];
+  mnemonic: string;
+  keyTerms: string[];
 };
 /** Snapshots for at most this many cards per request: enough to review, light enough to load every few seconds. */
 export const SNAPSHOT_MAX = 200;
@@ -208,7 +354,7 @@ export const SNAPSHOT_MAX = 200;
 /** The cards as they are now (missing ones are left out). */
 export function cardSnapshots(ids: number[], d: DB = getDb()): CardSnapshot[] {
   const get = d.prepare(
-    `SELECT id, deck_id, target, meaning, sentence, sentence_meaning, grammar, notes, category, tags, suspended, starred
+    `SELECT id, deck_id, target, meaning, sentence, sentence_meaning, grammar, notes, category, tags, suspended, starred, extra
      FROM items WHERE id = ?`,
   );
   const text = (v: unknown) => stripHtml(String(v ?? ''));
@@ -216,6 +362,8 @@ export function cardSnapshots(ids: number[], d: DB = getDb()): CardSnapshot[] {
   for (const id of ids.slice(0, SNAPSHOT_MAX)) {
     const r = get.get(id);
     if (!r) continue;
+    const extra = JSON.parse(String(r.extra ?? '{}')) as Record<string, string>;
+    const mcq = mcqOf({ extra, meaning: String(r.meaning ?? '') });
     out.push({
       id,
       deckId: Number(r.deck_id),
@@ -229,6 +377,14 @@ export function cardSnapshots(ids: number[], d: DB = getDb()): CardSnapshot[] {
       tags: JSON.parse(String(r.tags ?? '[]')) as string[],
       suspended: !!r.suspended,
       starred: !!r.starred,
+      choices: (mcq?.choices ?? []).map(text),
+      correct: mcq?.correct ?? [],
+      variants: parseVariants(extra.variants).map((v) => `${v.level}: ${v.prompt}`),
+      corrections: mcq ? correctionSlots(parseCorrections(extra.corrections), mcq) : [],
+      keyPoints: parseKeyPoints(extra.keyPoints),
+      requires: parseRequires(extra.requires),
+      mnemonic: cleanMnemonic(extra.mnemonic),
+      keyTerms: parseKeyTerms(extra.keyTerms),
     });
   }
   return out;

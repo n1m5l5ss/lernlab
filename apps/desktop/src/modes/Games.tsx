@@ -5,9 +5,14 @@ import { shuffle, splitArticle, normalize, stripHtml } from '@lernlab/core/text'
 import { qa } from '@lernlab/core/cards';
 import { say, sfx } from '../audio';
 import { useKeys, type Ctx, type BlockResult } from '../ctx';
-import { Cloze, Flip, Order, TypedEngine } from './Exercises';
+import { Cloze, Flip, Myth, Order, TypedEngine } from './Exercises';
+import { Explain } from './Explain';
+import { Twin } from './Twin';
+import { Worked } from './Worked';
+import { CaseFor } from '../case-view';
 import { CodeBlock } from '../code-block';
 import { Media, Rich } from '../rich';
+import { sprintLabel } from '../session-logic';
 import { recallFor } from '../plan';
 import { Feedback } from '../components';
 
@@ -59,9 +64,12 @@ function useCountdown(seconds: number, onEnd: () => void, paused: boolean) {
 /* ───────────── Category sprint: der/die/das, or any card categories ───────────── */
 export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
   const { t } = useTranslation();
-  const items = useMemo(() => shuffle(block.itemIds.map(ctx.item).filter((i) => i.category)), []);
+  // The card's label: the planner's pick (a category or a category-like tag, #211), else its category.
+  const labelOf = (i: Item) => sprintLabel(block.labels, i);
+  const items = useMemo(() => shuffle(block.itemIds.map(ctx.item).filter(labelOf)), []);
   const cats = useMemo(() => {
-    const set = [...new Set(items.map((i) => i.category!))];
+    if (block.choices?.length) return block.choices;
+    const set = [...new Set(items.map((i) => labelOf(i)!))];
     const order = ['der', 'die', 'das'];
     return set.every((c) => order.includes(c)) ? order.filter((c) => set.includes(c)) : set.slice(0, 4);
   }, []);
@@ -83,7 +91,7 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
   const item = items[idx % items.length];
   const pick = (c: string) => {
     if (flash || done.current) return;
-    const ok = c === item.category;
+    const ok = c === labelOf(item);
     const st = stats.current;
     st.total++;
     if (ok) {
@@ -91,8 +99,9 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
       st.combo++;
       st.best = Math.max(st.best, st.combo);
     } else st.combo = 0;
-    ctx.answer({ itemId: item.id, format: 'gender', genderOnly: true, correct: ok, shownAt: shown.current });
-    setFlash({ ok, cat: item.category! });
+    // The picked label is logged, so later rounds mix the labels that get mixed up. Practice only.
+    ctx.answer({ itemId: item.id, format: 'gender', genderOnly: true, correct: ok, shownAt: shown.current, given: c });
+    setFlash({ ok, cat: labelOf(item)! });
     setTimeout(
       () => {
         // Without a clock the sprint is one pass through the cards.
@@ -127,12 +136,15 @@ export function GenderSprint({ block, ctx, onDone }: G<'gender'>) {
   return (
     <div>
       <div className="round-head">
-        <div className="blocktitle grow">{isArticles ? t('games.sprintArticles') : t('games.sprint')}</div>
+        <div className="blocktitle grow">
+          {t(isArticles ? 'games.sprintArticles' : block.labels ? 'games.whichOne' : 'games.sprint')}
+        </div>
         <span className="pill">{t('games.hits', { count: stats.current.correct })}</span>
         {best > 0 && <span className="pill">{t('games.best', { count: best })}</span>}
       </div>
       <RoundClock left={left} total={block.seconds} />
       <div className="round-prompt">
+        {block.labels && item.image && <Media item={item} size="sm" />}
         <div className="prompt" lang={ctx.lang ?? undefined} aria-live="polite">
           {label}
         </div>
@@ -442,6 +454,7 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
       >
         <i style={{ width: `${(hp / ids.length) * 100}%` }} />
       </div>
+      {over === null && <CaseFor item={item} />}
       {over === null ? (
         ex.type === 'typed' ? (
           <TypedEngine
@@ -466,6 +479,14 @@ export function Boss({ block, ctx, onDone }: G<'boss'>) {
           />
         ) : ex.type === 'flip' ? (
           <Flip key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
+        ) : ex.type === 'myth' ? (
+          <Myth key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
+        ) : ex.type === 'explain' ? (
+          <Explain key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
+        ) : ex.type === 'twin' ? (
+          <Twin key={i} ex={ex} ctx={ctx} onNext={after} format="boss" />
+        ) : ex.type === 'worked' ? (
+          <Worked key={i} ex={ex} ctx={ctx} onNext={after} />
         ) : ex.type === 'cloze' ? (
           <Cloze key={i} ex={ex} ctx={ctx} onNext={after} />
         ) : ex.type === 'order' ? (

@@ -12,7 +12,9 @@ import { LENGTHS } from './lengths';
 import { dayDate, MotivationIcon } from './Motivation';
 import { parseSourceValue, sourceValue } from './sources';
 import { UpdateNote } from './UpdateNote';
+import { HabitNote } from './StudyPlan';
 import { markOnce, MARKS } from './perf';
+import { TogetherStart, type TogetherPlans } from './Together';
 
 type AppState = OutputOf<'state.get'>;
 
@@ -22,11 +24,13 @@ const noon = (day: string) => new Date(`${day}T12:00:00`);
 export function Home({
   state,
   onStart,
+  onTogether,
   refresh,
   goDecks,
 }: {
   state: AppState;
   onStart: (l: SessionLength, practice: boolean) => void;
+  onTogether: (plans: TogetherPlans) => void;
   refresh: () => void;
   goDecks: () => void;
 }) {
@@ -145,6 +149,7 @@ export function Home({
           {practice ? t('home.startPractice') : t('home.startStudying')} <kbd>{t('home.startKey')}</kbd>
         </Button>
       </section>
+      {state.learners.length > 0 && <TogetherStart state={state} onStart={onTogether} />}
       {s.repair && (
         <p className="panel home-repair">
           <MotivationIcon kind="repair" />
@@ -179,12 +184,17 @@ export function Home({
             <MotivationIcon kind="freeze" off={!s.freezes} />
             {s.freezes ? t('home.freezes', { count: s.freezes }) : t('home.freezesNone')}
           </p>
+          {state.settings.habitNote && (
+            <HabitNote onHide={() => void api.saveSettings({ habitNote: false }).then(refresh, () => refresh())} />
+          )}
         </section>
-        <section className="panel home-tile" aria-labelledby="home-level">
-          <h2 id="home-level">{t('home.levelTitle', { level: lvl.level })}</h2>
-          <p className="home-tile-value">{t('home.xpOf', { xp: lvl.into, next: lvl.span })}</p>
-          <ProgressBar labelledBy="home-level" value={lvl.into} max={lvl.span} />
-        </section>
+        {!state.settings.calm && (
+          <section className="panel home-tile" aria-labelledby="home-level">
+            <h2 id="home-level">{t('home.levelTitle', { level: lvl.level })}</h2>
+            <p className="home-tile-value">{t('home.xpOf', { xp: lvl.into, next: lvl.span })}</p>
+            <ProgressBar labelledBy="home-level" value={lvl.into} max={lvl.span} />
+          </section>
+        )}
         <section className="panel home-tile" aria-labelledby="home-goal">
           <h2 id="home-goal">{goal ? t('home.goalTitle', { goal: goal.label }) : t('home.knownTitle')}</h2>
           <p className="home-tile-value">

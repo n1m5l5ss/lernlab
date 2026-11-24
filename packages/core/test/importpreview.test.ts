@@ -125,3 +125,99 @@ test('JSON previews its cards', () => {
   assert.equal(p.deckName, 'J');
   assert.equal(p.total, 1);
 });
+
+test('a column of question variants is recognised, and can be mapped by hand', () => {
+  const known = previewFile(
+    'Pharma.csv',
+    strToU8('front,back,other questions\nBeta blocker,slows the heart,apply: Angina?\n'),
+  );
+  assert.equal(known.table?.fields.variants, 2);
+  const csv = 'Begriff;Antwort;Fragen\nBeta blocker;slows the heart;apply: A patient with angina?\n';
+  const res = importFile(
+    'Pharma.csv',
+    mapFile('Pharma.csv', strToU8(csv), { header: true, fields: { front: 0, back: 1, variants: 2 } }),
+  );
+  const extra = getDb().prepare('SELECT extra FROM items WHERE deck_id = ?').get(res.deck.id)!.extra;
+  assert.equal(JSON.parse(String(extra)).variants, 'apply: A patient with angina?');
+});
+
+test('a column of corrections for wrong choices is recognised', () => {
+  const known = previewFile(
+    'Cloud.csv',
+    strToU8('front,type,choices,correct,misconceptions\nServerless?,mcq,EC2|Lambda,2,Many think EC2 is\n'),
+  );
+  assert.equal(known.table?.fields.corrections, 4);
+});
+
+test('a column of key terms is recognised, and ==term== in the back previews as plain text', () => {
+  const known = previewFile('Bio.csv', strToU8('front,back,key terms\nWhat makes ATP?,The ==mitochondrion==,\n'));
+  assert.equal(known.table?.fields.keyTerms, 2);
+  assert.equal(known.cards[0].back, 'The mitochondrion');
+});
+
+test('the preview counts card-quality hints over the whole file, not just the cards shown', () => {
+  const long = Array.from({ length: 45 }, (_, i) => `w${i}`).join(' ');
+  const rows = Array.from({ length: 12 }, (_, i) => `Question ${i}?,${long},`);
+  const p = previewFile('Long.csv', strToU8(['front,back,image', ...rows, 'Pic?,A,pic.png', 'Short?,A,'].join('\n')));
+  assert.deepEqual(p.hints, [
+    { hint: 'split', count: 12 },
+    { hint: 'diagram', count: 12 },
+    { hint: 'decorativeImage', count: 1 },
+  ]);
+  assert.deepEqual(previewText('term\tdefinition').hints, []);
+  // A language deck's own language is not known before import, so its cards are checked as any subject.
+});
+
+test('a column of key points is recognised', () => {
+  const known = previewFile('Why.csv', strToU8('front,back,key_points\nWhy seasons?,Tilt,Tilt|Angle\n'));
+  assert.equal(known.table?.fields.keyPoints, 2);
+});
+
+test('a graph column is recognised', () => {
+  const known = previewFile('Graphs.csv', strToU8('front,back,plot\nWhich function?,y = 2x,y = 2x\n'));
+  assert.equal(known.table?.fields.graph, 2);
+});
+
+test('a case column is recognised', () => {
+  const known = previewFile('Cases.csv', strToU8('front,back,scenario\nDiagnosis?,STEMI,A man has chest pain.\n'));
+  assert.equal(known.table?.fields.case, 2);
+});
+
+test('a column of worked steps is recognised', () => {
+  const known = previewFile('Maths.csv', strToU8('front,back,worked_steps\nSolve,x = 4,Subtract :: 2x = 8|x = 4\n'));
+  assert.equal(known.table?.fields.workedSteps, 2);
+});
+
+test('every card column the CSV reader recognises can be chosen in the column mapping', async () => {
+  const { CSV_FIELD_NAMES } = await import('../src/formats/csv');
+  const { MAPPABLE_FIELDS } = await import('../src/importpreview');
+  const mappable: Record<string, string> = MAPPABLE_FIELDS;
+  for (const [field, names] of Object.entries(CSV_FIELD_NAMES)) {
+    if (!names.length) continue; // `extra` collects unknown columns; it has no column of its own
+    assert.ok(Object.hasOwn(mappable, field), `the mapping list is missing the CSV column "${names[0]}" (${field})`);
+    assert.ok(names.includes(mappable[field]), `${field}: the reader does not know the header "${mappable[field]}"`);
+  }
+  for (const field of ['twin', 'requires', 'case', 'graph', 'mnemonic', 'keyTerms', 'workedSteps', 'keyPoints'])
+    assert.ok(Object.hasOwn(mappable, field), field);
+});
+
+test('columns mapped by hand to a compare side and to "learn first" reach the cards', () => {
+  const csv = 'affect;effect;Verb and noun;#basics\nimply;infer;Speaker and listener;#basics\n';
+  const mapping = { header: false, fields: { front: 0, twin: 1, back: 2, requires: 3 } };
+  const preview = previewFile('Pairs.csv', strToU8(csv), mapping);
+  assert.deepEqual(preview.table?.fields, { front: 0, twin: 1, back: 2, requires: 3 });
+  const res = importFile('Pairs.csv', mapFile('Pairs.csv', strToU8(csv), mapping));
+  assert.equal(res.added, 2);
+  const extras = getDb()
+    .prepare('SELECT extra FROM items WHERE deck_id = ? ORDER BY ord')
+    .all(res.deck.id)
+    .map((r) => JSON.parse(String(r.extra)));
+  assert.deepEqual(
+    extras.map((e) => e.twin),
+    ['effect', 'infer'],
+  );
+  assert.ok(
+    extras.every((e) => String(e.requires).includes('basics')),
+    JSON.stringify(extras),
+  );
+});

@@ -1,0 +1,48 @@
+/* ConfidenceRow (#205): one quiet row under the feedback. The chosen level is filled with the accent and bold,
+   so it is not marked by colour alone; the scale's two ends are named under it. */
+.confidence {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.confidenceLabel {
+  font-weight: 600;
+}
+.levels {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.buttons {
+  display: inline-flex;
+  gap: var(--space-1);
+}
+.buttons button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+.buttons button:hover {
+  border-color: var(--color-border-strong);
+}
+.buttons button[aria-checked='true'] {
+  border-color: var(--color-accent);
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+  font-weight: 700;
+}
+.ends {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+}

@@ -129,6 +129,119 @@ test('the card editor saves one occlusion card per box; editing one keeps its si
   assert.equal(second.occlusionBoxes[0].label, 'Aortic arch');
 });
 
+test('the card editor saves, keeps and clears question variants', async () => {
+  const deck = await ok('decks.create', { name: 'Pharmacology', language: null });
+  const card = { front: 'Beta blocker', back: 'slows the heart' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, variants: 'apply: A <b>patient</b>?' } });
+  assert.equal((await ok('cards.get', { id })).extra.variants, 'apply: A patient?');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.variants, 'apply: A patient?', 'kept when the field is not sent');
+  await ok('cards.update', { id, card: { ...card, variants: '' } });
+  assert.ok(!('variants' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
+test('the card editor saves, keeps and clears what a card requires', async () => {
+  const deck = await ok('decks.create', { name: 'Calculus', language: null });
+  const card = { front: 'Chain rule', back: 'outer times inner' };
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { ...card, requires: '<b>Derivative</b>|#functions|' },
+  });
+  assert.equal((await ok('cards.get', { id })).extra.requires, 'Derivative|#functions');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal(
+    (await ok('cards.get', { id })).extra.requires,
+    'Derivative|#functions',
+    'kept when the field is not sent',
+  );
+  await ok('cards.update', { id, card: { ...card, requires: '' } });
+  assert.ok(!('requires' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
+test('the card editor saves, keeps and clears corrections for wrong choices', async () => {
+  const deck = await ok('decks.create', { name: 'Cloud quiz', language: null });
+  const card = { front: 'Serverless?', back: '', type: 'mcq', choices: 'EC2|Lambda', correct: '2' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, corrections: 'Many think <b>so</b>|x' } });
+  assert.equal((await ok('cards.get', { id })).extra.corrections, 'Many think so');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.corrections, 'Many think so', 'kept when the field is not sent');
+  await ok('cards.update', { id, card: { ...card, corrections: '' } });
+  assert.ok(!('corrections' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
+test('the card editor saves, keeps and clears a mnemonic, and a studied card carries its run', async () => {
+  const deck = await ok('decks.create', { name: 'Planets', language: null });
+  const card = { front: 'Order of the planets?', back: 'Mercury, Venus, Earth' };
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { ...card, mnemonic: '<b>My Very</b> Educated Mother' },
+  });
+  assert.equal((await ok('cards.get', { id })).extra.mnemonic, 'My Very Educated Mother');
+  await ok('cards.update', { id, card });
+  assert.equal((await ok('cards.get', { id })).extra.mnemonic, 'My Very Educated Mother', 'kept when not sent');
+  await ok('cards.update', { id, card: { ...card, mnemonic: '' } });
+  assert.ok(!('mnemonic' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
+test('the card editor saves key terms from ==term== in the back and clears them with the marks', async () => {
+  const deck = await ok('decks.create', { name: 'Cells', language: null });
+  const card = { front: 'What makes ATP?', back: 'The ==mitochondrion== does' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card });
+  const saved = await ok('cards.get', { id });
+  assert.deepEqual([saved.meaning, saved.extra.keyTerms], ['The mitochondrion does', 'mitochondrion']);
+  await ok('cards.update', { id, card: { starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.keyTerms, 'mitochondrion', 'kept when the card is not edited');
+  await ok('cards.update', { id, card: { ...card, back: 'The mitochondrion does' } });
+  assert.ok(!('keyTerms' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
+test('the card editor saves, keeps and clears key points; attempts may say "easy"', async () => {
+  const deck = await ok('decks.create', { name: 'Why', language: null });
+  const card = { front: 'Why seasons?', back: 'Tilt', type: 'explain' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, keyPoints: '<b>Tilt</b>|Angle' } });
+  assert.equal((await ok('cards.get', { id })).extra.keyPoints, 'Tilt|Angle');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.keyPoints, 'Tilt|Angle', 'kept when the field is not sent');
+  await ok('cards.update', { id, card: { ...card, type: 'basic' } });
+  assert.ok(!('keyPoints' in (await ok('cards.get', { id })).extra), 'a basic card has none');
+  const attempt = { sessionId: 's', itemId: id, format: 'flip', correct: true, responseMs: 1, xp: 1 };
+  const wrong = await handle('attempt.record', { ...attempt, easy: 'yes' }); // recording one would study today
+  assert.equal(!wrong.ok && wrong.error.code, 'invalid_input');
+});
+
+test('the card editor saves, keeps and clears worked steps', async () => {
+  const deck = await ok('decks.create', { name: 'Algebra', language: null });
+  const card = { front: 'Solve 2x + 3 = 11', back: 'x = 4', type: 'worked' };
+  const steps = 'Subtract 3 :: <b>2x = 8</b>|x = 4';
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, workedSteps: steps } });
+  assert.equal((await ok('cards.get', { id })).extra.workedSteps, 'Subtract 3 :: 2x = 8|x = 4');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.workedSteps, 'Subtract 3 :: 2x = 8|x = 4', 'kept');
+  await ok('cards.update', { id, card: { ...card, type: 'basic' } });
+  assert.ok(!('workedSteps' in (await ok('cards.get', { id })).extra), 'a basic card has none');
+});
+
+test('the card editor saves, keeps and clears a case; a mock exam shows it', async () => {
+  const deck = await ok('decks.create', { name: 'Cases', language: null });
+  const card = { front: 'Most likely diagnosis?', back: 'STEMI' };
+  const text = 'A man has <b>crushing</b> chest pain.';
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, case: text } });
+  await ok('cards.add', { deckId: deck.id, card: { front: 'Blocked artery?', back: 'RCA', case: text } });
+  assert.equal((await ok('cards.get', { id })).extra.case, 'A man has crushing chest pain.');
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.case, 'A man has crushing chest pain.', 'kept');
+  const exam = await ok('exam.start', { deckId: deck.id });
+  assert.deepEqual(
+    exam.questions.map((q: { stem: string; caseText?: string }) => [q.stem, q.caseText]),
+    [
+      ['Most likely diagnosis?', 'A man has crushing chest pain.'],
+      ['Blocked artery?', 'A man has crushing chest pain.'],
+    ],
+  );
+  await ok('cards.update', { id, card: { ...card, case: '' } });
+  assert.ok(!('case' in (await ok('cards.get', { id })).extra), 'cleared');
+});
+
 test('import preview saves nothing, and a column mapping reaches the real import', async () => {
   const before = (await ok('state.get')).itemCount;
   const csv = new TextEncoder().encode('Wort;Notiz;Bedeutung\nHund;pet;dog\nKatze;pet;cat\n');
@@ -239,7 +352,15 @@ test('the daily reminder is off by default, its time is checked, and it knows wh
   assert.deepEqual([bad.reminder, bad.reminderTime, bad.launchAtLogin], [false, '19:00', false]);
   await ok('settings.save', { reminder: true, reminderTime: '08:30' });
   const before = await ok('reminder.status');
-  assert.deepEqual(before, { enabled: true, time: '08:30', launchAtLogin: false, language: 'en', studiedToday: false });
+  assert.deepEqual(before, {
+    enabled: true,
+    time: '08:30',
+    launchAtLogin: false,
+    language: 'en',
+    plan: null,
+    studiedToday: false,
+    morning: null,
+  });
   await ok('session.finish', {
     sessionId: 'reminder-test',
     length: 'mini',
@@ -251,8 +372,52 @@ test('the daily reminder is off by default, its time is checked, and it knows wh
     perfectBlocks: 0,
     startedAt: new Date().toISOString(),
   });
+  // The sleep rhythm (#217) is off by default; on, the reminder knows when to offer the morning check.
+  const sleepy = await ok('settings.save', { sleepBridge: true, morningTime: '9 am' });
+  assert.deepEqual([sleepy.sleepBridge, sleepy.morningTime], [true, '08:00']);
+  assert.deepEqual((await ok('reminder.status')).morning, { time: '08:00', cards: 0 });
+  assert.equal((await ok('settings.save', { sleepBridge: 'yes' })).sleepBridge, false);
   assert.equal((await ok('reminder.status')).studiedToday, true);
   await ok('settings.save', { reminder: false });
+});
+
+test('the if-then study plan is plain text, checked, and goes into the reminder', async () => {
+  const d = (await ok('state.get')).settings;
+  assert.deepEqual([d.planAfter, d.planMinutes, d.planBackup, d.habitNote], ['', 5, '', true]);
+  const s = await ok('settings.save', {
+    planAfter: '  <b>finish dinner</b>. ',
+    planMinutes: '10',
+    planBackup: "I'm tired\n" + 'x'.repeat(300),
+    habitNote: false,
+  });
+  assert.equal(s.planAfter, 'bfinish dinner/b');
+  assert.equal(s.planMinutes, 10);
+  assert.ok(s.planBackup.startsWith("I'm tired x") && s.planBackup.length <= 80);
+  assert.equal(s.habitNote, false);
+  const bad = await ok('settings.save', { planAfter: { evil: 1 }, planMinutes: 7, planBackup: 3, habitNote: 'no' });
+  assert.deepEqual([bad.planAfter, bad.planMinutes, bad.planBackup, bad.habitNote], ['', 5, '', true]);
+  await ok('settings.save', { planAfter: 'lunch', planMinutes: 20, planBackup: '' });
+  assert.deepEqual((await ok('reminder.status')).plan, { after: 'lunch', minutes: 20, backup: '' });
+  await ok('settings.save', { planAfter: '', planMinutes: 5 });
+});
+
+test('LernLab suggests the hour you usually study, from local sessions only', async () => {
+  assert.deepEqual(await ok('plan.suggestTime'), { time: null });
+  for (const [i, h] of [19, 19, 19].entries()) {
+    const start = new Date(2026, 10, 2 + i, h, 5);
+    await ok('session.finish', {
+      sessionId: `usual-${i}`,
+      length: 'mini',
+      seconds: 60,
+      answers: 0,
+      correct: 0,
+      bossWon: null,
+      bestGenderCombo: 0,
+      perfectBlocks: 0,
+      startedAt: start.toISOString(),
+    });
+  }
+  assert.equal((await ok('plan.suggestTime')).time, '19:00');
 });
 
 test('Settings can show the version, licence and data folder', async () => {
@@ -418,6 +583,12 @@ test('progress lists every deck with learned vs remaining, and the hardest cards
   assert.deepEqual(p.decks.map((d: { id: number }) => d.id).sort(), decks.map((d: { id: number }) => d.id).sort());
   for (const d of p.decks) assert.equal(d.learned + d.remaining, d.cards);
   assert.equal(p.retention.weeks.length, 12);
+  // This week's goal (#214): the decks' card goals added up, and 3 to 7 sessions.
+  assert.equal(
+    p.week.cards.target,
+    p.decks.reduce((n: number, d: { week: { target: number } }) => n + d.week.target, 0),
+  );
+  assert.ok(p.week.sessions.target >= 3 && p.week.sessions.target <= 7);
   assert.ok(Array.isArray(p.studyDays) && Array.isArray(p.hardest));
   await ok('study.choose', { source: { kind: 'hardest' } });
   assert.deepEqual((await ok('state.get')).source, { kind: 'hardest' });
@@ -460,4 +631,208 @@ test('a recording made in the card editor is kept in media/ and plays from the c
   assert.equal(!huge.ok && huge.error.code, 'invalid_input');
   const noBytes = await handle('media.record', { data: 'GkXfow==' });
   assert.equal(!noBytes.ok && noBytes.error.code, 'invalid_input');
+});
+
+test('a sketch for a card is kept, comes back with the session plan, and can be removed', async () => {
+  const { fakePng } = await import('@lernlab/core/sketch-samples');
+  const deck = await ok('decks.create', { name: 'Sketches', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Mitochondrion', back: 'powerhouse' } });
+  const saved = await ok('sketch.save', { itemId: id, data: fakePng(480, 320), text: ' a tiny power plant ' });
+  assert.match(saved.file, /^sketch-.+\.png$/);
+  assert.equal(saved.text, 'a tiny power plant');
+  assert.ok(existsSync(join(dir, 'media', saved.file)));
+  const plan = await ok('session.plan', { length: 'mini', deckId: deck.id });
+  assert.deepEqual(plan.items[id].sketch, saved);
+  assert.equal(plan.items[id].image, null, 'the card itself is unchanged');
+
+  const words = await ok('sketch.save', { itemId: id, data: null, text: 'only words' });
+  assert.deepEqual(words, { file: '', text: 'only words' });
+  assert.ok(!existsSync(join(dir, 'media', saved.file)), 'the replaced picture is deleted');
+
+  const notPng = await handle('sketch.save', { itemId: id, data: new TextEncoder().encode('<svg/>'), text: '' });
+  assert.equal(!notPng.ok && notPng.error.code, 'unsupported_media');
+  const huge = await handle('sketch.save', { itemId: id, data: new Uint8Array(2 * 1024 * 1024), text: '' });
+  assert.equal(!huge.ok && huge.error.code, 'invalid_input');
+  const empty = await handle('sketch.save', { itemId: id, data: null, text: '' });
+  assert.equal(!empty.ok && empty.error.code, 'invalid_input');
+
+  assert.deepEqual(await ok('sketch.remove', { itemId: id }), { ok: true });
+  assert.equal((await ok('session.plan', { length: 'mini', deckId: deck.id })).items[id].sketch, undefined);
+});
+
+test('an answer carries the level of the question asked, and only a known level', async () => {
+  const deck = await ok('decks.create', { name: 'Levels', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Statin', back: 'atorvastatin' } });
+  const answer = { sessionId: 'lv', itemId: id, format: 'typed', correct: true, responseMs: 900, xp: 1 };
+  await ok('attempt.record', { ...answer, level: 'apply' });
+  const bad = await handle('attempt.record', { ...answer, level: 'synthesis' });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+});
+
+test('calm mode is off by default, saved as a plain yes or no, and XP is still counted while it is on (#216)', async () => {
+  assert.equal((await ok('state.get')).settings.calm, false);
+  assert.equal((await ok('settings.save', { calm: 'yes' })).calm, false);
+  assert.equal((await ok('settings.save', { calm: true })).calm, true);
+  const deck = await ok('decks.create', { name: 'Calm', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Calm?', back: 'Yes' } });
+  const before = (await ok('state.get')).totalXp;
+  await ok('attempt.record', {
+    sessionId: 'calm',
+    itemId: id,
+    format: 'typed',
+    correct: true,
+    responseMs: 900,
+    xp: 15,
+  });
+  assert.equal((await ok('state.get')).totalXp, before + 15);
+  assert.equal((await ok('settings.save', { calm: false })).calm, false);
+});
+
+test('how sure you were is saved with your answer, 1 to 5 only, and the rating can be turned off (#205)', async () => {
+  assert.equal((await ok('state.get')).settings.confidence, true, 'on by default');
+  assert.equal((await ok('settings.save', { confidence: false })).confidence, false);
+  assert.equal((await ok('settings.save', { confidence: 'no' })).confidence, true);
+  const deck = await ok('decks.create', { name: 'Sure', language: null });
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { front: 'Mitosis', back: 'cell division' } });
+  await ok('attempt.record', { sessionId: 'cf', itemId: id, format: 'typed', correct: false, responseMs: 900, xp: 1 });
+  assert.deepEqual(await ok('attempt.confidence', { sessionId: 'cf', itemId: id, confidence: 5 }), { ok: true });
+  for (const confidence of [0, 6, 2.5, '5', null]) {
+    const bad = await handle('attempt.confidence', { sessionId: 'cf', itemId: id, confidence });
+    assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  }
+});
+
+test('"Will you know this tomorrow?" answers are yes, unsure or no for known cards (#205)', async () => {
+  const deck = await ok('decks.create', { name: 'Tomorrow', language: null });
+  const { id } = await ok('cards.add', {
+    deckId: deck.id,
+    card: { front: 'Osmosis', back: 'water through a membrane' },
+  });
+  assert.deepEqual(await ok('tomorrow.save', { answers: [{ itemId: id, answer: 'unsure' }] }), { cards: 1 });
+  for (const answers of [[{ itemId: id, answer: 'maybe' }], [{ itemId: 'x', answer: 'yes' }], 'yes']) {
+    const bad = await handle('tomorrow.save', { answers });
+    assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  }
+  const tooMany = Array.from({ length: 101 }, () => ({ itemId: id, answer: 'yes' }));
+  assert.equal((await handle('tomorrow.save', { answers: tooMany })).ok, false);
+  const fin = await ok('session.finish', {
+    sessionId: 'tm',
+    length: 'mini',
+    seconds: 60,
+    answers: 1,
+    correct: 1,
+    bossWon: null,
+    bestGenderCombo: 0,
+    perfectBlocks: 0,
+    startedAt: new Date().toISOString(),
+  });
+  assert.equal(fin.tomorrowCheck, null, 'nothing to report on the day of the check');
+  assert.deepEqual(fin.patterns, { lines: [], next: null }, 'an ordinary session has no patterns to name (#213)');
+});
+
+test('three mix-ups of two cards bring a compare-card offer; the card is added once and survives an edit', async () => {
+  const deck = await ok('decks.create', { name: 'Mix-ups', language: null });
+  const a = await ok('cards.add', { deckId: deck.id, card: { front: 'affect', back: 'to influence' } });
+  const b = await ok('cards.add', { deckId: deck.id, card: { front: 'effect', back: 'a result' } });
+  const finish = () =>
+    ok('session.finish', {
+      sessionId: 'mx',
+      length: 'mini',
+      seconds: 60,
+      answers: 3,
+      correct: 0,
+      bossWon: null,
+      bestGenderCombo: 0,
+      perfectBlocks: 0,
+      startedAt: new Date().toISOString(),
+    });
+  const wrong = { sessionId: 'mx', itemId: a.id, format: 'mc', correct: false, responseMs: 1, xp: 0, practice: true };
+  for (let k = 0; k < 2; k++) await ok('attempt.record', { ...wrong, given: 'a result' });
+  assert.equal((await finish()).twinOffer, null);
+  await ok('attempt.record', { ...wrong, given: 'a result' });
+  const offer = (await finish()).twinOffer;
+  // The pair is stored by card id, so which card is `a` depends on the random ids.
+  assert.deepEqual([offer?.count, ...[offer?.a.front, offer?.b.front].sort()], [3, 'affect', 'effect']);
+  const bad = await handle('confusions.twin', { a: a.id, b: a.id, answer: '' });
+  assert.equal(!bad.ok && bad.error.code, 'invalid_input');
+  const { id } = await ok('confusions.twin', { a: a.id, b: b.id, answer: 'Both are about change.' });
+  assert.equal((await ok('confusions.twin', { a: b.id, b: a.id, answer: 'x' })).id, id);
+  assert.equal((await finish()).twinOffer, null, 'offered once');
+  const card = await ok('cards.get', { id });
+  assert.deepEqual([card.target, card.extra.twin].sort(), ['affect: to influence', 'effect: a result']);
+  await ok('cards.update', { id, card: { front: card.target, back: 'Both change things.', type: 'basic' } });
+  assert.equal((await ok('cards.get', { id })).extra.twin, card.extra.twin, 'kept by the card editor');
+  assert.deepEqual(await ok('confusions.dismiss', { a: a.id, b: b.id }), { ok: true });
+});
+
+test('teach-back: a mastered tag is offered, gives its key points, and its missed cards make a practice session', async () => {
+  const deck = await ok('decks.create', { name: 'Teach', language: null });
+  const ids: number[] = [];
+  for (const [front, back] of [
+    ['What makes ATP?', 'The mitochondrion'],
+    ['What builds proteins?', 'The ribosome'],
+    ['What holds DNA?', 'The nucleus'],
+  ])
+    ids.push((await ok('cards.add', { deckId: deck.id, card: { front, back, tags: 'organelles' } })).id);
+  assert.deepEqual(await ok('teachback.topics'), [], 'not mastered yet');
+  for (const itemId of ids)
+    await ok('attempt.record', { sessionId: 'tb', itemId, format: 'typed', correct: true, responseMs: 1, xp: 0 });
+  assert.deepEqual(await ok('teachback.topics'), [{ tag: 'organelles', cards: 3 }]);
+  const points = await ok('teachback.points', { tag: 'organelles' });
+  assert.deepEqual(
+    points.map((p: { text: string }) => p.text),
+    ['The mitochondrion', 'The ribosome', 'The nucleus'],
+  );
+  const plan = await ok('teachback.practice', { ids: [ids[1]] });
+  assert.equal(plan.practice, true);
+  assert.deepEqual(Object.keys(plan.items).map(Number), [ids[1]]);
+  const none = await handle('teachback.practice', { ids: [] });
+  assert.equal(!none.ok && none.error.code, 'invalid_input');
+});
+
+test('"say a few answers aloud" is on by default and can be turned off', async () => {
+  assert.equal((await ok('state.get')).settings.sayAloud, true);
+  assert.equal((await ok('settings.save', { sayAloud: false })).sayAloud, false);
+  assert.equal((await ok('settings.save', { sayAloud: 'yes' })).sayAloud, true);
+  assert.equal((await ok('state.get')).settings.actOut, true, '"act it out" too');
+  assert.equal((await ok('settings.save', { actOut: false })).actOut, false);
+  assert.equal((await ok('state.get')).settings.quietMinute, false, 'the quiet minute is off by default');
+  assert.equal((await ok('settings.save', { quietMinute: 'yes' })).quietMinute, false);
+  assert.equal((await ok('settings.save', { quietMinute: true })).quietMinute, true);
+});
+
+test('the card editor saves, keeps and clears a graph and the translate type; a mock exam shows the graph', async () => {
+  const deck = await ok('decks.create', { name: 'Graphs', language: null });
+  const card = { front: 'Which function is this?', back: 'y = 2x + 1', type: 'translate' };
+  const { id } = await ok('cards.add', { deckId: deck.id, card: { ...card, graph: ' Y = 2x + 1 ; x = -3..3' } });
+  await ok('cards.add', { deckId: deck.id, card: { front: 'Which curve?', back: 'y = x^2', graph: 'alert(1)' } });
+  const saved = await ok('cards.get', { id });
+  assert.deepEqual([saved.extra.graph, saved.extra.translate, saved.kind], ['y = 2x + 1; x = -3..3', '1', 'card']);
+  await ok('cards.update', { id, card: { ...card, starred: true } });
+  assert.equal((await ok('cards.get', { id })).extra.graph, 'y = 2x + 1; x = -3..3', 'kept');
+  const exam = await ok('exam.start', { deckId: deck.id });
+  assert.deepEqual(exam.questions.map((q: { stem: string; graph?: string }) => [q.stem, q.graph]).sort(), [
+    ['Which curve?', undefined],
+    ['Which function is this?', 'y = 2x + 1; x = -3..3'],
+  ]);
+  await ok('cards.update', { id, card: { ...card, type: 'basic', graph: '' } });
+  assert.deepEqual((await ok('cards.get', { id })).extra, {}, 'cleared');
+});
+
+test("concept maps: a deck keeps its cleaned maps; topics list them; a topic gives terms and the author's links", async () => {
+  assert.deepEqual(await ok('conceptmap.topics'), []);
+  const deck = await ok('decks.create', { name: 'Maps', language: null });
+  const maps = '# Cell energy\n<b>Glucose</b> --feeds--> Mitochondrion\nMitochondrion --makes--> ATP\nnot a link';
+  const saved = await ok('decks.update', { id: deck.id, patch: { settings: { maps } } });
+  assert.equal(saved.settings.maps, '# Cell energy\nGlucose --feeds--> Mitochondrion\nMitochondrion --makes--> ATP');
+  assert.deepEqual(await ok('conceptmap.topics'), [
+    { deckId: deck.id, deckName: 'Maps', topic: 'Cell energy', terms: 3, links: 2 },
+  ]);
+  const map = await ok('conceptmap.get', { deckId: deck.id, topic: 'Cell energy' });
+  assert.deepEqual(map.terms, ['ATP', 'Glucose', 'Mitochondrion']);
+  assert.equal(map.links.length, 2);
+  const none = await handle('conceptmap.get', { deckId: deck.id, topic: 'Other' });
+  assert.equal(!none.ok && none.error.code, 'map_not_found');
+  await ok('decks.update', { id: deck.id, patch: { settings: { maps: '' } } });
+  assert.deepEqual(await ok('conceptmap.topics'), [], 'an emptied field clears the maps');
 });

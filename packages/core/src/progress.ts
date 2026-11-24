@@ -6,6 +6,7 @@ import {
   addDays,
   BONUS,
   dayKey,
+  daysBetween,
   levelFor,
   NEW_STREAK,
   recordSession,
@@ -33,6 +34,11 @@ import {
 import { getDeck, listDecks, LANGUAGES } from './library';
 import { KNOWN_MASTERY } from './browse';
 import { stripHtml } from './text';
+import { LEVELS, type Level } from './variants';
+import { RECALL_FORMATS } from './types';
+import { calibration, calibrationCounts } from './confidence';
+import { WEEK_GOAL, weekCardTarget, weekSessionTarget } from './weekgoal';
+import { spacingCounts, spacingReport } from './spacing';
 
 /** Badge ids, in display order. Their names and descriptions live in locales/<code>.json under badges.<id>. */
 export const ACHIEVEMENTS = [
@@ -528,21 +534,52 @@ export function journey(d: DB = getDb(), now = new Date()) {
   const recent = new Map(
     d
       .prepare(
-        `SELECT deck_id, COUNT(*) AS n FROM (
+        `SELECT deck_id, COUNT(*) AS n, COALESCE(SUM(first >= ?), 0) AS week FROM (
            SELECT i.deck_id, MIN(a.day) AS first FROM attempts a JOIN items i ON i.id = a.item_id
            WHERE a.practice = 0 AND a.grade >= 2 GROUP BY a.item_id)
          WHERE first >= ? GROUP BY deck_id`,
       )
-      .all(paceSince)
-      .map((r: Row) => [Number(r.deck_id), Number(r.n)]),
+      .all(thisWeek, paceSince)
+      .map((r: Row) => [Number(r.deck_id), { n: Number(r.n), week: Number(r.week) }]),
   );
+  const newPerDay = getSettings(d).newPerDay;
+  // The mix of question levels answered per deck (#198), over the retention window. Only recall answers and
+  // variant questions count (games are not questions); a deck shows it once one of its variants was asked.
+  const levelRows = d
+    .prepare(
+      `SELECT i.deck_id, COALESCE(a.level, 'recall') AS level, COUNT(*) AS n FROM attempts a
+       JOIN items i ON i.id = a.item_id
+       WHERE a.day >= ? AND (a.level IS NOT NULL OR a.format IN (${RECALL_FORMATS.map((f) => `'${f}'`).join(',')}))
+       GROUP BY i.deck_id, COALESCE(a.level, 'recall')`,
+    )
+    .all(addDays(thisWeek, -7 * (JOURNEY.retentionWeeks - 1)));
+  const levelsOf = (deckId: number): Record<Level, number> | null => {
+    const rows = levelRows.filter((r: Row) => Number(r.deck_id) === deckId);
+    if (!rows.some((r: Row) => r.level !== 'recall')) return null;
+    const out: Record<Level, number> = { recall: 0, apply: 0, analyse: 0 };
+    for (const r of rows) if (LEVELS.includes(r.level as Level)) out[r.level as Level] = Number(r.n);
+    return out;
+  };
   const perWeekOf = (n: number) => Math.round((n / JOURNEY.paceWeeks) * 10) / 10;
   const decks = listDecks(d).map((dk) => {
     const { cards, learned } = counts.get(dk.id) ?? { cards: 0, learned: 0 };
     const goal = dk.settings.goal?.words ? { label: dk.settings.goal.label, target: dk.settings.goal.words } : null;
     const left = Math.max(0, (goal?.target ?? cards) - learned);
-    const perWeek = perWeekOf(recent.get(dk.id) ?? 0);
+    const perWeek = perWeekOf(recent.get(dk.id)?.n ?? 0);
+    const weekDone = recent.get(dk.id)?.week ?? 0;
     return {
+      /** This week's share of the weekly goal (#214): new cards to learn, and how many are done. */
+      week: {
+        done: weekDone,
+        target: weekCardTarget({
+          left,
+          done: weekDone,
+          examDate: dk.settings.examDate,
+          week: thisWeek,
+          perWeek,
+          newPerDay: typeof dk.settings.newPerDay === 'number' ? dk.settings.newPerDay : newPerDay,
+        }),
+      },
       id: dk.id,
       name: dk.name,
       cards,
@@ -552,6 +589,8 @@ export function journey(d: DB = getDb(), now = new Date()) {
       goal,
       examDate: dk.settings.examDate ?? null,
       reached: cards > 0 && left === 0,
+      /** Answers per question level over the last weeks, or null while none of the deck's variants was asked. */
+      levels: levelsOf(dk.id),
       /** The day the goal (or the whole deck) is reached at this pace; null without a pace. */
       forecast: left > 0 && perWeek > 0 ? addDays(today, Math.ceil((left / perWeek) * 7)) : null,
     };
@@ -581,6 +620,37 @@ export function journey(d: DB = getDb(), now = new Date()) {
     w.recalled += Number(r.ok);
   }
 
+  // This week's goal (#214): the decks' card goals added up, and sessions from the weeks before.
+  const sessionsSince = addDays(thisWeek, -7 * WEEK_GOAL.historyWeeks);
+  const sessionsByWeek = new Map<string, number>();
+  for (const r of d.prepare('SELECT day, sessions FROM days WHERE day >= ? AND day <= ?').all(sessionsSince, today)) {
+    const w = weekStart(r.day as string);
+    sessionsByWeek.set(w, (sessionsByWeek.get(w) ?? 0) + Number(r.sessions));
+  }
+  const earlier = Array.from(
+    { length: WEEK_GOAL.historyWeeks },
+    (_, i) => sessionsByWeek.get(addDays(thisWeek, -7 * (i + 1))) ?? 0,
+  );
+  const daysThisWeek = studyDays.filter((s) => s.day >= thisWeek);
+  const nextExam = decks
+    .filter((x) => x.examDate && x.examDate >= today)
+    .sort((a, b) => a.examDate!.localeCompare(b.examDate!))[0];
+  const week = {
+    start: thisWeek,
+    cards: {
+      target: decks.reduce((s, x) => s + x.week.target, 0),
+      done: decks.reduce((s, x) => s + x.week.done, 0),
+    },
+    sessions: { target: weekSessionTarget(earlier), done: sessionsByWeek.get(thisWeek) ?? 0 },
+    /** Days studied and minutes since Monday, for the progress card. */
+    days: daysThisWeek.length,
+    minutes: daysThisWeek.reduce((s, x) => s + x.minutes, 0),
+    /** The next exam among the decks, if any. */
+    exam: nextExam
+      ? { deck: nextExam.name, date: nextExam.examDate!, days: daysBetween(today, nextExam.examDate!) }
+      : null,
+  };
+
   const hard = hardestCards(JOURNEY.hardest, d);
   const text = new Map(
     (hard.length
@@ -598,10 +668,11 @@ export function journey(d: DB = getDb(), now = new Date()) {
   return {
     today,
     decks,
+    week,
     totals: {
       learned: decks.reduce((s, x) => s + x.learned, 0),
       remaining: decks.reduce((s, x) => s + x.remaining, 0),
-      perWeek: perWeekOf([...recent.values()].reduce((s, n) => s + n, 0)),
+      perWeek: perWeekOf([...recent.values()].reduce((s, r) => s + r.n, 0)),
     },
     heatmapSince,
     studyDays,
@@ -611,6 +682,10 @@ export function journey(d: DB = getDb(), now = new Date()) {
       recalled: weeks.reduce((s, w) => s + w.recalled, 0),
       target: getSettings(d).retention,
     },
+    /** How sure you were (1–5) against how often you were right at the next review (#205). */
+    calibration: calibration(calibrationCounts(d)),
+    /** Recall after days, weeks and months away, next to repeats on the same day (#215). */
+    spacing: spacingReport(spacingCounts(d, now)),
     hardest: hard.map((h) => ({
       ...h,
       front: plain(text.get(h.id)?.target),

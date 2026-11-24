@@ -71,7 +71,13 @@
       "explanation": "Explanation",
       "notes": "Notes",
       "category": "Category",
-      "tags": "Tags (separated by spaces)"
+      "tags": "Tags (separated by spaces)",
+      "variants": "Other ways to ask (one per line, starting with recall:, apply: or analyse:)",
+      "corrections": "Why each wrong choice is wrong",
+      "keyPoints": "Key points (one per line, 2 to 5)",
+      "requires": "Learn first (one card front or #tag per line)",
+      "mnemonic": "Memory aid",
+      "keyTerms": "Key terms (one per line)"
     },
     "now": "Now: {{text}}",
     "nowEmpty": "Now: empty",
@@ -107,7 +113,14 @@
     "acceptPlan": "Save the plan",
     "acceptExport": "Export…",
     "saved": "Saved.",
-    "exported": "Exported."
+    "exported": "Exported.",
+    "nowList": "Now:",
+    "wrongChoice": "Wrong choice: {{choice}}",
+    "extra": {
+      "requires": "Learn first: {{text}}",
+      "mnemonic": "Memory aid: {{text}}",
+      "keyTerms": "Key terms: {{text}}"
+    }
   },
   "common": {
     "save": "Save",
@@ -123,6 +136,11 @@
     "correctIs": "Correct: {{answer}}",
     "correctOrder": "Correct order:",
     "correctLabel": "Correct:"
+  },
+  "levels": {
+    "recall": "Recall",
+    "apply": "Apply",
+    "analyse": "Analyse"
   },
   "settings": {
     "dailyGoal": "Daily goal (sessions)",
@@ -148,6 +166,7 @@
       "daily": "Daily reminder",
       "dailyHint": "A gentle nudge once a day. It skips days when you have already studied.",
       "time": "Remind me at",
+      "morningTime": "Offer the morning check at",
       "launchAtLogin": "Open LernLab when I log in",
       "launchAtLoginHint": "Starts minimised, so reminders can arrive. You can close it any time.",
       "desktopOnly": "Reminders and opening at login work in the desktop app.",
@@ -158,7 +177,9 @@
           "A few minutes of practice today? Click to start.",
           "Your cards would love a visit. Click for a short session.",
           "Got five minutes? A little practice goes a long way."
-        ]
+        ],
+        "morning_one": "Good morning! {{count}} card from last night is ready for a short check.",
+        "morning_other": "Good morning! {{count}} cards from last night are ready for a short check."
       }
     },
     "language": "Language",
@@ -180,10 +201,12 @@
       "look": "Language and display",
       "study": "Studying",
       "reminders": "Reminders",
+      "plan": "Study plan",
       "data": "Your data",
       "privacy": "Updates and privacy",
       "assistant": "AI assistant",
-      "about": "About"
+      "about": "About",
+      "people": "People on this computer"
     },
     "textSize": "Text size",
     "textSizeOption": {
@@ -238,7 +261,7 @@
       "imported": "Data imported. Your previous data was saved as {{file}}.",
       "delete": "Delete all my data",
       "deleteHint": "Removes every deck, card, answer, setting, media file and backup from this computer.",
-      "deleteWarning": "Everything is deleted permanently, including all backups. This cannot be undone. To keep a copy, export everything first.",
+      "deleteWarning": "Everything is deleted permanently, including all backups and the progress of other people on this computer. This cannot be undone. To keep a copy, export everything first.",
       "deleteWord": "DELETE",
       "deleteType": "Type {{word}} to confirm",
       "deleteNow": "Delete everything",
@@ -276,7 +299,19 @@
       "warnBody": "Cards that link media from a website will contact that website each time you study them. That website can see your IP address and when you study. The links come from the people who made the deck, not from LernLab, so LernLab can't check what they show and isn't responsible for that content. You turn this on at your own risk, and you can turn it off at any time.",
       "accept": "I understand, turn it on",
       "cancel": "Keep it off"
-    }
+    },
+    "confidence": "Ask how sure I was",
+    "confidenceHint": "After about 1 answer in 4, one optional tap from 1 to 5. It never changes when a card comes back; Progress shows how well it matches what you really recall.",
+    "sayAloud": "Say a few answers aloud",
+    "sayAloudHint": "On a few starred or recently missed cards, a session asks you to say the answer out loud before you show it. It works because only some cards are spoken, so it is never asked on every card. No microphone is used.",
+    "actOut": "Act out a few action cards",
+    "actOutHint": "On a few cards tagged “action”, and a few verbs in language decks, a session asks you to act the answer out when it shows: do the movement, or mime it. Like saying answers aloud, it is only asked on a few cards. Nothing is checked.",
+    "quietMinute": "Offer a quiet minute after new cards",
+    "quietMinuteHint": "After a session with new cards, the summary offers one minute of rest with your eyes closed. It may help new memories settle; the studies disagree. You can always skip it or end it early.",
+    "calm": "Calm mode",
+    "calmHint": "Hides XP, levels, combos, badge news and confetti. Your progress, streak and study days stay. XP is still counted quietly, so nothing is lost if you switch back.",
+    "sleepBridge": "Evening and morning rhythm",
+    "sleepBridgeHint": "Sleep helps memory. After an evening session, new cards wait for the next evening, and your next session before 5 p.m. starts with a short check of last night's new cards and the ones you got wrong. Study at other times whenever you like: new cards then come as usual."
   },
   "home": {
     "welcomeTitle": "Welcome to LernLab",
@@ -339,6 +374,27 @@
     "sample": "Try a 2-minute sample first",
     "skip": "Skip for now"
   },
+  "plan": {
+    "title": "Your study plan",
+    "welcomeTitle": "Plan when you'll study (optional)",
+    "lead": "Tie studying to something you already do every day. People who plan when they'll study are more likely to do it.",
+    "after": "After I…",
+    "afterPlaceholder": "finish dinner",
+    "minutes": "I'll study for",
+    "backup": "Backup plan: if…",
+    "backupHint": "For days when the plan doesn't fit, one short session is enough.",
+    "backupPlaceholder": "I'm tired",
+    "sentence_one": "After I {{after}}, I'll study for {{count}} minute.",
+    "sentence_other": "After I {{after}}, I'll study for {{count}} minutes.",
+    "backupSentence": "If {{backup}}, I'll do one 5-minute session.",
+    "preview": "Your daily reminder will say:",
+    "suggest": "You usually study around {{time}}.",
+    "suggestUse": "Remind me then",
+    "habitNote": "Habits take a few weeks to form. One missed day barely matters: just pick up where you left off.",
+    "habitHide": "Hide this note",
+    "habitSetting": "Show a note about building the habit",
+    "habitSettingHint": "A short note on Home, next to your week, that one missed day barely matters."
+  },
   "decks": {
     "newDeck": "New deck",
     "import": "Import",
@@ -365,6 +421,17 @@
       "exportAnki": "Export for Anki",
       "subdeckHint": "Use :: for a sub-deck, for example Medicine::Cardio.",
       "examDate": "Exam date (optional)",
+      "subject": "Subject",
+      "subjectOther": "Something else",
+      "subjectMaths": "Maths",
+      "subjectScience": "Science",
+      "subjectHint": "In a maths or science deck, a new unit that has a worked example opens with that problem to try before the lesson. It is optional and never counts.",
+      "maps": "Concept maps (optional)",
+      "mapsPlaceholder": "# Cell energy\nGlucose --is broken down in--> Mitochondrion\nMitochondrion --makes--> ATP\nATP --powers--> Muscle",
+      "mapsHint": "For “Draw the map from memory” on the Progress page. Start a map with # and its topic, then write one link per line: Term --how it relates--> Other term. A map needs at least two links.",
+      "mapsNone": "LernLab can't read a map here yet. Start with # and a topic, then write at least two links like: Term --how it relates--> Other term.",
+      "mapsRead_one": "LernLab reads {{count}} map here, with {{links}} links in all. Lines it can't read are left out when you save.",
+      "mapsRead_other": "LernLab reads {{count}} maps here, with {{links}} links in all. Lines it can't read are left out when you save.",
       "voiceTitle": "Reading aloud",
       "voiceHint": "Cards without a recording are read by a voice on your computer.",
       "voice": "Voice",
@@ -430,6 +497,7 @@
         "exampleTranslation": "Example translation",
         "explanation": "Explanation",
         "notes": "Notes",
+        "mnemonic": "Mnemonic",
         "category": "Category",
         "tags": "Tags",
         "image": "Image",
@@ -445,7 +513,32 @@
         "choices": "Choices",
         "correct": "Correct choices",
         "steps": "Steps",
-        "altAnswers": "Other accepted answers"
+        "altAnswers": "Other accepted answers",
+        "variants": "Question variants",
+        "corrections": "Corrections for wrong choices",
+        "keyPoints": "Key points",
+        "workedSteps": "Worked steps",
+        "case": "Case",
+        "graph": "Graph",
+        "keyTerms": "Key terms to highlight",
+        "twin": "Compare with (second side)",
+        "requires": "Learn first",
+        "tolerance": "Tolerance (number answer)",
+        "code": "Code",
+        "codeLang": "Code language",
+        "occlusion": "Occlusion box",
+        "occlusionGroup": "Occlusion picture group",
+        "occlusionMode": "Occlusion mode"
+      },
+      "hints": {
+        "title": "Tips for better cards",
+        "split_one": "{{count}} card has an answer over {{words}} words. Split it into two cards?",
+        "split_other": "{{count}} cards have an answer over {{words}} words. Split them into two cards each?",
+        "decorativeImage_one": "{{count}} card has a picture with no description. Does it help the answer?",
+        "decorativeImage_other": "{{count}} cards have a picture with no description. Do the pictures help the answers?",
+        "diagram_one": "{{count}} card is about an idea and has no picture. A diagram could help.",
+        "diagram_other": "{{count}} cards are about an idea and have no picture. A diagram could help.",
+        "later": "You can import now and change cards later under Cards."
       },
       "previewCaption_one": "The first card",
       "previewCaption_other": "The first {{count}} cards",
@@ -508,6 +601,7 @@
     "subjectDeck_one": "Subject · {{count}} card",
     "subjectDeck_other": "Subject · {{count}} cards",
     "examOn": "exam {{date}}",
+    "examSleep": "Exam soon: sleep is part of studying. A good night helps you remember.",
     "new": "<b>{{count}}</b> new",
     "known": "<b>{{count}}</b> known of {{total}}",
     "childCounts": "{{due}} due, {{fresh}} new",
@@ -573,8 +667,56 @@
         "order": "Put steps in order",
         "numeric": "Number answer (with tolerance and unit)",
         "code": "Code (output, missing token or line order)",
-        "occlusion": "Image occlusion (hide parts of a picture)"
+        "occlusion": "Image occlusion (hide parts of a picture)",
+        "myth": "Myth (a common misconception to reject)",
+        "explain": "Explain it (a why or how question with key points)",
+        "worked": "Worked example (a solved problem whose steps fade)",
+        "translate": "Translate (two forms of one idea, asked both ways)"
       },
+      "translateNote": "This card is asked both ways: at every second review you see the answer side and recall this side.",
+      "graph": {
+        "label": "Graph (optional)",
+        "placeholder": "y = x^2 - 1; x = -3..3",
+        "hint": "LernLab draws it with the front. Write a function of x, such as y = 2x + 1 or y = sin(x); x = 0..6.3, or points to join: (0,1) (1,3) (2,5). You can use + - * / ^, brackets, pi, e, sqrt, sin, cos, tan, abs, exp, ln and log.",
+        "problem": "LernLab can't draw this graph yet. Check the brackets and write functions with brackets, like sin(x). The card saves without a graph."
+      },
+      "case": {
+        "label": "Case (optional)",
+        "placeholder": "A 58-year-old man has crushing chest pain for 40 minutes. His ECG shows ST elevation in II, III and aVF.",
+        "hint": "For a chain of linked questions about one case: paste the same case into each of its cards. It shows above the question, and a mock exam asks the whole case together."
+      },
+      "worked": {
+        "problem": "Problem",
+        "problemPlaceholder": "Solve 2x + 3 = 11",
+        "answer": "Final answer (optional)",
+        "answerPlaceholder": "x = 4 (left empty: the last step's result)",
+        "title": "Solution steps",
+        "help": "2 to 8 steps, in order. Learners first study the full example, then type the last result, then the last two, and so on until they solve it all. Only the whole problem changes the schedule.",
+        "label": "Step {{n}}: what you do",
+        "labelPlaceholder": "Subtract 3 from both sides",
+        "result": "Step {{n}}: the result",
+        "resultPlaceholder": "2x = 8",
+        "remove": "Remove step {{n}}",
+        "add": "Add a step",
+        "full": "A worked example can hold {{count}} steps."
+      },
+      "explain": "Question (why or how)",
+      "explainPlaceholder": "Why do we have seasons?",
+      "explainBack": "Model explanation (optional)",
+      "explainBackPlaceholder": "Earth's tilted axis changes how directly sunlight hits each half of the planet.",
+      "keyPoints": {
+        "title": "Key points",
+        "help": "2 to 5 points a good explanation covers. After explaining, learners tick the ones they got: all is Good, some is Hard, none is Again.",
+        "point": "Key point {{n}}",
+        "placeholder": "One idea a good answer mentions",
+        "remove": "Remove key point {{n}}",
+        "add": "Add a key point",
+        "full": "A card can hold {{count}} key points."
+      },
+      "myth": "Myth (what many people wrongly believe)",
+      "mythPlaceholder": "We only use 10% of our brains.",
+      "mythWhy": "Why it is wrong",
+      "mythWhyPlaceholder": "Brain scans show activity all over the brain, even during sleep.",
       "question": "Question",
       "prompt": "Prompt",
       "front": "Front",
@@ -620,6 +762,8 @@
       "backPlaceholder": "Definition or answer",
       "alt": "Also accept (separate with |)",
       "altPlaceholder": "colour|color",
+      "requires": "Learn first (fronts of other cards or #tags, separate with |)",
+      "requiresPlaceholder": "Derivative|#functions",
       "explanation": "Explanation",
       "explanationPlaceholder": "Why it is right – shown after answering",
       "example": "Example sentence (mark the word with <b>…</b> for fill-the-gap)",
@@ -632,6 +776,26 @@
       "media": "Media",
       "imageAlt": "Image description",
       "imageAltPlaceholder": "What the picture shows, read out by screen readers",
+      "variants": {
+        "title": "Other ways to ask",
+        "help": "Same answer, new wording: a situation to apply it to, a prediction, or the fact in other words. Sessions take turns asking them, and the card keeps one schedule.",
+        "question": "Question {{n}}",
+        "level": "Level of question {{n}}",
+        "placeholder": {
+          "recall": "The same fact in other words",
+          "apply": "A situation where the answer is needed",
+          "analyse": "What happens if…? Why…? How does it compare?"
+        },
+        "remove": "Remove question {{n}}",
+        "add": "Add a question",
+        "full": "A card can hold {{count}} questions."
+      },
+      "corrections": {
+        "title": "Common mix-ups",
+        "help": "Optional: for a wrong choice people often pick, say why it is wrong. Picking it shows your note with the right answer.",
+        "choice": "If someone picks “{{choice}}”",
+        "placeholder": "Many people think … In fact …, because …"
+      },
       "mediaSet": {
         "image": "✓ Image",
         "audio": "✓ Audio",
@@ -666,11 +830,14 @@
       "dropRejected": "Can't put these on a card: {{names}}. Use an image, GIF, audio or video file.",
       "duplicate_one": "This deck already has a card with this front: “{{front}}” → {{back}}. You can still add it.",
       "duplicate_other": "This deck already has {{count}} cards with this front, like “{{front}}” → {{back}}. You can still add it.",
-      "formatHint": "Formatting: **bold**, *italic*, `code`, or the tags {{tags}}. Anything else is removed. Math: \\( x^2 \\) in a line, \\[ x^2 \\] on its own line.",
+      "formatHint": "Formatting: **bold**, *italic*, `code`, ==key term== (highlighted when the answer shows), or the tags {{tags}}. Anything else is removed. Math: \\( x^2 \\) in a line, \\[ x^2 \\] on its own line.",
       "preview": "Preview",
       "previewQuestion": "Preview · question",
       "previewAnswer": "Preview · answer",
-      "moreFields": "More: explanation, example, category, tags",
+      "moreFields": "More: explanation, example, mnemonic, category, tags",
+      "mnemonic": "Mnemonic",
+      "mnemonicPlaceholder": "A memory aid, like “My Very Educated Mother…”",
+      "mnemonicHint": "Shown only after a miss or when you ask for a hint, never before you try. It stops showing by itself once you get the card right twice in a row.",
       "previewShuffled": "When you study, the order is shuffled.",
       "alsoAccepted": "Also accepted: {{answers}}",
       "problem": {
@@ -680,7 +847,15 @@
         "number": "Start the answer with a number, like 9.81 m/s^2, or this card is studied as a basic card.",
         "tolerance": "Write the tolerance as a number like 0.05 or a percentage like 1%, or it is left out.",
         "code": "Add the output, a gap like {{open}}token{{close}} in the code, or at least two lines to put in order.",
-        "occlusion": "Add an image, draw at least one box and give each box a label."
+        "occlusion": "Add an image, draw at least one box and give each box a label.",
+        "keyPoints": "Write at least two key points, or this card is studied as a basic card.",
+        "workedSteps": "Write at least two steps with a result, or this card is studied as a basic card."
+      },
+      "hints": {
+        "title": "Tips for this card",
+        "split": "This answer is over {{words}} words. Split it into two cards? Short answers are easier to recall.",
+        "decorativeImage": "This picture has no description. Does it help the answer? If it does, describe it. If not, the card is clearer without it.",
+        "diagram": "This card is about an idea. A diagram or picture could help."
       },
       "add": "Add card",
       "starred": "★ Starred",
@@ -740,6 +915,85 @@
       "perWeek": "cards learned a week (last 4 weeks)",
       "recalled": "of reviews recalled (12 weeks)"
     },
+    "week": {
+      "title": "This week’s goal",
+      "cards": "New cards",
+      "sessions": "Sessions",
+      "of": "{{done, number}} of {{target, number}}",
+      "reached": "{{done, number}} of {{target, number}} · reached",
+      "exam_one": "Next exam: {{deck}} on {{date}}, in {{count}} day.",
+      "exam_other": "Next exam: {{deck}} on {{date}}, in {{count}} days.",
+      "how": "The goal is worked out fresh each Monday from your deck goals, exam dates and recent pace. A slow week is never owed: what is left is spread over the weeks that remain."
+    },
+    "card": {
+      "open": "Progress card",
+      "title": "Your progress card",
+      "lead": "Print it or save it to show a teacher, a parent or a friend. It is made on this computer; nothing is sent anywhere.",
+      "heading": "My study progress",
+      "weekOf": "Week of {{date}}",
+      "learned_one": "card learned so far",
+      "learned_other": "cards learned so far",
+      "days": "days this week",
+      "daysValue_one": "{{count}} of 7",
+      "daysValue_other": "{{count}} of 7",
+      "minutes_one": "minute this week",
+      "minutes_other": "minutes this week",
+      "recalled": "of reviews recalled",
+      "decks": "Decks",
+      "deckLearned_one": "{{learned, number}} of {{count, number}} card learned",
+      "deckLearned_other": "{{learned, number}} of {{count, number}} cards learned",
+      "footer": "Made with LernLab on {{date}}",
+      "save": "Save as picture (PNG)",
+      "print": "Print or save as PDF",
+      "close": "Close",
+      "saved": "Picture saved.",
+      "failed": "The picture could not be made. Printing still works."
+    },
+    "spacing": {
+      "title": "After time away: your own numbers",
+      "empty_one": "Once you have reviewed {{count}} card that had been away for a while, this shows how many you still recalled.",
+      "empty_other": "Once you have {{count}} reviews of cards that had been away for a while, this shows how many you still recalled.",
+      "lead": {
+        "days_one": "After 1 to 6 days away, you recalled {{percent}} of {{count, number}} review.",
+        "days_other": "After 1 to 6 days away, you recalled {{percent}} of {{count, number}} reviews.",
+        "weeks_one": "After 1 to 4 weeks away, you still recalled {{percent}} of {{count, number}} review.",
+        "weeks_other": "After 1 to 4 weeks away, you still recalled {{percent}} of {{count, number}} reviews.",
+        "months_one": "After a month or more away, you still recalled {{percent}} of {{count, number}} review.",
+        "months_other": "After a month or more away, you still recalled {{percent}} of {{count, number}} reviews."
+      },
+      "group": {
+        "sameDay": "Repeated on the same day",
+        "days": "After 1 to 6 days",
+        "weeks": "After 7 to 29 days",
+        "months": "After 30 days or more"
+      },
+      "value_one": "{{percent}} of {{count, number}} answer",
+      "value_other": "{{percent}} of {{count, number}} answers",
+      "few_one": "{{count, number}} answer so far; shown from {{min}}",
+      "few_other": "{{count, number}} answers so far; shown from {{min}}",
+      "sameDay": "Repeats on the same day usually go better, because the answer is still fresh. That feels like knowing, but the numbers after time away show what has lasted.",
+      "note": "These are your own most recent recall answers (up to {{max, number}}, from the last year). After time away, only your first answer of the day counts. This is a record, not an experiment: each row holds different cards, so the rows can’t be compared like a test."
+    },
+    "methods": {
+      "title": "How LernLab helps you remember",
+      "lead": "Four ideas from research on learning shape every session.",
+      "recall": {
+        "title": "Recall, not rereading",
+        "body": "Pulling an answer out of your memory strengthens it more than reading it again. So LernLab asks first and shows the answer after, and games never count as knowing a card."
+      },
+      "spacing": {
+        "title": "Spacing, not cramming",
+        "body": "A card comes back when you are close to forgetting it: after a day, then some days, then weeks. Cramming feels better on the day, but in studies spaced reviews are remembered for longer. The numbers above show how your own cards held up after time away."
+      },
+      "mixing": {
+        "title": "Mixing, not one thing at a time",
+        "body": "Sessions mix cards and formats. Mixed practice feels harder while you do it, and in studies it helps people tell similar things apart later, most of all for look-alikes."
+      },
+      "easy": {
+        "title": "“Feels easy” can mislead",
+        "body": "Rereading and quick repeats feel smooth, and that is easy to mistake for knowing. Effort while you recall is a good sign, and a miss followed by the answer still helps. “How sure were you?” lets you check the feeling against what you really recalled."
+      }
+    },
     "decksTitle": "Your decks",
     "noDecks": "No decks yet. Import or create one on the Decks screen.",
     "deck": {
@@ -754,7 +1008,10 @@
       "deckBy": "At this pace, the whole deck by about {{date}}",
       "noPace": "Learn a few cards to see when you will get there.",
       "goalReached": "Goal reached. Well done.",
-      "allLearned": "Every card learned. Well done."
+      "allLearned": "Every card learned. Well done.",
+      "levels": "Questions answered",
+      "levelShare": "{{level}} {{percent}}",
+      "levelsHint": "Most of your practice in this deck is recall. A mock exam mixes in its apply and analyse questions."
     },
     "days": {
       "title": "Study days",
@@ -786,6 +1043,20 @@
       "missed_one": "missed {{count}} time",
       "missed_other": "missed {{count}} times",
       "empty": "No hard cards yet. Cards you forget show up here."
+    },
+    "calibration": {
+      "title": "How sure you were",
+      "lead": "Cards you rated {{high}} were right {{highPercent}} of the time at their next review; rated {{low}}, {{lowPercent}}.",
+      "leadOne": "Cards you rated {{level}} were right {{percent}} of the time at their next review.",
+      "empty": "When asked after an answer, tap how sure you were, from 1 to 5. Once those cards come back for review, this shows how often each rating turned out right.",
+      "level_one": "Rated {{level}}: right {{percent}} of the time at the next review ({{count}} card)",
+      "level_other": "Rated {{level}}: right {{percent}} of the time at the next review ({{count}} cards)",
+      "levelFew_one": "Rated {{level}}: not enough reviews yet ({{count}} card)",
+      "levelFew_other": "Rated {{level}}: not enough reviews yet ({{count}} cards)",
+      "low": "1: guessing",
+      "axis": "Bars: share right at the next review",
+      "high": "5: certain",
+      "few": "Too few yet"
     }
   },
   "summary": {
@@ -803,7 +1074,27 @@
     "daysOf_one": "{{count}} of 7",
     "daysOf_other": "{{count}} of 7",
     "daysThisWeek": "days this week",
-    "goalReached": "Daily goal reached (+{{xp}} XP)",
+    "goalReached": "Daily goal reached",
+    "rewardsTitle": "What your XP was for",
+    "rewardXp": "+{{xp, number}}",
+    "rewards": {
+      "recall_one": "{{count}} answer recalled from memory",
+      "recall_other": "{{count}} answers recalled from memory",
+      "comeback_one": "{{count}} card recalled after a slip",
+      "comeback_other": "{{count}} cards recalled after a slip",
+      "practice_one": "{{count}} right answer in practice rounds and games",
+      "practice_other": "{{count}} right answers in practice rounds and games",
+      "run_one": "Answers right in a row",
+      "run_other": "Answers right in a row (longest run: {{count}})",
+      "tried_one": "{{count}} miss: trying counts too",
+      "tried_other": "{{count}} misses: trying counts too",
+      "perfect_one": "{{count}} round with every answer right",
+      "perfect_other": "{{count}} rounds with every answer right",
+      "goal_one": "Daily goal reached",
+      "goal_other": "Daily goal reached",
+      "boss_one": "Boss defeated",
+      "boss_other": "Boss defeated"
+    },
     "momentsTitle": "What you earned",
     "moments": {
       "levelTitle": "Level {{level}} reached",
@@ -818,16 +1109,77 @@
       "repairBody_one": "One more session by {{deadline}} brings your {{count}}-day streak back.",
       "repairBody_other": "One more session by {{deadline}} brings your {{count}}-day streak back."
     },
-    "bossDefeated": "Boss defeated (+{{xp}} XP)",
+    "bossDefeated": "Boss defeated",
+    "patterns": {
+      "title": "How this session went",
+      "mixups_one": "{{count}} miss was a mix-up between two similar cards.",
+      "mixups_other": "{{count}} misses were mix-ups between two similar cards.",
+      "tag_one": "{{count}} of the cards you missed is tagged “{{tag}}”.",
+      "tag_other": "{{count}} of the cards you missed are tagged “{{tag}}”.",
+      "confident_one": "{{count}} miss was an answer you felt sure of.",
+      "confident_other": "{{count}} misses were answers you felt sure of.",
+      "fast_one": "{{count}} miss was answered in about a second.",
+      "fast_other": "{{count}} misses were answered in about a second.",
+      "hints_one": "A hint helped with {{used}} of {{count}} typed answer.",
+      "hints_other": "A hint helped with {{used}} of {{count}} typed answers.",
+      "comeback_one": "{{count}} card you missed, you recalled later in this session. Going back to a miss is what makes it stick.",
+      "comeback_other": "{{count}} cards you missed, you recalled later in this session. Going back to a miss is what makes it stick.",
+      "nextLabel": "A next step:",
+      "next": {
+        "mixups": "put the two cards side by side and name the one thing that tells them apart. When a pair keeps coming back, a compare card is offered here.",
+        "tag": "a short session on just that tag.",
+        "confident": "read those answers once more in the list below. Being surprised by an answer helps it stick.",
+        "fast": "read the whole question and take a breath before you answer. Speed earns nothing here.",
+        "hints": "try for a few seconds before you ask for the hint. An attempt, even a wrong one, helps more than the hint."
+      },
+      "studyTag": "Study “{{tag}}” next"
+    },
     "missed_one": "This one comes back tomorrow",
     "missed_other": "These {{count}} come back tomorrow",
     "missedPractice_one": "This one is worth another look",
     "missedPractice_other": "These {{count}} are worth another look",
+    "quiet": {
+      "title": "A quiet minute?",
+      "body": "You learned new cards. One minute of rest with your eyes closed may help them settle. The studies disagree, so try it if you like it.",
+      "start": "Rest for a minute",
+      "rest": "Close your eyes and rest",
+      "restBody": "Let your mind wander. There is nothing to do. The rest ends by itself.",
+      "left_one": "{{count}} second left",
+      "left_other": "{{count}} seconds left",
+      "end": "End the rest",
+      "over": "The minute is over."
+    },
     "again": "One more round",
     "againKey": "Space",
     "done": "Done",
     "doneKey": "Enter",
-    "practice": "That was practice: your review schedule did not change."
+    "practice": "That was practice: your review schedule did not change.",
+    "tomorrow": {
+      "title": "Will you know these tomorrow?",
+      "lead": "Just the question, no answer: picture tomorrow and decide. Next time you will see how your guesses held up. Skip any you like.",
+      "yes": "Yes",
+      "unsure": "Not sure",
+      "no": "No",
+      "saved": "Saved. Cards you are not sure about come first in your next warm-up.",
+      "reportTitle": "How your guesses from {{date}} held up",
+      "report": {
+        "yes_one": "You said yes to {{count}} card that came back: you knew {{right}}.",
+        "yes_other": "You said yes to {{count}} cards that came back: you knew {{right}}.",
+        "unsure_one": "Not sure about {{count}} card: you knew {{right}}.",
+        "unsure_other": "Not sure about {{count}} cards: you knew {{right}}.",
+        "no_one": "You said no to {{count}} card: you knew {{right}}.",
+        "no_other": "You said no to {{count}} cards: you knew {{right}}."
+      }
+    },
+    "twin": {
+      "title_one": "You mixed these two up {{count}} time",
+      "title_other": "You mixed these two up {{count}} times",
+      "lead": "Similar cards are easy to mix up. A compare card shows both side by side, so you learn to tell them apart. Write your answer now if you like; it becomes the card's answer.",
+      "placeholder": "Both… The difference is…",
+      "add": "Add a compare card",
+      "notNow": "Not now",
+      "added": "Added. The compare card comes up with your new cards."
+    }
   },
   "exam": {
     "kicker": "Mock exam",
@@ -881,6 +1233,8 @@
     "unanswered_other": "left unanswered",
     "timeUsed": "time used",
     "byTopic": "Score by topic",
+    "byLevel": "Score by question level",
+    "byLevelHint": "Recall asks the fact; apply and analyse ask you to use it.",
     "noTag": "No tag",
     "topicScore": "{{count}} of {{total}} · {{percent}}%",
     "weak": "Weak areas",
@@ -999,6 +1353,10 @@
       "boss": "Your hardest cards. Three lives – have fun with it!",
       "sortGender": "Der, die or das? As fast as you can!",
       "sort": "Sort each card into its group. Fast!",
+      "tellApart": "Which group does each one belong to? Take your time.",
+      "related": "A quick look at cards related to the ones you reviewed.",
+      "morning": "Morning check: last night's cards first.",
+      "basics": "One of today's cards keeps slipping. First a look at what it builds on.",
       "match": "Match the pairs – against the clock!",
       "trueFalse": "Quick: does this match?",
       "lesson": "One idea, then practise it right away.",
@@ -1008,7 +1366,9 @@
       "cloze": "What is missing?",
       "speak": "Say it out loud!",
       "rain": "Type the answers before they land!",
-      "rescue": "Quick look back at the hard ones."
+      "rescue": "Quick look back at the hard ones.",
+      "guess": "New topic: {{topic}}. Have a guess before you learn it.",
+      "tryFirst": "New unit: {{topic}}. Try a problem before the lesson."
     },
     "agenda": {
       "today": "Today: {{parts}}.",
@@ -1028,6 +1388,12 @@
     "xp": "⭐ {{xp, number}}",
     "xpLabel": "XP this session",
     "xpFloat": "+{{xp}}",
+    "xpFloatRun": "+{{xp}} · {{count}} in a row",
+    "xpFloatComeback": "+{{xp}} · back after a slip",
+    "xpFloatPerfect": "+{{xp}} · whole round right",
+    "swap": "Swap this round",
+    "swapHint": "Once per session: do this round in another format, with the same cards",
+    "swapped": "Swapped: the same cards in another format.",
     "end": "End session",
     "step": "{{n}} of {{total}}",
     "blockProgress": "Progress in this block",
@@ -1049,14 +1415,46 @@
       "blitz": "Blitz",
       "listen": "Listen",
       "picture-quiz": "Picture quiz",
+      "related-cards": "Related cards",
+      "basics-first": "Basics first",
       "fill-the-gap": "Fill the gap",
       "speak": "Speak",
       "recall": "Recall",
       "word-rain": "Word rain",
       "boss": "Boss fight",
       "rescue": "Quick rescue",
-      "action-round": "Action round"
-    }
+      "action-round": "Action round",
+      "guess-first": "Guess first",
+      "try-first": "Try first"
+    },
+    "guess": {
+      "title": "Guess first · {{topic}}",
+      "kind": "Wrong guesses are expected and help you learn. Nothing here counts – the answer always follows.",
+      "skip": "Skip to the new cards",
+      "yours": "Your guess",
+      "optional": "Optional. A quick thought is enough.",
+      "show": "Show answer",
+      "answer": "Answer:",
+      "yourGuess": "You guessed: {{guess}}",
+      "next": "Next question",
+      "toCards": "Meet the new cards",
+      "choices": "Choices",
+      "gap": "?"
+    },
+    "tryFirst": {
+      "title": "Try first · {{topic}}",
+      "kind": "You haven't learned this yet. Try it anyway: working on a problem first helps the lesson stick, even when you get stuck. Nothing here counts and there is no clock.",
+      "skip": "Skip to the lesson",
+      "yours": "Your attempt",
+      "optional": "Optional. Write as far as you get, or work on paper.",
+      "show": "Show the worked solution",
+      "yourGuess": "Your attempt:\n{{guess}}",
+      "solution": "Worked solution",
+      "compare": "Compare it with your attempt: where did your way differ? You study this example next.",
+      "toCards": "Start the lesson"
+    },
+    "confidentMiss": "Confident mistakes are the easiest to fix. That one comes back in a moment.",
+    "confidentMissBack": "The one you were sure of is back. Another go, just for practice."
   },
   "keys": {
     "enter": "Enter",
@@ -1090,13 +1488,124 @@
       "false": "✗ False",
       "true": "✓ True"
     },
+    "myth": {
+      "title": "True or myth?",
+      "true": "True",
+      "myth": "Myth",
+      "rejected": "Right: it's a myth. Now, why?",
+      "show": "Show why",
+      "hint": "Say or think why first, then check.",
+      "because": "It's a myth, because:",
+      "fooled": "It's a myth, a common one. Here's why:"
+    },
+    "twin": {
+      "title": "Compare",
+      "sides": "The two to compare",
+      "question": "What do they share? What is the one key difference?",
+      "hint": "Say or think your answer first, then check.",
+      "check": "I have my answer",
+      "noAnswer": "This card has no written answer. Did you name something they share and the one key difference?"
+    },
+    "explain": {
+      "title": "Explain it in your own words",
+      "label": "Your explanation",
+      "placeholder": "Why or how? Write it as if you were teaching a friend.",
+      "check": "Check my explanation",
+      "checkKeys": "Ctrl + Enter",
+      "checkKeysMac": "⌘ + Enter",
+      "dontKnow": "I don't know yet",
+      "say": "Say it instead",
+      "stopListening": "Stop listening",
+      "listening": "Listening… Your words appear in the box.",
+      "noSpeech": "Speech input isn't available here. Type your explanation instead.",
+      "model": "A model answer:",
+      "gaveUp": "Here is one way to explain it. This card comes back soon.",
+      "pointsLegend": "Tick the key points you covered",
+      "resultAll": "All points covered: counts as Good.",
+      "resultSome": "Some points covered: counts as Hard.",
+      "resultNone": "No points ticked yet: counts as Again.",
+      "done": "Done",
+      "easy": "That was easy",
+      "understand": "How well do you understand this? (optional)",
+      "understandAfter": "And now? (optional)",
+      "gapDown": "You rated {{before}} before and {{after}} after. Explaining often shows what is still unclear: that is how it helps.",
+      "gapUp": "You rated {{before}} before and {{after}} after: explaining made it clearer.",
+      "gapSame": "You rated {{before}} before and after."
+    },
+    "case": {
+      "label": "Case"
+    },
+    "graph": {
+      "alt": "Graph of a function for x from {{from}} to {{to}}. It passes through {{points}}.",
+      "altPoints": "Graph: a line through the points {{points}}.",
+      "point": "({{x}}, {{y}})",
+      "pointSeparator": ", "
+    },
+    "worked": {
+      "title": {
+        "study": "Worked example · study it",
+        "fade": "Worked example · finish it",
+        "whole": "Solve it yourself"
+      },
+      "intro": {
+        "study": "Read each step and make sure you see why it follows. Next, you fill in the last step yourself.",
+        "fade_one": "The first steps are done. Fill in the last step. This is practice.",
+        "fade_other": "The first steps are done. Fill in the last {{count}} steps. This is practice.",
+        "whole_one": "Solve the whole problem, one step at a time.",
+        "whole_other": "Solve the whole problem, one step at a time."
+      },
+      "step": "Step {{n}}",
+      "resultOf": "Result of step {{n}}",
+      "placeholder": "Type the result of this step…",
+      "later": "Comes next",
+      "right": "Right:",
+      "wrong": "The result is:",
+      "iWasRight": "I was right about step {{n}}",
+      "dontKnow": "I don't know this step",
+      "studied": "I've studied it",
+      "result": {
+        "fade": {
+          "right": "Every step right. Next time, one more step is yours.",
+          "wrong": "Not yet. Next time, the example shows one more step."
+        },
+        "whole": {
+          "right": "Solved on your own.",
+          "wrong": "Not yet. Next time, the example shows the first step again."
+        }
+      }
+    },
     "flip": {
       "title": "Recall · think of the answer",
       "show": "Show answer",
       "hint": "Say or think your answer first – that's what makes it stick.",
+      "sayAloud": "Say the answer out loud first, then show it.",
       "no": "Didn't know",
       "partly": "Partly",
       "yes": "Knew it"
+    },
+    "actOut": "Act it out: do the action, or mime it, as you say the answer.",
+    "mnemonic": {
+      "lead": "Your mnemonic:"
+    },
+    "sketch": {
+      "draw": "Draw it",
+      "again": "Draw it again",
+      "why": "Optional: a quick sketch of the meaning helps it stick. It doesn't have to be good.",
+      "title": "Sketch pad",
+      "canvas": "Drawing area",
+      "hint": "Draw the meaning with a mouse, a finger or a pen. Prefer words? Describe your picture below instead.",
+      "undo": "Undo",
+      "clear": "Clear",
+      "text": "What does it show?",
+      "textHint": "Optional with a drawing. It is shown with your sketch.",
+      "save": "Save sketch",
+      "cancel": "Cancel",
+      "lead": "Your sketch",
+      "alt": "The sketch you drew for this card",
+      "remove": "Remove sketch",
+      "removeAsk": "Remove your sketch for good?",
+      "removeYes": "Remove",
+      "removeNo": "Keep it"
     },
     "typed": {
       "overridden": "Okay – counted as correct.",
@@ -1147,6 +1656,7 @@
       "gotIt": "Got it – practise!"
     },
     "mcq": {
+      "mixUp": "A common mix-up",
       "title": "Question",
       "titleMulti_one": "Question · choose {{count}}",
       "titleMulti_other": "Question · choose {{count}}"
@@ -1166,6 +1676,16 @@
       "title": "Name the hidden part",
       "askedOne": "Box {{n}} of {{count}} is hidden; the other boxes show their labels.",
       "askedAll": "All {{count}} boxes are hidden; box {{n}} is the one asked."
+    },
+    "confidence": {
+      "label": "How sure were you?",
+      "low": "Guessing",
+      "high": "Certain",
+      "level1": "1: guessing",
+      "level2": "2: unsure",
+      "level3": "3: fairly sure",
+      "level4": "4: sure",
+      "level5": "5: certain"
     }
   },
   "check": {
@@ -1178,6 +1698,7 @@
   "games": {
     "sprintArticles": "Der, die or das?",
     "sprint": "Sort each card",
+    "whichOne": "Which one is this?",
     "sorted": "Right: {{category}}",
     "itWas": "Not quite. It’s {{category}}",
     "hits": "{{count}} right",
@@ -1209,6 +1730,7 @@
     "data_process_exit": "LernLab lost touch with your data for a moment. Please try again.",
     "data_process_down": "LernLab can't reach your data right now. Close and reopen LernLab; your progress is saved.",
     "invalid_input": "That input was not valid.",
+    "sketch_too_big": "That sketch is too big to save (the limit is {{kb}} KB). Clear some of it and try again.",
     "migration_failed": "Your data could not be upgraded. LernLab restored your backup.",
     "name_required": "Give the deck a name.",
     "front_required": "The card needs a front.",
@@ -1253,13 +1775,19 @@
     "data_export_too_new": "This export was made by a newer version of LernLab. Update LernLab first.",
     "mapping_needs_front": "Choose which column holds the front of the cards.",
     "anki_deck_empty": "“{{deck}}” in Anki has no cards.",
+    "map_not_found": "This deck no longer has a concept map for that topic.",
     "exam_not_found": "This exam was already handed in or has expired. Start a new one.",
     "gallery_offline": "LernLab could not reach the deck gallery. Check your internet connection.",
     "gallery_unavailable": "The deck gallery is not available at the moment.",
     "gallery_bad_index": "The deck gallery's list could not be read.",
     "gallery_too_big": "This deck is bigger than the gallery says, so it was not downloaded.",
     "gallery_checksum": "The download does not match the deck in the gallery, so it was not installed. Please try again.",
-    "gallery_unknown_deck": "That deck is no longer in the gallery. Open the gallery again to see the latest list."
+    "gallery_unknown_deck": "That deck is no longer in the gallery. Open the gallery again to see the latest list.",
+    "invalid_confidence": "How sure you were must be a number from 1 to 5.",
+    "learner_name_required": "Give the person a name.",
+    "learners_full": "At most 5 other people can be added.",
+    "learner_exists": "There is already someone with this name.",
+    "learner_not_found": "This person is no longer on this computer."
   },
   "update": {
     "ready": "LernLab {{version}} is ready. Restart to update; your progress is saved and backed up.",
@@ -1280,5 +1808,131 @@
       "image": "This picture is on the internet. To show it, turn on “Allow pictures and sounds from the internet” in Settings.",
       "video": "This video is on the internet. To show it, turn on “Allow pictures and sounds from the internet” in Settings."
     }
+  },
+  "cmap": {
+    "title": "Draw the map from memory",
+    "intro": "These topics have a concept map from the deck's author. Link the terms from memory, then compare. It is practice and never changes your schedule.",
+    "topicInfo_one": "{{deck}} · {{count}} term",
+    "topicInfo_other": "{{deck}} · {{count}} terms",
+    "start": "Draw it",
+    "startFor": "Draw the map of {{topic}}, from the deck {{deck}}",
+    "kicker": "Concept map from memory",
+    "prompt_one": "How does this {{count}} term connect? Add the links you remember, in your own words. There is no timer, and you compare with the author's map when you are ready.",
+    "prompt_other": "How do these {{count}} terms connect? Add the links you remember, in your own words. There is no timer, and you compare with the author's map when you are ready.",
+    "terms": "Terms",
+    "addTitle": "Add a link",
+    "from": "From",
+    "to": "To",
+    "label": "How it relates (optional)",
+    "labelPlaceholder": "makes, causes, is part of…",
+    "choose": "Choose a term",
+    "add": "Add link",
+    "pickBoth": "Choose the two terms to link.",
+    "sameTerm": "Choose two different terms.",
+    "alreadyLinked": "{{from}} and {{to}} are already linked. Remove that link to change it.",
+    "added": "Added: {{link}}",
+    "removed": "Removed: {{link}}",
+    "link": "{{from}} → {{label}} → {{to}}",
+    "linkPlain": "{{from}} → {{to}}",
+    "yourLinks_one": "Your map: {{count}} link",
+    "yourLinks_other": "Your map: {{count}} links",
+    "noLinks": "No links yet. Add the first one above.",
+    "remove": "Remove",
+    "removeLink": "Remove the link {{link}}",
+    "yourMapAlt_one": "Picture of your map: {{count}} link. The links are listed as text on this page.",
+    "yourMapAlt_other": "Picture of your map: {{count}} links. The links are listed as text on this page.",
+    "authorsMapAlt_one": "Picture of the author's map: {{count}} link. The links are listed as text on this page.",
+    "authorsMapAlt_other": "Picture of the author's map: {{count}} links. The links are listed as text on this page.",
+    "compare": "Compare with the author's map",
+    "back": "Back to Progress",
+    "result_one": "Your map has {{matched}} of the {{count}} link in the author's map.",
+    "result_other": "Your map has {{matched}} of the {{count}} links in the author's map.",
+    "resultNote": "Nothing is graded: a map can be drawn in more than one good way.",
+    "sideBySide": "Your map and the author's map",
+    "yours": "Your map",
+    "authors": "The author's map",
+    "legend": "Solid lines: in both maps. Dashed: only in the author's map. Dotted: only in yours.",
+    "matched_one": "In both maps: {{count}} link",
+    "matched_other": "In both maps: {{count}} links",
+    "missing_one": "Only in the author's map: {{count}} link",
+    "missing_other": "Only in the author's map: {{count}} links",
+    "extra_one": "Only in your map: {{count}} link",
+    "extra_other": "Only in your map: {{count}} links",
+    "noneMatched": "None yet.",
+    "noneMissing": "None: you have every link of the author's map.",
+    "noneExtra": "None.",
+    "pair": "{{from}} and {{to}}.",
+    "words": "You wrote “{{yours}}”; the author wrote “{{authors}}”.",
+    "noLabel": "no words",
+    "reversed": "You drew the arrow the other way round.",
+    "done": "Done",
+    "keepDrawing": "Add more links",
+    "again": "Start again"
+  },
+  "teach": {
+    "title": "Teach it back",
+    "intro": "You know these topics well. Explaining one to a beginner in about {{seconds}} seconds shows what you can say without the cards. It is practice and never changes your schedule.",
+    "cards_one": "{{count}} card",
+    "cards_other": "{{count}} cards",
+    "start": "Explain it",
+    "startFor": "Explain {{tag}}",
+    "kicker": "Teach it back",
+    "prompt": "Explain “{{tag}}” to a beginner in about {{seconds}} seconds. Say it out loud, record yourself or type it. There is no timer: take the time you need.",
+    "typeLabel": "Your explanation",
+    "typePlaceholder": "Start with the main idea, in simple words…",
+    "record": "Record your voice",
+    "recordAgain": "Record again",
+    "stop": "Stop recording ({{time}})",
+    "recording": "Recording. Press Stop recording when you are done.",
+    "recorded": "Recording ready. You can play it on the next step.",
+    "yourRecording": "Your recording",
+    "private": "Your explanation is not saved. The recording stays on this computer and is gone when you leave this screen.",
+    "compare": "Compare with the key points",
+    "back": "Back to Progress",
+    "checkNote": "Read or play your explanation again and compare it with the key points. Tick the ones you left out.",
+    "yours": "Your explanation",
+    "missedLegend": "Tick the points you missed",
+    "noPoints": "This topic has no key points to compare with yet.",
+    "missedCount_one": "{{count}} card is worth another look.",
+    "missedCount_other": "{{count}} cards are worth another look.",
+    "allCovered": "Nothing ticked: you covered every point.",
+    "practise_one": "Practise {{count}} card",
+    "practise_other": "Practise {{count}} cards",
+    "done": "Done",
+    "again": "Explain it again"
+  },
+  "together": {
+    "title": "Study together",
+    "lead": "Two people take turns on one deck. Each answer counts only for the person who gave it. No scores, no winner.",
+    "with": "With",
+    "deck": "Deck",
+    "start": "Study with {{name}}",
+    "nothing": "Neither of you has cards to study in this deck right now.",
+    "firstLearner": "First learner",
+    "turn": "Turn {{n}} of {{total}}",
+    "turnOf": "{{name}}'s turn",
+    "passHint": "Pass the keyboard to {{name}}. This round is saved to {{name}}'s own progress. The other person is welcome to help by explaining afterwards.",
+    "go": "Start the round",
+    "stop": "Stop here",
+    "doneTitle": "You studied together",
+    "doneBody": "{{a}} and {{b}} each have their answers saved to their own progress, and their cards come back on their own schedule.",
+    "doneAction": "Back to Home"
+  },
+  "learners": {
+    "lead": "Someone else can study your decks with you on this computer, in Study together on Home. They get a name and their own progress, kept in its own folder inside your LernLab data folder. No account, no password, nothing online.",
+    "myName": "Your name",
+    "myNameHint": "Shown when it is your turn.",
+    "others": "Other people on this computer",
+    "add": "Add a person",
+    "addHint": "A name is enough.",
+    "addAction": "Add",
+    "added": "{{name}} was added. Study together is now on Home.",
+    "remove": "Remove {{name}}",
+    "removeTitle": "Remove {{name}}?",
+    "removeBody": "{{name}}'s progress and its backups on this computer are deleted permanently. This cannot be undone. Your decks, cards and your own progress stay.",
+    "removeConfirm": "Remove and delete their progress",
+    "keep": "Keep",
+    "removed": "{{name}} was removed.",
+    "dataHint": "Their progress is backed up every day in their own folder (the last 7 are kept). Your backups, Restore, Export everything and Import everything cover your own data only and leave theirs as it is. Delete all my data deletes theirs too."
   }
 }

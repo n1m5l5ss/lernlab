@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { SessionLength, SessionPlan } from '@lernlab/core/types';
 import type { OutputOf } from '../backend/handlers';
@@ -17,20 +17,26 @@ import { Badges } from './Badges';
 import { StreakPanel } from './Motivation';
 import { Shell } from './Shell';
 import { AiRequests } from './AiRequests';
+import { TeachBack } from './TeachBack';
+import { ConceptMap } from './ConceptMap';
 import { Welcome } from './Welcome';
 import { WhatsNew } from './WhatsNew';
 import { formatDate, setLanguage } from './i18n';
 import { applyTheme } from './theme';
 import { applyDisplay } from './display';
 import { allowRemoteMedia } from './remote-media';
-import { hashFor, isStartHash, routeFromHash, type Route } from './routes';
+import { hashFor, isStartHash, mayStartFromShortcut, routeFromHash, type Route } from './routes';
 import { markOnce, MARKS } from './perf';
+import { Together, type TogetherPlans } from './Together';
 
 type AppState = OutputOf<'state.get'>;
 /** The study session and its summary fill the window; everything else sits in the shell. */
 type FullScreen =
   | { name: 'play'; plan: SessionPlan }
+  | { name: 'together'; plans: TogetherPlans }
   | { name: 'exam'; deckId: number }
+  | { name: 'teach'; tag: string }
+  | { name: 'map'; deckId: number; topic: string }
   | {
       name: 'summary';
       result: SessionResult;
@@ -46,6 +52,9 @@ export function App() {
   const [state, setState] = useState<AppState | null>(null);
   const [route, setRoute] = useState<Route>(() => routeFromHash(location.hash));
   const [full, setFull] = useState<FullScreen | null>(null);
+  // What the hash listener (set up once) needs to know about now.
+  const now = useRef<{ open: FullScreen['name'] | null; route: Route }>({ open: null, route });
+  now.current = { open: full?.name ?? null, route };
   const [error, setError] = useState('');
   /** Closed this launch: never shown twice, even if saving that failed. */
   const [whatsNewClosed, setWhatsNewClosed] = useState(false);
@@ -84,6 +93,17 @@ export function App() {
       });
     if (s) await start(s.settings.sessionLength);
   };
+  /** "Study this tag next" on the summary (#213): the next session covers that tag, as picked on Home. */
+  const studyTag = async (tag: string) => {
+    const s = await api
+      .chooseSource({ kind: 'tag', tag })
+      .then(refresh)
+      .catch((e: unknown) => {
+        setError(message(e));
+        return null;
+      });
+    if (s) await start(s.settings.sessionLength);
+  };
   const go = (r: Route) => {
     setFull(null);
     if (location.hash !== hashFor(r)) location.hash = hashFor(r);
@@ -101,6 +121,11 @@ export function App() {
     });
     const onHash = () => {
       if (isStartHash(location.hash)) {
+        // The shortcut never throws away a session, an exam or a teach-back, and never fires from a text box.
+        if (!mayStartFromShortcut(now.current.open, document.activeElement)) {
+          history.replaceState(null, '', hashFor(now.current.route));
+          return;
+        }
         history.replaceState(null, '', hashFor('home'));
         setRoute('home');
         start('standard');
@@ -184,12 +209,52 @@ export function App() {
         }}
       />
     );
+  if (full?.name === 'together')
+    return (
+      <Together
+        plans={full.plans}
+        ownerName={state.settings.learnerName}
+        settings={state.settings}
+        onDone={() => {
+          go('home');
+          refresh();
+        }}
+      />
+    );
   if (full?.name === 'exam')
     return (
       <Exam
         deckId={full.deckId}
         onDone={() => {
           go('decks');
+          refresh();
+        }}
+      />
+    );
+  if (full?.name === 'map')
+    return (
+      <ConceptMap
+        deckId={full.deckId}
+        topic={full.topic}
+        onDone={() => {
+          go('progress');
+          refresh();
+        }}
+      />
+    );
+  if (full?.name === 'teach')
+    return (
+      <TeachBack
+        tag={full.tag}
+        onPractise={async (ids) => {
+          try {
+            setFull({ name: 'play', plan: await api.teachPractice(ids) });
+          } catch (e) {
+            setError(message(e));
+          }
+        }}
+        onDone={() => {
+          go('progress');
           refresh();
         }}
       />
@@ -201,6 +266,9 @@ export function App() {
         server={full.server}
         lang={full.lang}
         items={full.items}
+        calm={state.settings.calm}
+        onStudyTag={studyTag}
+        quietMinute={state.settings.quietMinute}
         onAgain={() => start('mini', full.result.practice)}
         onHome={() => {
           go('home');
@@ -215,7 +283,15 @@ export function App() {
       kicker={route === 'home' ? formatDate(new Date(), { weekday: 'long', day: 'numeric', month: 'long' }) : undefined}
       requests={state.settings.aiAssistant || state.aiRequests > 0 ? state.aiRequests : undefined}
     >
-      {route === 'home' && <Home state={state} onStart={start} refresh={refresh} goDecks={() => go('decks')} />}
+      {route === 'home' && (
+        <Home
+          state={state}
+          onStart={start}
+          onTogether={(plans) => setFull({ name: 'together', plans })}
+          refresh={refresh}
+          goDecks={() => go('decks')}
+        />
+      )}
       {route === 'decks' && (
         <Decks
           state={state}
@@ -229,7 +305,11 @@ export function App() {
       {route === 'cards' && <Browse state={state} refresh={refresh} />}
       {route === 'progress' && (
         <div className="col" style={{ gap: 'var(--space-5)' }}>
-          <Progress onStudyHardest={studyHardest} />
+          <Progress
+            onStudyHardest={studyHardest}
+            onTeach={(tag) => setFull({ name: 'teach', tag })}
+            onMap={(deckId, topic) => setFull({ name: 'map', deckId, topic })}
+          />
           <StreakPanel streak={state.streak} />
           <Badges got={state.achievements} />
         </div>

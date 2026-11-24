@@ -451,6 +451,9 @@ input {
 .compare mark {
   color: inherit;
   border-radius: 2px;
+  padding: 0;
+  font-weight: inherit;
+  text-decoration: none;
 }
 .compare mark.miss {
   background: color-mix(in srgb, var(--color-incorrect-fill) 18%, transparent);
@@ -950,7 +953,8 @@ textarea.input {
   min-height: 64px;
   resize: vertical;
 }
-label.lbl {
+label.lbl,
+.explain-yours .lbl {
   font-size: calc(12px * var(--text-scale));
   color: var(--muted);
   font-weight: 700;
@@ -1222,6 +1226,37 @@ kbd {
   max-width: var(--size-card-max-width);
   margin: 0 auto;
 }
+.quiet-offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+}
+.quiet-offer h2 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-subhead);
+}
+.quiet-offer p {
+  margin: 0;
+}
+.quiet-dialog {
+  max-width: 440px;
+  color: var(--color-text);
+  text-align: center;
+}
+/* The rest dims everything behind it. No animation: the countdown is plain text. */
+.quiet-dialog::backdrop {
+  background: color-mix(in srgb, var(--color-bg) 94%, transparent);
+}
+.quiet-dialog h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-subhead);
+}
+.quiet-left {
+  margin: var(--space-4) 0;
+  font-size: var(--text-title);
+  font-variant-numeric: tabular-nums;
+}
 .session-dialog {
   max-width: 440px;
   color: var(--color-text);
@@ -1279,6 +1314,30 @@ kbd {
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-4);
 }
+.summary-tiles-calm {
+  grid-template-columns: repeat(2, 1fr);
+}
+.summary-rewards h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+}
+.summary-rewards ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-2);
+}
+.summary-rewards li {
+  display: grid;
+  grid-template-columns: minmax(4ch, auto) 1fr;
+  gap: var(--space-4);
+  align-items: baseline;
+}
+.summary-rewards b {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
 @media (max-width: 640px) {
   .summary-tiles {
     grid-template-columns: 1fr;
@@ -1321,6 +1380,41 @@ kbd {
 }
 .summary-missed li b {
   font-size: var(--text-subhead);
+}
+/* "Will you know these tomorrow?" (#205): each new card's question with a yes / not sure / no choice. */
+.tomorrow h2,
+.tomorrow-report h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-body);
+}
+.tomorrow > p {
+  margin: 0 0 var(--space-2);
+}
+.tomorrow ul,
+.tomorrow-report ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.tomorrow li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) 0;
+  border-top: 1px solid var(--color-border);
+}
+.tomorrow-q {
+  flex: 1 1 16rem;
+  min-width: 0;
+  font-weight: 600;
+}
+.tomorrow-choice {
+  flex: 0 0 auto;
+}
+.tomorrow-report li + li {
+  margin-top: var(--space-1);
 }
 .summary-actions {
   display: flex;
@@ -1826,6 +1920,69 @@ kbd {
     display: none;
   }
 }
+/* Calibration (#205): the retention bars' look, five ratings with their number under each bar. */
+.calib-chart {
+  height: 140px;
+}
+.calib-few {
+  width: 100%;
+  text-align: center;
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.calib-axis {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-2);
+  margin: calc(-1 * var(--space-2)) 0 0;
+  padding: 0;
+  list-style: none;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.journey-teach ul {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.journey-teach li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.teach-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.teach-panel h2 {
+  margin: 0;
+}
+.teach-panel audio {
+  width: 100%;
+}
+.teach-record {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+.teach-recording {
+  color: var(--color-incorrect);
+  box-shadow: inset 0 0 0 2px var(--color-incorrect);
+}
+.teach-text {
+  margin: 0;
+  white-space: pre-wrap;
+}
+.teach-about {
+  display: block;
+}
 .journey-hard-head {
   display: flex;
   align-items: center;
@@ -1878,6 +2035,98 @@ kbd {
   background: var(--color-subtle);
   color: var(--color-text);
 }
+.editor-hints,
+.import-hints {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-control);
+  border-inline-start: 3px solid var(--color-accent);
+  background: var(--color-subtle);
+  color: var(--color-text);
+}
+.editor-hints ul,
+.import-hints ul {
+  margin: var(--space-1) 0 0;
+  padding-inline-start: var(--space-4);
+}
+.import-hints p {
+  margin: var(--space-1) 0 0;
+}
+.act-out {
+  margin-top: var(--space-2);
+}
+.say-aloud,
+.act-out {
+  font-weight: 700;
+  color: var(--color-text);
+}
+.mnemonic {
+  margin-top: var(--space-2);
+  padding-inline-start: var(--space-2);
+  border-inline-start: 3px solid var(--color-border-strong);
+  color: var(--color-text);
+  text-align: start;
+}
+.mnemonic-lead {
+  font-weight: 700;
+}
+/* The learner's own sketch (#220): a small framed picture with the answer; the pad's offer on a new card. */
+.sketchcue {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+  text-align: start;
+}
+.sketchcue-lead {
+  font-weight: 700;
+  color: var(--color-text);
+}
+.sketchcue img {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-control);
+}
+.sketchcue-text {
+  color: var(--color-text);
+  font-size: var(--text-body);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+}
+.sketchcue-remove {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.btn.sketch-btn {
+  min-height: 36px;
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-caption);
+}
+.sketchoffer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.sketchoffer .sketchcue {
+  align-items: center;
+  margin-top: 0;
+}
+/* A key term (==term== in a card): shown by weight and an underline as well as a tint, never by colour alone. */
+mark {
+  padding: 0 0.15em;
+  border-radius: 2px;
+  background: var(--color-accent-tint);
+  color: inherit;
+  font-weight: 700;
+  text-decoration: underline 2px var(--color-accent);
+  text-underline-offset: 3px;
+}
 .editor-drop {
   border: 2px dashed var(--color-border);
   border-radius: var(--radius-control);
@@ -1907,6 +2156,81 @@ kbd {
 }
 .editor-slot .btn {
   padding: 0 var(--space-2);
+}
+.editor-variants {
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.editor-variants legend {
+  margin: 0 0 var(--space-1);
+  padding: 0;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.editor-variants p {
+  margin: 0;
+}
+.editor-variants > .btn {
+  align-self: flex-start;
+}
+.editor-variant {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  gap: var(--space-2);
+  align-items: center;
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.editor-variant textarea.input {
+  grid-column: 1 / -1;
+  min-height: 0;
+  field-sizing: content;
+}
+.editor-variant select.input {
+  width: auto;
+}
+.editor-keypoint,
+.editor-worked-step {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+/* What you do gets more room than its result. */
+.editor-worked-step .input:first-of-type {
+  flex: 2;
+}
+.editor-worked-step .input {
+  flex: 1;
+  min-width: 0;
+}
+/* The label quotes the choice: keep its own case. */
+.editor-correction .lbl {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.editor-correction textarea.input {
+  min-height: 0;
+  field-sizing: content;
+}
+/* A wrong choice's correction (#202): the author's note in body text, between the lead and the right answer. */
+.misconception {
+  margin: var(--space-2) 0;
+  font-size: var(--text-body);
+  font-weight: 500;
+  color: var(--color-text);
+}
+.misconception p {
+  margin: 0 0 var(--space-2);
+}
+.misconception p:last-child {
+  margin-bottom: 0;
 }
 .editor-preview {
   display: grid;
@@ -2132,6 +2456,80 @@ kbd {
 .welcome-skip {
   margin-inline-start: auto;
   color: var(--color-text-muted);
+}
+
+/* ── If-then study plan (#204): on Welcome, in Settings, and the habit note on Home ── */
+.welcome-plan {
+  margin: 0 0 var(--space-6);
+  padding: var(--space-4) var(--space-5);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+.welcome-plan summary {
+  min-height: var(--size-min-target);
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  cursor: pointer;
+}
+.welcome-plan summary::before {
+  content: '▸';
+  margin-inline-end: var(--space-2);
+  color: var(--color-text-muted);
+}
+.welcome-plan[open] summary::before {
+  content: '▾';
+}
+[dir='rtl'] .welcome-plan:not([open]) summary::before {
+  content: '◂';
+}
+.welcome-plan summary::-webkit-details-marker {
+  display: none;
+}
+.welcome-plan summary:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+}
+.plan-fields .input {
+  flex: 0 1 320px;
+  width: auto;
+  min-width: 0;
+}
+.plan-preview {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-accent-tint);
+  border-radius: var(--radius-control);
+}
+.plan-preview figcaption {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+}
+.plan-preview blockquote {
+  margin: var(--space-1) 0 0;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.plan-suggest {
+  padding-top: var(--space-4);
+}
+.habit-note {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  line-height: var(--line-body);
+}
+.habit-note-hide {
+  min-height: var(--size-min-target);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
 }
 
 /* Motivation (issue #30): level-up and badge moments on the summary, badges and streak on Progress, freezes on Home.
@@ -2485,6 +2883,29 @@ div.deck-drop {
 }
 .whats-new-group li + li {
   margin-top: var(--space-2);
+}
+.level-tag {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--color-accent-tint);
+  color: var(--color-accent);
+  font-size: var(--text-caption);
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+  vertical-align: middle;
+}
+.level-tag.level-recall {
+  background: var(--color-subtle);
+  color: var(--color-text);
+}
+.journey-levels p {
+  margin: var(--space-2) 0 0;
+}
+.journey-level {
+  display: inline-block;
+  margin-inline-end: var(--space-1);
 }
 .whats-new-tag {
   display: inline-block;
@@ -3246,4 +3667,603 @@ textarea.input.code-input {
 .request-checklist li.off label {
   opacity: 0.5;
   text-decoration: line-through;
+}
+
+/* Explain it (modes/Explain.tsx, #199): write an explanation, then tick the key points you covered. */
+.explain-card .prompt {
+  text-align: start;
+  margin-bottom: var(--space-3);
+}
+.explain-card .feedback .ans {
+  margin-top: var(--space-2);
+  font-size: var(--text-body);
+  font-weight: 500;
+  color: var(--color-text);
+}
+.explain-input {
+  min-height: 140px;
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+.explain-voice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.explain-understand {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-3) 0;
+}
+.explain-understand [role='radiogroup'] {
+  max-width: 420px;
+}
+.explain-understand button {
+  padding: 0 var(--space-2);
+}
+.explain-yours p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--color-text);
+}
+/* The case of a case chain (components/CasePanel.tsx, #209), above each of its questions. */
+.case-panel {
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-inline-start: 4px solid var(--color-accent);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+  text-align: start;
+}
+.case-panel-label {
+  font-size: calc(12px * var(--text-scale));
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  margin-bottom: var(--space-1);
+}
+.case-panel-text {
+  font-size: var(--text-body);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+/* Concept map from memory (ConceptMap.tsx, components/ConceptMapView.tsx, #219). */
+.cmap-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: start;
+}
+.cmap-panel h2 {
+  margin: 0;
+}
+.cmap-terms,
+.cmap-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: var(--space-2);
+}
+.cmap-terms {
+  flex-wrap: wrap;
+}
+.cmap-terms li {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-card);
+  background: var(--color-subtle);
+}
+.cmap-list {
+  flex-direction: column;
+}
+.cmap-list li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  overflow-wrap: anywhere;
+}
+.cmap-add {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--space-3);
+  align-items: end;
+}
+.cmap-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.cmap-figure {
+  margin: 0;
+}
+.cmap-figure figcaption {
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+.cmap-view {
+  max-width: 100%;
+  height: auto;
+  align-self: center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+.cmap-view-link line {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+.cmap-view-matched line {
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+}
+.cmap-view-missing line {
+  stroke-dasharray: 7 5;
+}
+.cmap-view-extra line {
+  stroke-dasharray: 2 4;
+}
+.cmap-view-arrow {
+  fill: var(--color-text-muted);
+}
+.cmap-view-node {
+  fill: var(--color-subtle);
+  stroke: var(--color-border-strong);
+}
+.cmap-view-term {
+  fill: var(--color-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.cmap-view-label {
+  fill: var(--color-text);
+  font-size: 11px;
+  paint-order: stroke;
+  stroke: var(--color-bg);
+  stroke-width: 3px;
+}
+.deck-maps {
+  font-family: var(--font-mono, monospace);
+}
+/* A card's graph (components/GraphPlot.tsx, #210): a curve on a light grid, drawn from tokens only. */
+.graph-plot {
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+}
+.graph-plot-box {
+  fill: none;
+}
+.graph-plot-grid {
+  stroke: var(--color-border);
+  stroke-width: 1;
+}
+.graph-plot-axis {
+  stroke: var(--color-text-muted);
+  stroke-width: 1.5;
+}
+.graph-plot-line {
+  fill: none;
+  stroke: var(--color-accent);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.graph-plot-dot {
+  fill: var(--color-accent);
+}
+.graph-plot-tick {
+  fill: var(--color-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+/* Try first (modes/Guess.tsx, #218): room to write an attempt, kept as written next to the solution. */
+.try-input {
+  min-height: 120px;
+  font-size: var(--text-body);
+  line-height: 1.5;
+}
+.try-yours {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.try-solution {
+  margin-top: var(--space-3);
+  font-weight: 700;
+}
+.guess-answer .worked-steps {
+  margin-bottom: var(--space-3);
+}
+/* Worked examples that fade (modes/Worked.tsx, #206): the steps of a solved problem, the last ones typed. */
+.worked-card .prompt {
+  text-align: start;
+  margin-bottom: var(--space-3);
+}
+.worked-steps {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0 0;
+  padding-inline-start: var(--space-6);
+  text-align: start;
+}
+.worked-step {
+  padding-inline-start: var(--space-2);
+}
+.worked-step::marker {
+  color: var(--muted);
+  font-weight: 700;
+}
+.worked-label {
+  font-size: var(--text-body);
+}
+.worked-result {
+  font-size: var(--text-subhead);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.worked-step .input {
+  margin-top: var(--space-1);
+}
+.worked-later {
+  font-size: var(--text-body);
+}
+.worked-mark.right {
+  color: var(--color-correct);
+}
+.worked-mark.wrong {
+  color: var(--color-incorrect);
+}
+.worked-yours {
+  display: block;
+  font-weight: 400;
+}
+.worked-card .feedback .ans {
+  margin-top: var(--space-2);
+  font-size: var(--text-body);
+  font-weight: 500;
+}
+.explain-points {
+  margin: var(--space-3) 0 0;
+  padding-inline-start: var(--space-5);
+}
+.keypoints {
+  margin: var(--space-4) 0 var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+.keypoints legend {
+  padding: 0 var(--space-1);
+  font-weight: 700;
+}
+.keypoints ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.keypoints li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--size-min-target);
+}
+.keypoints input[type='checkbox'] {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  accent-color: var(--color-accent);
+}
+.keypoints label {
+  flex: 1;
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+/* Compare cards (#200): two things side by side; they stack when there is no room for two columns. */
+.side-by-side {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr));
+  gap: var(--space-3);
+  text-align: start;
+}
+.side-by-side-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  font-size: var(--text-subhead);
+  overflow-wrap: anywhere;
+}
+.twin-question {
+  margin: var(--space-4) 0 0;
+  font-weight: 700;
+}
+.twin-offer h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+}
+.twin-offer > p {
+  margin: var(--space-3) 0;
+}
+.twin-answer {
+  min-height: 4.5rem;
+  field-sizing: content;
+}
+
+/* Guess first (modes/Guess.tsx): a new topic's questions before its cards. */
+.guess-head {
+  margin-bottom: var(--space-1);
+}
+.guess-note {
+  margin: 0 0 var(--space-3);
+}
+.guess-input {
+  display: grid;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+.guess-answer {
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  text-align: start;
+  animation: rise var(--motion-feedback) var(--motion-ease-enter);
+}
+.guess-answer .ans {
+  font-size: var(--text-subhead);
+  font-weight: 700;
+}
+
+/* This week's goal and the progress card (#214). */
+.week-goal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+.week-goal-head h2 {
+  margin: 0;
+}
+.week-goal-list,
+.progress-card ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--space-4);
+}
+.week-goal-list {
+  margin-bottom: var(--space-4);
+}
+.progress-card-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+}
+.progress-card-row b {
+  overflow-wrap: anywhere;
+}
+.progress-card-row span {
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+.card-dialog {
+  width: min(720px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+  color: var(--color-text);
+}
+.card-dialog::backdrop {
+  background: color-mix(in srgb, var(--color-bg) 75%, transparent);
+}
+.card-dialog h2 {
+  margin: 0 0 var(--space-2);
+  font-size: var(--text-subhead);
+}
+.card-dialog .session-dialog-actions {
+  flex-wrap: wrap;
+}
+.progress-card {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-6);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+.progress-card h3 {
+  margin: 0;
+  font-size: var(--text-title);
+}
+.progress-card header p,
+.progress-card footer,
+.progress-card-note {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+.progress-card h4 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.progress-card-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.progress-card-stats div {
+  display: flex;
+  flex-direction: column-reverse; /* the number above its label */
+  justify-content: flex-end;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
+}
+.progress-card-stats dd {
+  margin: 0;
+  font-size: var(--text-subhead);
+  font-weight: 700;
+}
+.progress-card-stats dt {
+  font-size: var(--text-caption);
+  color: var(--color-text-muted);
+}
+.progress-card footer {
+  font-size: var(--text-caption);
+}
+/* Printing the card: only the card, at the top of the page. */
+@media print {
+  body[data-print='card'] * {
+    visibility: hidden;
+  }
+  body[data-print='card'] .progress-card,
+  body[data-print='card'] .progress-card * {
+    visibility: visible;
+  }
+  body[data-print='card'] .progress-card {
+    position: fixed;
+    inset-block-start: 0;
+    inset-inline: 0;
+    border: none;
+    print-color-adjust: exact;
+  }
+}
+
+/* How the session went (#213). */
+.summary-patterns h2 {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-body);
+}
+.summary-patterns ul {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  display: grid;
+  gap: var(--space-2);
+}
+.summary-patterns-next {
+  margin: var(--space-4) 0 0;
+  color: var(--color-text-muted);
+}
+.summary-patterns-next b {
+  color: var(--color-text);
+}
+.summary-patterns-next .btn {
+  display: block;
+  margin-top: var(--space-3);
+}
+/* AI requests: study aids. Lists show the card's entries now above one line per proposed entry. */
+.request-now-list {
+  padding-inline-start: var(--space-5);
+}
+.request-lines {
+  min-height: 0;
+  resize: vertical;
+  font: inherit;
+}
+.request-choices {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  gap: var(--space-3);
+}
+.request-choices legend {
+  padding: 0 var(--space-1);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+.request-extra {
+  grid-column: 2 / -1;
+}
+
+/* How LernLab's methods work (#215). */
+.methods details {
+  border-top: 1px solid var(--color-border);
+}
+.methods summary {
+  min-height: var(--size-min-target);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 700;
+  cursor: pointer;
+}
+.methods summary::before {
+  content: '▸';
+  width: 1ch;
+  color: var(--color-text-muted);
+}
+.methods details[open] summary::before {
+  content: '▾';
+}
+.methods summary::-webkit-details-marker {
+  display: none;
+}
+.methods details p {
+  margin: 0 0 var(--space-4);
+  max-width: 70ch;
+  color: var(--color-text-muted);
+}
+/* Study together (#224): the start panel on Home, the hand-over screen, and the people list in Settings. */
+.together-start {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.together-start h2,
+.together-start p {
+  margin: 0;
+}
+.learners {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.learners li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  overflow-wrap: anywhere;
+}
+.learners-add {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+.learners-add .field {
+  flex: 1;
+}
+.learners-add .field {
+  flex-direction: column;
+  align-items: stretch;
+  border: none;
+  padding: 0;
 }

@@ -1,7 +1,18 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Item } from '@lernlab/core/types';
-import { MISSED_SHOWN, summaryFacts, summaryMoments } from './summary-logic';
+import {
+  MISSED_SHOWN,
+  TOMORROW_SHOWN,
+  celebrates,
+  summaryFacts,
+  summaryMoments,
+  tomorrowCards,
+  tomorrowReport,
+  QUIET_SECONDS,
+  offersQuietMinute,
+  quietLeft,
+} from './summary-logic';
 
 const item = (id: number) => ({ id, target: `word ${id}`, meaning: `meaning ${id}` }) as Item;
 const items = Object.fromEntries([1, 2, 3, 4, 5, 6, 7, 8].map((id) => [id, item(id)]));
@@ -66,4 +77,61 @@ test('moments: level-up first, then badges, then streak news; nothing for an ord
   const quiet = { ...repair, streakChange: { freezeEarned: false, repaired: false, repairDone: null } };
   assert.deepEqual(summaryMoments(summaryFacts(result, quiet, items), quiet), []);
   assert.deepEqual(summaryMoments(summaryFacts(result, null, items), null), []);
+});
+
+test('calm mode keeps streak news and drops the level, the badges and the celebration (#216)', () => {
+  const server = {
+    bonus: 0,
+    sessionXp: 120,
+    goalMetNow: true,
+    state: { totalXp: 300, week },
+    unlocked: [{ key: 'first' }],
+    streakChange: { freezeEarned: true, repaired: false, repairDone: null },
+  };
+  const f = summaryFacts(result, server, items);
+  assert.deepEqual(summaryMoments(f, server, true), [{ kind: 'freeze' }]);
+  assert.equal(celebrates(f, server, false), true);
+  assert.equal(celebrates(f, server, true), false);
+  assert.equal(celebrates({ levelUp: null }, { goalMetNow: false, unlocked: [] }, false), false);
+  assert.equal(celebrates({ levelUp: null }, null, false), false);
+});
+
+test('the tomorrow check asks about the new cards met, question only, never in practice (#205)', () => {
+  const qa = (i: Item) => ({ prompt: `question ${i.id}` });
+  assert.deepEqual(tomorrowCards({ practice: false, newCards: [2, 99, 4, 2] }, items, qa), [
+    { id: 2, prompt: 'question 2' },
+    { id: 4, prompt: 'question 4' },
+  ]);
+  assert.deepEqual(tomorrowCards({ practice: true, newCards: [2, 4] }, items, qa), []);
+  assert.deepEqual(tomorrowCards({ practice: false, newCards: [] }, items, qa), []);
+  const many = Array.from({ length: 30 }, (_, i) => i + 1);
+  const lots = Object.fromEntries(many.map((id) => [id, item(id)]));
+  assert.equal(tomorrowCards({ practice: false, newCards: many }, lots, qa).length, TOMORROW_SHOWN);
+});
+
+test('the report on the last check lists only answers whose cards came back', () => {
+  const groups = {
+    yes: { cards: 3, reviewed: 3, right: 2 },
+    unsure: { cards: 2, reviewed: 0, right: 0 },
+    no: { cards: 1, reviewed: 1, right: 1 },
+  };
+  assert.deepEqual(tomorrowReport(groups), [
+    { answer: 'yes', reviewed: 3, right: 2 },
+    { answer: 'no', reviewed: 1, right: 1 },
+  ]);
+});
+
+test('the quiet minute is offered only when turned on, after a real session that taught new cards', () => {
+  assert.equal(offersQuietMinute({ practice: false, introduced: 3 }, true), true);
+  assert.equal(offersQuietMinute({ practice: false, introduced: 3 }, false), false, 'off by default');
+  assert.equal(offersQuietMinute({ practice: false, introduced: 0 }, true), false, 'nothing new to rest on');
+  assert.equal(offersQuietMinute({ practice: true, introduced: 3 }, true), false);
+});
+
+test('the quiet minute counts down one minute in whole seconds and stops at zero', () => {
+  assert.equal(QUIET_SECONDS, 60);
+  assert.equal(quietLeft(1000, 1000), 60);
+  assert.equal(quietLeft(1000, 1000 + 12_400), 48);
+  assert.equal(quietLeft(1000, 1000 + 60_000), 0);
+  assert.equal(quietLeft(1000, 1000 + 95_000), 0);
 });

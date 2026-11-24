@@ -4,17 +4,20 @@ import { useTranslation } from 'react-i18next';
 import type { OutputOf } from '../backend/handlers';
 import { api } from './api';
 import { isDesktop } from './bridge';
-import i18next, { LANGUAGES, PSEUDO, PSEUDO_RTL, formatPercent, setLanguage } from './i18n';
+import i18next, { LANGUAGES, PSEUDO, PSEUDO_RTL, formatDate, formatPercent, setLanguage } from './i18n';
 import { THEMES } from '@lernlab/ui/tokens';
 import { applyTheme } from './theme';
 import { TEXT_SIZES, applyDisplay } from './display';
 import { LENGTHS } from './lengths';
-import { cleanReminderTime } from '@lernlab/core/reminder';
+import { cleanMorningTime, cleanReminderTime } from '@lernlab/core/reminder';
 import { ASSISTANT_GUIDE_URL, LIBRARIES, LICENSE_URL, ONLINE_CASES, REPO_URL } from './about';
 import { clientConfig } from './assistant-logic';
 import { DataControls } from './DataControls';
 import { allowRemoteMedia } from './remote-media';
 import { Button, Card, Input, SegmentedControl, Select } from './components';
+import { PlanFields } from './StudyPlan';
+import { LearnersSettings } from './Together';
+import { planDraftOf, planPatch, timeOfDay } from './plan-logic';
 
 const TIMERS = [
   { key: 'off', blitz: 0, q: 0 },
@@ -60,6 +63,10 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
   const [newPerDay, setNewPerDay] = useState(String(state.settings.newPerDay));
   const [dailyGoal, setDailyGoal] = useState(String(state.settings.dailyGoalSessions));
   const [reminderTime, setReminderTime] = useState(state.settings.reminderTime);
+  const [morningTime, setMorningTime] = useState(state.settings.morningTime);
+  const [plan, setPlan] = useState(() => planDraftOf(state.settings));
+  // The hour you usually study, from your own sessions on this computer (#204).
+  const [usualTime, setUsualTime] = useState<string | null>(null);
   const desktop = isDesktop();
   const [msg, setMsg] = useState('');
   // Internet media (#177) turns on only after the warning is accepted; keeping it off is the default button.
@@ -68,6 +75,10 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
   const [info, setInfo] = useState<Info | null>(null);
   useEffect(() => {
     api.appInfo().then(setInfo, (err: Error) => setMsg(err.message));
+    api.suggestPlanTime().then(
+      (r) => setUsualTime(r.time),
+      () => setUsualTime(null),
+    );
   }, []);
   useEffect(() => {
     if (!msg) return;
@@ -87,6 +98,8 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
       setNewPerDay(String(saved.newPerDay));
       setDailyGoal(String(saved.dailyGoalSessions));
       setReminderTime(saved.reminderTime);
+      setMorningTime(saved.morningTime);
+      setPlan(planDraftOf(saved));
       await setLanguage(saved.uiLanguage);
       setMsg(i18next.t('common.saved')); // the new language, not the one this render started with
       onSaved();
@@ -103,7 +116,20 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
   };
   const timer = TIMERS.findIndex((x) => x.blitz === s.blitzSeconds && x.q === (s.questionTimer ?? 0));
   type Toggle =
-    'sound' | 'teacherVoice' | 'reducedMotion' | 'betaUpdates' | 'reminder' | 'launchAtLogin' | 'aiAssistant';
+    | 'sound'
+    | 'teacherVoice'
+    | 'reducedMotion'
+    | 'betaUpdates'
+    | 'reminder'
+    | 'launchAtLogin'
+    | 'aiAssistant'
+    | 'habitNote'
+    | 'confidence'
+    | 'calm'
+    | 'sleepBridge'
+    | 'sayAloud'
+    | 'actOut'
+    | 'quietMinute';
   const check = (key: Toggle, id: string, disabled = false) => (
     <input
       id={id}
@@ -241,6 +267,58 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
             </option>
           ))}
         </Select>
+        <Row id="set-confidence" label={t('settings.confidence')} hint={t('settings.confidenceHint')}>
+          {check('confidence', 'set-confidence')}
+        </Row>
+        <Row id="set-say-aloud" label={t('settings.sayAloud')} hint={t('settings.sayAloudHint')}>
+          {check('sayAloud', 'set-say-aloud')}
+        </Row>
+        <Row id="set-act-out" label={t('settings.actOut')} hint={t('settings.actOutHint')}>
+          {check('actOut', 'set-act-out')}
+        </Row>
+        <Row id="set-quiet-minute" label={t('settings.quietMinute')} hint={t('settings.quietMinuteHint')}>
+          {check('quietMinute', 'set-quiet-minute')}
+        </Row>
+        <Row id="set-calm" label={t('settings.calm')} hint={t('settings.calmHint')}>
+          {check('calm', 'set-calm')}
+        </Row>
+        <Row id="set-sleep" label={t('settings.sleepBridge')} hint={t('settings.sleepBridgeHint')}>
+          {check('sleepBridge', 'set-sleep')}
+        </Row>
+      </Section>
+
+      <Section id="plan" title={t('settings.section.plan')}>
+        <p className="settings-hint">{t('plan.lead')}</p>
+        <PlanFields
+          idPrefix="set-plan"
+          className="field settings-row"
+          draft={plan}
+          onChange={setPlan}
+          onCommit={(next) => {
+            const patch = planPatch(next)!;
+            if (
+              patch.planAfter !== s.planAfter ||
+              patch.planMinutes !== s.planMinutes ||
+              patch.planBackup !== s.planBackup
+            )
+              void update(patch);
+          }}
+        />
+        {usualTime && (
+          <div className="settings-block plan-suggest">
+            <span>{t('plan.suggest', { time: formatDate(timeOfDay(usualTime), { timeStyle: 'short' }) })}</span>
+            {desktop && (s.reminderTime !== usualTime || !s.reminder) && (
+              <div className="settings-actions">
+                <Button onClick={() => update({ reminder: true, reminderTime: usualTime })}>
+                  {t('plan.suggestUse')}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        <Row id="set-habit" label={t('plan.habitSetting')} hint={t('plan.habitSettingHint')}>
+          {check('habitNote', 'set-habit')}
+        </Row>
       </Section>
 
       <Section id="reminders" title={t('settings.section.reminders')}>
@@ -259,6 +337,18 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
           // The field is empty while half typed; save only a complete time.
           onBlur={() => cleanReminderTime(reminderTime) === reminderTime && update({ reminderTime })}
         />
+        {s.sleepBridge && (
+          <Input
+            id="set-morning-time"
+            label={t('settings.reminders.morningTime')}
+            className="field settings-row"
+            type="time"
+            value={morningTime}
+            disabled={!desktop || !s.reminder}
+            onChange={(e) => setMorningTime(e.target.value)}
+            onBlur={() => cleanMorningTime(morningTime) === morningTime && update({ morningTime })}
+          />
+        )}
         <Row
           id="set-login"
           label={t('settings.reminders.launchAtLogin')}
@@ -266,6 +356,10 @@ export function Settings({ state, onSaved }: { state: AppState; onSaved: () => v
         >
           {check('launchAtLogin', 'set-login', !desktop)}
         </Row>
+      </Section>
+
+      <Section id="people" title={t('settings.section.people')}>
+        <LearnersSettings state={state} onSaved={onSaved} />
       </Section>
 
       <Section id="data" title={t('settings.section.data')}>

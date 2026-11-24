@@ -1,5 +1,7 @@
 import type { Line } from '@lernlab/core/teacher';
-import type { Format, Item, SessionPlan } from '@lernlab/core/types';
+import type { Format, Item, SessionPlan, Sketch } from '@lernlab/core/types';
+import type { Level } from '@lernlab/core/variants';
+import type { Confidence } from '@lernlab/core/confidence';
 import type { TextTeacher } from './lines';
 
 export type AnswerInput = {
@@ -14,6 +16,12 @@ export type AnswerInput = {
   genderOnly?: boolean;
   shownAt: number;
   silent?: boolean; // no sound/XP float (e.g. intro)
+  /** A card brought back for relearning: logged as practice, never a second grade. */
+  practice?: boolean;
+  /** Asked with one of the card's question variants: its level. */
+  level?: Level;
+  /** "That was easy" after ticking every key point of an explain card (core/explain.ts). */
+  easy?: boolean;
 };
 
 export type Ctx = {
@@ -29,9 +37,25 @@ export type Ctx = {
   pool: Item[];
   answer: (a: AnswerInput) => number;
   /** "I was right": undo today's failing grade for this card. */
-  override: (itemId: number) => void;
+  override: (itemId: number, practice?: boolean) => void;
   combo: number;
   missed: Set<number>;
+  /** A card's correct recalls in a row since its last miss, this session's answers included; undefined while never missed (core/mnemonic.ts). */
+  mnemonicRun?: (itemId: number) => number | undefined;
+  /**
+   * "How sure were you?" (#205): save the learner's 1–5 rating of their last answer to this card. Only set
+   * where the session asks it (a real recall answer, the setting on); never changes the schedule.
+   */
+  confidence?: (itemId: number, value: Confidence) => void;
+  /**
+   * The learner's own sketches (#220): the one for a card (this session's changes included), saving a drawing
+   * (PNG bytes), a description or both, and removing it. Never an answer; never changes the schedule.
+   */
+  sketches?: {
+    of: (itemId: number) => Sketch | undefined;
+    save: (itemId: number, picture: Uint8Array | null, text: string) => Promise<void>;
+    remove: (itemId: number) => Promise<void>;
+  };
   /** Show a line in the speech bubble (a core Line, or text already translated). */
   teacher: (line: Line | string) => void;
   settings: { sound: boolean; teacherVoice: boolean; questionTimer?: number; blitzSeconds?: number };

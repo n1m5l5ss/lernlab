@@ -22,9 +22,11 @@ Each one is built from a folder in [`decks/`](decks/) with a `manifest.json` and
 | [german-a1-starter.zip](downloads/german-a1-starter.zip) | First German words, with articles and example sentences |
 | [aws-cloud-basics.zip](downloads/aws-cloud-basics.zip) | Core AWS services for the Cloud Practitioner exam |
 | [biology-the-cell.zip](downloads/biology-the-cell.zip) | Parts of the cell and what they do |
-| [template.zip](downloads/template.zip) | An empty template: manifest, a `cards.csv` with every column, and empty `images/`, `audio/` and `video/` folders |
+| [template.zip](downloads/template.zip) | A template to fill in: manifest, a `cards.csv` with the main columns and four example cards (a plain card, a multiple-choice card, a language card and an explain card with key points), and empty `images/`, `audio/` and `video/` folders |
 
 [german-colours-with-pictures.lernpack](german-colours-with-pictures.lernpack) is the same colours deck as LernLab exports it: a `.lernpack` version 1 package with `manifest.json`, `cards.jsonl` and `media/`. `npx tsx scripts/build-example-lernpack.ts` rebuilds it too.
+
+[learn-how-to-learn.csv](learn-how-to-learn.csv) is a deck about studying itself (#215): 16 cards on recall, spacing, mixing and why "feels easy" can mislead, to study with LernLab like any other deck.
 
 The unzipped versions are in [`decks/`](decks/), so you can see exactly how a package looks. The plain spreadsheet files (`*.csv`, `*.tsv`) in this folder also import on their own.
 

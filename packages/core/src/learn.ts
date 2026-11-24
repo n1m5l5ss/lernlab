@@ -5,9 +5,15 @@ import { getDb, getMeta, tx, type DB } from './db';
 import { gradeFor, dayKey } from './game';
 import { FORMAT_LEVEL, RECALL_FORMATS, type Attempt, type Item } from './types';
 import { qa } from './cards';
-import { DEFAULT_REMINDER_TIME } from './reminder';
+import { DEFAULT_MORNING_TIME, DEFAULT_REMINDER_TIME } from './reminder';
+import { DEFAULT_PLAN_MINUTES } from './studyplan';
 import { withOcclusionBoxes } from './occlusion';
+import { withMnemonicRuns } from './mnemonic';
+import { withSketches } from './sketch';
 import { createEmptyCard, liveScheduler, reviveCard, type Card, type Grade as FsrsGrade } from './scheduler';
+import { LEVELS } from './variants';
+import { noteConfusion } from './confusions';
+import { isWorked, rungOf, workedStepsOf } from './worked';
 
 export type Settings = {
   deck: string;
@@ -37,12 +43,35 @@ export type Settings = {
   reminder: boolean;
   /** When the reminder shows, "HH:MM" in local time. */
   reminderTime: string;
+  /** If-then plan (#204): "After I ___ (planAfter), I'll study for ___ (planMinutes) minutes". Plain text; '' = no plan. */
+  planAfter: string;
+  planMinutes: number;
+  /** Optional backup plan: "If ___ (planBackup), I'll do one 5-minute session". Plain text; '' = none. */
+  planBackup: string;
+  /** Show the short note on habits (one missed day barely matters) next to the streak on Home. */
+  habitNote: boolean;
   /** Start LernLab, minimised, when you log in to the computer (desktop app only). */
   launchAtLogin: boolean;
   /** Let an AI assistant the user connects (MCP, #148) read their data and propose changes. Off by default. */
   aiAssistant: boolean;
   /** Load pictures, video and sound that decks link from the internet (#177). Off by default: it tells those sites the learner's IP address. */
   remoteMedia: boolean;
+  /** After a recall answer, ask "How sure were you?" (1–5, optional, #205). It never changes the schedule. */
+  confidence: boolean;
+  /** Calm mode (#216): hide XP, levels, combos and celebrations. XP is still counted, so nothing is lost. Off by default. */
+  calm: boolean;
+  /** What to call this computer's first learner when two study together (#224). '' until they give a name. */
+  learnerName: string;
+  /** Sleep bridge (#217, sleep.ts): new cards in the evening, a short check the next morning. Off by default. */
+  sleepBridge: boolean;
+  /** When the morning check is offered by the reminder, "HH:MM" in local time. */
+  morningTime: string;
+  /** Ask for the answer out loud on a few flip cards, starred or recently missed (#222). On by default. */
+  sayAloud: boolean;
+  /** Ask to act out a few action cards: tagged `action`, or verbs in a language deck (#225). On by default. */
+  actOut: boolean;
+  /** Offer an optional minute of eyes-closed rest after a session with new cards (#226). The evidence is mixed, so it is off by default. */
+  quietMinute: boolean;
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -63,9 +92,21 @@ export const DEFAULT_SETTINGS: Settings = {
   reducedMotion: false,
   reminder: false,
   reminderTime: DEFAULT_REMINDER_TIME,
+  planAfter: '',
+  planMinutes: DEFAULT_PLAN_MINUTES,
+  planBackup: '',
+  habitNote: true,
   launchAtLogin: false,
   aiAssistant: false,
   remoteMedia: false,
+  confidence: true,
+  calm: false,
+  learnerName: '',
+  sleepBridge: false,
+  morningTime: DEFAULT_MORNING_TIME,
+  sayAloud: true,
+  actOut: true,
+  quietMinute: false,
 };
 
 export const getSettings = (d: DB = getDb()): Settings => ({ ...DEFAULT_SETTINGS, ...getMeta(d, 'settings', {}) });
@@ -115,6 +156,9 @@ export function hardestCards(limit: number, d: DB = getDb()): { id: number; laps
 }
 
 /** Turn a study source into a query scope. Only numbers are written into SQL; tags are matched in code. */
+/** Just these cards, whatever their deck. */
+export const cardsScope = (ids: number[]): Scope => ({ source: { kind: 'all' }, where: idList(ids) });
+
 export function scopeFor(source: StudySource, d: DB = getDb()): Scope {
   switch (source.kind) {
     case 'deck':
@@ -214,7 +258,7 @@ function logAttempt(d: DB, a: Attempt, now: Date, grade: number | null, practice
   const day = dayKey(now);
   d.prepare(
     `INSERT INTO attempts(ts, day, session_id, item_id, format, correct, near_miss, article_error, used_hint,
-       response_ms, given, xp, grade, practice) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       response_ms, given, xp, grade, practice, level) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   ).run(
     now.toISOString(),
     day,
@@ -230,6 +274,7 @@ function logAttempt(d: DB, a: Attempt, now: Date, grade: number | null, practice
     a.xp,
     grade,
     practice ? 1 : 0,
+    a.level && LEVELS.includes(a.level) ? a.level : null,
   );
   d.prepare(`INSERT INTO days(day, xp) VALUES (?, ?) ON CONFLICT(day) DO UPDATE SET xp = xp + excluded.xp`).run(
     day,
@@ -242,6 +287,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
   return tx(d, () => {
     const item = d.prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(a.itemId);
     if (!item) return { grade: null };
+    noteConfusion(d, item, a, now); // a wrong answer that is another card's answer (#200); never grades anything
     if (a.practice) {
       // Practice is logged (history, XP) but never introduces a card, moves the mastery ladder or grades FSRS.
       logAttempt(d, a, now, null, true);
@@ -253,7 +299,7 @@ export function recordAttempt(a: Attempt, d: DB = getDb(), now = new Date()) {
     // Code and occlusion cards are question cards in every format they are asked in.
     if (
       a.format === 'intro' ||
-      ((['mcq', 'order', 'flip'].includes(a.format) || ['code', 'occlusion'].includes(String(item.kind))) &&
+      ((['mcq', 'order', 'flip', 'worked'].includes(a.format) || ['code', 'occlusion'].includes(String(item.kind))) &&
         !a.genderOnly)
     )
       introduce(a.itemId, d, now);
@@ -339,13 +385,38 @@ export function overrideToCorrect(itemId: number, d: DB = getDb(), now = new Dat
 }
 
 export function allItems(d: DB = getDb(), scope?: Scope): Item[] {
-  return withOcclusionBoxes(
-    d
-      .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
-      .all()
-      .map(rowToItem),
+  return withSketches(
+    withMnemonicRuns(
+      withOcclusionBoxes(
+        d
+          .prepare(`${ITEM_SELECT} WHERE i.suspended = 0${dk(scope)} ORDER BY i.ord`)
+          .all()
+          .map(rowToItem),
+        d,
+      ),
+      d,
+    ),
     d,
   );
+}
+
+/**
+ * Set each worked example's rung (worked.ts) from its ladder answers in the attempts log: right moves one up,
+ * wrong one down. One query, and none when the cards hold no worked example.
+ */
+export function withRungs<T extends Item>(items: T[], d: DB = getDb()): T[] {
+  const ladders = items.filter(isWorked);
+  if (!ladders.length) return items;
+  const answers = new Map<number, boolean[]>(ladders.map((i) => [i.id, []]));
+  for (const r of d
+    .prepare(
+      `SELECT item_id, correct FROM attempts WHERE format IN ('worked', 'ladder')
+       AND item_id IN (${ladders.map((i) => Number(i.id)).join(',')}) ORDER BY id`,
+    )
+    .all())
+    answers.get(Number(r.item_id))?.push(Number(r.correct) === 1);
+  for (const i of ladders) i.rung = rungOf(answers.get(i.id)!, workedStepsOf(i).length);
+  return items;
 }
 
 /** End of the current learning day (4 a.m. next morning), used as the "due" cutoff. */
@@ -447,19 +518,29 @@ export function grammarItemIds(group: string, d: DB = getDb(), scope?: Scope): n
 export function itemsByIds(ids: number[], d: DB = getDb()): Record<number, Item> {
   if (!ids.length) return {};
   const rows = d.prepare(`${ITEM_SELECT} WHERE i.id IN (${ids.map(() => '?').join(',')})`).all(...ids);
-  return Object.fromEntries(withOcclusionBoxes(rows.map(rowToItem), d).map((i) => [i.id, i]));
+  const items = withSketches(withMnemonicRuns(withOcclusionBoxes(rows.map(rowToItem), d), d), d);
+  return Object.fromEntries(items.map((i) => [i.id, i]));
 }
 
-export function srsInfo(ids: number[], d: DB = getDb()): Record<number, { reps: number; mastery: number }> {
+export function srsInfo(
+  ids: number[],
+  d: DB = getDb(),
+): Record<number, { reps: number; mastery: number; lapses: number }> {
   if (!ids.length) return {};
   const rows = d
     .prepare(
-      `SELECT i.id, COALESCE(s.reps, -1) AS reps, COALESCE(st.mastery, 0) AS mastery FROM items i
+      `SELECT i.id, COALESCE(s.reps, -1) AS reps, COALESCE(st.mastery, 0) AS mastery, COALESCE(s.lapses, 0) AS lapses
+       FROM items i
        LEFT JOIN srs s ON s.item_id = i.id LEFT JOIN item_state st ON st.item_id = i.id
        WHERE i.id IN (${ids.map(() => '?').join(',')})`,
     )
     .all(...ids);
-  return Object.fromEntries(rows.map((r: Row) => [Number(r.id), { reps: Number(r.reps), mastery: Number(r.mastery) }]));
+  return Object.fromEntries(
+    rows.map((r: Row) => [
+      Number(r.id),
+      { reps: Number(r.reps), mastery: Number(r.mastery), lapses: Number(r.lapses) },
+    ]),
+  );
 }
 
 /** The source the learner last chose: a deck, all decks, several decks, a tag, starred or hardest cards. */
@@ -471,7 +552,15 @@ export function currentSource(d: DB = getDb()): StudySource {
 }
 
 /** New cards for a session: up to `cap`, and never more than each deck's own new-card limit for today. */
-export function freshPerDeck(d: DB, now: Date, scope: Scope, cap: number, deckOf?: (id: number) => number): number[] {
+/** `order`: a different order to meet the new cards in (the session planner groups new words by theme). */
+export function freshPerDeck(
+  d: DB,
+  now: Date,
+  scope: Scope,
+  cap: number,
+  deckOf?: (id: number) => number,
+  order?: (ids: number[]) => number[],
+): number[] {
   const left = new Map<number, number>();
   const budget = (deck: number) => {
     if (!left.has(deck)) left.set(deck, Math.max(0, deckNewPerDay(deck, d) - introducedTodayCount(d, now, deck)));
@@ -487,7 +576,7 @@ export function freshPerDeck(d: DB, now: Date, scope: Scope, cap: number, deckOf
       decks.set(Number(r.id), Number(r.deck_id));
     deckOf = (id) => decks.get(id)!;
   }
-  for (const id of ids) {
+  for (const id of order ? order(ids) : ids) {
     const deck = deckOf(id);
     if (budget(deck) <= 0) continue;
     left.set(deck, budget(deck) - 1);

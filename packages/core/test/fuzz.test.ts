@@ -24,6 +24,15 @@ const { readApkg } = await import('../src/formats/apkg');
 const { writeApkg } = await import('../src/formats/apkgwrite');
 const { listZip, unsafeZipPath } = await import('../src/formats/zip');
 const { sanitizeHtml, SAFE_TAGS } = await import('../src/cards');
+const { cardToItem } = await import('../src/library');
+const { MNEMONIC_MAX_LENGTH, cleanMnemonic, mnemonicHtml } = await import('../src/mnemonic');
+const { KEY_TERMS_MAX, KEY_TERM_MAX_LENGTH, answerSource, keyTermsOf, markAnswer } = await import('../src/keyterms');
+const { cleanVariants, parseVariants, VARIANTS_MAX, VARIANT_MAX_LENGTH } = await import('../src/variants');
+const { cleanCorrections, correctionHtml, parseCorrections, CORRECTION_MAX_LENGTH } =
+  await import('../src/misconceptions');
+const { cleanKeyPoints, keyPointHtml, parseKeyPoints, KEY_POINTS_MAX, KEY_POINT_MAX_LENGTH } =
+  await import('../src/explain');
+const { cleanTwin, TWIN_MAX_LENGTH } = await import('../src/twin');
 const { UserError } = await import('../src/errors');
 const { installNodeHost } = await import('@lernlab/storage-sqlite');
 installNodeHost();
@@ -126,6 +135,214 @@ test('sanitizeHtml: whatever goes in, only bare safe-list tags come out', () => 
 test('CSV and pasted text: any input is read or refused cleanly', () => {
   fc.assert(
     fc.property(hostileText, (text) => worksOrUserError(() => csvToCards(text))),
+    params(RUNS * 2),
+  );
+});
+
+test('question variants: any text gives a few plain-text questions, and cleaning is stable', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const variants = parseVariants(text);
+      assert.ok(variants.length <= VARIANTS_MAX);
+      for (const v of variants) {
+        assert.ok(v.prompt && v.prompt.length <= VARIANT_MAX_LENGTH && !v.prompt.includes('|'));
+        assert.ok(['recall', 'apply', 'analyse'].includes(v.level));
+      }
+      const line = cleanVariants(text);
+      assert.equal(cleanVariants(line), line, 'cleaning twice changes nothing');
+      assert.equal(parseVariants(line).length, variants.length);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test('key terms: any back and any terms give a plain answer, a few terms and safe HTML, and editing is stable', () => {
+  const deck = { id: 1, name: 'D', language: null };
+  fc.assert(
+    fc.property(hostileText, hostileText, (back, terms) => {
+      const item = cardToItem(deck, { front: 'Q', back, keyTerms: terms });
+      if (!item) return;
+      const list = keyTermsOf(item);
+      assert.ok(list.length <= KEY_TERMS_MAX);
+      for (const t of list) assert.ok(t && t.length <= KEY_TERM_MAX_LENGTH && !t.includes('|'));
+      const html = markAnswer(item, item.meaning);
+      // Without key terms the answer is shown as before (the screen sanitises it); with them it is already safe.
+      if (list.length) assert.equal(sanitizeHtml(html), html);
+      else assert.equal(html, item.meaning);
+      // Opened in the editor and saved again, the card keeps its answer; saving twice changes nothing more.
+      const again = cardToItem(deck, { front: 'Q', back: answerSource(item), keyTerms: '' });
+      const twice = again && cardToItem(deck, { front: 'Q', back: answerSource(again), keyTerms: '' });
+      assert.deepEqual(twice && [twice.meaning, twice.extra], again && [again.meaning, again.extra]);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test('mnemonics: any text gives short plain text, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const m = cleanMnemonic(text);
+      assert.ok(m.length <= MNEMONIC_MAX_LENGTH);
+      assert.equal(cleanMnemonic(m), m, 'cleaning twice changes nothing');
+      const html = mnemonicHtml(m);
+      assert.equal(sanitizeHtml(html), html);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test('corrections: any text gives plain-text corrections, cleaning is stable and the HTML stays safe', () => {
+  const mcq = { choices: ['a', 'b', 'c', 'd'], correct: [1] };
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      for (const c of parseCorrections(text)) {
+        assert.ok(c.length <= CORRECTION_MAX_LENGTH && !c.includes('|'));
+        assert.equal(sanitizeHtml(correctionHtml(c)), correctionHtml(c), 'already safe HTML');
+      }
+      const line = cleanCorrections(text, mcq);
+      assert.equal(cleanCorrections(line, mcq), line, 'cleaning twice changes nothing');
+      const list = parseCorrections(line);
+      assert.ok(list.length <= 4 && !list[1]);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+const {
+  cleanWorkedSteps,
+  parseWorkedSteps,
+  stepHtml,
+  WORKED_STEPS_MAX,
+  WORKED_LABEL_MAX_LENGTH,
+  WORKED_RESULT_MAX_LENGTH,
+} = await import('../src/worked');
+test('worked steps: any text gives at most eight plain-text steps, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const list = parseWorkedSteps(text);
+      assert.ok(list.length <= WORKED_STEPS_MAX);
+      for (const s of list) {
+        assert.ok(s.result && s.result.length <= WORKED_RESULT_MAX_LENGTH && !s.result.includes('|'));
+        assert.ok(s.label.length <= WORKED_LABEL_MAX_LENGTH && !s.label.includes('|') && !s.label.includes('::'));
+        for (const t of [s.label, s.result]) assert.equal(sanitizeHtml(stepHtml(t)), stepHtml(t), 'already safe HTML');
+      }
+      const line = cleanWorkedSteps(text);
+      assert.equal(cleanWorkedSteps(line), line, 'cleaning twice changes nothing');
+      assert.deepEqual(parseWorkedSteps(line), list.length >= 2 ? list : []);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+const { cleanGraph, parseGraph, plotGraph, graphPoints, GRAPH_MAX_LENGTH } = await import('../src/graph');
+test('graphs: any text reads or gives no graph, never throws; the kept line is stable, safe and draws finite numbers', () => {
+  const pieces = [
+    'x',
+    'y',
+    '=',
+    '+',
+    '-',
+    '*',
+    '/',
+    '^',
+    '(',
+    ')',
+    ';',
+    '..',
+    ',',
+    ' ',
+    'sin',
+    'sqrt',
+    'ln',
+    'pi',
+    'e',
+  ];
+  const mathish = fc
+    .array(fc.oneof(fc.constantFrom(...pieces), fc.integer({ min: 0, max: 999 }).map(String)), { maxLength: 40 })
+    .map((a) => a.join(''));
+  fc.assert(
+    fc.property(fc.oneof(hostileText, mathish), (text) => {
+      const line = cleanGraph(text);
+      assert.ok(line.length <= GRAPH_MAX_LENGTH + 40 && /^[0-9a-z.+\-*/^(),;= ]*$/.test(line), line);
+      assert.equal(cleanGraph(line), line, 'cleaning twice changes nothing');
+      const g = parseGraph(line);
+      if (!g) return assert.equal(line, '');
+      const plot = plotGraph(g);
+      assert.ok(plot.paths.length <= 130 && !/NaN|Infinity/.test(plot.paths.join(' ')));
+      for (const n of [...plot.x, ...plot.y, ...plot.dots.flat(), ...graphPoints(g).flat()])
+        assert.ok(Number.isFinite(n));
+    }),
+    params(RUNS * 2),
+  );
+});
+
+const { cleanMaps, parseMaps, compareMaps, termsOf, MAPS_MAX, MAP_LINKS_MAX, MAP_TERMS_MAX } =
+  await import('../src/conceptmap');
+test('concept maps: any text gives capped maps of plain text, cleaning is stable and comparing never throws', () => {
+  const line = fc.oneof(
+    hostileText,
+    fc.tuple(hostileText, hostileText, hostileText).map(([a, l, b]) => `${a} --${l}--> ${b}`),
+    hostileText.map((t) => `# ${t}`),
+  );
+  fc.assert(
+    fc.property(fc.array(line, { maxLength: 60 }), (lines) => {
+      const text = cleanMaps(lines.join('\n'));
+      assert.equal(cleanMaps(text), text, 'cleaning twice changes nothing');
+      assert.equal(sanitizeHtml(text), text, 'plain text');
+      const maps = parseMaps(text);
+      assert.ok(maps.length <= MAPS_MAX);
+      for (const m of maps) {
+        assert.ok(m.links.length >= 2 && m.links.length <= MAP_LINKS_MAX && termsOf(m.links).length <= MAP_TERMS_MAX);
+        const c = compareMaps(m.links.slice(1), m.links);
+        assert.deepEqual([c.matched.length, c.missing.length, c.extra.length], [m.links.length - 1, 1, 0]);
+      }
+    }),
+    params(RUNS),
+  );
+});
+
+const { cleanCase, caseHtml, questionOf, CASE_MAX_LENGTH } = await import('../src/cases');
+test('cases: any text gives one line of plain text, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, hostileText, (text, front) => {
+      const c = cleanCase(text);
+      assert.ok(c.length <= CASE_MAX_LENGTH && !/[\n\r]/.test(c));
+      assert.equal(cleanCase(c), c, 'cleaning twice changes nothing');
+      assert.equal(sanitizeHtml(caseHtml(c)), caseHtml(c), 'already safe HTML');
+      const q = questionOf(front, c);
+      assert.ok(q === front || (q.length > 0 && front.endsWith(q)), 'the question is the front or its end');
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test('key points: any text gives at most five plain-text points, cleaning is stable and the HTML stays safe', () => {
+  fc.assert(
+    fc.property(hostileText, (text) => {
+      const list = parseKeyPoints(text);
+      assert.ok(list.length <= KEY_POINTS_MAX);
+      for (const p of list) {
+        assert.ok(p && p.length <= KEY_POINT_MAX_LENGTH && !p.includes('|'));
+        assert.equal(sanitizeHtml(keyPointHtml(p)), keyPointHtml(p), 'already safe HTML');
+      }
+      const line = cleanKeyPoints(text);
+      assert.equal(cleanKeyPoints(line), line, 'cleaning twice changes nothing');
+      assert.ok(line === '' || parseKeyPoints(line).length >= 2);
+    }),
+    params(RUNS * 2),
+  );
+});
+
+test("a compare card's second side: any text becomes short plain text, and cleaning twice changes nothing", () => {
+  fc.assert(
+    fc.property(
+      fc.oneof(fc.string({ maxLength: 900 }), fc.constantFrom('<b>x</b>', '&amp;lt;script&amp;gt;', '<scr<b></b>ipt>')),
+      (text) => {
+        const side = cleanTwin(text);
+        assert.ok(side.length <= TWIN_MAX_LENGTH);
+        assert.equal(cleanTwin(side), side);
+      },
+    ),
     params(RUNS * 2),
   );
 });

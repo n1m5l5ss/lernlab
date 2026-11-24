@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { heatColumn, heatLevel, heatmapWeeks, monthStarts, recallRate } from './progress-logic';
+import { heatColumn, heatLevel, heatmapWeeks, levelMix, monthStarts, recallRate } from './progress-logic';
 
 test('heat levels follow session lengths; a studied day is never level 0', () => {
   assert.equal(heatLevel(0, false), 0);
@@ -41,4 +41,20 @@ test('the study-days calendar runs the way the language reads: right to left put
   assert.equal(heatColumn(51, 52, 'ltr'), 51);
   assert.equal(heatColumn(0, 52, 'rtl'), 51);
   assert.equal(heatColumn(51, 52, 'rtl'), 0);
+});
+
+test('question levels: shares of the answers, and a gentle hint only when nearly all of them are recall', () => {
+  const mix = levelMix({ recall: 6, apply: 3, analyse: 1 });
+  assert.deepEqual(mix.shares, [
+    { level: 'recall', share: 0.6 },
+    { level: 'apply', share: 0.3 },
+    { level: 'analyse', share: 0.1 },
+  ]);
+  assert.equal(mix.mostlyRecall, false);
+  assert.equal(levelMix({ recall: 17, apply: 2, analyse: 1 }).mostlyRecall, true);
+  assert.equal(levelMix({ recall: 4, apply: 1, analyse: 0 }).mostlyRecall, false, 'too few answers to say');
+  assert.deepEqual(
+    levelMix({ recall: 0, apply: 0, analyse: 0 }).shares.map((s) => s.share),
+    [0, 0, 0],
+  );
 });

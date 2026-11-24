@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MIC_ONLY, micProblem, recorderOptions, recordingType, secondsLeft } from './recorder-logic';
+import { MIC_ONLY, clock, micProblem, recorderOptions, recordingType, secondsLeft } from './recorder-logic';
 
 test('records Opus in WebM (Chromium, Electron) or Ogg (Firefox), or offers no Record button', () => {
   assert.equal(
@@ -41,4 +41,12 @@ test('says why the microphone could not be used', () => {
   assert.equal(micProblem(err('NotReadableError')), 'noMic');
   assert.equal(micProblem(new TypeError('no mediaDevices')), 'failed');
   assert.equal(micProblem('boom'), 'failed');
+});
+
+test('a teach-back recording shows how long it has run, as minutes and seconds', () => {
+  assert.equal(clock(0), '0:00');
+  assert.equal(clock(59), '0:59');
+  assert.equal(clock(60), '1:00');
+  assert.equal(clock(185.9), '3:05');
+  assert.equal(clock(-3), '0:00');
 });
