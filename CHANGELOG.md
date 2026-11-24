@@ -2,6 +2,60 @@
 
 All notable changes to LernLab are listed here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/). New entries are added automatically by release-please from pull-request titles. See [docs/RELEASING.md](docs/RELEASING.md).
 
+## [1.2.0](https://github.com/n1m5l5ss/lernlab/compare/v1.1.1...v1.2.0) (2026-11-24)
+
+
+### Added
+
+* add a calm mode, say what each XP reward was for, and swap a round once per session ([64476d4](https://github.com/n1m5l5ss/lernlab/commit/64476d4290af4c70818ea8cd224e3ead1f99b1c8))
+* add cards that translate between graphs and formulas ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf)), closes [#209](https://github.com/n1m5l5ss/lernlab/issues/209) [#210](https://github.com/n1m5l5ss/lernlab/issues/210) [#215](https://github.com/n1m5l5ss/lernlab/issues/215) [#220](https://github.com/n1m5l5ss/lernlab/issues/220) [#219](https://github.com/n1m5l5ss/lernlab/issues/219) [#224](https://github.com/n1m5l5ss/lernlab/issues/224)
+* add case chains: one case with linked questions ([#242](https://github.com/n1m5l5ss/lernlab/issues/242)) ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* add key points to the CSV template ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* add myth cards that ask "true or myth?" and then why ([#234](https://github.com/n1m5l5ss/lernlab/issues/234)) ([7a604c4](https://github.com/n1m5l5ss/lernlab/commit/7a604c43463f066c0a56490fcf9a8fc49ec8e8e9)), closes [#202](https://github.com/n1m5l5ss/lernlab/issues/202)
+* add worked examples that fade step by step ([64476d4](https://github.com/n1m5l5ss/lernlab/commit/64476d4290af4c70818ea8cd224e3ead1f99b1c8))
+* add, edit and remove other ways to ask a card in the card editor ([#230](https://github.com/n1m5l5ss/lernlab/issues/230)) ([01b1d8f](https://github.com/n1m5l5ss/lernlab/commit/01b1d8f3b53e627b173dcdd604fa09832c7c14fa)), closes [#198](https://github.com/n1m5l5ss/lernlab/issues/198)
+* ask "Which one is this?" about the groups you mix up ([#240](https://github.com/n1m5l5ss/lernlab/issues/240)) ([aea0662](https://github.com/n1m5l5ss/lernlab/commit/aea0662284cb0fb65fa0cde6c8b2cb3e447ce682))
+* ask cards in their other ways during reviews, exams and on Progress ([#231](https://github.com/n1m5l5ss/lernlab/issues/231)) ([ce38cad](https://github.com/n1m5l5ss/lernlab/commit/ce38cadf289341f9f87303085468697527587db3))
+* ask how sure you were and show on Progress how often that was right ([#235](https://github.com/n1m5l5ss/lernlab/issues/235)) ([4d89681](https://github.com/n1m5l5ss/lernlab/commit/4d89681f79c8982ed60461578b5553d0e68e6d61))
+* ask you to act out a few action cards ([7617dc7](https://github.com/n1m5l5ss/lernlab/commit/7617dc7c5c67b86fd3bae100ddd242025851f6a8))
+* ask you to say the answer aloud on a few flip cards ([7617dc7](https://github.com/n1m5l5ss/lernlab/commit/7617dc7c5c67b86fd3bae100ddd242025851f6a8))
+* bring missed cards back until you get them right ([#227](https://github.com/n1m5l5ss/lernlab/issues/227)) ([8fba637](https://github.com/n1m5l5ss/lernlab/commit/8fba637cfa54e875c050b9c75c80fa94552fe547)), closes [#201](https://github.com/n1m5l5ss/lernlab/issues/201)
+* draw a concept map from memory and compare it with the author's ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* draw a new card's meaning on a sketch pad and see your sketch with the answer ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* explain a common mix-up when you pick a wrong choice ([#233](https://github.com/n1m5l5ss/lernlab/issues/233)) ([920b397](https://github.com/n1m5l5ss/lernlab/commit/920b397075e214e5ccf868590d3b4c35ae3b4778))
+* explain why and how cards in your own words, then tick the key points ([#237](https://github.com/n1m5l5ss/lernlab/issues/237)) ([e1a985b](https://github.com/n1m5l5ss/lernlab/commit/e1a985b096b26b72370ab2dedf60b3aeb1ea3d17))
+* give the rest of a related group of cards a quick question ([aea0662](https://github.com/n1m5l5ss/lernlab/commit/aea0662284cb0fb65fa0cde6c8b2cb3e447ce682))
+* learn the basics before the cards that build on them ([aea0662](https://github.com/n1m5l5ss/lernlab/commit/aea0662284cb0fb65fa0cde6c8b2cb3e447ce682))
+* let a card hold other ways to ask its question ([#229](https://github.com/n1m5l5ss/lernlab/issues/229)) ([59dbc5e](https://github.com/n1m5l5ss/lernlab/commit/59dbc5ecb7eca73f1c9a3badb26d48c0105f5965)), closes [#198](https://github.com/n1m5l5ss/lernlab/issues/198)
+* let learners guess before they start a new topic ([#232](https://github.com/n1m5l5ss/lernlab/issues/232)) ([cbd76e1](https://github.com/n1m5l5ss/lernlab/commit/cbd76e1a7626f90e0e32ccaf85cfbad7f978a1d3)), closes [#203](https://github.com/n1m5l5ss/lernlab/issues/203)
+* let two people study together on one computer ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* let your AI assistant suggest question variants, corrections and key points for your cards ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* make an if-then study plan and show it in the daily reminder ([#228](https://github.com/n1m5l5ss/lernlab/issues/228)) ([d8929c8](https://github.com/n1m5l5ss/lernlab/commit/d8929c805ccc4132730f03dd71fbcc9c5f03e0f9))
+* offer an evening and morning study rhythm ([#241](https://github.com/n1m5l5ss/lernlab/issues/241)) ([7617dc7](https://github.com/n1m5l5ss/lernlab/commit/7617dc7c5c67b86fd3bae100ddd242025851f6a8))
+* offer an optional quiet minute after learning new cards ([7617dc7](https://github.com/n1m5l5ss/lernlab/commit/7617dc7c5c67b86fd3bae100ddd242025851f6a8))
+* practise the cards you mix up side by side ([#239](https://github.com/n1m5l5ss/lernlab/issues/239)) ([64476d4](https://github.com/n1m5l5ss/lernlab/commit/64476d4290af4c70818ea8cd224e3ead1f99b1c8))
+* re-check confident misses and ask if you'll know new cards tomorrow ([#236](https://github.com/n1m5l5ss/lernlab/issues/236)) ([aac6699](https://github.com/n1m5l5ss/lernlab/commit/aac669971fcfb95fc9b8789f7bfd634bd3c20a89))
+* say how a session went on the summary, with one next step ([7617dc7](https://github.com/n1m5l5ss/lernlab/commit/7617dc7c5c67b86fd3bae100ddd242025851f6a8))
+* say your explanation aloud on explain cards ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* show a card's mnemonic only after a miss or a hint, then fade it out ([aea0662](https://github.com/n1m5l5ss/lernlab/commit/aea0662284cb0fb65fa0cde6c8b2cb3e447ce682))
+* show a goal for this week and a progress card you can print or save ([aea0662](https://github.com/n1m5l5ss/lernlab/commit/aea0662284cb0fb65fa0cde6c8b2cb3e447ce682))
+* show how your own cards held up after time away, and explain how LernLab's methods work ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* suggest better cards in the editor and import preview, and highlight key terms ([64476d4](https://github.com/n1m5l5ss/lernlab/commit/64476d4290af4c70818ea8cd224e3ead1f99b1c8))
+* teach a topic back and tick the key points you left out ([aea0662](https://github.com/n1m5l5ss/lernlab/commit/aea0662284cb0fb65fa0cde6c8b2cb3e447ce682))
+* try a maths or science problem before the lesson ([aea0662](https://github.com/n1m5l5ss/lernlab/commit/aea0662284cb0fb65fa0cde6c8b2cb3e447ce682))
+* write explain cards and their key points in the card editor ([#238](https://github.com/n1m5l5ss/lernlab/issues/238)) ([4856f61](https://github.com/n1m5l5ss/lernlab/commit/4856f61e46dbd83d21b9ddaa7c6e0751056a804f)), closes [#199](https://github.com/n1m5l5ss/lernlab/issues/199)
+
+
+### Fixed
+
+* keep Ctrl+Enter in an answer box from starting a new session ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+* let the import preview map every new card column ([d163676](https://github.com/n1m5l5ss/lernlab/commit/d163676781d9335afbd41ad5a6b541fafe996fdf))
+
+
+### Performance
+
+* keep imports fast when cards don't use the new optional fields ([aea0662](https://github.com/n1m5l5ss/lernlab/commit/aea0662284cb0fb65fa0cde6c8b2cb3e447ce682))
+
 ## [1.1.1](https://github.com/n1m5l5ss/lernlab/compare/v1.1.0...v1.1.1) (2026-11-21)
 
 
